@@ -1,8 +1,8 @@
-var Renderer = 
+function Renderer(renderingArea)
 {
-	drawingContext : 
+	this.drawingContext =
 	{
-		renderingArea : null,
+		renderingArea : renderingArea,
 		gl : null,
 		shaders : null,
 		projection : null,
@@ -38,10 +38,6 @@ var Renderer =
 		
 		Initialize : function()
 		{
-			console.log('Intitalizing rendering area');
-			this.RefreshSize();
-			this.renderingArea.focus();
-			
 			console.log('Initializing gl context');
 			this.gl = this.renderingArea.getContext("webgl") || this.renderingArea.getContext("experimental-webgl");
 			this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -73,13 +69,6 @@ var Renderer =
 			this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
 		},
 		
-		RefreshSize : function()
-		{
-			this.renderingArea = document.getElementById('RenderingArea');
-			this.renderingArea.width = window.innerWidth;
-			this.renderingArea.height = window.innerHeight;
-		},
-		
 		GetShader : function(identifier)
 		{
 			var shaderScript, shaderSource, shader;
@@ -106,9 +95,9 @@ var Renderer =
 			}
 			return shader;
 		}
-	},
+	};
 	
-	camera :
+	this.camera =
 	{
 		//Camera location
 		at : new Vector([.0, .0, -10.0]),
@@ -236,9 +225,9 @@ var Renderer =
 			var w = new Vector(render.Multiply(u).values);
 			return w.Times(1./w.coordinates[3]);
 		}
-	},
+	};
 	
-	Inititalize : function(scene)
+	this.Initialize = function()
 	{
 		this.drawingContext.Initialize();
 		this.Draw(Scene);
@@ -295,18 +284,23 @@ var Renderer =
 			}
 			Renderer.Draw(scene);
 		};
-	},
+	};
 	
-	Draw : function(scene)
+	this.Draw = function(scene)
 	{
 		var gl = this.drawingContext.gl;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		
-		this.drawingContext.RefreshSize();
 		this.camera.InititalizeDrawingContext(this.drawingContext);
 		if(scene)
 		{
 			scene.Draw(this.drawingContext);
 		}
-	}
+	};
+	
+	this.Resize = function(width, height)
+	{
+		this.drawingContext.renderingArea.width = width;
+		this.drawingContext.renderingArea.height = height;
+	};
 };

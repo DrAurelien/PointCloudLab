@@ -1,0 +1,45 @@
+body
+{
+	overflow : hidden;
+	padding : 0px;
+	margin : 0px;
+}
+
+canvas
+{
+	position : fixed;
+	top : 0px;
+	left : 0px;
+	margin : 0px;
+}
+
+div.DataWindow
+{
+	position : fixed;
+	left : 10px;
+	top : 10px;
+	width : 200px;
+	overflow : auto;
+	margin : 0px;
+	right-padding : 20px;
+	background-color : white;
+	opacity : 0.8;
+	z-index : 1;
+	border-radius: 5px;
+}
+
+div.DataWindowHandle
+{
+	position : absolute;
+	right : 0px;
+	top : 0px;
+	width : 5px;
+	background-color : gray;
+	opacity : 0.8;
+	z-index: 2;
+}
+
+div.DataWindowHandle:hover
+{
+	background-color : lightgray;
+}

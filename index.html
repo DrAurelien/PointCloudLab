@@ -1,6 +1,7 @@
 <html>
 
 <head>
+	<link rel="stylesheet" type="text/css" href="style.css">
 	<script id="VertexShader" type="x-shader/x-vertex">
 		attribute vec3 VertexPosition;
 		attribute vec3 NormalVector;
@@ -31,6 +32,8 @@
 	<script type="text/javascript" src="matrix.js"></script>
 	<script type="text/javascript" src="shapes.js"></script>
 	<script type="text/javascript" src="renderer.js"></script>
+	<script type="text/javascript" src="data.js"></script>
+	<script type="text/javascript" src="interface.js"></script>
 	<script type="text/javascript">
 		var Scene =
 		{
@@ -47,14 +50,10 @@
 				}
 			}
 		};
-		
-		window.onresize = function() {Renderer.Draw(Scene);}
 	</script>
 </head>
 
-<body style="overflow : hidden; padding : 0px; margin : 0px;" onload="Renderer.Inititalize(Scene);">
-	<canvas style="margin : 0px;" id="RenderingArea">
-	</canvas>
+<body onload="Interface.Initialize(Scene);">
 </body>
 
 </html>
