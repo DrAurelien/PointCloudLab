@@ -29,7 +29,6 @@ function DataHandler(dataWindow)
 			widthToRestore : this.window.style.width
 		};
 		
-		this.SwitchVisibility();
 		this.RefreshContent(scene);
 	};
 	
@@ -86,12 +85,49 @@ function DataHandler(dataWindow)
 	//Refresh content of data and properties views
 	this.RefreshContent = function(scene)
 	{
+		
 		this.dataArea.innerHTML = '';
+		
+		//Buttons
+		var dataHandler = this;
+		function CreateItem(objectName)
+		{
+			return {
+				label : objectName,
+				callback : function()
+				{
+					var createdObject = null;
+					switch(objectName)
+					{
+						case 'Sphere' :
+							createdObject = new Sphere(new Vector([0, 0, 0]), 1);
+							break;
+						case 'Cylinder' :
+							createdObject = new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1);
+							break;
+						default : break;
+					}
+					
+					scene.objects.push(createdObject);
+					dataHandler.currentItem = createdObject;
+					Interface.Refresh();
+				}
+			};
+		}
+		
+		var createCombo = ComboBox('New',
+		[
+			CreateItem('Sphere'),
+			CreateItem('Cylinder')
+		]);
+		this.dataArea.appendChild(createCombo);
+		
+		//Scene
 		for(var index=0; index<scene.objects.length; index++)
 		{
 			var currentObject = scene.objects[index];
 			var item = document.createElement('div');
-			item.className = 'SceneItem';
+			item.className = (currentObject == this.currentItem)?'SelectedSceneItem':'SceneItem';
 			var itemContent = document.createTextNode(currentObject.name);
 			item.appendChild(itemContent);
 			

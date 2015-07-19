@@ -54,10 +54,17 @@ div.DataArea, div.PropertiesArea
 	overflow : auto;
 }
 
-div.SceneItem
+div.SceneItem, div.SelectedSceneItem
 {
 	padding-left : 10px;
 	cursor : pointer;
+}
+
+div.SelectedSceneItem
+{
+	background-color : black;
+	color : white;
+	font-weight : bold;
 }
 
 div.SceneItem:hover
@@ -65,7 +72,7 @@ div.SceneItem:hover
 	background-color : lightgray;
 }
 
-div.Button
+div.Button, div.ComboButton
 {
 	width : 70px;
 	text-align : center;
@@ -79,6 +86,27 @@ div.Button:hover
 {
 	background-color : lightgray;
 	border : 1px solid darkgray;
+}
+
+div.ComboList
+{
+	position : fixed;
+	background-color : lightgray;
+	border-radius: 3px;
+	padding : 10px;
+	opacity : 1;
+	z-index : 100;
+	border : 1px solid darkgray;
+}
+
+div.ComboOption
+{
+	cursor : pointer;
+}
+
+div.ComboOption:hover
+{
+	background-color : darkgray;
 }
 
 table
