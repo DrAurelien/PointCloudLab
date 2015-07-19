@@ -20,14 +20,14 @@ div.DataWindow
 	position : fixed;
 	left : 10px;
 	top : 10px;
-	width : 200px;
+	width : 300px;
 	overflow : hidden;
 	margin : 0px;
 	padding : 0px;
 	background-color : white;
 	opacity : 0.8;
 	z-index : 1;
-	border-radius: 5px;
+	border-radius: 7px;
 }
 
 div.DataWindowHandle
@@ -35,7 +35,7 @@ div.DataWindowHandle
 	position : absolute;
 	right : 0px;
 	top : 0px;
-	width : 5px;
+	width : 7px;
 	background-color : gray;
 	opacity : 0.8;
 	z-index: 2;
@@ -52,4 +52,35 @@ div.DataArea, div.PropertiesArea
 	margin : 0px;
 	padding : 10px;
 	overflow : hidden;
+}
+
+div.SceneItem
+{
+	padding-left : 10px;
+	cursor : pointer;
+}
+
+div.SceneItem:hover
+{
+	background-color : lightgray;
+}
+
+table
+{
+	margin : 0px;
+	padding : 0px;
+}
+
+td
+{
+	vertical-align: top;
+	font-size : 11px;
+	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	padding : 0px;
+	margin : 0px;
+}
+
+td.PropertyName
+{
+	font-weight : bold;
 }

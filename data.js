@@ -6,6 +6,7 @@ function Data(dataWindow)
 	this.visibility = null;
 	this.handle = null;
 	this.currentProperties = null;
+	this.currentItem = null;
 	
 	this.Initialize = function(scene)
 	{
@@ -48,7 +49,7 @@ function Data(dataWindow)
 		{
 			this.dataArea.style.height = this.window.clientHeight/2;
 			this.propertiesArea.style.height = this.dataArea.style.height;
-			this.dataArea.style.borderBottom = '1px solid white';
+			this.dataArea.style.borderBottom = '1px solid lightGray';
 			this.propertiesArea.style.borderTop = '1px solid darkGray';
 		}
 		else
@@ -80,17 +81,86 @@ function Data(dataWindow)
 			this.dataArea.style.display= 'block';
 			this.propertiesArea.style.display = 'block';
 		}
-	}
+	};
 	
+	//Refresh content of data and properties views
 	this.RefreshContent = function(scene)
 	{
 		this.dataArea.innerHTML = '';
 		for(var index=0; index<scene.objects.length; index++)
 		{
+			var currentObject = scene.objects[index];
 			var item = document.createElement('div');
-			var itemContent = document.createTextNode(scene.objects[index].name);
+			item.className = 'SceneItem';
+			var itemContent = document.createTextNode(currentObject.name);
 			item.appendChild(itemContent);
+			
+			//Javascript closure : create an object to avoid closure issues
+			function ItemClicked(object, target)
+			{
+				this.object = object;
+				this.target = target;
+				
+				this.Callback = function(event)
+				{
+					var self = this;
+					return function()
+					{
+						self.target.currentProperties = self.object.GetProperties();
+						self.target.RefreshContent(scene);
+						self.target.currentItem = self.object;
+					}
+				}
+			}
+			
+			item.onclick = new ItemClicked(currentObject, this).Callback();
+			
 			this.dataArea.appendChild(item);
 		}
+		
+		this.HandlePropertiesWindowVisibility();
+		if(this.currentProperties != null)
+		{
+			var table = this.DisplayedProperties(this.currentProperties);
+			this.propertiesArea.innerHTML = '';
+			this.propertiesArea.appendChild(table);
+		}
+	};
+	
+	//Computes the table showing the properties in parameter
+	this.DisplayedProperties = function(properties)
+	{
+		var table = document.createElement('table');
+		table.callName = 'Properties';
+		for(var property in properties)
+		{
+			var row = document.createElement('tr');
+			row.className = 'Property';
+			
+			var leftCol = document.createElement('td');
+			leftCol.className = 'PropertyName';
+			var leftColContent = document.createTextNode(property + ' :');
+			leftCol.appendChild(leftColContent);
+			row.appendChild(leftCol);
+			
+			var rightCol = document.createElement('td');
+			rightCol.className = 'PropertyValue';
+			var rightColContent;
+			if(properties[property] instanceof Object)
+			{
+				rightColContent = this.DisplayedProperties(properties[property]);
+				rightColContent.style.borderLeft = '1px solid darkgray';
+			}
+			else
+			{
+				rightColContent = document.createTextNode(properties[property]);
+			}
+			rightCol.appendChild(rightColContent);
+			row.appendChild(rightCol);
+			
+			table.appendChild(row);
+		}
+		
+		return table;
 	}
 }

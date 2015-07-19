@@ -1,5 +1,25 @@
 var Sampling = 30;
 
+var ShapesIntentifiers = 
+{
+	Sphere : 1,
+	Cylinder : 1,
+	GetIdentifier : function(shape)
+	{
+		var prefix = shape.constructor.name;
+		for(var identifier in this)
+		{
+			if(identifier == prefix)
+			{
+				prefix += "-"+this[identifier];
+				this[identifier]++;
+				return prefix;
+			}
+		}
+		throw 'Cannot generate identifier for shape "'+identifier+'"';
+	}
+}
+
 //Unit sphere centered at (0,0,0)
 var UnitSpherePoints =
 {
@@ -222,7 +242,7 @@ function Sphere(center, radius)
 {
 	this.center = center;
 	this.radius = radius;
-	this.name = 'Sphere';
+	this.name = ShapesIntentifiers.GetIdentifier(this);
 	
 	this.Draw = function(drawingContext)
 	{
@@ -236,7 +256,25 @@ function Sphere(center, radius)
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
 		
 		DrawUnitShape(UnitSpherePoints, drawingContext);
-	}
+	};
+	
+	this.GetProperties = function()
+	{
+		return {
+			name : this.name,
+			center :
+			{
+				x : this.center.coordinates[0],
+				y : this.center.coordinates[1],
+				z : this.center.coordinates[2]
+			},
+			radius : this.radius
+		};
+	};
+	
+	this.SetProperties = function(properties)
+	{
+	};
 }
 
 function Cylinder(center, axis, radius, height)
@@ -245,7 +283,7 @@ function Cylinder(center, axis, radius, height)
 	this.axis = axis.Normalized();
 	this.radius = radius;
 	this.height = height;
-	this.name = 'Cylinder';
+	this.name = ShapesIntentifiers.GetIdentifier(this);
 	
 	this.Draw = function(drawingContext)
 	{	
@@ -272,5 +310,30 @@ function Cylinder(center, axis, radius, height)
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
 		
 		DrawUnitShape(UnitCylinderPoints, drawingContext);
-	}
+	};
+	
+	this.GetProperties = function()
+	{
+		return {
+			name : this.name,
+			center :
+			{
+				x : this.center.coordinates[0],
+				y : this.center.coordinates[1],
+				z : this.center.coordinates[2]
+			},
+			axis :
+			{
+				x : this.axis.coordinates[0],
+				y : this.axis.coordinates[1],
+				z : this.axis.coordinates[2]
+			},
+			radius : this.radius,
+			height : this.height
+		};
+	};
+	
+	this.SetProperties = function(properties)
+	{
+	};
 }
