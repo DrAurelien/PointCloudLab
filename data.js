@@ -45,15 +45,22 @@ function DataHandler(dataWindow)
 	{
 		if(this.currentItem != null)
 		{
-			var currentProperties = this.currentItem.GetProperties();
-			this.dataArea.style.height = this.window.clientHeight/2;
+			var height = this.window.clientHeight/2;
+			this.dataArea.style.height = height;
+			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
+			height -= delta;
+			this.dataArea.style.height = height;
 			this.propertiesArea.style.height = this.dataArea.style.height;
 			this.dataArea.style.borderBottom = '1px solid lightGray';
 			this.propertiesArea.style.borderTop = '1px solid darkGray';
 		}
 		else
 		{
-			this.dataArea.style.height = this.window.clientHeight;
+			var height = this.window.clientHeight;
+			this.dataArea.style.height = height;
+			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
+			height -= delta;
+			this.dataArea.style.height = height;
 			this.propertiesArea.style.height = "0px";
 			this.dataArea.style.borderBottom = '';
 			this.propertiesArea.style.borderTop = '';
@@ -85,7 +92,12 @@ function DataHandler(dataWindow)
 	//Refresh content of data and properties views
 	this.RefreshContent = function(scene)
 	{
-		
+		this.RefreshData(scene);
+		this.RefreshProperties();
+	};
+	
+	this.RefreshData = function(scene)
+	{
 		this.dataArea.innerHTML = '';
 		
 		//Buttons
@@ -152,7 +164,10 @@ function DataHandler(dataWindow)
 			
 			this.dataArea.appendChild(item);
 		}
-		
+	}
+	
+	this.RefreshProperties = function()
+	{
 		this.HandlePropertiesWindowVisibility();
 		if(this.currentItem != null)
 		{
@@ -189,7 +204,7 @@ function DataHandler(dataWindow)
 			};
 			this.propertiesArea.appendChild(applyButton);
 		}
-	};
+	}
 	
 	//Computes the table showing the properties in parameter
 	this.DisplayProperties = function(properties)
@@ -208,15 +223,15 @@ function DataHandler(dataWindow)
 			row.appendChild(leftCol);
 			
 			var rightCol = document.createElement('td');
-			rightCol.className = 'PropertyValue';
 			var rightColContent;
 			if(properties[property] instanceof Object)
 			{
+				rightCol.className = 'PropertyComplexValue';
 				rightColContent = this.DisplayProperties(properties[property]);
-				rightColContent.style.borderLeft = '1px solid darkgray';
 			}
 			else
 			{
+				rightCol.className = 'PropertyValue';
 				rightColContent = document.createElement('input');
 				rightColContent.type = 'text';
 				rightColContent.width=20;
