@@ -222,6 +222,7 @@ function Sphere(center, radius)
 {
 	this.center = center;
 	this.radius = radius;
+	this.name = 'Sphere';
 	
 	this.Draw = function(drawingContext)
 	{
@@ -244,6 +245,7 @@ function Cylinder(center, axis, radius, height)
 	this.axis = axis.Normalized();
 	this.radius = radius;
 	this.height = height;
+	this.name = 'Cylinder';
 	
 	this.Draw = function(drawingContext)
 	{	

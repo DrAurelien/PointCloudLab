@@ -3,6 +3,8 @@ body
 	overflow : hidden;
 	padding : 0px;
 	margin : 0px;
+	font-size : 11px;
+	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 }
 
 canvas
@@ -19,9 +21,9 @@ div.DataWindow
 	left : 10px;
 	top : 10px;
 	width : 200px;
-	overflow : auto;
+	overflow : hidden;
 	margin : 0px;
-	right-padding : 20px;
+	padding : 0px;
 	background-color : white;
 	opacity : 0.8;
 	z-index : 1;
@@ -42,4 +44,12 @@ div.DataWindowHandle
 div.DataWindowHandle:hover
 {
 	background-color : lightgray;
+}
+
+div.DataArea, div.PropertiesArea
+{
+	border : 1ps solid black;
+	margin : 0px;
+	padding : 10px;
+	overflow : hidden;
 }
