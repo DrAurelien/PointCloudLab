@@ -51,7 +51,7 @@ div.DataArea, div.PropertiesArea
 	border : 1ps solid black;
 	margin : 0px;
 	padding : 10px;
-	overflow : hidden;
+	overflow : auto;
 }
 
 div.SceneItem
@@ -63,6 +63,22 @@ div.SceneItem
 div.SceneItem:hover
 {
 	background-color : lightgray;
+}
+
+div.Button
+{
+	width : 70px;
+	text-align : center;
+	background-color : darkgray;
+	border : 1px solid lightgray;
+	margin : auto;
+	cursor : pointer;
+}
+
+div.Button:hover
+{
+	background-color : lightgray;
+	border : 1px solid darkgray;
 }
 
 table
@@ -83,4 +99,16 @@ td
 td.PropertyName
 {
 	font-weight : bold;
+}
+
+input.PropertyValue
+{
+	font-size : 11px;
+	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	border : 0px;
+}
+
+input.PropertyValue:hover
+{
+	background-color : lightgray;
 }

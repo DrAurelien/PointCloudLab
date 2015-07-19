@@ -1,12 +1,12 @@
 var Interface = 
 {
 	sceneRenderer : null,
-	dataWindow : null,
+	dataHandler : null,
 	clickSelection : null,
 	
 	Initialize : function(scene)
 	{
-		this.InitializeDataWindow(scene);
+		this.InitializeDataHandler(scene);
 		this.InitializeRenderer(scene);
 		
 		window.onresize = function()
@@ -16,19 +16,19 @@ var Interface =
 		this.Refresh();
 	},
 	
-	InitializeDataWindow : function(scene)
+	InitializeDataHandler : function(scene)
 	{
 		//Create a div to display the scene
 		var dataVewing = document.createElement('div');
 		dataVewing.className = 'DataWindow';
 		document.body.appendChild(dataVewing);
 		
-		this.dataWindow = new Data(dataVewing);
-		this.dataWindow.Initialize(scene);
+		this.dataHandler = new DataHandler(dataVewing);
+		this.dataHandler.Initialize(scene);
 		
-		this.dataWindow.handle.onclick = function(event)
+		this.dataHandler.handle.onclick = function(event)
 		{
-			Interface.dataWindow.SwitchVisibility();
+			Interface.dataHandler.SwitchVisibility();
 		}
 	},
 	
@@ -101,7 +101,8 @@ var Interface =
 	
 	Refresh : function()
 	{
-		this.dataWindow.Resize(window.innerWidth, window.innerHeight);
+		this.dataHandler.Resize(window.innerWidth, window.innerHeight);
+		this.dataHandler.RefreshContent(Scene);
 		
 		this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
 		this.sceneRenderer.Draw(Scene);

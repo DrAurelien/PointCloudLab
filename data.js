@@ -1,11 +1,10 @@
-function Data(dataWindow)
+function DataHandler(dataWindow)
 {
 	this.window = dataWindow;
 	this.dataArea = null;
 	this.propertiesArea = null;
 	this.visibility = null;
 	this.handle = null;
-	this.currentProperties = null;
 	this.currentItem = null;
 	
 	this.Initialize = function(scene)
@@ -45,8 +44,9 @@ function Data(dataWindow)
 	
 	this.HandlePropertiesWindowVisibility = function()
 	{
-		if(this.currentProperties != null)
+		if(this.currentItem != null)
 		{
+			var currentProperties = this.currentItem.GetProperties();
 			this.dataArea.style.height = this.window.clientHeight/2;
 			this.propertiesArea.style.height = this.dataArea.style.height;
 			this.dataArea.style.borderBottom = '1px solid lightGray';
@@ -106,9 +106,8 @@ function Data(dataWindow)
 					var self = this;
 					return function()
 					{
-						self.target.currentProperties = self.object.GetProperties();
-						self.target.RefreshContent(scene);
 						self.target.currentItem = self.object;
+						self.target.RefreshContent(scene);
 					}
 				}
 			}
@@ -119,16 +118,45 @@ function Data(dataWindow)
 		}
 		
 		this.HandlePropertiesWindowVisibility();
-		if(this.currentProperties != null)
+		if(this.currentItem != null)
 		{
-			var table = this.DisplayedProperties(this.currentProperties);
+			var currentProperties = this.currentItem.GetProperties();
+			var table = this.DisplayProperties(currentProperties);
 			this.propertiesArea.innerHTML = '';
 			this.propertiesArea.appendChild(table);
+			
+			var applyButton = document.createElement('div');
+			applyButton.className = 'button';
+			var applyLabel = document.createTextNode('Apply');
+			applyButton.appendChild(applyLabel);
+			
+			var self = this;
+			applyButton.onclick = function()
+			{
+				var propertiesTable = null;
+				for(var index=0; index<self.propertiesArea.children.length && propertiesTable==null; index++)
+				{
+					if(self.propertiesArea.children[index].tagName.toLowerCase() == 'table')
+					{
+						propertiesTable = self.propertiesArea.children[index];
+					}
+				}
+				var properties = self.GetCurrentProperties(propertiesTable);
+				var oldProperties = self.currentItem.GetProperties();
+				if(!self.currentItem.SetProperties(properties))
+				{
+					alert("Invalid properties. The submitted modifications are not taken into account");
+					self.currentItem.SetProperties(oldProperties);
+				}
+				//Imporovable (onmodif callback)
+				Interface.Refresh();
+			};
+			this.propertiesArea.appendChild(applyButton);
 		}
 	};
 	
 	//Computes the table showing the properties in parameter
-	this.DisplayedProperties = function(properties)
+	this.DisplayProperties = function(properties)
 	{
 		var table = document.createElement('table');
 		table.callName = 'Properties';
@@ -139,7 +167,7 @@ function Data(dataWindow)
 			
 			var leftCol = document.createElement('td');
 			leftCol.className = 'PropertyName';
-			var leftColContent = document.createTextNode(property + ' :');
+			var leftColContent = document.createTextNode(property);
 			leftCol.appendChild(leftColContent);
 			row.appendChild(leftCol);
 			
@@ -148,12 +176,16 @@ function Data(dataWindow)
 			var rightColContent;
 			if(properties[property] instanceof Object)
 			{
-				rightColContent = this.DisplayedProperties(properties[property]);
+				rightColContent = this.DisplayProperties(properties[property]);
 				rightColContent.style.borderLeft = '1px solid darkgray';
 			}
 			else
 			{
-				rightColContent = document.createTextNode(properties[property]);
+				rightColContent = document.createElement('input');
+				rightColContent.type = 'text';
+				rightColContent.width=20;
+				rightColContent.className = 'PropertyValue';
+				rightColContent.value = properties[property];
 			}
 			rightCol.appendChild(rightColContent);
 			row.appendChild(rightCol);
@@ -162,5 +194,26 @@ function Data(dataWindow)
 		}
 		
 		return table;
-	}
+	};
+	
+	this.GetCurrentProperties = function(propertiesTable)
+	{
+		var properties = {};
+		for(var index=0; index<propertiesTable.children.length; index++)
+		{
+			var propertyRow = propertiesTable.children[index];
+			var porpertyNameCol = propertyRow.children[0];
+			var porpertyValueCol = propertyRow.children[1];
+			var propertyValueElement = porpertyValueCol.children[0];
+			if(propertyValueElement.tagName.toLowerCase() == 'input')
+			{
+				properties[porpertyNameCol.textContent] = propertyValueElement.value;
+			}
+			else
+			{
+				properties[porpertyNameCol.textContent] = this.GetCurrentProperties(propertyValueElement);
+			}
+		}
+		return properties;
+	};
 }

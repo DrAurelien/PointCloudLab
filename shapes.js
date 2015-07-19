@@ -274,6 +274,43 @@ function Sphere(center, radius)
 	
 	this.SetProperties = function(properties)
 	{
+		try
+		{
+			if('center' in properties)
+			{
+				this.center = new Vector([
+					parseFloat(properties.center.x),
+					parseFloat(properties.center.y),
+					parseFloat(properties.center.z)
+				]);
+				for(var index=0; index<3; index++)
+				{
+					if(isNaN(this.center.coordinates[index]))
+					{
+						return false;
+					}
+				}
+			}
+			
+			if('name' in properties)
+			{
+				this.name = properties.name;
+			}
+			
+			if('radius' in properties)
+			{
+				this.radius = parseFloat(properties.radius);
+				if(isNaN(this.radius))
+				{
+					return false;
+				}
+			}
+		}
+		catch(exception)
+		{
+			return false;
+		}
+		return true;
 	};
 }
 
@@ -335,5 +372,68 @@ function Cylinder(center, axis, radius, height)
 	
 	this.SetProperties = function(properties)
 	{
+		try
+		{
+			if('center' in properties)
+			{
+				this.center = new Vector([
+					parseFloat(properties.center.x),
+					parseFloat(properties.center.y),
+					parseFloat(properties.center.z)
+				]);
+				for(var index=0; index<3; index++)
+				{
+					if(isNaN(this.center.coordinates[index]))
+					{
+						return false;
+					}
+				}
+			}
+			
+			if('axis' in properties)
+			{
+				this.axis = new Vector([
+					parseFloat(properties.axis.x),
+					parseFloat(properties.axis.y),
+					parseFloat(properties.axis.z)
+				]);
+				this.axis = this.axis.Normalized();
+				for(var index=0; index<3; index++)
+				{
+					if(isNaN(this.axis.coordinates[index]))
+					{
+						return false;
+					}
+				}
+			}
+			
+			if('name' in properties)
+			{
+				this.name = properties.name;
+			}
+			
+			if('radius' in properties)
+			{
+				this.radius = parseFloat(properties.radius);
+				if(isNaN(this.radius))
+				{
+					return false;
+				}
+			}
+			
+			if('height' in properties)
+			{
+				this.height = parseFloat(properties.height);
+				if(isNaN(this.height))
+				{
+					return false;
+				}
+			}
+		}
+		catch(exception)
+		{
+			return false;
+		}
+		return true;
 	};
 }
