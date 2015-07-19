@@ -23,7 +23,8 @@ var Interface =
 		dataVewing.className = 'DataWindow';
 		document.body.appendChild(dataVewing);
 		
-		this.dataHandler = new DataHandler(dataVewing);
+		var self = this;
+		this.dataHandler = new DataHandler(dataVewing, function() {self.Refresh();});
 		this.dataHandler.Initialize(scene);
 		
 		this.dataHandler.handle.onclick = function(event)

@@ -1,4 +1,4 @@
-function DataHandler(dataWindow)
+function DataHandler(dataWindow, updateCallback)
 {
 	this.window = dataWindow;
 	this.dataArea = null;
@@ -6,6 +6,7 @@ function DataHandler(dataWindow)
 	this.visibility = null;
 	this.handle = null;
 	this.currentItem = null;
+	this.updateCallback = updateCallback;
 	
 	this.Initialize = function(scene)
 	{
@@ -122,7 +123,10 @@ function DataHandler(dataWindow)
 					
 					scene.objects.push(createdObject);
 					dataHandler.currentItem = createdObject;
-					Interface.Refresh();
+					if(dataHandler.updateCallback != null)
+					{
+						dataHandler.updateCallback();
+					}
 				}
 			};
 		}
@@ -199,8 +203,10 @@ function DataHandler(dataWindow)
 					alert("Invalid properties. The submitted modifications are not taken into account");
 					self.currentItem.SetProperties(oldProperties);
 				}
-				//Imporovable (onmodif callback)
-				Interface.Refresh();
+				if(self.updateCallback != null)
+				{
+					self.updateCallback();
+				}
 			};
 			this.propertiesArea.appendChild(applyButton);
 		}
