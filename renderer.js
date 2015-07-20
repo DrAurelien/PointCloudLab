@@ -139,8 +139,8 @@ function Renderer(renderingArea)
 			var z = this.to.Minus(this.at);
 			var d = z.Norm();
 			z = z.Times(1./d);
-			var x = this.up.Cross(z);
-			var y = z.Cross(x);
+			var x = this.up.Cross(z).Normalized();
+			var y = z.Cross(x).Normalized();
 			return {x:x, y:y, z:z, distance:d};
 		},
 		
@@ -189,19 +189,34 @@ function Renderer(renderingArea)
 		
 		Rotate : function(dx, dy)
 		{
-			var f = Math.tan(this.fov/2.0);
+			//DX rotation (around Y axis)
+			var angle = 2*Math.PI*dx / this.screen.width;
 			var innerBase = this.GetInnerBase();
-			var objectSpaceHeight = f*innerBase.distance;
-			var objectSpaceWidth = objectSpaceHeight*this.screen.width/this.screen.height;
+			var rotation = RotationMatrix(innerBase.y, angle);
+			var point = new Matrix(1, 4, this.at.Minus(this.to).coordinates.concat([1]));
+			point = rotation.Multiply(point);
+			for(var index=0; index<3; index++)
+			{
+				this.at.coordinates[index] = point.values[index];
+			}
+			this.at = this.to.Plus(this.at);
+			this.up = innerBase.y;
+
 			
-			var deltax = innerBase.x.Times(-objectSpaceWidth*dx/this.screen.width);
-			var deltay = innerBase.y.Times(objectSpaceHeight*dy/this.screen.height);
-			var delta = deltax.Plus(deltay);
-			
-			this.at = this.at.Plus(delta);
-			var newInnerBase = this.GetInnerBase();
-			this.at = this.to.Minus(newInnerBase.z.Times(innerBase.distance));
-			this.up = newInnerBase.y;
+			//DY rotation (around X axis)
+			angle = Math.PI*dy / this.screen.height;
+			innerBase = this.GetInnerBase();
+			rotation = RotationMatrix(innerBase.x, angle);
+			point = new Matrix(1, 4, this.at.Minus(this.to).coordinates.concat([1]));
+			var updir = new Matrix(1, 4, innerBase.y.coordinates.concat([1]));
+			point = rotation.Multiply(point);
+			updir = rotation.Multiply(updir);
+			for(var index=0; index<3; index++)
+			{
+				this.at.coordinates[index] = point.values[index];
+				this.up.coordinates[index] = updir.values[index];
+			}
+			this.at = this.to.Plus(this.at);
 		},
 		
 		Zoom : function(d)
@@ -271,7 +286,7 @@ function Renderer(renderingArea)
 				switch(renderer.mouseTracker.button)
 				{
 					case 1: //Left mouse
-						renderer.camera.Rotate(-5*dx, 5*dy);
+						renderer.camera.Rotate(-dx, dy);
 						break;
 					case 2: //Middle mouse
 						break;
