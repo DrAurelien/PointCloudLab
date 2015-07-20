@@ -6,14 +6,13 @@ var ShapesIntentifiers =
 	Cylinder : 1,
 	GetIdentifier : function(shape)
 	{
-		var prefix = shape.constructor.name;
 		for(var identifier in this)
 		{
-			if(identifier == prefix)
+			if(identifier == shape)
 			{
-				prefix += "-"+this[identifier];
+				shape += "-"+this[identifier];
 				this[identifier]++;
-				return prefix;
+				return shape;
 			}
 		}
 		throw 'Cannot generate identifier for shape "'+identifier+'"';
@@ -242,7 +241,7 @@ function Sphere(center, radius)
 {
 	this.center = center;
 	this.radius = radius;
-	this.name = ShapesIntentifiers.GetIdentifier(this);
+	this.name = ShapesIntentifiers.GetIdentifier('Sphere');
 	
 	this.Draw = function(drawingContext)
 	{
@@ -320,7 +319,7 @@ function Cylinder(center, axis, radius, height)
 	this.axis = axis.Normalized();
 	this.radius = radius;
 	this.height = height;
-	this.name = ShapesIntentifiers.GetIdentifier(this);
+	this.name = ShapesIntentifiers.GetIdentifier('Cylinder');
 	
 	this.Draw = function(drawingContext)
 	{	
