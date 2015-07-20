@@ -227,11 +227,14 @@ function Renderer(renderingArea)
 		}
 	};
 	
+	this.lastMousePosition = null;
+	
 	this.Initialize = function()
 	{
 		this.drawingContext.Initialize();
 		this.Draw(Scene);
 		
+		var renderer = this;
 		this.drawingContext.renderingArea.oncontextmenu = function (event) {
 			event = event ||window.event;
 			event.preventDefault();
@@ -241,28 +244,37 @@ function Renderer(renderingArea)
 		this.drawingContext.renderingArea.onmousemove = function(event)
 		{
 			event = event ||window.event;
+			
+			var dx=0, dy=0;
+			if(renderer.lastMousePosition)
+			{
+				dx = event.clientX-renderer.lastMousePosition.x;
+				dx = event.clientY-renderer.lastMousePosition.y;
+			}
+			renderer.lastMousePosition = {x:event.clientX, y:event.clientY};
+			
 			switch(event.which)
 			{
 				case 1: //Left mouse
-					Renderer.camera.Rotate(-5*event.movementX, 5*event.movementY);
+					renderer.camera.Rotate(-5*dx, 5*dy);
 					break;
 				case 2: //Middle mouse
 					break;
 				case 3: //Right mouse
-					Renderer.camera.Pan(event.movementX, event.movementY);
+					renderer.camera.Pan(dx, dy);
 					break;
 				default:
 					return true;
 			}
-			Renderer.Draw(scene);
+			renderer.Draw(scene);
 			return true;
 		};
 		
 		this.drawingContext.renderingArea.onmousewheel = function(event)
 		{
 			event = event ||window.event;
-			Renderer.camera.Zoom(event.wheelDelta/100);
-			Renderer.Draw(scene);
+			renderer.camera.Zoom(event.wheelDelta/100);
+			renderer.Draw(scene);
 		};
 		
 		document.onkeypress = function(event)
@@ -271,18 +283,18 @@ function Renderer(renderingArea)
 			switch(event.keyCode)
 			{
 				case 'p'.charCodeAt(0):
-					Renderer.drawingContext.rendering.Point(!Renderer.drawingContext.rendering.Point());
+					renderer.drawingContext.rendering.Point(!renderer.drawingContext.rendering.Point());
 					break;
 				case 'w'.charCodeAt(0):
-					Renderer.drawingContext.rendering.Wire(!Renderer.drawingContext.rendering.Wire());
+					renderer.drawingContext.rendering.Wire(!renderer.drawingContext.rendering.Wire());
 					break;
 				case 's'.charCodeAt(0):
-					Renderer.drawingContext.rendering.Surface(!Renderer.drawingContext.rendering.Surface());
+					renderer.drawingContext.rendering.Surface(!renderer.drawingContext.rendering.Surface());
 					break;
 				default:
 					return true;
 			}
-			Renderer.Draw(scene);
+			renderer.Draw(scene);
 		};
 	};
 	
