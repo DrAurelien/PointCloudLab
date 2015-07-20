@@ -42,62 +42,7 @@ var Interface =
 		
 		//Create the scene handler
 		this.sceneRenderer = new Renderer(sceneRenderingArea);
-		this.sceneRenderer.Initialize();
-		
-		//Handle user commands on scene rendering area
-		sceneRenderingArea.oncontextmenu = function (event) {
-			event = event ||window.event;
-			event.preventDefault();
-			return false;
-		};
-		
-		sceneRenderingArea.onmousemove = function(event)
-		{
-			event = event ||window.event;
-			switch(event.which)
-			{
-				case 1: //Left mouse
-					Interface.sceneRenderer.camera.Rotate(-5*event.movementX, 5*event.movementY);
-					break;
-				case 2: //Middle mouse
-					break;
-				case 3: //Right mouse
-					Interface.sceneRenderer.camera.Pan(event.movementX, event.movementY);
-					break;
-				default:
-					return true;
-			}
-			Interface.sceneRenderer.Draw(scene);
-			return true;
-		};
-		
-		sceneRenderingArea.onmousewheel = function(event)
-		{
-			event = event ||window.event;
-			Interface.sceneRenderer.camera.Zoom(event.wheelDelta/100);
-			Interface.sceneRenderer.Draw(scene);
-		};
-		
-		document.onkeypress = function(event)
-		{
-			event = event ||window.event;
-			switch(event.keyCode)
-			{
-				case 'p'.charCodeAt(0):
-					Interface.sceneRenderer.drawingContext.rendering.Point(!Interface.sceneRenderer.drawingContext.rendering.Point());
-					break;
-				case 'w'.charCodeAt(0):
-					Interface.sceneRenderer.drawingContext.rendering.Wire(!Interface.sceneRenderer.drawingContext.rendering.Wire());
-					break;
-				case 's'.charCodeAt(0):
-					Interface.sceneRenderer.drawingContext.rendering.Surface(!Interface.sceneRenderer.drawingContext.rendering.Surface());
-					break;
-				default:
-					return true;
-			}
-			event.preventDefault();
-			Interface.sceneRenderer.Draw(scene);
-		};
+		this.sceneRenderer.Initialize(scene);
 	},
 	
 	Refresh : function()

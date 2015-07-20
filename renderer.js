@@ -227,9 +227,9 @@ function Renderer(renderingArea)
 		}
 	};
 	
-	this.lastMousePosition = null;
+	this.mouseTracker = null;
 	
-	this.Initialize = function()
+	this.Initialize = function(scene)
 	{
 		this.drawingContext.Initialize();
 		this.Draw(Scene);
@@ -241,32 +241,49 @@ function Renderer(renderingArea)
 			return false;
 		};
 		
+		this.drawingContext.renderingArea.onmousedown = function(event)
+		{
+			renderer.mouseTracker = {
+				x : event.clientX,
+				y : event.clientY,
+				button : event.which
+			};
+		};
+		
+		
+		this.drawingContext.renderingArea.onmouseup = function(event)
+		{
+			renderer.mouseTracker = null;
+		};
+		
 		this.drawingContext.renderingArea.onmousemove = function(event)
 		{
 			event = event ||window.event;
 			
 			var dx=0, dy=0;
-			if(renderer.lastMousePosition)
+			if(renderer.mouseTracker)
 			{
-				dx = event.clientX-renderer.lastMousePosition.x;
-				dx = event.clientY-renderer.lastMousePosition.y;
-			}
-			renderer.lastMousePosition = {x:event.clientX, y:event.clientY};
+				dx = event.clientX-renderer.mouseTracker.x;
+				dy = event.clientY-renderer.mouseTracker.y;
+				renderer.mouseTracker.x = event.clientX;
+				renderer.mouseTracker.y = event.clientY;
 			
-			switch(event.which)
-			{
-				case 1: //Left mouse
-					renderer.camera.Rotate(-5*dx, 5*dy);
-					break;
-				case 2: //Middle mouse
-					break;
-				case 3: //Right mouse
-					renderer.camera.Pan(dx, dy);
-					break;
-				default:
-					return true;
+				switch(renderer.mouseTracker.button)
+				{
+					case 1: //Left mouse
+						renderer.camera.Rotate(-5*dx, 5*dy);
+						break;
+					case 2: //Middle mouse
+						break;
+					case 3: //Right mouse
+						renderer.camera.Pan(dx, dy);
+						break;
+					default:
+						return true;
+				}
+				
+				renderer.Draw(scene);
 			}
-			renderer.Draw(scene);
 			return true;
 		};
 		
@@ -279,8 +296,9 @@ function Renderer(renderingArea)
 		
 		document.onkeypress = function(event)
 		{
-			event = event ||window.event;
-			switch(event.keyCode)
+			event = event || window.event;
+			var key = event.key ? event.key.charCodeAt(0) : event.keyCode;
+			switch(key)
 			{
 				case 'p'.charCodeAt(0):
 					renderer.drawingContext.rendering.Point(!renderer.drawingContext.rendering.Point());

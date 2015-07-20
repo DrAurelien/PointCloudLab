@@ -5,7 +5,7 @@ function ComboBox(label, options)
 	var buttonLabel = document.createTextNode(label);
 	button.appendChild(buttonLabel);
 	
-	button.onclick = function(event)
+	function CreateComboList()
 	{
 		var popup = document.createElement('div');
 		popup.className = 'ComboList';
@@ -24,7 +24,7 @@ function ComboBox(label, options)
 			{
 				this.popup = popup;
 				this.callbackFunction = callback;
-				this.Callback = function(event)
+				this.Callback = function()
 				{
 					var self = this;
 					return function()
@@ -41,7 +41,15 @@ function ComboBox(label, options)
 			popup.appendChild(item);
 			document.body.appendChild(popup);
 		}
+		
+		//Delete popup when clicking again
+		button.onclick = function()
+		{
+			popup.parentNode.removeChild(popup);
+			button.onclick = CreateComboList;
+		}
 	}
 	
+	button.onclick = CreateComboList;
 	return button;
 }
