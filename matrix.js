@@ -110,7 +110,7 @@ function TranslationMatrix(v)
 	var result = new IdentityMatrix(4);
 	for(var index=0; index<3; index++)
 	{
-		result.SetValue(index, 3, v.coordinates[index]);
+		result.SetValue(index, 3, v.Get(index));
 	}
 	return result;
 }
@@ -120,9 +120,9 @@ function RotationMatrix(axis, angle)
 	var result = IdentityMatrix(4);
 	var c = Math.cos(angle);
 	var s = Math.sin(angle);
-	var x = axis.coordinates[0];
-	var y = axis.coordinates[1];
-	var z = axis.coordinates[2];
+	var x = axis.Get(0);
+	var y = axis.Get(1);
+	var z = axis.Get(2);
 	
 	result.SetValue(0, 0, x*x+(1-(x*x))*c);
 	result.SetValue(0, 1, x*y*(1-c)-z*s);

@@ -145,7 +145,7 @@ function Renderer(renderingArea)
 			context.gl.uniformMatrix4fv(context.projection, false, new Float32Array(projection.values));
 			
 			//Lighting
-			context.gl.uniform3fv(context.eyeposition, new Float32Array(this.at.coordinates));
+			context.gl.uniform3fv(context.eyeposition, new Float32Array(this.at.Flatten()));
 			context.gl.uniform3fv(context.lightposition, new Float32Array([100.0, 100.0, 100.0])); //TODO : parameter light
 			
 			context.gl.viewport(0,0,this.screen.width,this.screen.height);
@@ -169,10 +169,10 @@ function Renderer(renderingArea)
 			var translation = IdentityMatrix(4);
 			for(var index=0; index<3; index++)
 			{
-				basechange.SetValue(0, index, -innerBase.x.coordinates[index]);
-				basechange.SetValue(1, index, innerBase.y.coordinates[index]);
-				basechange.SetValue(2, index, -innerBase.z.coordinates[index]);
-				translation.SetValue(index, 3, -this.at.coordinates[index]);
+				basechange.SetValue(0, index, -innerBase.x.Get(index));
+				basechange.SetValue(1, index, innerBase.y.Get(index));
+				basechange.SetValue(2, index, -innerBase.z.Get(index));
+				translation.SetValue(index, 3, -this.at.Get(index));
 			}
 			return basechange.Multiply(translation);
 		},
@@ -211,11 +211,11 @@ function Renderer(renderingArea)
 			var angle = 2*Math.PI*dx / this.screen.width;
 			var innerBase = this.GetInnerBase();
 			var rotation = RotationMatrix(innerBase.y, angle);
-			var point = new Matrix(1, 4, this.at.Minus(this.to).coordinates.concat([1]));
+			var point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
 			point = rotation.Multiply(point);
 			for(var index=0; index<3; index++)
 			{
-				this.at.coordinates[index] = point.values[index];
+				this.at.Set(index, point.values[index]);
 			}
 			this.at = this.to.Plus(this.at);
 			this.up = innerBase.y;
@@ -225,14 +225,14 @@ function Renderer(renderingArea)
 			angle = Math.PI*dy / this.screen.height;
 			innerBase = this.GetInnerBase();
 			rotation = RotationMatrix(innerBase.x, angle);
-			point = new Matrix(1, 4, this.at.Minus(this.to).coordinates.concat([1]));
-			var updir = new Matrix(1, 4, innerBase.y.coordinates.concat([1]));
+			point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
+			var updir = new Matrix(1, 4, innerBase.y.Flatten().concat([1]));
 			point = rotation.Multiply(point);
 			updir = rotation.Multiply(updir);
 			for(var index=0; index<3; index++)
 			{
-				this.at.coordinates[index] = point.values[index];
-				this.up.coordinates[index] = updir.values[index];
+				this.at.Set(index, point.values[index]);
+				this.up.Set(index, updir.values[index]);
 			}
 			this.at = this.to.Plus(this.at);
 		},
@@ -248,15 +248,15 @@ function Renderer(renderingArea)
 		ComputeProjection : function(v)
 		{
 			var u;
-			if(v.coordinates.length==3)
-				u = new Matrix(1, 4, [v.coordinates[0], v.coordinates[1], v.coordinates[2], 1.0]);
+			if(v.Dimension()==3)
+				u = new Matrix(1, 4, v.Flatten().concat([1.0]));
 			else
-				u = new Matrix(1, 4, v.coordinates);
+				u = new Matrix(1, 4, v.Flatten());
 			var projection = this.GetProjectionMatrix();
 			var modelview = this.GetModelViewMatrix();
 			var render = projection.Multiply(modelview);
 			var w = new Vector(render.Multiply(u).values);
-			return w.Times(1./w.coordinates[3]);
+			return w.Times(1./w.Get(3));
 		}
 	};
 	

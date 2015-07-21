@@ -111,9 +111,8 @@ div.ComboOption:hover
 
 table.Properties
 {
-	margin : 0px;
 	padding : 0px;
-    border-collapse: collapse;
+    border-spacing : 5px;
 }
 
 td
@@ -126,11 +125,10 @@ td
 	margin : 0px;
 }
 
-
-td.PropertyValue, td.PropertyName
+td.PropertyComplexValue
 {
-	padding-top : 2px;
-	padding-bottom : 2px;
+	border : 1px solid lightgray;
+	border-right : 0px;
 }
 
 td.PropertyName

@@ -250,7 +250,7 @@ function Sphere(center, radius)
 		for(var index=0; index<3; index++)
 		{
 			shapetransform.SetValue(index, index, this.radius);
-			shapetransform.SetValue(index, 3, this.center.coordinates[index]);
+			shapetransform.SetValue(index, 3, this.center.Get(index));
 		}
 		
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
@@ -268,9 +268,9 @@ function Sphere(center, radius)
 			{
 				Center :
 				{
-					x : this.center.coordinates[0],
-					y : this.center.coordinates[1],
-					z : this.center.coordinates[2]
+					x : this.center.Get(0),
+					y : this.center.Get(1),
+					z : this.center.Get(2)
 				},
 				Radius : this.radius
 			},
@@ -299,7 +299,7 @@ function Sphere(center, radius)
 					]);
 					for(var index=0; index<3; index++)
 					{
-						if(isNaN(this.center.coordinates[index]))
+						if(isNaN(this.center.Get(index)))
 						{
 							return false;
 						}
@@ -350,7 +350,7 @@ function Cylinder(center, axis, radius, height)
 		shapetransform.SetValue(2, 2, this.height);
 		//Rotate
 		var rotation;
-		if(1-this.axis.coordinates[2]>0.0000001)
+		if(1-this.axis.Get(2)>0.0000001)
 		{
 			var z = new Vector([0.0, 0.0, 1.0]);
 			var w = this.axis.Cross(z);
@@ -378,15 +378,15 @@ function Cylinder(center, axis, radius, height)
 			{
 				Center :
 				{
-					x : this.center.coordinates[0],
-					y : this.center.coordinates[1],
-					z : this.center.coordinates[2]
+					x : this.center.Get(0),
+					y : this.center.Get(1),
+					z : this.center.Get(2)
 				},
 				Axis :
 				{
-					x : this.axis.coordinates[0],
-					y : this.axis.coordinates[1],
-					z : this.axis.coordinates[2]
+					x : this.axis.Get(0),
+					y : this.axis.Get(1),
+					z : this.axis.Get(2)
 				},
 				Radius : this.radius,
 				Height : this.height
@@ -417,7 +417,7 @@ function Cylinder(center, axis, radius, height)
 					]);
 					for(var index=0; index<3; index++)
 					{
-						if(isNaN(this.center.coordinates[index]))
+						if(isNaN(this.center.Get(index)))
 						{
 							return false;
 						}
@@ -434,7 +434,7 @@ function Cylinder(center, axis, radius, height)
 					this.axis = this.axis.Normalized();
 					for(var index=0; index<3; index++)
 					{
-						if(isNaN(this.axis.coordinates[index]))
+						if(isNaN(this.axis.Get(index)))
 						{
 							return false;
 						}
