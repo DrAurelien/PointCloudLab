@@ -109,7 +109,7 @@ div.ComboOption:hover
 	background-color : darkgray;
 }
 
-table
+table.Properties
 {
 	margin : 0px;
 	padding : 0px;

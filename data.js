@@ -216,7 +216,7 @@ function DataHandler(dataWindow, updateCallback)
 	this.DisplayProperties = function(properties)
 	{
 		var table = document.createElement('table');
-		table.callName = 'Properties';
+		table.className = 'Properties';
 		for(var property in properties)
 		{
 			var row = document.createElement('tr');

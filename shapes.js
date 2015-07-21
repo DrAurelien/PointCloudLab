@@ -263,14 +263,18 @@ function Sphere(center, radius)
 	this.GetProperties = function()
 	{
 		return {
-			name : this.name,
-			center :
+			Name : this.name,
+			Geometry :
 			{
-				x : this.center.coordinates[0],
-				y : this.center.coordinates[1],
-				z : this.center.coordinates[2]
+				Center :
+				{
+					x : this.center.coordinates[0],
+					y : this.center.coordinates[1],
+					z : this.center.coordinates[2]
+				},
+				Radius : this.radius
 			},
-			radius : this.radius
+			Material : this.material.GetProperties()
 		};
 	};
 	
@@ -278,31 +282,43 @@ function Sphere(center, radius)
 	{
 		try
 		{
-			if('center' in properties)
+			if('Name' in properties)
 			{
-				this.center = new Vector([
-					parseFloat(properties.center.x),
-					parseFloat(properties.center.y),
-					parseFloat(properties.center.z)
-				]);
-				for(var index=0; index<3; index++)
+				this.name = properties.Name;
+			}
+			
+			if('Geometry' in properties)
+			{
+				var geometry = properties.Geometry;
+				if('Center' in geometry)
 				{
-					if(isNaN(this.center.coordinates[index]))
+					this.center = new Vector([
+						parseFloat(geometry.Center.x),
+						parseFloat(geometry.Center.y),
+						parseFloat(geometry.Center.z)
+					]);
+					for(var index=0; index<3; index++)
+					{
+						if(isNaN(this.center.coordinates[index]))
+						{
+							return false;
+						}
+					}
+				}
+
+				if('Radius' in geometry)
+				{
+					this.radius = parseFloat(geometry.Radius);
+					if(isNaN(this.radius))
 					{
 						return false;
 					}
 				}
 			}
 			
-			if('name' in properties)
+			if('Material' in properties)
 			{
-				this.name = properties.name;
-			}
-			
-			if('radius' in properties)
-			{
-				this.radius = parseFloat(properties.radius);
-				if(isNaN(this.radius))
+				if(!this.material.SetProperties(properties.Material))
 				{
 					return false;
 				}
@@ -357,21 +373,25 @@ function Cylinder(center, axis, radius, height)
 	this.GetProperties = function()
 	{
 		return {
-			name : this.name,
-			center :
+			Name : this.name,
+			Geometry :
 			{
-				x : this.center.coordinates[0],
-				y : this.center.coordinates[1],
-				z : this.center.coordinates[2]
+				Center :
+				{
+					x : this.center.coordinates[0],
+					y : this.center.coordinates[1],
+					z : this.center.coordinates[2]
+				},
+				Axis :
+				{
+					x : this.axis.coordinates[0],
+					y : this.axis.coordinates[1],
+					z : this.axis.coordinates[2]
+				},
+				Radius : this.radius,
+				Height : this.height
 			},
-			axis :
-			{
-				x : this.axis.coordinates[0],
-				y : this.axis.coordinates[1],
-				z : this.axis.coordinates[2]
-			},
-			radius : this.radius,
-			height : this.height
+			Material : this.material.GetProperties()
 		};
 	};
 	
@@ -379,57 +399,71 @@ function Cylinder(center, axis, radius, height)
 	{
 		try
 		{
-			if('center' in properties)
+			if('Name' in properties)
 			{
-				this.center = new Vector([
-					parseFloat(properties.center.x),
-					parseFloat(properties.center.y),
-					parseFloat(properties.center.z)
-				]);
-				for(var index=0; index<3; index++)
+				this.Name = properties.name;
+			}
+			
+			if('Geometry' in properties)
+			{
+				var geometry = properties.Geometry;
+				
+				if('Center' in geometry)
 				{
-					if(isNaN(this.center.coordinates[index]))
+					this.center = new Vector([
+						parseFloat(geometry.Center.x),
+						parseFloat(geometry.Center.y),
+						parseFloat(geometry.Center.z)
+					]);
+					for(var index=0; index<3; index++)
+					{
+						if(isNaN(this.center.coordinates[index]))
+						{
+							return false;
+						}
+					}
+				}
+				
+				if('Axis' in geometry)
+				{
+					this.axis = new Vector([
+						parseFloat(geometry.Axis.x),
+						parseFloat(geometry.Axis.y),
+						parseFloat(geometry.Axis.z)
+					]);
+					this.axis = this.axis.Normalized();
+					for(var index=0; index<3; index++)
+					{
+						if(isNaN(this.axis.coordinates[index]))
+						{
+							return false;
+						}
+					}
+				}
+				
+				
+				if('Radius' in geometry)
+				{
+					this.radius = parseFloat(geometry.Radius);
+					if(isNaN(this.radius))
+					{
+						return false;
+					}
+				}
+				
+				if('Height' in geometry)
+				{
+					this.height = parseFloat(geometry.Height);
+					if(isNaN(this.height))
 					{
 						return false;
 					}
 				}
 			}
 			
-			if('axis' in properties)
+			if('Material' in properties)
 			{
-				this.axis = new Vector([
-					parseFloat(properties.axis.x),
-					parseFloat(properties.axis.y),
-					parseFloat(properties.axis.z)
-				]);
-				this.axis = this.axis.Normalized();
-				for(var index=0; index<3; index++)
-				{
-					if(isNaN(this.axis.coordinates[index]))
-					{
-						return false;
-					}
-				}
-			}
-			
-			if('name' in properties)
-			{
-				this.name = properties.name;
-			}
-			
-			if('radius' in properties)
-			{
-				this.radius = parseFloat(properties.radius);
-				if(isNaN(this.radius))
-				{
-					return false;
-				}
-			}
-			
-			if('height' in properties)
-			{
-				this.height = parseFloat(properties.height);
-				if(isNaN(this.height))
+				if(!this.material.SetProperties(properties.Material))
 				{
 					return false;
 				}
