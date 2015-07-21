@@ -10,6 +10,12 @@ function Renderer(renderingArea)
 		shapetransform : null,
 		vertices : null,
 		normals : null,
+		//Lighting
+		color : null,
+		diffuse : null,
+		ambiant : null,
+		specular : null,
+		glossy : null,
 		
 		//How to render elements (using points, wire, or surfaces, or combinations of these options)
 		rendering :
@@ -67,6 +73,14 @@ function Renderer(renderingArea)
 			this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
 			this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
 			this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
+			
+			this.color = this.gl.getUniformLocation(this.shaders, "Color");
+			this.eyeposition = this.gl.getUniformLocation(this.shaders, "EyePosition");
+			this.lightposition = this.gl.getUniformLocation(this.shaders, "LightPosition");
+			this.diffuse = this.gl.getUniformLocation(this.shaders, "DiffuseCoef");
+			this.ambiant = this.gl.getUniformLocation(this.shaders, "AmbiantCoef");
+			this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");
+			this.glossy = this.gl.getUniformLocation(this.shaders, "GlossyPow");
 		},
 		
 		GetShader : function(identifier)
@@ -129,6 +143,10 @@ function Renderer(renderingArea)
 			//Projection
 			var projection = this.GetProjectionMatrix();
 			context.gl.uniformMatrix4fv(context.projection, false, new Float32Array(projection.values));
+			
+			//Lighting
+			context.gl.uniform3fv(context.eyeposition, new Float32Array(this.at.coordinates));
+			context.gl.uniform3fv(context.lightposition, new Float32Array([100.0, 100.0, 100.0])); //TODO : parameter light
 			
 			context.gl.viewport(0,0,this.screen.width,this.screen.height);
 			context.gl.clear(context.gl.COLOR_BUFFER_BIT|context.gl.DEPTH_BUFFER_BIT);

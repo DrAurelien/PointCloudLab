@@ -242,6 +242,7 @@ function Sphere(center, radius)
 	this.center = center;
 	this.radius = radius;
 	this.name = ShapesIntentifiers.GetIdentifier('Sphere');
+	this.material = new Material([0.3, 0.75, 0.3]);
 	
 	this.Draw = function(drawingContext)
 	{
@@ -253,6 +254,8 @@ function Sphere(center, radius)
 		}
 		
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
+		
+		this.material.InitializeLightingModel(drawingContext);
 		
 		DrawUnitShape(UnitSpherePoints, drawingContext);
 	};
@@ -320,6 +323,7 @@ function Cylinder(center, axis, radius, height)
 	this.radius = radius;
 	this.height = height;
 	this.name = ShapesIntentifiers.GetIdentifier('Cylinder');
+	this.material = new Material([0.3, 0.75, 0.3]);
 	
 	this.Draw = function(drawingContext)
 	{	
@@ -344,6 +348,8 @@ function Cylinder(center, axis, radius, height)
 		shapetransform = translation.Multiply(shapetransform);
 		
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
+		
+		this.material.InitializeLightingModel(drawingContext);
 		
 		DrawUnitShape(UnitCylinderPoints, drawingContext);
 	};
