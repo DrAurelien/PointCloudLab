@@ -1,10 +1,10 @@
 function Material(color)
 {
 	this.baseColor = color;
-	this.diffuse = 1;
-	this.ambiant = 1;
-	this.specular = 3;
-	this.glossy = 8;
+	this.diffuse = 1.0;
+	this.ambiant = 1.0;
+	this.specular = 1.0;
+	this.glossy = 8.0;
 }
 
 Material.prototype.InitializeLightingModel = function(drawingContext)
