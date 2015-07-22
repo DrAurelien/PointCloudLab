@@ -23,6 +23,7 @@ function Shape(shape)
 {
 	this.name = ShapesIntentifiers.GetIdentifier(shape);
 	this.material = new Material([0.3, 0.75, 0.3]);
+	this.selected = false;
 }
 
 Shape.prototype.GetProperties = function()
@@ -149,5 +150,11 @@ Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 			var element = unitShape.elements[index];
 			drawingContext.gl.drawElements(element.type, element.count, drawingContext.gl.UNSIGNED_SHORT, sizeOfUnisgnedShort*element.from);
 		}
+	}
+	
+	if(this.selected)
+	{
+		var box = this.GetBoundingBox();
+		box.Draw(drawingContext);
 	}
 }

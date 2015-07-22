@@ -144,3 +144,11 @@ Sphere.prototype.Draw = function(drawingContext)
 	
 	this.DrawUnitShape(UnitSpherePoints, drawingContext);
 };
+
+Sphere.prototype.GetBoundingBox = function()
+{
+	var size = new Vector([1, 1, 1]).Times(2*this.radius);
+	var bb = new BoundingBox();
+	bb.Set(this.center, size);
+	return bb;
+}

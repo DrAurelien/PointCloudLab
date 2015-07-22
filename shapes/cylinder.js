@@ -175,3 +175,15 @@ Cylinder.prototype.Draw = function(drawingContext)
 	
 	this.DrawUnitShape(UnitCylinderPoints, drawingContext);
 }
+
+Cylinder.prototype.GetBoundingBox = function()
+{
+	var size = new Vector([
+		2*Math.abs(0.5*this.height*this.axis.Get(0)+this.radius*Math.sin(Math.acos(this.axis.Get(0)))),
+		2*Math.abs(0.5*this.height*this.axis.Get(1)+this.radius*Math.sin(Math.acos(this.axis.Get(1)))),
+		2*Math.abs(0.5*this.height*this.axis.Get(2)+this.radius*Math.sin(Math.acos(this.axis.Get(2))))
+	]);
+	var bb = new BoundingBox();
+	bb.Set(this.center, size);
+	return bb;
+}

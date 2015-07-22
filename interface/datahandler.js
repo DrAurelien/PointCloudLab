@@ -122,6 +122,7 @@ function DataHandler(dataWindow, updateCallback)
 					}
 					
 					scene.objects.push(createdObject);
+					scene.Select(createdObject);
 					dataHandler.currentItem = createdObject;
 					if(dataHandler.updateCallback != null)
 					{
@@ -159,7 +160,15 @@ function DataHandler(dataWindow, updateCallback)
 					return function()
 					{
 						self.target.currentItem = self.object;
-						self.target.RefreshContent(scene);
+						scene.Select(self.object);
+						if(self.target.updateCallback != null)
+						{
+							self.target.updateCallback();
+						}
+						else
+						{
+							self.target.RefreshContent(scene);
+						}
 					}
 				}
 			}
