@@ -3,6 +3,7 @@ function Renderer(renderingArea)
 	this.drawingContext =
 	{
 		renderingArea : renderingArea,
+		sampling : 30,
 		gl : null,
 		shaders : null,
 		projection : null,

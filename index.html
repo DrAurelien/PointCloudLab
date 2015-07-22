@@ -49,14 +49,20 @@
 			gl_FragColor = vec4(Color * lightingCoef, 1);
 		}
 	</script>
-	<script type="text/javascript" src="vector.js"></script>
-	<script type="text/javascript" src="matrix.js"></script>
-	<script type="text/javascript" src="material.js"></script>
-	<script type="text/javascript" src="shapes.js"></script>
-	<script type="text/javascript" src="controls.js"></script>
-	<script type="text/javascript" src="renderer.js"></script>
-	<script type="text/javascript" src="data.js"></script>
-	<script type="text/javascript" src="interface.js"></script>
+	<!--MATHS-->
+	<script type="text/javascript" src="maths/vector.js"></script>
+	<script type="text/javascript" src="maths/matrix.js"></script>
+	<!-- RENDERING-->
+	<script type="text/javascript" src="opengl/materials.js"></script>
+	<script type="text/javascript" src="opengl/renderer.js"></script>
+	<!-- SHAPES -->
+	<script type="text/javascript" src="shapes/shapes.js"></script>
+	<script type="text/javascript" src="shapes/sphere.js"></script>
+	<script type="text/javascript" src="shapes/cylinder.js"></script>
+	<!--INTERFACE-->
+	<script type="text/javascript" src="interface/controls.js"></script>
+	<script type="text/javascript" src="interface/datahandler.js"></script>
+	<script type="text/javascript" src="interface/interface.js"></script>
 	<script type="text/javascript">
 		var Scene =
 		{
