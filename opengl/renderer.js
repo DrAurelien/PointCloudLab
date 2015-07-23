@@ -1,4 +1,4 @@
-function Renderer(renderingArea)
+function Renderer(renderingArea, refreshCallback)
 {
 	this.drawingContext =
 	{
@@ -17,6 +17,7 @@ function Renderer(renderingArea)
 		ambiant : null,
 		specular : null,
 		glossy : null,
+		refreshCallback : refreshCallback,
 		
 		//How to render elements (using points, wire, or surfaces, or combinations of these options)
 		rendering :
@@ -270,12 +271,11 @@ function Renderer(renderingArea)
 			var projection = this.GetProjectionMatrix();
 			var modelview = this.GetModelViewMatrix();
 			var render = projection.Multiply(modelview);
-			var unproject = render.Inverted();
-			var v = unproject.Multiply(u).values;
+			var v = render.LUSolve(u);
 			var w = new Vector([0, 0, 0]);
 			for(var index=0; index<3; index++)
 			{
-				w.Set(i, v[index]/v[3]);
+				w.Set(index, v.GetValue(index, 0)/v.GetValue(3, 0));
 			}
 			return w;
 		}
@@ -315,9 +315,9 @@ function Renderer(renderingArea)
 			{
 				if(now.getTime()-renderer.mouseTracker.date.getTime() < 500)
 				{
-					//var selected = PickObject(event.clientX, event.clientY, scene);
-					//scene.Select(selected);
-					//RefreshCallback();
+					var selected = renderer.PickObject(event.clientX, event.clientY, scene);
+					scene.Select(selected);
+					refreshCallback();
 				}
 			}
 			renderer.mouseTracker = null;
@@ -408,7 +408,7 @@ function Renderer(renderingArea)
 		var ray = 
 		{
 			from : p1,
-			dir : p2.Minus(p1)
+			dir : p2.Minus(p1).Normalized()
 		};
 		
 		var picked = null;

@@ -41,7 +41,8 @@ var Interface =
 		document.body.appendChild(sceneRenderingArea);
 		
 		//Create the scene handler
-		this.sceneRenderer = new Renderer(sceneRenderingArea);
+		self = this;
+		this.sceneRenderer = new Renderer(sceneRenderingArea, function() {self.Refresh();});
 		this.sceneRenderer.Initialize(scene);
 	},
 	

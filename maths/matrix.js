@@ -66,119 +66,165 @@ Matrix.prototype.Transposed = function()
 	return transposed;
 }
 
-Matrix.prototype.MultiplyRow = function(row, scalar)
-{
-	for(var index=0; index<this.width; index++)
-	{
-		this.SetValue(row, index, scalar*this.GetValue(row, index));
-	}
-}
-
-//Set targetrow += row*scalar
-Matrix.prototype.CombineRows = function(targetrow, row, scalar)
-{
-	for(var index=0; index<this.width; index++)
-	{
-		this.SetValue(targetrow, index,
-			this.GetValue(targetrow, index)+
-			scalar*this.GetValue(row, index));
-	}
-}
-
-Matrix.prototype.SwapRows = function(srcrow, destrow)
-{
-	for(var index=0; index<this.width; index++)
-	{
-		var tmp = this.GetValue(srcrow, index);
-		this.SetValue(srcrow, index, this.GetValue(destrow, index));
-		this.SetValue(destrow, index, tmp);
-	}
-}
-
-Matrix.prototype.GetLeadingValueIndex = function(row)
-{
-	for(var index=0; index<this.width; index++)
-	{
-		if(this.SetValue(row, index)>0)
-			return index;
-	}
-	return null;
-}
-
-Matrix.prototype.IsRowEchelon = function()
-{
-	for(var index=0; index<this.height; index++)
-	{
-		var leadingIndex = this.GetLeadingValueIndex(index);
-		for(var row=index; row<this.height; row++)
-		{
-			if(this.GetValue(row, leadingIndex) != 0)
-			{
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-Matrix.prototype.IsRowReduced = function()
-{
-	for(var index=0; index<this.height; index++)
-	{
-		var leadingIndex = this.GetLeadingValueIndex(index);
-		for(var row=0; row<this.height; row++)
-		{
-			if(this.GetValue(row, leadingIndex) != 0)
-			{
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-Matrix.prototype.Inverted = function()
+Matrix.prototype.LUDecomposition = function()
 {
 	if(this.width != this.height)
 	{
-		throw "Cannot invert non square matrices";
+		throw 'Cannot compute LU decomposition for non square matrix';
 	}
 	
-	var left = new Matrix(this.width, this.height, new Array(this.width*this.height));
-	var right = new Matrix(this.width, this.height, new Array(this.width*this.height));
+	var LU =
+	{
+		matrix : NullMatrix(this.width, this.height),
+		factor : 1.0,
+		swaps : new Array(this.width),
+		//Mostly for debug purpose
+		GetL : function()
+		{
+			var result = NullMatrix(this.matrix.width, this.matrix.height);
+			for(var ii=0; ii<this.matrix.heigth; ii++)
+			{
+				result.SetValue(ii, ii, 1.0);
+				for(var jj=0; jj<ii; jj++)
+				{
+					result.SetValue(ii, jj, this.matrix.GetValue(ii, jj));
+				}
+			}
+			return result;
+		},
+		GetU : function()
+		{
+			var result = NullMatrix(this.matrix.width, this.matrix.height);
+			for(var ii=0; ii<this.matrix.heigth; ii++)
+			{
+				for(var jj=ii; jj<=this.matrix.width; jj++)
+				{
+					result.SetValue(ii, jj, this.matrix.GetValue(ii, jj));
+				}
+			}
+			return result;
+		}
+	};
 	for(var ii=0; ii<this.height; ii++)
 	{
 		for(var jj=0; jj<this.width; jj++)
 		{
-			right.SetValue(ii, jj, ii==jj?1.0:0.0);
-			left.SetValue(ii, jj, this.GetValue(ii, jj));
+			LU.matrix.SetValue(ii, jj, this.GetValue(ii, jj));
 		}
 	}
 	
-	//Gauss-Jordan Pivot
-	while(!left.IsRowEchelon())
+	//Search for the greatest element of each line
+	var scale = new Array(LU.matrix.width);
+	for(var ii=0; ii<LU.matrix.height; ii++)
 	{
-		//Get Leading row
-		leftmostLeading = 0;
-		leadingIndex = left.GetLeadingValueIndex(0)
-		for(var index=1; index<left.height; left++)
+		var maxval = 0;
+		for(var jj=0; jj<LU.matrix.width; jj++)
 		{
-			var leading = left.GetLeadingValueIndex(index);
-			if(leadingIndex==null || leading<leadingIndex)
+			var val = Math.abs(LU.matrix.GetValue(ii, jj));
+			if(val > maxval)
 			{
-				leftmostLeading = index;
-				leadingIndex = index;
+				maxval = val;
 			}
 		}
-		
-		//TODO : swap and combine until row echelon
+		if(maxval < 0.000001)
+		{
+			throw 'Cannot perform LU decomposition of a singular matrix';
+		}
+		scale[ii] = 1.0/maxval;
 	}
-	while(!left.IsRowReduced())
+	
+	//Main loop
+	for(var kk=0; kk<LU.matrix.width; kk++)
 	{
-		//TODO : swap and combine until row reduced
+		//Search for the largest pivot
+		var maxval = 0.0;
+		var maxindex = kk;
+		for(var ii=kk; ii<LU.matrix.height; ii++)
+		{
+			var val = scale[ii] * Math.abs(LU.matrix.GetValue(ii, kk));
+			if(val > maxval)
+			{
+				maxindex = ii;
+				maxval = val;
+			}
+		}
+		//Swap row so that current row has the best pivot
+		if(kk != maxindex)
+		{
+			for(var jj=0; jj<this.width; jj++)
+			{
+				var tmp = LU.matrix.GetValue(maxindex, jj);
+				LU.matrix.SetValue(maxindex, jj, LU.matrix.GetValue(kk, jj));
+				LU.matrix.SetValue(kk, jj, tmp);
+			}
+			var tmp = scale[maxindex];
+			scale[maxindex] = scale[kk];
+			scale[kk] = tmp;
+			//Swap changes parity of the scale factore
+			LU.factor = -LU.factor;
+		}
+		LU.swaps[kk] = maxindex;
+		
+		for(var ii=kk+1; ii<this.height; ii++)
+		{
+			var val = LU.matrix.GetValue(ii, kk) / LU.matrix.GetValue(kk, kk);
+			LU.matrix.SetValue(ii, kk, val);
+			for(var jj=kk+1; jj<this.width; jj++)
+			{
+				LU.matrix.SetValue(ii, jj, LU.matrix.GetValue(ii, jj) - val * LU.matrix.GetValue(kk, jj));
+			}
+		}
 	}
-	//TODO : multiply each line to make left identity
-	return right;
+	
+	return LU;
+}
+
+//Solve THIS * X = rightHand (rightHand being a matrix)
+Matrix.prototype.LUSolve = function(rightHand)
+{
+	if(rightHand.width != 1 || rightHand.height != this.width)
+	{
+		throw 'Cannot solve equations system, due to inconsistent dimensions';
+	}
+	
+	var solution = NullMatrix(rightHand.width, rightHand.height);
+	for(var ii=0; ii<rightHand.height; ii++)
+	{
+		solution.SetValue(ii, 0, rightHand.GetValue(ii, 0));
+	}
+	
+	var LU = this.LUDecomposition();
+	
+	//Solve L * Y = rightHand
+	var kk = 0;
+	for(var ii=0; ii<rightHand.height; ii++)
+	{
+		var sum = solution.GetValue(LU.swaps[ii], 0);
+		solution.SetValue(LU.swaps[ii], 0, solution.GetValue(ii, 0));
+		if(kk != 0)
+		{
+			for(var jj=kk-1 ; jj<ii; jj++)
+			{
+				sum -= LU.matrix.GetValue(ii, jj)*solution.GetValue(jj,0);
+			}
+		}
+		else if(sum != 0)
+		{
+			kk = ii+1;
+		}
+		solution.SetValue(ii, 0, sum);
+	}
+	//Solve U * X = Y
+	for(var ii=rightHand.height-1; ii>=0; ii--)
+	{
+		var sum = solution.GetValue(ii, 0);
+		for(var jj=ii+1; jj<rightHand.height; jj++)
+		{
+			sum -= LU.matrix.GetValue(ii, jj)*solution.GetValue(jj,0);
+		}
+		solution.SetValue(ii, 0, sum / LU.matrix.GetValue(ii, ii));
+	}
+	return solution;
 }
 
 Matrix.prototype.Log = function()
