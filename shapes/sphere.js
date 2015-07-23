@@ -152,3 +152,57 @@ Sphere.prototype.GetBoundingBox = function()
 	bb.Set(this.center, size);
 	return bb;
 }
+
+Sphere.prototype.GetWorldToInnerBaseMatrix = function()
+{
+	var matrix = IdentityMatrix(4);
+	for(var index=0; index<3; index++)
+	{
+		matrix.SetValue(index, 3, -this.center.Get(index));
+	}
+	return matrix;
+}
+
+Sphere.prototype.GetInnerBaseToWorldMatrix = function()
+{
+	var matrix = IdentityMatrix(4);
+	for(var index=0; index<3; index++)
+	{
+		matrix.SetValue(index, 3, this.center.Get(index));
+	}
+	return matrix;
+}
+
+Sphere.prototype.RayIntersection = function(ray)
+{
+	var worldToBase = this.GetWorldToInnerBaseMatrix();
+	var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
+	var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([1])));
+	
+	//Solve [t] : (innerFrom[i]+t*innerDir[i])^2=1 for each i<3
+	var aa = 0;
+	var bb = 0;
+	var cc = 0;
+	for(var index=0; index<3; index++)
+	{
+		aa += innerDir.GetValue(index,0) * innerDir.GetValue(index,0);
+		bb += 2.0*innerDir.GetValue(index,0)*innerFrom.GetValue(index,0);
+		cc += innerFrom.GetValue(index,0) * innerFrom.GetValue(index,0);
+	}
+	
+	//Solve [t] : aa.t^2 + bb.t + cc = 1
+	cc -= 1;
+	var dd = bb*bb - 4.0*aa*cc;
+	var tt = [];
+	if(Math.abs(dd)<0.0000001)
+	{
+		tt.push(-bb/2.0*aa);
+	}
+	else if(dd > 0.)
+	{
+		tt.push((-bb+Math.sqrt(dd))/2.0*aa);
+		tt.push((-bb-Math.sqrt(dd))/2.0*aa);
+	}
+	
+	return tt;
+}

@@ -258,6 +258,26 @@ function Renderer(renderingArea)
 			var render = projection.Multiply(modelview);
 			var w = new Vector(render.Multiply(u).values);
 			return w.Times(1./w.Get(3));
+		},
+		
+		ComputeInvertedProjection : function(p)
+		{
+			var u;
+			if(p.Dimension()==3)
+				u = new Matrix(1, 4, p.Flatten().concat([1.0]));
+			else
+				u = new Matrix(1, 4, p.Flatten());
+			var projection = this.GetProjectionMatrix();
+			var modelview = this.GetModelViewMatrix();
+			var render = projection.Multiply(modelview);
+			var unproject = render.Inverted();
+			var v = unproject.Multiply(u).values;
+			var w = new Vector([0, 0, 0]);
+			for(var index=0; index<3; index++)
+			{
+				w.Set(i, v[index]/v[3]);
+			}
+			return w;
 		}
 	};
 	
@@ -277,22 +297,35 @@ function Renderer(renderingArea)
 		
 		this.drawingContext.renderingArea.onmousedown = function(event)
 		{
+			event = event || window.event;
 			renderer.mouseTracker = {
 				x : event.clientX,
 				y : event.clientY,
-				button : event.which
+				button : event.which,
+				date : new Date()
 			};
 		};
 		
 		
 		this.drawingContext.renderingArea.onmouseup = function(event)
 		{
+			event = event || window.event;
+			var now = new Date();
+			if(renderer.mouseTracker != null)
+			{
+				if(now.getTime()-renderer.mouseTracker.date.getTime() < 500)
+				{
+					//var selected = PickObject(event.clientX, event.clientY, scene);
+					//scene.Select(selected);
+					//RefreshCallback();
+				}
+			}
 			renderer.mouseTracker = null;
 		};
 		
 		this.drawingContext.renderingArea.onmousemove = function(event)
 		{
-			event = event ||window.event;
+			event = event || window.event;
 			
 			var dx=0, dy=0;
 			if(renderer.mouseTracker)
@@ -367,4 +400,35 @@ function Renderer(renderingArea)
 		this.drawingContext.renderingArea.width = width;
 		this.drawingContext.renderingArea.height = height;
 	};
+	
+	this.PickObject = function(x, y, scene)
+	{
+		var p1 = this.camera.ComputeInvertedProjection(new Vector([x, y, 0]));
+		var p2 = this.camera.ComputeInvertedProjection(new Vector([x, y, 1]));
+		var ray = 
+		{
+			from : p1,
+			dir : p2.Minus(p1)
+		};
+		
+		var picked = null;
+		for(var index=0; index<scene.objects.length; index++)
+		{
+			var intersections = scene.objects[index].RayIntersection(ray);
+			for(var ii=0; ii<intersections.length; ii++)
+			{
+				if(picked == null || picked.depth>intersections[ii])
+				{
+					picked.object = scene.objects[index];
+					picked.depth = intersections[ii];
+				}
+			}
+		}
+		
+		if(picked != null)
+		{
+			return picked.object;
+		}
+		return null;
+	}
 };

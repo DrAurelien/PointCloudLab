@@ -66,6 +66,121 @@ Matrix.prototype.Transposed = function()
 	return transposed;
 }
 
+Matrix.prototype.MultiplyRow = function(row, scalar)
+{
+	for(var index=0; index<this.width; index++)
+	{
+		this.SetValue(row, index, scalar*this.GetValue(row, index));
+	}
+}
+
+//Set targetrow += row*scalar
+Matrix.prototype.CombineRows = function(targetrow, row, scalar)
+{
+	for(var index=0; index<this.width; index++)
+	{
+		this.SetValue(targetrow, index,
+			this.GetValue(targetrow, index)+
+			scalar*this.GetValue(row, index));
+	}
+}
+
+Matrix.prototype.SwapRows = function(srcrow, destrow)
+{
+	for(var index=0; index<this.width; index++)
+	{
+		var tmp = this.GetValue(srcrow, index);
+		this.SetValue(srcrow, index, this.GetValue(destrow, index));
+		this.SetValue(destrow, index, tmp);
+	}
+}
+
+Matrix.prototype.GetLeadingValueIndex = function(row)
+{
+	for(var index=0; index<this.width; index++)
+	{
+		if(this.SetValue(row, index)>0)
+			return index;
+	}
+	return null;
+}
+
+Matrix.prototype.IsRowEchelon = function()
+{
+	for(var index=0; index<this.height; index++)
+	{
+		var leadingIndex = this.GetLeadingValueIndex(index);
+		for(var row=index; row<this.height; row++)
+		{
+			if(this.GetValue(row, leadingIndex) != 0)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+Matrix.prototype.IsRowReduced = function()
+{
+	for(var index=0; index<this.height; index++)
+	{
+		var leadingIndex = this.GetLeadingValueIndex(index);
+		for(var row=0; row<this.height; row++)
+		{
+			if(this.GetValue(row, leadingIndex) != 0)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+Matrix.prototype.Inverted = function()
+{
+	if(this.width != this.height)
+	{
+		throw "Cannot invert non square matrices";
+	}
+	
+	var left = new Matrix(this.width, this.height, new Array(this.width*this.height));
+	var right = new Matrix(this.width, this.height, new Array(this.width*this.height));
+	for(var ii=0; ii<this.height; ii++)
+	{
+		for(var jj=0; jj<this.width; jj++)
+		{
+			right.SetValue(ii, jj, ii==jj?1.0:0.0);
+			left.SetValue(ii, jj, this.GetValue(ii, jj));
+		}
+	}
+	
+	//Gauss-Jordan Pivot
+	while(!left.IsRowEchelon())
+	{
+		//Get Leading row
+		leftmostLeading = 0;
+		leadingIndex = left.GetLeadingValueIndex(0)
+		for(var index=1; index<left.height; left++)
+		{
+			var leading = left.GetLeadingValueIndex(index);
+			if(leadingIndex==null || leading<leadingIndex)
+			{
+				leftmostLeading = index;
+				leadingIndex = index;
+			}
+		}
+		
+		//TODO : swap and combine until row echelon
+	}
+	while(!left.IsRowReduced())
+	{
+		//TODO : swap and combine until row reduced
+	}
+	//TODO : multiply each line to make left identity
+	return right;
+}
+
 Matrix.prototype.Log = function()
 {
 	console.log('Matrix ' + this.height + ' x ' + this.width + ' : ');
