@@ -160,7 +160,7 @@ function Renderer(renderingArea, refreshCallback)
 			var d = z.Norm();
 			z = z.Times(1./d);
 			var x = this.up.Cross(z).Normalized();
-			var y = z.Cross(x).Normalized();
+			var y = x.Cross(z).Normalized();
 			return {x:x, y:y, z:z, distance:d};
 		},
 		
@@ -171,8 +171,9 @@ function Renderer(renderingArea, refreshCallback)
 			var translation = IdentityMatrix(4);
 			for(var index=0; index<3; index++)
 			{
-				basechange.SetValue(0, index, -innerBase.x.Get(index));
+				basechange.SetValue(0, index, innerBase.x.Get(index));
 				basechange.SetValue(1, index, innerBase.y.Get(index));
+				//Homogeneous coordinate system is left handed
 				basechange.SetValue(2, index, -innerBase.z.Get(index));
 				translation.SetValue(index, 3, -this.at.Get(index));
 			}
@@ -259,6 +260,10 @@ function Renderer(renderingArea, refreshCallback)
 			var render = projection.Multiply(modelview);
 			var w = new Vector(render.Multiply(u).values);
 			return w.Times(1./w.Get(3));
+			//Viewport
+			w.Set(0, (w.Get(0)+1.0)*this.screen.width/2.0);
+			w.Set(1, (w.Get(1)+1.0)*this.screen.height/2.0);
+			return w
 		},
 		
 		ComputeInvertedProjection : function(p)
@@ -335,19 +340,20 @@ function Renderer(renderingArea, refreshCallback)
 			if(renderer.mouseTracker)
 			{
 				dx = event.clientX-renderer.mouseTracker.x;
-				dy = event.clientY-renderer.mouseTracker.y;
+				//Screen coordinate system is top-left (oriented down) while camera is oriented up
+				dy = renderer.mouseTracker.y-event.clientY;
 				renderer.mouseTracker.x = event.clientX;
 				renderer.mouseTracker.y = event.clientY;
 			
 				switch(renderer.mouseTracker.button)
 				{
 					case 1: //Left mouse
-						renderer.camera.Rotate(-dx, dy);
+						renderer.camera.Rotate(-dx, -dy);
 						break;
 					case 2: //Middle mouse
 						break;
 					case 3: //Right mouse
-						renderer.camera.Pan(dx, dy);
+						renderer.camera.Pan(-dx, -dy);
 						break;
 					default:
 						return true;
@@ -411,7 +417,7 @@ function Renderer(renderingArea, refreshCallback)
 		var ray = 
 		{
 			from : this.camera.at,
-			dir : this.camera.at.Minus(point).Normalized()
+			dir : point.Minus(this.camera.at).Normalized()
 		};
 		
 		var picked = null;
