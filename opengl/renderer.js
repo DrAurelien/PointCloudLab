@@ -159,7 +159,7 @@ function Renderer(renderingArea, refreshCallback)
 			var z = this.to.Minus(this.at);
 			var d = z.Norm();
 			z = z.Times(1./d);
-			var x = this.up.Cross(z).Normalized();
+			var x = z.Cross(this.up).Normalized();
 			var y = x.Cross(z).Normalized();
 			return {x:x, y:y, z:z, distance:d};
 		},
@@ -229,7 +229,7 @@ function Renderer(renderingArea, refreshCallback)
 			innerBase = this.GetInnerBase();
 			rotation = RotationMatrix(innerBase.x, angle);
 			point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
-			var updir = new Matrix(1, 4, innerBase.y.Flatten().concat([1]));
+			var updir = new Matrix(1, 4, innerBase.y.Flatten().concat([0]));
 			point = rotation.Multiply(point);
 			updir = rotation.Multiply(updir);
 			for(var index=0; index<3; index++)
@@ -348,7 +348,7 @@ function Renderer(renderingArea, refreshCallback)
 				switch(renderer.mouseTracker.button)
 				{
 					case 1: //Left mouse
-						renderer.camera.Rotate(-dx, -dy);
+						renderer.camera.Rotate(-dx, dy);
 						break;
 					case 2: //Middle mouse
 						break;

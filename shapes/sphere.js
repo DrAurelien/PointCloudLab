@@ -177,9 +177,9 @@ Sphere.prototype.RayIntersection = function(ray)
 {
 	var worldToBase = this.GetWorldToInnerBaseMatrix();
 	var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-	var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([1])));
+	var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
 	
-	//Solve [t] : (innerFrom[i]+t*innerDir[i])^2=1 for each i<3
+	//Solve [t] : sqrnorm(innerFrom[i]+t*innerDir[i])=radius
 	var aa = 0;
 	var bb = 0;
 	var cc = 0;
@@ -190,8 +190,8 @@ Sphere.prototype.RayIntersection = function(ray)
 		cc += innerFrom.GetValue(index,0) * innerFrom.GetValue(index,0);
 	}
 	
-	//Solve [t] : aa.t^2 + bb.t + cc = 1
-	cc -= 1;
+	//Solve [t] : aa.t^2 + bb.t + cc = radius
+	cc -= this.radius*this.radius;
 	var dd = bb*bb - 4.0*aa*cc;
 	var tt = [];
 	if(Math.abs(dd)<0.0000001)
