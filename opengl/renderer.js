@@ -268,6 +268,10 @@ function Renderer(renderingArea, refreshCallback)
 				u = new Matrix(1, 4, p.Flatten().concat([1.0]));
 			else
 				u = new Matrix(1, 4, p.Flatten());
+			//First : screen to normalized screen coordinates
+			u.SetValue(0, 0, 2.0*u.GetValue(0,0)/this.screen.width - 1.0);
+			u.SetValue(1, 0, 1.0 - 2.0*u.GetValue(1,0)/this.screen.height);
+			//Then : normalized screen to world coordinates
 			var projection = this.GetProjectionMatrix();
 			var modelview = this.GetModelViewMatrix();
 			var render = projection.Multiply(modelview);
@@ -403,12 +407,11 @@ function Renderer(renderingArea, refreshCallback)
 	
 	this.PickObject = function(x, y, scene)
 	{
-		var p1 = this.camera.ComputeInvertedProjection(new Vector([x, y, 0]));
-		var p2 = this.camera.ComputeInvertedProjection(new Vector([x, y, 1]));
+		var point = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
 		var ray = 
 		{
-			from : p1,
-			dir : p2.Minus(p1).Normalized()
+			from : this.camera.at,
+			dir : this.camera.at.Minus(point).Normalized()
 		};
 		
 		var picked = null;
@@ -419,8 +422,10 @@ function Renderer(renderingArea, refreshCallback)
 			{
 				if(picked == null || picked.depth>intersections[ii])
 				{
-					picked.object = scene.objects[index];
-					picked.depth = intersections[ii];
+					picked={
+						object : scene.objects[index],
+						depth : intersections[ii]
+					};
 				}
 			}
 		}
