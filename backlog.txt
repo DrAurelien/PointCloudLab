@@ -59,6 +59,8 @@
 		- Nuage de points
 		- Maillage
 	- Définition d'un objet relativement à un autre (notion de "contrainte")
+		- Implentation de la notion de propriété (class propetiété, classe héritantes valeur, vecteur -tableau de valeurs- ou reference)
+		- Autocompletion lors de la modification des properiétés d'un objet
 	- Possibilité de "détacher un objet" : Les objets qui sont définis (par défaut ?) relativement à d'autres objets doivent pouvoir être détachés de cet objet (ils en deviennent indépendant)
 - Chargement de nuages de points à partir de fichiers locaux
 - Algorithmes avancés

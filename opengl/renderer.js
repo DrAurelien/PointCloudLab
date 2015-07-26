@@ -1,4 +1,4 @@
-function Renderer(renderingArea)
+function Renderer(renderingArea, refreshCallback)
 {
 	this.drawingContext =
 	{
@@ -17,6 +17,7 @@ function Renderer(renderingArea)
 		ambiant : null,
 		specular : null,
 		glossy : null,
+		refreshCallback : refreshCallback,
 		
 		//How to render elements (using points, wire, or surfaces, or combinations of these options)
 		rendering :
@@ -155,12 +156,12 @@ function Renderer(renderingArea)
 		
 		GetInnerBase : function()
 		{
-			var z = this.to.Minus(this.at);
-			var d = z.Norm();
-			z = z.Times(1./d);
-			var x = this.up.Cross(z).Normalized();
-			var y = z.Cross(x).Normalized();
-			return {x:x, y:y, z:z, distance:d};
+			var lookAt = this.to.Minus(this.at);
+			var d = lookAt.Norm();
+			lookAt = lookAt.Times(1./d);
+			var right = lookAt.Cross(this.up).Normalized();
+			var up = right.Cross(lookAt).Normalized();
+			return {right:right, up:up, lookAt:lookAt, distance:d};
 		},
 		
 		GetModelViewMatrix : function()
@@ -170,9 +171,9 @@ function Renderer(renderingArea)
 			var translation = IdentityMatrix(4);
 			for(var index=0; index<3; index++)
 			{
-				basechange.SetValue(0, index, -innerBase.x.Get(index));
-				basechange.SetValue(1, index, innerBase.y.Get(index));
-				basechange.SetValue(2, index, -innerBase.z.Get(index));
+				basechange.SetValue(0, index, innerBase.right.Get(index));
+				basechange.SetValue(1, index, innerBase.up.Get(index));
+				basechange.SetValue(2, index, -innerBase.lookAt.Get(index));
 				translation.SetValue(index, 3, -this.at.Get(index));
 			}
 			return basechange.Multiply(translation);
@@ -198,8 +199,8 @@ function Renderer(renderingArea)
 			var objectSpaceHeight = f*innerBase.distance;
 			var objectSpaceWidth = objectSpaceHeight*this.screen.width/this.screen.height;
 			
-			var deltax = innerBase.x.Times(objectSpaceWidth*dx/this.screen.width);
-			var deltay = innerBase.y.Times(objectSpaceHeight*dy/this.screen.height);
+			var deltax = innerBase.right.Times(objectSpaceWidth*-dx/this.screen.width);
+			var deltay = innerBase.up.Times(objectSpaceHeight*-dy/this.screen.height);
 			var delta = deltax.Plus(deltay);
 			
 			this.at = this.at.Plus(delta);
@@ -209,9 +210,9 @@ function Renderer(renderingArea)
 		Rotate : function(dx, dy)
 		{
 			//DX rotation (around Y axis)
-			var angle = 2*Math.PI*dx / this.screen.width;
+			var angle = 2*Math.PI*-dx / this.screen.width;
 			var innerBase = this.GetInnerBase();
-			var rotation = RotationMatrix(innerBase.y, angle);
+			var rotation = RotationMatrix(innerBase.up, angle);
 			var point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
 			point = rotation.Multiply(point);
 			for(var index=0; index<3; index++)
@@ -219,15 +220,15 @@ function Renderer(renderingArea)
 				this.at.Set(index, point.values[index]);
 			}
 			this.at = this.to.Plus(this.at);
-			this.up = innerBase.y;
+			this.up = innerBase.up;
 
 			
 			//DY rotation (around X axis)
 			angle = Math.PI*dy / this.screen.height;
 			innerBase = this.GetInnerBase();
-			rotation = RotationMatrix(innerBase.x, angle);
+			rotation = RotationMatrix(innerBase.right, angle);
 			point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
-			var updir = new Matrix(1, 4, innerBase.y.Flatten().concat([1]));
+			var updir = new Matrix(1, 4, innerBase.up.Flatten().concat([0]));
 			point = rotation.Multiply(point);
 			updir = rotation.Multiply(updir);
 			for(var index=0; index<3; index++)
@@ -243,7 +244,7 @@ function Renderer(renderingArea)
 			var innerBase = this.GetInnerBase();
 			innerBase.distance *= Math.pow(0.9, d);
 			
-			this.at = this.to.Minus(innerBase.z.Times(innerBase.distance));
+			this.at = this.to.Minus(innerBase.lookAt.Times(innerBase.distance));
 		},
 		
 		ComputeProjection : function(v)
@@ -258,6 +259,33 @@ function Renderer(renderingArea)
 			var render = projection.Multiply(modelview);
 			var w = new Vector(render.Multiply(u).values);
 			return w.Times(1./w.Get(3));
+			//Viewport
+			w.Set(0, (w.Get(0)+1.0)*this.screen.width/2.0);
+			w.Set(1, (w.Get(1)+1.0)*this.screen.height/2.0);
+			return w
+		},
+		
+		ComputeInvertedProjection : function(p)
+		{
+			var u;
+			if(p.Dimension()==3)
+				u = new Matrix(1, 4, p.Flatten().concat([1.0]));
+			else
+				u = new Matrix(1, 4, p.Flatten());
+			//First : screen to normalized screen coordinates
+			u.SetValue(0, 0, 2.0*u.GetValue(0,0)/this.screen.width - 1.0);
+			u.SetValue(1, 0, 1.0 - 2.0*u.GetValue(1,0)/this.screen.height);
+			//Then : normalized screen to world coordinates
+			var projection = this.GetProjectionMatrix();
+			var modelview = this.GetModelViewMatrix();
+			var render = projection.Multiply(modelview);
+			var v = render.LUSolve(u);
+			var w = new Vector([0, 0, 0]);
+			for(var index=0; index<3; index++)
+			{
+				w.Set(index, v.GetValue(index, 0)/v.GetValue(3, 0));
+			}
+			return w;
 		}
 	};
 	
@@ -277,35 +305,49 @@ function Renderer(renderingArea)
 		
 		this.drawingContext.renderingArea.onmousedown = function(event)
 		{
+			event = event || window.event;
 			renderer.mouseTracker = {
 				x : event.clientX,
 				y : event.clientY,
-				button : event.which
+				button : event.which,
+				date : new Date()
 			};
 		};
 		
 		
 		this.drawingContext.renderingArea.onmouseup = function(event)
 		{
+			event = event || window.event;
+			var now = new Date();
+			if(renderer.mouseTracker != null)
+			{
+				if(now.getTime()-renderer.mouseTracker.date.getTime() < 500)
+				{
+					var selected = renderer.PickObject(event.clientX, event.clientY, scene);
+					scene.Select(selected);
+					refreshCallback();
+				}
+			}
 			renderer.mouseTracker = null;
 		};
 		
 		this.drawingContext.renderingArea.onmousemove = function(event)
 		{
-			event = event ||window.event;
+			event = event || window.event;
 			
 			var dx=0, dy=0;
 			if(renderer.mouseTracker)
 			{
 				dx = event.clientX-renderer.mouseTracker.x;
-				dy = event.clientY-renderer.mouseTracker.y;
+				//Screen coordinate system is top-left (oriented down) while camera is oriented up
+				dy = renderer.mouseTracker.y-event.clientY;
 				renderer.mouseTracker.x = event.clientX;
 				renderer.mouseTracker.y = event.clientY;
 			
 				switch(renderer.mouseTracker.button)
 				{
 					case 1: //Left mouse
-						renderer.camera.Rotate(-dx, dy);
+						renderer.camera.Rotate(dx, dy);
 						break;
 					case 2: //Middle mouse
 						break;
@@ -367,4 +409,36 @@ function Renderer(renderingArea)
 		this.drawingContext.renderingArea.width = width;
 		this.drawingContext.renderingArea.height = height;
 	};
+	
+	this.PickObject = function(x, y, scene)
+	{
+		var point = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
+		var ray = 
+		{
+			from : this.camera.at,
+			dir : point.Minus(this.camera.at).Normalized()
+		};
+		
+		var picked = null;
+		for(var index=0; index<scene.objects.length; index++)
+		{
+			var intersections = scene.objects[index].RayIntersection(ray);
+			for(var ii=0; ii<intersections.length; ii++)
+			{
+				if(picked == null || picked.depth>intersections[ii])
+				{
+					picked={
+						object : scene.objects[index],
+						depth : intersections[ii]
+					};
+				}
+			}
+		}
+		
+		if(picked != null)
+		{
+			return picked.object;
+		}
+		return null;
+	}
 };

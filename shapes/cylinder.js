@@ -187,3 +187,90 @@ Cylinder.prototype.GetBoundingBox = function()
 	bb.Set(this.center, size);
 	return bb;
 }
+
+Cylinder.prototype.GetWorldToInnerBaseMatrix = function()
+{
+	var translation = IdentityMatrix(4);
+	var basechange = IdentityMatrix(4);
+	var mindir = 0;
+	for(var index=0; index<3; index++)
+	{
+		if(Math.abs(this.axis.Get(index))<Math.abs(this.axis.Get(mindir)))
+		{
+			mindir = index;
+		}
+	}
+	var xx = new Vector([0.0, 0.0, 0.0]);
+	xx.Set(mindir, 1.0);
+	xx = this.axis.Cross(xx).Normalized();
+	var yy = this.axis.Cross(xx).Normalized();
+	for(var index=0; index<3; index++)
+	{
+		basechange.SetValue(0, index, xx.Get(index));
+		basechange.SetValue(1, index, yy.Get(index));
+		basechange.SetValue(2, index, this.axis.Get(index));
+		translation.SetValue(index, 3, -this.center.Get(index));
+	}
+	return basechange.Multiply(translation);
+}
+
+Cylinder.prototype.RayIntersection = function(ray)
+{
+	var worldToBase = this.GetWorldToInnerBaseMatrix();
+	var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
+	var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+	
+	//haveing p[t] = (innerFrom[i]+t*innerDir[i])
+	//Solve p[t].x^2+p[t].y^2=radius for each i<3
+	var aa = 0;
+	var bb = 0;
+	var cc = 0;
+	for(var index=0; index<2; index++)
+	{
+		aa += innerDir.GetValue(index,0) * innerDir.GetValue(index,0);
+		bb += 2.0*innerDir.GetValue(index,0)*innerFrom.GetValue(index,0);
+		cc += innerFrom.GetValue(index,0) * innerFrom.GetValue(index,0);
+	}
+	
+	//Solve [t] : aa.t^2 + bb.t + cc = radius
+	var halfHeight = this.height/2.0;
+	var sqrRadius = this.radius*this.radius;
+	cc -= sqrRadius;
+	var dd = bb*bb - 4.0*aa*cc;
+	var tt = [];
+	function acceptValue(value)
+	{
+		var point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));
+		if(Math.abs(point.Get(2))<=halfHeight)
+		{
+			tt.push(value);
+		}
+	}
+	
+	if(Math.abs(dd)<0.0000001)
+	{
+		acceptValue(-bb/2.0*aa);
+	}
+	else if(dd > 0.)
+	{
+		acceptValue((-bb+Math.sqrt(dd))/2.0*aa);
+		acceptValue((-bb-Math.sqrt(dd))/2.0*aa);
+	}
+	
+	if(tt.length<2 && Math.abs(innerDir.GetValue(2, 0))>0.000001)
+	{
+		function acceptDiskValue(value)
+		{
+			var point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));
+			if(point.Get(0)*point.Get(0) + point.Get(1)*point.Get(1) <= sqrRadius)
+			{
+				tt.push(value);
+			}
+		}
+		//test bounding disks
+		//solve [t] : p[t].z = halfHeight
+		acceptDiskValue((halfHeight-innerFrom.GetValue(2, 0))/innerDir.GetValue(2, 0));
+		acceptDiskValue((-halfHeight-innerFrom.GetValue(2, 0))/innerDir.GetValue(2, 0));
+	}
+	return tt;
+}
