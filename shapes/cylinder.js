@@ -202,8 +202,8 @@ Cylinder.prototype.GetWorldToInnerBaseMatrix = function()
 	}
 	var xx = new Vector([0.0, 0.0, 0.0]);
 	xx.Set(mindir, 1.0);
-	xx = this.axis.Cross(xx);
-	var yy = this.axis.Cross(xx);
+	xx = this.axis.Cross(xx).Normalized();
+	var yy = this.axis.Cross(xx).Normalized();
 	for(var index=0; index<3; index++)
 	{
 		basechange.SetValue(0, index, xx.Get(index));
@@ -233,13 +233,15 @@ Cylinder.prototype.RayIntersection = function(ray)
 	}
 	
 	//Solve [t] : aa.t^2 + bb.t + cc = radius
-	cc -= this.radius*this.radius;
+	var halfHeight = this.height/2.0;
+	var sqrRadius = this.radius*this.radius;
+	cc -= sqrRadius;
 	var dd = bb*bb - 4.0*aa*cc;
 	var tt = [];
-	
 	function acceptValue(value)
 	{
-		if(new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value)).Get(2)<=this.height)
+		var point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));
+		if(Math.abs(point.Get(2))<=halfHeight)
 		{
 			tt.push(value);
 		}
@@ -255,9 +257,20 @@ Cylinder.prototype.RayIntersection = function(ray)
 		acceptValue((-bb-Math.sqrt(dd))/2.0*aa);
 	}
 	
-	if(tt.length<2)
+	if(tt.length<2 && Math.abs(innerDir.GetValue(2, 0))>0.000001)
 	{
-		//TODO : solve intersection with disks
+		function acceptDiskValue(value)
+		{
+			var point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));
+			if(point.Get(0)*point.Get(0) + point.Get(1)*point.Get(1) <= sqrRadius)
+			{
+				tt.push(value);
+			}
+		}
+		//test bounding disks
+		//solve [t] : p[t].z = halfHeight
+		acceptDiskValue((halfHeight-innerFrom.GetValue(2, 0))/innerDir.GetValue(2, 0));
+		acceptDiskValue((-halfHeight-innerFrom.GetValue(2, 0))/innerDir.GetValue(2, 0));
 	}
 	return tt;
 }

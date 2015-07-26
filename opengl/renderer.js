@@ -156,12 +156,12 @@ function Renderer(renderingArea, refreshCallback)
 		
 		GetInnerBase : function()
 		{
-			var z = this.to.Minus(this.at);
-			var d = z.Norm();
-			z = z.Times(1./d);
-			var x = z.Cross(this.up).Normalized();
-			var y = x.Cross(z).Normalized();
-			return {x:x, y:y, z:z, distance:d};
+			var lookAt = this.to.Minus(this.at);
+			var d = lookAt.Norm();
+			lookAt = lookAt.Times(1./d);
+			var right = lookAt.Cross(this.up).Normalized();
+			var up = right.Cross(lookAt).Normalized();
+			return {right:right, up:up, lookAt:lookAt, distance:d};
 		},
 		
 		GetModelViewMatrix : function()
@@ -171,10 +171,9 @@ function Renderer(renderingArea, refreshCallback)
 			var translation = IdentityMatrix(4);
 			for(var index=0; index<3; index++)
 			{
-				basechange.SetValue(0, index, innerBase.x.Get(index));
-				basechange.SetValue(1, index, innerBase.y.Get(index));
-				//Homogeneous coordinate system is left handed
-				basechange.SetValue(2, index, -innerBase.z.Get(index));
+				basechange.SetValue(0, index, innerBase.right.Get(index));
+				basechange.SetValue(1, index, innerBase.up.Get(index));
+				basechange.SetValue(2, index, -innerBase.lookAt.Get(index));
 				translation.SetValue(index, 3, -this.at.Get(index));
 			}
 			return basechange.Multiply(translation);
@@ -200,8 +199,8 @@ function Renderer(renderingArea, refreshCallback)
 			var objectSpaceHeight = f*innerBase.distance;
 			var objectSpaceWidth = objectSpaceHeight*this.screen.width/this.screen.height;
 			
-			var deltax = innerBase.x.Times(objectSpaceWidth*dx/this.screen.width);
-			var deltay = innerBase.y.Times(objectSpaceHeight*dy/this.screen.height);
+			var deltax = innerBase.right.Times(objectSpaceWidth*-dx/this.screen.width);
+			var deltay = innerBase.up.Times(objectSpaceHeight*-dy/this.screen.height);
 			var delta = deltax.Plus(deltay);
 			
 			this.at = this.at.Plus(delta);
@@ -211,9 +210,9 @@ function Renderer(renderingArea, refreshCallback)
 		Rotate : function(dx, dy)
 		{
 			//DX rotation (around Y axis)
-			var angle = 2*Math.PI*dx / this.screen.width;
+			var angle = 2*Math.PI*-dx / this.screen.width;
 			var innerBase = this.GetInnerBase();
-			var rotation = RotationMatrix(innerBase.y, angle);
+			var rotation = RotationMatrix(innerBase.up, angle);
 			var point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
 			point = rotation.Multiply(point);
 			for(var index=0; index<3; index++)
@@ -221,15 +220,15 @@ function Renderer(renderingArea, refreshCallback)
 				this.at.Set(index, point.values[index]);
 			}
 			this.at = this.to.Plus(this.at);
-			this.up = innerBase.y;
+			this.up = innerBase.up;
 
 			
 			//DY rotation (around X axis)
 			angle = Math.PI*dy / this.screen.height;
 			innerBase = this.GetInnerBase();
-			rotation = RotationMatrix(innerBase.x, angle);
+			rotation = RotationMatrix(innerBase.right, angle);
 			point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
-			var updir = new Matrix(1, 4, innerBase.y.Flatten().concat([0]));
+			var updir = new Matrix(1, 4, innerBase.up.Flatten().concat([0]));
 			point = rotation.Multiply(point);
 			updir = rotation.Multiply(updir);
 			for(var index=0; index<3; index++)
@@ -245,7 +244,7 @@ function Renderer(renderingArea, refreshCallback)
 			var innerBase = this.GetInnerBase();
 			innerBase.distance *= Math.pow(0.9, d);
 			
-			this.at = this.to.Minus(innerBase.z.Times(innerBase.distance));
+			this.at = this.to.Minus(innerBase.lookAt.Times(innerBase.distance));
 		},
 		
 		ComputeProjection : function(v)
@@ -348,12 +347,12 @@ function Renderer(renderingArea, refreshCallback)
 				switch(renderer.mouseTracker.button)
 				{
 					case 1: //Left mouse
-						renderer.camera.Rotate(-dx, dy);
+						renderer.camera.Rotate(dx, dy);
 						break;
 					case 2: //Middle mouse
 						break;
 					case 3: //Right mouse
-						renderer.camera.Pan(-dx, -dy);
+						renderer.camera.Pan(dx, dy);
 						break;
 					default:
 						return true;
