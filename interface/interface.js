@@ -42,7 +42,15 @@ var Interface =
 		
 		//Create the scene handler
 		self = this;
-		this.sceneRenderer = new Renderer(sceneRenderingArea, function() {self.Refresh();});
+		function Refresh(selectedItems)
+		{
+			if(selectedItems)
+			{
+				self.dataHandler.currentItem = selectedItems;
+			}
+			self.Refresh();
+		}
+		this.sceneRenderer = new Renderer(sceneRenderingArea, Refresh);
 		this.sceneRenderer.Initialize(scene);
 	},
 	
