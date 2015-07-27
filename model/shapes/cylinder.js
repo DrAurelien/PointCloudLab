@@ -253,8 +253,8 @@ Cylinder.prototype.RayIntersection = function(ray)
 	}
 	else if(dd > 0.)
 	{
-		acceptValue((-bb+Math.sqrt(dd))/2.0*aa);
-		acceptValue((-bb-Math.sqrt(dd))/2.0*aa);
+		acceptValue((-bb+Math.sqrt(dd))/(2.0*aa));
+		acceptValue((-bb-Math.sqrt(dd))/(2.0*aa));
 	}
 	
 	if(tt.length<2 && Math.abs(innerDir.GetValue(2, 0))>0.000001)

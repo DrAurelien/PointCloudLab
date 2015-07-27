@@ -321,11 +321,11 @@ function Renderer(renderingArea, refreshCallback)
 			var now = new Date();
 			if(renderer.mouseTracker != null)
 			{
-				if(now.getTime()-renderer.mouseTracker.date.getTime() < 500)
+				if(now.getTime()-renderer.mouseTracker.date.getTime() < 200)
 				{
 					var selected = renderer.PickObject(event.clientX, event.clientY, scene);
 					scene.Select(selected);
-					refreshCallback();
+					refreshCallback(selected);
 				}
 			}
 			renderer.mouseTracker = null;
@@ -422,15 +422,18 @@ function Renderer(renderingArea, refreshCallback)
 		var picked = null;
 		for(var index=0; index<scene.objects.length; index++)
 		{
-			var intersections = scene.objects[index].RayIntersection(ray);
-			for(var ii=0; ii<intersections.length; ii++)
+			if(scene.objects[index].visible)
 			{
-				if(picked == null || picked.depth>intersections[ii])
+				var intersections = scene.objects[index].RayIntersection(ray);
+				for(var ii=0; ii<intersections.length; ii++)
 				{
-					picked={
-						object : scene.objects[index],
-						depth : intersections[ii]
-					};
+					if(picked == null || picked.depth>intersections[ii])
+					{
+						picked={
+							object : scene.objects[index],
+							depth : intersections[ii]
+						};
+					}
 				}
 			}
 		}

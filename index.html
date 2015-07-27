@@ -1,6 +1,7 @@
 <html>
 
 <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<script id="VertexShader" type="x-shader/x-vertex">
 		attribute vec3 VertexPosition;
@@ -55,39 +56,16 @@
 	<!-- RENDERING-->
 	<script type="text/javascript" src="opengl/materials.js"></script>
 	<script type="text/javascript" src="opengl/renderer.js"></script>
-	<!-- SHAPES -->
-	<script type="text/javascript" src="shapes/boundingbox.js"></script>
-	<script type="text/javascript" src="shapes/shapes.js"></script>
-	<script type="text/javascript" src="shapes/sphere.js"></script>
-	<script type="text/javascript" src="shapes/cylinder.js"></script>
+	<!-- MODEL -->
+	<script type="text/javascript" src="model/shapes/boundingbox.js"></script>
+	<script type="text/javascript" src="model/shapes/shapes.js"></script>
+	<script type="text/javascript" src="model/shapes/sphere.js"></script>
+	<script type="text/javascript" src="model/shapes/cylinder.js"></script>
+	<script type="text/javascript" src="model/scene.js"></script>
 	<!--INTERFACE-->
 	<script type="text/javascript" src="interface/controls.js"></script>
 	<script type="text/javascript" src="interface/datahandler.js"></script>
 	<script type="text/javascript" src="interface/interface.js"></script>
-	<script type="text/javascript">
-		var Scene =
-		{
-			objects : [
-				//new Sphere(new Vector( [.0,.0,.0]), 2.0),
-				//new Cylinder(new Vector([-3, 0, 0]), new Vector([1, 1, 1]), 0.5, 2)
-			],
-			
-			Draw : function(drawingContext)
-			{
-				for(index=0; index<this.objects.length; index++)
-				{
-					this.objects[index].Draw(drawingContext);
-				}
-			},
-			
-			Select : function(element)
-			{
-				for(index=0; index<this.objects.length; index++)
-				{
-					this.objects[index].selected = (this.objects[index] == element);
-				}
-			}
-		};
 	</script>
 </head>
 

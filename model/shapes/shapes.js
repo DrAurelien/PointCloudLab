@@ -24,12 +24,14 @@ function Shape(shape)
 	this.name = ShapesIntentifiers.GetIdentifier(shape);
 	this.material = new Material([0.3, 0.75, 0.3]);
 	this.selected = false;
+	this.visible = true;
 }
 
 Shape.prototype.GetProperties = function()
 {
 	return {
 		Name : this.name,
+		Visible : this.visible?"1":"0",
 		Geometry : this.GetGeometry(),
 		Material : this.material.GetProperties()
 	};
@@ -99,6 +101,11 @@ Shape.prototype.SetProperties = function(properties)
 			this.name = properties.Name;
 		}
 		
+		if('Visible' in properties)
+		{
+			this.visible = (properties.Visible)=="1";
+		}
+		
 		if('Geometry' in properties)
 		{
 			if(!this.SetGeometry(properties.Geometry))
@@ -124,37 +131,40 @@ Shape.prototype.SetProperties = function(properties)
 
 Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 {
-	unitShape.Sample(drawingContext.sampling, drawingContext.gl);
-	
-	this.material.InitializeLightingModel(drawingContext);
-	
-	drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.pointsBuffer);
-	drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
-	if(unitShape.normalsBuffer)
+	if(this.visible)
 	{
-		drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.normalsBuffer);
-		drawingContext.gl.vertexAttribPointer(drawingContext.normals, 3, drawingContext.gl.FLOAT, false, 0, 0);
-	}
-	
-	if(drawingContext.rendering.Point())
-	{
-		drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, unitShape.points.length/3);
-	}
-	
-	if(drawingContext.rendering.Surface())
-	{
-		var sizeOfUnisgnedShort = 2;
-		drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, unitShape.indexBuffer);
-		for(var index=0; index<unitShape.elements.length; index++)
+		unitShape.Sample(drawingContext.sampling, drawingContext.gl);
+		
+		this.material.InitializeLightingModel(drawingContext);
+		
+		drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.pointsBuffer);
+		drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
+		if(unitShape.normalsBuffer)
 		{
-			var element = unitShape.elements[index];
-			drawingContext.gl.drawElements(element.type, element.count, drawingContext.gl.UNSIGNED_SHORT, sizeOfUnisgnedShort*element.from);
+			drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.normalsBuffer);
+			drawingContext.gl.vertexAttribPointer(drawingContext.normals, 3, drawingContext.gl.FLOAT, false, 0, 0);
 		}
-	}
-	
-	if(this.selected)
-	{
-		var box = this.GetBoundingBox();
-		box.Draw(drawingContext);
+		
+		if(drawingContext.rendering.Point())
+		{
+			drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, unitShape.points.length/3);
+		}
+		
+		if(drawingContext.rendering.Surface())
+		{
+			var sizeOfUnisgnedShort = 2;
+			drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, unitShape.indexBuffer);
+			for(var index=0; index<unitShape.elements.length; index++)
+			{
+				var element = unitShape.elements[index];
+				drawingContext.gl.drawElements(element.type, element.count, drawingContext.gl.UNSIGNED_SHORT, sizeOfUnisgnedShort*element.from);
+			}
+		}
+		
+		if(this.selected)
+		{
+			var box = this.GetBoundingBox();
+			box.Draw(drawingContext);
+		}
 	}
 }

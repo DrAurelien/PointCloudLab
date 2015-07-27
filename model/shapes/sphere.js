@@ -200,8 +200,8 @@ Sphere.prototype.RayIntersection = function(ray)
 	}
 	else if(dd > 0.)
 	{
-		tt.push((-bb+Math.sqrt(dd))/2.0*aa);
-		tt.push((-bb-Math.sqrt(dd))/2.0*aa);
+		tt.push((-bb+Math.sqrt(dd))/(2.0*aa));
+		tt.push((-bb-Math.sqrt(dd))/(2.0*aa));
 	}
 	
 	return tt;
