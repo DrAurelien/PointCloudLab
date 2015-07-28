@@ -75,8 +75,26 @@ BoundingBox.prototype.GetSize = function()
 	return this.max.Minus(this.min);
 }
 
+BoundingBox.prototype.Add = function(p)
+{
+	if(this.min == null || this.max == null)
+	{
+		this.min = new Vector(p.Flatten());
+		this.max = new Vector(p.Flatten());
+	}
+	else
+	{
+		for(var index=0; index<p.Dimension(); index++)
+		{
+			this.min.Set(index, Math.min(this.min.Get(index), p.Get(index)));
+			this.max.Set(index, Math.max(this.max.Get(index), p.Get(index)));
+		}
+	}
+}
+
 BoundingBox.prototype.Draw = function(drawingContext)
 {
+	drawingContext.EnableNormals(false);
 	UnitBoundingBoxPoints.Inititalize(drawingContext.gl);
 	
 	var material = new Material([1.0, 1.0, 0.0]);

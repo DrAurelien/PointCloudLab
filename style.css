@@ -72,17 +72,21 @@ div.SceneItem:hover
 	background-color : lightgray;
 }
 
-div.Button, div.ComboButton
+div.Button, div.ComboButton, div.FileOpener
 {
 	width : 70px;
+	height : 17px;
 	text-align : center;
+	vertical-align : middle;
 	background-color : darkgray;
 	border : 1px solid lightgray;
+	background-color : lightgray;
+	border-radius: 3px;
 	margin : auto;
 	cursor : pointer;
 }
 
-div.Button:hover, div.ComboButton:hover
+div.Button:hover, div.ComboButton:hover, div.FileOpener:hover
 {
 	background-color : lightgray;
 	border : 1px solid darkgray;
@@ -107,6 +111,11 @@ div.ComboOption
 div.ComboOption:hover
 {
 	background-color : darkgray;
+}
+
+input.FileOpener
+{
+	display : none;
 }
 
 table.Properties

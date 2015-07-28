@@ -11,6 +11,7 @@ function Renderer(renderingArea, refreshCallback)
 		shapetransform : null,
 		vertices : null,
 		normals : null,
+		usenormals : null,
 		//Lighting
 		color : null,
 		diffuse : null,
@@ -69,7 +70,7 @@ function Renderer(renderingArea, refreshCallback)
 			this.gl.enableVertexAttribArray(this.vertices);
 			console.log('   Inititalizing normals attribute');
 			this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
-			this.gl.enableVertexAttribArray(this.normals);
+			this.EnableNormals(true);
 			
 			console.log('   Inititalizing matrices');
 			this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
@@ -83,6 +84,21 @@ function Renderer(renderingArea, refreshCallback)
 			this.ambiant = this.gl.getUniformLocation(this.shaders, "AmbiantCoef");
 			this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");
 			this.glossy = this.gl.getUniformLocation(this.shaders, "GlossyPow");
+			this.usenormals = this.gl.getUniformLocation(this.shaders, "UseNormals");
+		},
+		
+		EnableNormals : function(b)
+		{
+			if(b)
+			{
+				this.gl.uniform1i(this.usenormals, 1);
+				this.gl.enableVertexAttribArray(this.normals);
+			}
+			else
+			{
+				this.gl.uniform1i(this.usenormals, 0);
+				this.gl.disableVertexAttribArray(this.normals);
+			}
 		},
 		
 		GetShader : function(identifier)

@@ -2,7 +2,11 @@ function Matrix(width, height, values)
 {
 	this.width = width;
 	this.height = height;
-	this.values = values;
+	this.values = new Array(values.length);
+	for(var index=0; index<values.length; index++)
+	{
+		this.values[index] = values[index];
+	}
 }
 
 Matrix.prototype.FlatIndex = function(row, col)

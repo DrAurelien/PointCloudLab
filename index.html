@@ -30,23 +30,34 @@
 		uniform  highp float AmbiantCoef;
 		uniform  highp float SpecularCoef;
 		uniform  highp float GlossyPow;
+		uniform lowp int UseNormals;
 		
 		varying highp vec3 Position;
 		varying highp vec3 Normal;
 		
 		void main(void) {
-			//Phong lighting
-			highp vec3 eyeVect = EyePosition - Position;
-			eyeVect /= length(eyeVect);
-			highp vec3 lightVect = LightPosition - Position;
-			lightVect /= length(lightVect);
-			highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
-			reflVec /= length(reflVec);
 			
-			highp float lightingCoef = ( AmbiantCoef +
-				max(DiffuseCoef * dot(Normal, lightVect), 0.0) +
-				max(SpecularCoef * pow(dot(eyeVect, reflVec), GlossyPow), 0.0)
-				) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
+			highp float lightingCoef;
+			
+			if(UseNormals == 0)
+			{
+				lightingCoef = 1.0;
+			}
+			else
+			{
+				//Phong lighting
+				highp vec3 eyeVect = EyePosition - Position;
+				eyeVect /= length(eyeVect);
+				highp vec3 lightVect = LightPosition - Position;
+				lightVect /= length(lightVect);
+				highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
+				reflVec /= length(reflVec);
+				
+				 lightingCoef = ( AmbiantCoef +
+					max(DiffuseCoef * dot(Normal, lightVect), 0.0) +
+					max(SpecularCoef * pow(dot(eyeVect, reflVec), GlossyPow), 0.0)
+					) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
+			}
 			gl_FragColor = vec4(Color * lightingCoef, 1);
 		}
 	</script>
@@ -57,13 +68,18 @@
 	<script type="text/javascript" src="opengl/materials.js"></script>
 	<script type="text/javascript" src="opengl/renderer.js"></script>
 	<!-- MODEL -->
-	<script type="text/javascript" src="model/shapes/boundingbox.js"></script>
+	<script type="text/javascript" src="model/cadprimitive.js"></script>
+	<script type="text/javascript" src="model/boundingbox.js"></script>
+	<script type="text/javascript" src="model/pointcloud.js"></script>
 	<script type="text/javascript" src="model/shapes/shapes.js"></script>
 	<script type="text/javascript" src="model/shapes/sphere.js"></script>
 	<script type="text/javascript" src="model/shapes/cylinder.js"></script>
 	<script type="text/javascript" src="model/scene.js"></script>
 	<!--INTERFACE-->
+	<script type="text/javascript" src="files/plyloader.js"></script>
+	<script type="text/javascript" src="files/fileloader.js"></script>
 	<script type="text/javascript" src="interface/controls.js"></script>
+	<script type="text/javascript" src="interface/controls/fileopener.js"></script>
 	<script type="text/javascript" src="interface/datahandler.js"></script>
 	<script type="text/javascript" src="interface/interface.js"></script>
 	</script>

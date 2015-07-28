@@ -101,6 +101,12 @@ function DataHandler(dataWindow, updateCallback)
 	{
 		this.dataArea.innerHTML = '';
 		
+		var container = document.createElement('table');
+		container.width = '100%';
+		var containerRow = document.createElement('tr');
+		container.appendChild(containerRow);
+		this.dataArea.appendChild(container);
+		
 		//Buttons
 		var dataHandler = this;
 		function CreateItem(objectName)
@@ -137,7 +143,26 @@ function DataHandler(dataWindow, updateCallback)
 			CreateItem('Sphere'),
 			CreateItem('Cylinder')
 		]);
-		this.dataArea.appendChild(createCombo);
+		
+		var containerCell = document.createElement('td');
+		containerRow.appendChild(containerCell);
+		containerCell.appendChild(createCombo);
+		
+		var openButton = FileOpener('Open', function(createdObject) {
+			if(createdObject != null)
+			{
+				scene.objects.push(createdObject);
+				scene.Select(createdObject);
+				dataHandler.currentItem = createdObject;
+				if(dataHandler.updateCallback != null)
+				{
+					dataHandler.updateCallback();
+				}
+			}
+		});
+		var containerCell = document.createElement('td');
+		containerRow.appendChild(containerCell);
+		containerCell.appendChild(openButton);
 		
 		//Scene
 		for(var index=0; index<scene.objects.length; index++)

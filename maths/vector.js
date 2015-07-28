@@ -1,6 +1,10 @@
 function Vector(coords)
 {
-	this.coordinates = coords;
+	this.coordinates = new Array(coords.length);
+	for(var index=0; index<coords.length; index++)
+	{
+		this.coordinates[index] = coords[index];
+	}
 }
 
 Vector.prototype.Flatten = function()
