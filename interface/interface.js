@@ -44,10 +44,7 @@ var Interface =
 		self = this;
 		function Refresh(selectedItems)
 		{
-			if(selectedItems)
-			{
-				self.dataHandler.currentItem = selectedItems;
-			}
+			self.dataHandler.currentItem = selectedItems;
 			self.Refresh();
 		}
 		this.sceneRenderer = new Renderer(sceneRenderingArea, Refresh);

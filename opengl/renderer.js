@@ -70,7 +70,7 @@ function Renderer(renderingArea, refreshCallback)
 			this.gl.enableVertexAttribArray(this.vertices);
 			console.log('   Inititalizing normals attribute');
 			this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
-			this.gl.enableVertexAttribArray(this.normals);
+			this.EnableNormals(true);
 			
 			console.log('   Inititalizing matrices');
 			this.projection = this.gl.getUniformLocation(this.shaders, "Projection");

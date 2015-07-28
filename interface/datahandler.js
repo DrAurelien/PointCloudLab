@@ -152,6 +152,7 @@ function DataHandler(dataWindow, updateCallback)
 			if(createdObject != null)
 			{
 				scene.objects.push(createdObject);
+				scene.Select(createdObject);
 				dataHandler.currentItem = createdObject;
 				if(dataHandler.updateCallback != null)
 				{

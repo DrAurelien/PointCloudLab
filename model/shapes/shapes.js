@@ -1,133 +1,12 @@
-// Object handling shapes identifers reservation, so that each new shape has a unic identifier
-var ShapesIntentifiers = 
-{
-	Sphere : 1,
-	Cylinder : 1,
-	GetIdentifier : function(shape)
-	{
-		for(var identifier in this)
-		{
-			if(identifier == shape)
-			{
-				shape += "-"+this[identifier];
-				this[identifier]++;
-				return shape;
-			}
-		}
-		throw 'Cannot generate identifier for shape "'+identifier+'"';
-	}
-}
-
 //Shape class
 function Shape(shape)
 {
-	this.name = ShapesIntentifiers.GetIdentifier(shape);
-	this.material = new Material([0.3, 0.75, 0.3]);
-	this.selected = false;
-	this.visible = true;
+	CADPrimitive.call(this, shape);
 }
 
-Shape.prototype.GetProperties = function()
-{
-	return {
-		Name : this.name,
-		Visible : this.visible?"1":"0",
-		Geometry : this.GetGeometry(),
-		Material : this.material.GetProperties()
-	};
-}
-
-//Returns a property defining the "vector" parameter
-Shape.prototype.MakeVectorProperty = function(vector)
-{
-	return {
-		X : vector.Get(0),
-		Y : vector.Get(1),
-		Z : vector.Get(2),
-	};
-}
-
-//Returns a vector defined by the "property" parameter (null if property does not define a valid vector)
-Shape.prototype.ParseVectorProperty = function(property)
-{
-	var result = null;
-	try
-	{
-		result = new Vector([
-				parseFloat(property.X),
-				parseFloat(property.Y),
-				parseFloat(property.Z)
-		]);	
-		for(var index=0; index<3; index++)
-		{
-			if(isNaN(result.Get(index)))
-			{
-				return null;
-			}
-		}
-	}
-	catch(exception)
-	{
-		return null;
-	}
-	return result;
-}
-
-Shape.prototype.ParseRealProperty = function(property)
-{
-	var result = null;
-	try
-	{
-		result = parseFloat(property);
-		if(isNaN(result))
-		{
-			return null;
-		}
-	}
-	catch(exception)
-	{
-		return null;
-	}
-	return result;
-}
-
-//Update
-Shape.prototype.SetProperties = function(properties)
-{
-	try
-	{
-		if('Name' in properties)
-		{
-			this.name = properties.Name;
-		}
-		
-		if('Visible' in properties)
-		{
-			this.visible = (properties.Visible)=="1";
-		}
-		
-		if('Geometry' in properties)
-		{
-			if(!this.SetGeometry(properties.Geometry))
-			{
-				return false;
-			}
-		}
-		
-		if('Material' in properties)
-		{
-			if(!this.material.SetProperties(properties.Material))
-			{
-				return false;
-			}
-		}
-	}
-	catch(exception)
-	{
-		return false;
-	}
-	return true;
-};
+//Inheritance
+Shape.prototype = Object.create(CADPrimitive.prototype);
+Shape.prototype.constructor = Shape;
 
 Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 {
@@ -144,6 +23,7 @@ Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 		//For lighting model
 		if(unitShape.normalsBuffer)
 		{
+			drawingContext.EnableNormals(true);
 			drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.normalsBuffer);
 			drawingContext.gl.vertexAttribPointer(drawingContext.normals, 3, drawingContext.gl.FLOAT, false, 0, 0);
 		}
@@ -174,12 +54,6 @@ Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 		{
 			var box = this.GetBoundingBox();
 			box.Draw(drawingContext);
-		}
-		
-		//Restore normals
-		if(unitShape.normalsBuffer == null)
-		{
-			drawingContext.EnableNormals(true);
 		}
 	}
 }

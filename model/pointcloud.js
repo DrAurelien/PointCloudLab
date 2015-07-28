@@ -1,13 +1,19 @@
 function PointCloud()
 {
 	this.points = [];
-	
+	this.boundingbox = new BoundingBox();
 	this.glPointsBuffer = null;
+	CADPrimitive.call(this, 'PointCloud');
 }
+
+//Inheritance
+PointCloud.prototype = Object.create(CADPrimitive.prototype);
+PointCloud.prototype.constructor = PointCloud;
 
 PointCloud.prototype.PushPoint = function(p)
 {
 	this.points = this.points.concat(p.Flatten());
+	this.boundingbox.Add(p);
 }
 
 PointCloud.prototype.GetPoint = function(i)
@@ -19,19 +25,9 @@ PointCloud.prototype.GetPoint = function(i)
 		this.points[index++]);
 }
 
-
-PointCloud.prototype.GetProperties = function()
-{
-	return {};
-}
-
-PointCloud.prototype.GetProperties = function(properties)
-{
-}
-
 PointCloud.prototype.GetBoundingBox = function()
 {
-	return new BoundingBox(new Vector([0, 0, 0]), new Vector([0, 0, 0]));
+	return this.boundingbox;
 }
 
 PointCloud.prototype.Draw = function(drawingContext)
@@ -42,8 +38,7 @@ PointCloud.prototype.Draw = function(drawingContext)
 	var shapetransform = IdentityMatrix(4);
 	glContext.uniformMatrix4fv(drawingContext.shapetransform, glContext.FALSE, new Float32Array(shapetransform.values));
 	
-	var material = new Material([0.75, 0.2, 0.3]);
-	material.InitializeLightingModel(drawingContext);
+	this.material.InitializeLightingModel(drawingContext);
 	
 	if(!this.glPointsBuffer)
 	{
@@ -57,6 +52,11 @@ PointCloud.prototype.Draw = function(drawingContext)
 	glContext.drawArrays(drawingContext.gl.POINTS, 0, this.points.length/3);
 	
 	drawingContext.EnableNormals(true);
+	
+	if(this.selected)
+	{
+		this.boundingbox.Draw(drawingContext);
+	}
 }
 
 
