@@ -7,7 +7,7 @@ function PointCloud()
 
 PointCloud.prototype.PushPoint = function(p)
 {
-	this.points.push(p.Flatten());
+	this.points = this.points.concat(p.Flatten());
 }
 
 PointCloud.prototype.GetPoint = function(i)
@@ -37,6 +37,14 @@ PointCloud.prototype.GetBoundingBox = function()
 PointCloud.prototype.Draw = function(drawingContext)
 {
 	var glContext = drawingContext.gl;
+	drawingContext.EnableNormals(false);
+	
+	var shapetransform = IdentityMatrix(4);
+	glContext.uniformMatrix4fv(drawingContext.shapetransform, glContext.FALSE, new Float32Array(shapetransform.values));
+	
+	var material = new Material([0.75, 0.2, 0.3]);
+	material.InitializeLightingModel(drawingContext);
+	
 	if(!this.glPointsBuffer)
 	{
 		this.glPointsBuffer = glContext.createBuffer();
@@ -45,7 +53,10 @@ PointCloud.prototype.Draw = function(drawingContext)
 	}
 	
 	glContext.bindBuffer(glContext.ARRAY_BUFFER, this.glPointsBuffer);
-	drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.points.length/3);
+	glContext.vertexAttribPointer(drawingContext.points, 3, drawingContext.gl.FLOAT, false, 0, 0);
+	glContext.drawArrays(drawingContext.gl.POINTS, 0, this.points.length/3);
+	
+	drawingContext.EnableNormals(true);
 }
 
 

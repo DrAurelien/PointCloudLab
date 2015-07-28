@@ -31,10 +31,13 @@ PlyElement.prototype.PushItem = function(item)
 {
 	var expected;
 	var found;
+	
 	if(this.definition.length == 0)
 	{
 		throw 'no definition provided for element \"' + this.name + '\"';
 	}
+	
+	//Check item consistency with respect to element defintion
 	if(this.definition[0].type == 'list')
 	{
 		expected = item[0];
@@ -46,9 +49,36 @@ PlyElement.prototype.PushItem = function(item)
 		expected = this.definition.length;
 		found = item.length;
 	}
+	
 	if(expected != found)
 	{
 		throw 'inconsistent item : expecting ' + expected + ' properties for element \"' + this.name + '\", found '+found;	
+	}
+	
+	//cast objects to their target type
+	var defIndex = 0;
+	for(var index=0; index<expected; index++)
+	{
+		var type = this.definition[defIndex].type;
+		if(type== 'list')
+		{
+			type = this.definition[defIndex].params[1];
+		}
+		else
+		{
+			defIndex++;
+		}
+		switch(type)
+		{
+			case 'float':
+				item[index] = parseFloat(item[index]);
+				break;
+			case 'int':
+				item[index] = parseInt(item[index]);
+				break;
+			default:
+				break;
+		}
 	}
 	this.items.push(item);
 }

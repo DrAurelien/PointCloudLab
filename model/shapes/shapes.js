@@ -137,19 +137,28 @@ Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 		
 		this.material.InitializeLightingModel(drawingContext);
 		
+		//Surface points
 		drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.pointsBuffer);
 		drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
+		
+		//For lighting model
 		if(unitShape.normalsBuffer)
 		{
 			drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, unitShape.normalsBuffer);
 			drawingContext.gl.vertexAttribPointer(drawingContext.normals, 3, drawingContext.gl.FLOAT, false, 0, 0);
 		}
+		else
+		{
+			drawingContext.EnableNormals(false);
+		}
 		
+		//Points-based rendering
 		if(drawingContext.rendering.Point())
 		{
 			drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, unitShape.points.length/3);
 		}
 		
+		//Surface rendering
 		if(drawingContext.rendering.Surface())
 		{
 			var sizeOfUnisgnedShort = 2;
@@ -165,6 +174,12 @@ Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 		{
 			var box = this.GetBoundingBox();
 			box.Draw(drawingContext);
+		}
+		
+		//Restore normals
+		if(unitShape.normalsBuffer == null)
+		{
+			drawingContext.EnableNormals(true);
 		}
 	}
 }
