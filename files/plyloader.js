@@ -1,51 +1,211 @@
+//////////////////////////////////////
+// PLY element
+//////////////////////////////////////
+
+function PlyElement(name, count)
+{
+	this.name = name;
+	this.count = count;
+	this.definition = [];
+	this.items = [];
+}
+
+PlyElement.prototype.PushDefinitionProperty = function(name, type, params)
+{
+	//Check the property has not already been defined
+	for(var index=0; index<this.definition.length; index++)
+	{
+		if(this.definition[index].name == name)
+		{
+			throw 'the property \"' + name + '\" already exists for element \"' + this.name + '\"';
+		}
+	}
+	this.definition.push({
+		name : name,
+		type : type,
+		params : params});
+}
+
+
+PlyElement.prototype.PushItem = function(item)
+{
+	var expected;
+	var found;
+	if(this.definition.length == 0)
+	{
+		throw 'no definition provided for element \"' + this.name + '\"';
+	}
+	if(this.definition[0].type == 'list')
+	{
+		expected = item[0];
+		found = item.length-1;
+		item = item.slice(1, item.length);
+	}
+	else
+	{
+		expected = this.definition.length;
+		found = item.length;
+	}
+	if(expected != found)
+	{
+		throw 'inconsistent item : expecting ' + expected + ' properties for element \"' + this.name + '\", found '+found;	
+	}
+	this.items.push(item);
+}
+
+PlyElement.prototype.IsFilled = function()
+{
+	return (this.count == this.items.length);
+}
+
+PlyElement.prototype.GetItem = function(itemsindex)
+{
+	var result = {};
+	for(var index=0; index<this.definition.length; index++)
+	{
+		result[this.definition[index].name] = this.items[itemsindex][index];
+	}
+	return result;
+}
+
+PlyElement.prototype.NbItems = function(itemsindex)
+{
+	return this.items.length;
+}
+
+//////////////////////////////////////
+// Elements collection handler
+//////////////////////////////////////
+function PlyElements()
+{
+	this.elements = [];
+	this.current = 0;
+}
+
+PlyElements.prototype.PushElement = function(name, count)
+{
+	this.elements.push(new PlyElement(name, count));
+	this.current = this.elements.length-1;
+}
+
+PlyElements.prototype.GetCurrent = function()
+{
+	if(this.current < this.elements.length)
+	{
+		return this.elements[this.current];
+	}
+	return null;
+}
+
+PlyElements.prototype.GetElement = function(name)
+{
+	for(var index=0; index<this.elements.length; index++)
+	{
+		if(this.elements[index].name == name)
+		{
+			return this.elements[index];
+		}
+	}
+	return null;
+}
+
+PlyElements.prototype.ResetCurrent = function()
+{
+	this.current = 0;
+}
+
+PlyElements.prototype.NbElements = function()
+{
+	return this.elements.length;
+}
+
+PlyElements.prototype.PushItem = function(item)
+{
+	var currentElement = null;
+	while((currentElement = this.GetCurrent()) != null && currentElement.IsFilled())
+	{
+		this.current++;
+	}
+	if(currentElement == null)
+	{
+		throw 'all the elements have been filled with items.'
+	}
+	currentElement.PushItem(item);
+}
+
+//////////////////////////////////////////
+// PLY File Loader
+//////////////////////////////////////////
 function PlyLoader(content)
 {
 	var lines = content.split('\n');
-	var index = 0;
-	var elements = [];
+	var lineindex = 0;
+	var elements = new PlyElements();
+
+	function Error(message)
+	{
+		throw 'PLY ERROR [@ line '+lineindex+'] : ' + message;
+	}
 	
 	//Firt line shoul be 'PLY'
-	if(lines.length < 2 || lines[index++].toLowerCase() != 'ply')
+	if(lines.length < 2 || lines[lineindex++].toLowerCase() != 'ply')
 	{
-		throw 'PLY ERROR : This is not a real PLY file';
+		Error('this is not a valid PLY file');
 	}
 	
 	//Second line indicates the PLY format
-	var format = lines[index++].split(' ');
+	var format = lines[lineindex++].split(' ');
 	if(format[1].toLowerCase() != 'ascii')
 	{
-		throw 'PLY ERROR : Non ASCII ply files are not supported';
+		Error('non ASCII ply files are not supported');
 	}
 	
 	//Then should be the header
 	var inHeader = true;
 	do
 	{
-		if(index >= lines.length)
+		if(lineindex >= lines.length)
 		{
-			throw 'PLY ERROR : unexpected end of file while parsing header';
+			Error('unexpected end of file while parsing header');
 		}
-		var currentLine = lines[index++].split(' ');
+		var currentLine = lines[lineindex++].split(' ');
 		switch(currentLine[0].toLowerCase())
 		{
 			case 'element':
-				elements.push({
-					name : currentLine[1].toLowerCase(),
-					count : parseInt(currentLine[2]),
-					definition : [],
-					list : []
-				});
+				if(currentLine.length == 3)
+				{
+					elements.PushElement(
+						currentLine[1].toLowerCase(), //name
+						parseInt(currentLine[2]) //count
+					);
+				}
+				else{
+					Error("element definition format error");
+				}
 				break;
 			case 'property':
-				if(elements.length == 0)
-				{
-					throw 'PLY ERROR : unexpected property at line ' + index;
+				try {
+					var currentElement = elements.GetCurrent();
+					if(currentLine)
+					{
+						if(currentLine.length>2)
+						{
+							currentElement.PushDefinitionProperty(
+								currentLine[currentLine.length-1].toLowerCase(), //name
+								currentLine[1].toLowerCase(), //type
+								(currentLine.length>3)?currentLine.slice(2,-1): null
+							);
+						}
+						else{
+							Error("property definition format error");
+						}
+					}
+					else
+					{
+						Error('unexpected property, while no element has been introduced');
+					}
 				}
-				var currentElementDefinition = elements[elements.length];
-				currentElementDefinition.push({
-					name : currentLine[2].toLowerCase(),
-					type : currentLine[1].toLowerCase()
-				});
+				catch(exception) { Error(exception); }
 				break;
 			case 'comment':
 				//ignore
@@ -54,61 +214,46 @@ function PlyLoader(content)
 				inHeader = false;
 				break;
 			default :
-				throw 'PLY ERROR : unexpected header line at line ' + index;
+				Error('unexpected header line');
 		}
 	}while(inHeader);
 	
-	if(elements.length == 0)
+	if(elements.NbElements() == 0)
 	{
-		throw 'PLY ERROR : No element definition has been found in file header';
+		Error('no element definition has been found in file header');
 	}
 	
-	var currentElementIndex = 0;
-	var currentElement = elements[0];
-	while(index<lines.length)
+	//Read PLY body content
+	elements.ResetCurrent();
+	while(lineindex<lines.length)
 	{
-		var currentItem = lines[index++].split(' ');
-		if(currentItem.length != currentElement.definition.length)
+		var line = lines[lineindex++].trim();
+		//ignore blank lines
+		if(line != "")
 		{
-			throw 'PLY ERROR : inconsistent element at line '+index+' (expecting '+currentElement.definition.length+' properties for element '+currentElementIndex+', found '+currentItem.length+')';
-		}
-		if(currentElement.list.length==currentElement.count)
-		{
-			if(currentElementIndex >= elements.length)
-			{
-				throw 'PLY ERROR : too many elements regarding header definition (starting from line '+index+')';
+			var currentItem = line.split(' ');
+			try {
+				elements.PushItem(currentItem);
 			}
-			currentElement = elements[currentElementIndex++];
+			catch( exception ) { Error(exception); }
 		}
 	}
 	
+	//Build the resulting object
 	var result = null;
-	for(var index=0; index<elements.length; index++)
+	var vertices = elements.GetElement('vertex');
+	if(vertices)
 	{
-		if(element.name == 'vertex')
+		result = new PointCloud();
+		//Load point cloud from vertices list
+		for(var index=0; index<vertices.NbItems(); index++)
 		{
-			result = new PointCloud();
-			
-			//Load vertex definition
-			var definition = {};
-			for(var cursor = 0; cursor<element.defintion.length; cursor++)
-			{
-				defintion[element.defintion[cursor]] = cursor;
-			}
-			if(!('x' in definition) || !('y' in definition) || !('z' in definition))
-			{
-				throw 'PLY ERROR : incomplete defintion of vertex element';
-			}
-			
-			//Load point cloud from vertices list
-			for(var cursor = 0; cursor<element.list.length; cursor++)
-			{
-				result.PushPoint(new Vector([
-					element.list[cursor][definition.x],
-					element.list[cursor][definition.y],
-					element.list[cursor][definition.z]
-				]));
-			}
+			var vertex = vertices.GetItem(index);
+			result.PushPoint(new Vector([
+				vertex.x,
+				vertex.y,
+				vertex.z
+			]));
 		}
 	}
 	

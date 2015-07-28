@@ -34,8 +34,9 @@ PointCloud.prototype.GetBoundingBox = function()
 	return new BoundingBox(new Vector([0, 0, 0]), new Vector([0, 0, 0]));
 }
 
-PointCloud.prototype.Draw = function(unitShape, drawingContext)
+PointCloud.prototype.Draw = function(drawingContext)
 {
+	var glContext = drawingContext.gl;
 	if(!this.glPointsBuffer)
 	{
 		this.glPointsBuffer = glContext.createBuffer();

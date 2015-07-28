@@ -148,7 +148,17 @@ function DataHandler(dataWindow, updateCallback)
 		containerRow.appendChild(containerCell);
 		containerCell.appendChild(createCombo);
 		
-		var openButton = FileOpener('Open', function(value) {alert(value)});
+		var openButton = FileOpener('Open', function(createdObject) {
+			if(createdObject != null)
+			{
+				scene.objects.push(createdObject);
+				dataHandler.currentItem = createdObject;
+				if(dataHandler.updateCallback != null)
+				{
+					dataHandler.updateCallback();
+				}
+			}
+		});
 		var containerCell = document.createElement('td');
 		containerRow.appendChild(containerCell);
 		containerCell.appendChild(openButton);
