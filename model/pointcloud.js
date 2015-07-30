@@ -30,28 +30,30 @@ PointCloud.prototype.GetBoundingBox = function()
 	return this.boundingbox;
 }
 
-PointCloud.prototype.Draw = function(drawingContext)
+PointCloud.prototype.PrepareRendering = function(drawingContext)
 {
-	var glContext = drawingContext.gl;
-	drawingContext.EnableNormals(false);
-	
 	var shapetransform = IdentityMatrix(4);
-	glContext.uniformMatrix4fv(drawingContext.shapetransform, glContext.FALSE, new Float32Array(shapetransform.values));
-	
-	this.material.InitializeLightingModel(drawingContext);
+	drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
 	
 	if(!this.glPointsBuffer)
 	{
-		this.glPointsBuffer = glContext.createBuffer();
-		glContext.bindBuffer(glContext.ARRAY_BUFFER, this.glPointsBuffer);
-		glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(this.points), glContext.STATIC_DRAW);
+		this.glPointsBuffer = drawingContext.gl.createBuffer();
+		drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, this.glPointsBuffer);
+		drawingContext.gl.bufferData(drawingContext.gl.ARRAY_BUFFER, new Float32Array(this.points), drawingContext.gl.STATIC_DRAW);
 	}
+	drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, this.glPointsBuffer);
+	drawingContext.gl.vertexAttribPointer(drawingContext.points, 3, drawingContext.gl.FLOAT, false, 0, 0);
+}
+
+PointCloud.prototype.Draw = function(drawingContext)
+{
+	drawingContext.EnableNormals(false);
 	
-	glContext.bindBuffer(glContext.ARRAY_BUFFER, this.glPointsBuffer);
-	glContext.vertexAttribPointer(drawingContext.points, 3, drawingContext.gl.FLOAT, false, 0, 0);
-	glContext.drawArrays(drawingContext.gl.POINTS, 0, this.points.length/3);
+	this.material.InitializeLightingModel(drawingContext);
 	
-	drawingContext.EnableNormals(true);
+	this.PrepareRendering(drawingContext);
+	
+	drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.points.length/3);
 	
 	if(this.selected)
 	{

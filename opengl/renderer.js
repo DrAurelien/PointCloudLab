@@ -51,6 +51,7 @@ function Renderer(renderingArea, refreshCallback)
 			this.gl = this.renderingArea.getContext("webgl") || this.renderingArea.getContext("experimental-webgl");
 			this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 			this.gl.enable(this.gl.DEPTH_TEST);
+			this.gl.disable(this.gl.CULL_FACE);
 			this.gl.depthFunc(this.gl.LEQUAL);
 			
 			console.log('Inititalizing gl sharders');

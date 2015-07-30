@@ -4,6 +4,7 @@ var Intentifiers =
 	Sphere : 1,
 	Cylinder : 1,
 	PointCloud : 1,
+	Mesh : 1,
 	GetIdentifier : function(primitive)
 	{
 		for(var identifier in this)

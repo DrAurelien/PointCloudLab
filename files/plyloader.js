@@ -26,6 +26,73 @@ PlyElement.prototype.PushDefinitionProperty = function(name, type, params)
 		params : params});
 }
 
+PlyElement.prototype.CastValue = function(value, defIndex)
+{
+	var type = this.definition[defIndex].type;
+	if(type == 'list')
+	{
+		type = this.definition[defIndex].params[1];
+	}
+	switch(type)
+	{
+		case 'float':
+			return parseFloat(value);
+			break;
+		case 'int':
+			return parseInt(value);
+			break;
+		default:
+			return value;
+	}
+}
+
+PlyElement.prototype.PrepareItem = function(item)
+{
+	var itemIndex = 0;
+	var storedItem = {};
+	for(var index=0; storedItem!= null && index<this.definition.length; index++)
+	{
+		if(itemIndex<item.length)
+		{
+			if(this.definition[index].type == 'list')
+			{
+				var length = parseInt(item[itemIndex++]);
+				if(itemIndex+length<=item.length)
+				{
+					var values = new Array(length);
+					for(var cursor = 0; cursor<length; cursor++)
+					{
+						values[cursor] = this.CastValue(item[itemIndex++], index)
+					}
+					storedItem[this.definition[index].name] = values;
+				}
+				else
+				{
+					storedItem = null;
+				}
+			}
+			else
+			{
+				storedItem[this.definition[index].name] = this.CastValue(item[itemIndex++], index);
+			}
+		}
+		else
+		{
+			storedItem = null;
+		}
+	}
+	if(itemIndex != item.length)
+	{
+			storedItem = null;
+	}
+	
+	if(storedItem == null)
+	{
+		throw 'inconsistent item : expecting ' + itemIndex + ' properties for element \"' + this.name + '\", found '+item.length;	
+	}
+	
+	return storedItem;
+}
 
 PlyElement.prototype.PushItem = function(item)
 {
@@ -37,50 +104,7 @@ PlyElement.prototype.PushItem = function(item)
 		throw 'no definition provided for element \"' + this.name + '\"';
 	}
 	
-	//Check item consistency with respect to element defintion
-	if(this.definition[0].type == 'list')
-	{
-		expected = item[0];
-		found = item.length-1;
-		item = item.slice(1, item.length);
-	}
-	else
-	{
-		expected = this.definition.length;
-		found = item.length;
-	}
-	
-	if(expected != found)
-	{
-		throw 'inconsistent item : expecting ' + expected + ' properties for element \"' + this.name + '\", found '+found;	
-	}
-	
-	//cast objects to their target type
-	var defIndex = 0;
-	for(var index=0; index<expected; index++)
-	{
-		var type = this.definition[defIndex].type;
-		if(type== 'list')
-		{
-			type = this.definition[defIndex].params[1];
-		}
-		else
-		{
-			defIndex++;
-		}
-		switch(type)
-		{
-			case 'float':
-				item[index] = parseFloat(item[index]);
-				break;
-			case 'int':
-				item[index] = parseInt(item[index]);
-				break;
-			default:
-				break;
-		}
-	}
-	this.items.push(item);
+	this.items.push(this.PrepareItem(item));
 }
 
 PlyElement.prototype.IsFilled = function()
@@ -88,14 +112,9 @@ PlyElement.prototype.IsFilled = function()
 	return (this.count == this.items.length);
 }
 
-PlyElement.prototype.GetItem = function(itemsindex)
+PlyElement.prototype.GetItem = function(index)
 {
-	var result = {};
-	for(var index=0; index<this.definition.length; index++)
-	{
-		result[this.definition[index].name] = this.items[itemsindex][index];
-	}
-	return result;
+	return this.items[index];
 }
 
 PlyElement.prototype.NbItems = function(itemsindex)
@@ -284,6 +303,23 @@ function PlyLoader(content)
 				vertex.y,
 				vertex.z
 			]));
+		}
+	}
+	
+	var faces = elements.GetElement('face');
+	if(faces)
+	{
+		if(!result)
+		{
+			Error("faces defined without vertices");
+		}
+		result = new Mesh(result);
+		
+		//Load mesh from faces list
+		for(var index=0; index<faces.NbItems(); index++)
+		{
+			var face = faces.GetItem(index);
+			result.PushFace(face.vertex_indices);
 		}
 	}
 	
