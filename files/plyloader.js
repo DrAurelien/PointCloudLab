@@ -321,6 +321,8 @@ function PlyLoader(content)
 			var face = faces.GetItem(index);
 			result.PushFace(face.vertex_indices);
 		}
+		
+		result.ComputeNormals();
 	}
 	
 	return result;
