@@ -44,26 +44,65 @@ Mesh.prototype.ComputeNormals = function()
 	var nbFaces = this.Size();
 	var nbPoints = this.pointcloud.Size();
 	var normals = new Array(nbPoints);
-	for(var index=0; index<nbPoints; index++)
+	var self = this;
+	
+	function Initialize()
 	{
-		normals[index] = new Vector([0, 0, 0]);
+		var index = 0;
+		LongProcess('Initializing normals (step 1 / 3)',
+			function()
+			{
+				if(index>=nbPoints)
+				{
+					return null;
+				}
+				normals[index++] = new Vector([0, 0, 0]);
+				return {current : index, total : nbPoints};
+			},
+			Compute
+		);
 	}
 	
-	for(var index=0; index<nbFaces; index++)
+	function Compute()
 	{
-		var face = this.GetFace(index);
-		var normal = face.points[1].Minus(face.points[0]).Cross(face.points[2].Minus(face.points[0])).Normalized();
-		for(var pointindex=0; pointindex<face.indices.length; pointindex++)
-		{
-			normals[face.indices[pointindex]] = normals[face.indices[pointindex]].Plus(normal);
-		}
+		var index = 0;
+		LongProcess('Computing normals (step 2 / 3)',
+			function()
+			{
+				if(index>=nbFaces)
+				{
+					return null;
+				}
+				var face = self.GetFace(index++);
+				var normal = face.points[1].Minus(face.points[0]).Cross(face.points[2].Minus(face.points[0])).Normalized();
+				for(var pointindex=0; pointindex<face.indices.length; pointindex++)
+				{
+					normals[face.indices[pointindex]] = normals[face.indices[pointindex]].Plus(normal);
+				}
+				return {current : index, total : nbFaces};
+			},
+			FillPointCloud
+		);
 	}
 	
-	this.pointcloud.ClearNormals();
-	for(var index=0; index<nbPoints; index++)
+	function FillPointCloud()
 	{
-		this.pointcloud.PushNormal(normals[index].Normalized());
+		var index = 0;
+		self.pointcloud.ClearNormals();
+		LongProcess('Assigning normals (step 3 / 3)',
+			function()
+			{
+				if(index>=nbPoints)
+				{
+					return null;
+				}
+				self.pointcloud.PushNormal(normals[index++].Normalized());
+				return {current : index, total : nbPoints};
+			}
+		);
 	}
+	
+	Initialize();
 }
 
 Mesh.prototype.GetBoundingBox = function()

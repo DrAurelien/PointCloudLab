@@ -187,23 +187,27 @@ PlyElements.prototype.PushItem = function(item)
 //////////////////////////////////////////
 function PlyLoader(content)
 {
-	var lines = content.split('\n');
-	var lineindex = 0;
-	var elements = new PlyElements();
+	this.lines = content.split('\n');
+	this.lineindex = 0;
+	this.elements = new PlyElements();
+	this.result = null;
+}
 
+PlyLoader.prototype.Load = function(onloaded)
+{	
 	function Error(message)
 	{
-		throw 'PLY ERROR [@ line '+lineindex+'] : ' + message;
+		throw 'PLY ERROR [@ line '+this.lineindex+'] : ' + message;
 	}
 	
 	//Firt line shoul be 'PLY'
-	if(lines.length < 2 || lines[lineindex++].toLowerCase() != 'ply')
+	if(this.lines.length < 2 || this.lines[this.lineindex++].toLowerCase() != 'ply')
 	{
 		Error('this is not a valid PLY file');
 	}
 	
 	//Second line indicates the PLY format
-	var format = lines[lineindex++].split(' ');
+	var format = this.lines[this.lineindex++].split(' ');
 	if(format[1].toLowerCase() != 'ascii')
 	{
 		Error('non ASCII ply files are not supported');
@@ -213,17 +217,17 @@ function PlyLoader(content)
 	var inHeader = true;
 	do
 	{
-		if(lineindex >= lines.length)
+		if(this.lineindex >= this.lines.length)
 		{
 			Error('unexpected end of file while parsing header');
 		}
-		var currentLine = lines[lineindex++].split(' ');
+		var currentLine = this.lines[this.lineindex++].split(' ');
 		switch(currentLine[0].toLowerCase())
 		{
 			case 'element':
 				if(currentLine.length == 3)
 				{
-					elements.PushElement(
+					this.elements.PushElement(
 						currentLine[1].toLowerCase(), //name
 						parseInt(currentLine[2]) //count
 					);
@@ -234,7 +238,7 @@ function PlyLoader(content)
 				break;
 			case 'property':
 				try {
-					var currentElement = elements.GetCurrent();
+					var currentElement = this.elements.GetCurrent();
 					if(currentLine)
 					{
 						if(currentLine.length>2)
@@ -267,63 +271,102 @@ function PlyLoader(content)
 		}
 	}while(inHeader);
 	
-	if(elements.NbElements() == 0)
+	if(this.elements.NbElements() == 0)
 	{
 		Error('no element definition has been found in file header');
 	}
 	
 	//Read PLY body content
-	elements.ResetCurrent();
-	while(lineindex<lines.length)
+	
+	var self = this;
+	function LoadItems()
 	{
-		var line = lines[lineindex++].trim();
-		//ignore blank lines
+		if(self.lineindex>=self.lines.length)
+		{
+			return null;
+		}
+		var line = self.lines[self.lineindex++].trim();
+		//ignore blank this.lines
 		if(line != "")
 		{
 			var currentItem = line.split(' ');
 			try {
-				elements.PushItem(currentItem);
+				self.elements.PushItem(currentItem);
 			}
 			catch( exception ) { Error(exception); }
 		}
-	}
-	
-	//Build the resulting object
-	var result = null;
-	var vertices = elements.GetElement('vertex');
-	if(vertices)
-	{
-		result = new PointCloud();
-		//Load point cloud from vertices list
-		for(var index=0; index<vertices.NbItems(); index++)
-		{
-			var vertex = vertices.GetItem(index);
-			result.PushPoint(new Vector([
-				vertex.x,
-				vertex.y,
-				vertex.z
-			]));
-		}
-	}
-	
-	var faces = elements.GetElement('face');
-	if(faces)
-	{
-		if(!result)
-		{
-			Error("faces defined without vertices");
-		}
-		result = new Mesh(result);
 		
-		//Load mesh from faces list
-		for(var index=0; index<faces.NbItems(); index++)
-		{
-			var face = faces.GetItem(index);
-			result.PushFace(face.vertex_indices);
-		}
-		
-		result.ComputeNormals();
+		return {current : self.lineindex, total : self.lines.length};
 	}
-	
-	return result;
+
+	function ComputeNormals()
+	{
+		self.result.ComputeNormals();
+		if(onloaded)
+		{
+			onloaded();
+		}
+	}
+
+	function BuildMesh()
+	{
+		var faces = self.elements.GetElement('face');
+		if(faces)
+		{
+			if(!self.result)
+			{
+				Error("faces defined without vertices");
+			}
+			self.result = new Mesh(self.result);
+			var index=0;
+			
+			//Load mesh faces from faces list
+			function PushFace()
+			{
+				if(index>=faces.NbItems())
+				{
+					return null;
+				}
+				var face = faces.GetItem(index++);
+				self.result.PushFace(face.vertex_indices);
+				
+				return {current : index, total : faces.NbItems()};
+			}
+			
+			LongProcess('Loading PLY mesh (step 3/3)', PushFace, ComputeNormals);
+		}
+	}
+
+	function BuildCloud()
+	{
+		var vertices = self.elements.GetElement('vertex');
+		if(vertices)
+		{
+			self.result = new PointCloud();
+			var index = 0;
+			
+			//Load point cloud from vertices list
+			function PushVertex()
+			{
+				if(index>=vertices.NbItems())
+				{
+					return null;
+				}
+				
+				var vertex = vertices.GetItem(index++);
+				self.result.PushPoint(new Vector([
+					vertex.x,
+					vertex.y,
+					vertex.z
+				]));
+				
+				return {current : index, total : vertices.NbItems()};
+			}
+			
+			LongProcess('Loading PLY vertices (step 2 / 3)', PushVertex, BuildMesh);
+		}
+	}
+
+	this.elements.ResetCurrent();
+	LongProcess('Parsing PLY content (step 1 / 3)', LoadItems, BuildCloud);
 }

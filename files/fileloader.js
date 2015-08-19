@@ -2,9 +2,13 @@ function LoadFile(file, loadedcallback)
 {
 	if (file) {
 		var extension = file.name.split('.').pop();
-		
+		var progress = new ProgressBar();
 		var reader = new FileReader();
+		
 		reader.onloadend = function(event) {
+			
+			progress.Delete();
+			
 			event = event || window.event;
 			var fileContent = event.target.result;
 			switch(extension)
@@ -13,7 +17,12 @@ function LoadFile(file, loadedcallback)
 				case 'ply':
 					if(fileContent)
 					{
-						loadedcallback(PlyLoader(fileContent));
+						loader = new PlyLoader(fileContent);
+						function ResultCallback()
+						{
+							loadedcallback(loader.result);
+						}
+						loader.Load(ResultCallback);
 					}
 					break;
 				default:
@@ -21,6 +30,14 @@ function LoadFile(file, loadedcallback)
 					break;
 			}
 		}
+		
+		reader.onprogress = function(event)
+		{
+			progress.Update(event.loaded, event.total);
+		}
+		
+		progress.Show();
+		progress.SetMessage('Loading file : ' + file.name);
 		reader.readAsText(file);
 	}
 }
