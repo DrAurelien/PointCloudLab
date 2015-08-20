@@ -2,6 +2,7 @@ function Mesh(cloud)
 {
 	this.pointcloud = cloud;
 	this.faces = [];
+	this.size = 0;
 	this.boundingbox = new BoundingBox();
 	this.glIndexBuffer = null;
 	CADPrimitive.call(this, 'Mesh');
@@ -13,7 +14,31 @@ Mesh.prototype.constructor = Mesh;
 
 Mesh.prototype.PushFace = function(f)
 {
-	this.faces = this.faces.concat(f);
+	if(f.length != 3)
+	{
+		throw 'Non triangular faces are not (yet) supported in meshes';
+	}
+	
+	if(this.size + f.length > this.faces.length)
+	{
+		//Not optimal (Reserve should be called before callin PushFace)
+		this.Reserve(this.faces.length + f.length);
+	}
+	
+	for(index=0; index<f.length; index++)
+	{
+		this.faces[this.size++] = f[index];
+	}
+}
+
+Mesh.prototype.Reserve = function(capacity)
+{
+	var faces = new Array(3*capacity);
+	for(var index=0; index<this.size; index++)
+	{
+		faces[index] = this.faces[index];
+	}
+	this.faces = faces;
 }
 
 Mesh.prototype.GetFace = function(i)
@@ -36,7 +61,7 @@ Mesh.prototype.GetFace = function(i)
 
 Mesh.prototype.Size = function()
 {
-	return this.faces.length / 3;
+	return this.size / 3;
 }
 
 Mesh.prototype.ComputeNormals = function()
@@ -137,7 +162,7 @@ Mesh.prototype.Draw = function(drawingContext)
 	//Surface rendering
 	if(drawingContext.rendering.Surface())
 	{
-		drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.faces.length, drawingContext.gl.UNSIGNED_SHORT, 0);
+		drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.gl.UNSIGNED_SHORT, 0);
 	}
 	
 	if(this.selected)

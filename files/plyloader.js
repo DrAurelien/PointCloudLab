@@ -318,6 +318,7 @@ PlyLoader.prototype.Load = function(onloaded)
 				Error("faces defined without vertices");
 			}
 			self.result = new Mesh(self.result);
+			self.result.Reserve(faces.NbItems());
 			var index=0;
 			
 			//Load mesh faces from faces list
@@ -343,6 +344,7 @@ PlyLoader.prototype.Load = function(onloaded)
 		if(vertices)
 		{
 			self.result = new PointCloud();
+			self.result.Reserve(vertices.NbItems());
 			var index = 0;
 			
 			//Load point cloud from vertices list

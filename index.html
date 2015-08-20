@@ -56,7 +56,8 @@
 				 lightingCoef = ( AmbiantCoef +
 					max(DiffuseCoef * dot(Normal, lightVect), 0.0) +
 					max(SpecularCoef * pow(dot(eyeVect, reflVec), GlossyPow), 0.0)
-					) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
+					//) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
+					) / 3.0;
 			}
 			gl_FragColor = vec4(Color * lightingCoef, 1);
 		}
