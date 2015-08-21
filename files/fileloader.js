@@ -38,6 +38,6 @@ function LoadFile(file, loadedcallback)
 		
 		progress.Show();
 		progress.SetMessage('Loading file : ' + file.name);
-		reader.readAsText(file);
+		reader.readAsArrayBuffer(file);
 	}
 }

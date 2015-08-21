@@ -26,75 +26,77 @@ PlyElement.prototype.PushDefinitionProperty = function(name, type, params)
 		params : params});
 }
 
-PlyElement.prototype.CastValue = function(value, defIndex)
+PlyElement.prototype.GetNextValue = function(reader, format, type)
 {
-	var type = this.definition[defIndex].type;
-	if(type == 'list')
+	if(reader.Eof())
 	{
-		type = this.definition[defIndex].params[1];
+		throw 'reached end of file while parsing PLY items';
 	}
-	switch(type)
+	
+	switch(format)
 	{
-		case 'float':
-			return parseFloat(value);
+		case 'ascii':
+		{
+			var value = reader.GetAsciiWord(true);
+			if(value == '')
+			{
+				throw 'reached end of line while parsing PLY item (incomplete item specification with regard to defintion of '+this.name+')';
+			}
+			switch(type)
+			{
+				case 'uchar':
+				case 'int':
+					return parseInt(value);
+				case 'float':
+					return parseFloat(value);
+			}
 			break;
-		case 'int':
-			return parseInt(value);
+		}
+		case 'binary':
+		{
+			switch(type)
+			{
+				case 'uchar':
+				case 'uint8':
+					return reader.GetNextUInt8();
+				case 'int':
+				case 'int32':
+					return reader.GetNextInt32();
+				case 'float':
+				case 'float32':
+					return reader.GetNextFloat32();
+			}
 			break;
-		default:
-			return value;
+		}
 	}
+	return null;
 }
 
-PlyElement.prototype.PrepareItem = function(item)
+PlyElement.prototype.ParseItem = function(reader, format)
 {
-	var itemIndex = 0;
 	var storedItem = {};
-	for(var index=0; storedItem!= null && index<this.definition.length; index++)
+	for(var index=0; index<this.definition.length; index++)
 	{
-		if(itemIndex<item.length)
+		if(this.definition[index].type == 'list')
 		{
-			if(this.definition[index].type == 'list')
+			var length = this.GetNextValue(reader, format, this.definition[index].params[0]);
+			var values = new Array(length);
+			for(var cursor = 0; cursor<length; cursor++)
 			{
-				var length = parseInt(item[itemIndex++]);
-				if(itemIndex+length<=item.length)
-				{
-					var values = new Array(length);
-					for(var cursor = 0; cursor<length; cursor++)
-					{
-						values[cursor] = this.CastValue(item[itemIndex++], index)
-					}
-					storedItem[this.definition[index].name] = values;
-				}
-				else
-				{
-					storedItem = null;
-				}
+				values[cursor] = this.GetNextValue(reader, format, this.definition[index].params[1]);
 			}
-			else
-			{
-				storedItem[this.definition[index].name] = this.CastValue(item[itemIndex++], index);
-			}
+			storedItem[this.definition[index].name] = values;
 		}
 		else
 		{
-			storedItem = null;
+			storedItem[this.definition[index].name] = this.GetNextValue(reader, format, this.definition[index].type);
 		}
 	}
-	if(itemIndex != item.length)
-	{
-			storedItem = null;
-	}
-	
-	if(storedItem == null)
-	{
-		throw 'inconsistent item : expecting ' + itemIndex + ' properties for element \"' + this.name + '\", found '+item.length;	
-	}
-	
+
 	return storedItem;
 }
 
-PlyElement.prototype.PushItem = function(item)
+PlyElement.prototype.PushItem = function(reader, format)
 {
 	var expected;
 	var found;
@@ -104,7 +106,14 @@ PlyElement.prototype.PushItem = function(item)
 		throw 'no definition provided for element \"' + this.name + '\"';
 	}
 	
-	this.items.push(this.PrepareItem(item));
+	this.items.push(this.ParseItem(reader, format));
+	if(format == 'ascii')
+	{
+		while(!reader.Eof() && reader.GetCurrentAsciiChar() == '\n')
+		{
+			reader.GetNextAsciiChar();
+		}
+	}
 }
 
 PlyElement.prototype.IsFilled = function()
@@ -168,7 +177,7 @@ PlyElements.prototype.NbElements = function()
 	return this.elements.length;
 }
 
-PlyElements.prototype.PushItem = function(item)
+PlyElements.prototype.PushItem = function(reader, format)
 {
 	var currentElement = null;
 	while((currentElement = this.GetCurrent()) != null && currentElement.IsFilled())
@@ -179,7 +188,7 @@ PlyElements.prototype.PushItem = function(item)
 	{
 		throw 'all the elements have been filled with items.'
 	}
-	currentElement.PushItem(item);
+	currentElement.PushItem(reader, format);
 }
 
 //////////////////////////////////////////
@@ -187,8 +196,7 @@ PlyElements.prototype.PushItem = function(item)
 //////////////////////////////////////////
 function PlyLoader(content)
 {
-	this.lines = content.split('\n');
-	this.lineindex = 0;
+	this.reader = new BinaryReader(content);
 	this.elements = new PlyElements();
 	this.result = null;
 }
@@ -197,31 +205,56 @@ PlyLoader.prototype.Load = function(onloaded)
 {	
 	function Error(message)
 	{
-		throw 'PLY ERROR [@ line '+this.lineindex+'] : ' + message;
+		throw 'PLY ERROR : ' + message;
 	}
 	
 	//Firt line shoul be 'PLY'
-	if(this.lines.length < 2 || this.lines[this.lineindex++].toLowerCase() != 'ply')
+	if(this.reader.Eof() || this.reader.GetAsciiLine().toLowerCase() != 'ply')
 	{
-		Error('this is not a valid PLY file');
+		Error('this is not a valid PLY file (line 1)');
 	}
 	
 	//Second line indicates the PLY format
-	var format = this.lines[this.lineindex++].split(' ');
-	if(format[1].toLowerCase() != 'ascii')
+	if(!this.reader.Eof())
 	{
-		Error('non ASCII ply files are not supported');
+		var format = this.reader.GetAsciiLine().split(' ');
+		if(format.length == 3 || format[0].toLowerCase() != 'format')
+		{
+			format = format[1].toLowerCase();
+			if(format == 'binary_big_endian')
+			{
+				format = 'binary';
+				this.reader.endianness = Endianness.BigEndian;
+			}
+			else if(format == 'binary_little_endian')
+			{
+				format = 'binary';
+				this.reader.endianness = Endianness.LittleEndian;
+			}
+			else if(format != 'ascii')
+			{
+				Error('unsuported PLY format "' + format + '" (line 2)');
+			}
+		}
+		else
+		{
+			Error('invalid ply format specification (line 2)');
+		}
+	}
+	else
+	{
+		Error('this is not a valid PLY file (line 2)');
 	}
 	
 	//Then should be the header
 	var inHeader = true;
 	do
 	{
-		if(this.lineindex >= this.lines.length)
+		if(this.reader.Eof())
 		{
 			Error('unexpected end of file while parsing header');
 		}
-		var currentLine = this.lines[this.lineindex++].split(' ');
+		var currentLine = this.reader.GetAsciiLine().split(' ');
 		switch(currentLine[0].toLowerCase())
 		{
 			case 'element':
@@ -277,26 +310,20 @@ PlyLoader.prototype.Load = function(onloaded)
 	}
 	
 	//Read PLY body content
-	
 	var self = this;
 	function LoadItems()
 	{
-		if(self.lineindex>=self.lines.length)
+		if(self.reader.Eof())
 		{
 			return null;
 		}
-		var line = self.lines[self.lineindex++].trim();
-		//ignore blank this.lines
-		if(line != "")
-		{
-			var currentItem = line.split(' ');
-			try {
-				self.elements.PushItem(currentItem);
-			}
-			catch( exception ) { Error(exception); }
-		}
 		
-		return {current : self.lineindex, total : self.lines.length};
+		try {
+			self.elements.PushItem(self.reader, format);
+		}
+		catch( exception ) { Error(exception); }
+		
+		return {current : self.reader.cursor, total : self.reader.stream.length};
 	}
 
 	function ComputeNormals()
