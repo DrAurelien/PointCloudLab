@@ -32,7 +32,10 @@ function ComboBox(label, options)
 						//Call the functino
 						self.callbackFunction();
 						//Close the popup
-						self.popup.parentNode.removeChild(self.popup);
+						if(self.popup.parentNode)
+						{
+							self.popup.parentNode.removeChild(self.popup);
+						}
 					}
 				}
 			}
