@@ -124,6 +124,8 @@ function DataHandler(dataWindow, updateCallback)
 						case 'Cylinder' :
 							createdObject = new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1);
 							break;
+						case 'Torus' :
+							createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1);
 						default : break;
 					}
 					
@@ -141,7 +143,8 @@ function DataHandler(dataWindow, updateCallback)
 		var createCombo = ComboBox('New',
 		[
 			CreateItem('Sphere'),
-			CreateItem('Cylinder')
+			CreateItem('Cylinder'),
+			CreateItem('Torus')
 		]);
 		
 		var containerCell = document.createElement('td');

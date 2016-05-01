@@ -192,17 +192,7 @@ Cylinder.prototype.GetWorldToInnerBaseMatrix = function()
 {
 	var translation = IdentityMatrix(4);
 	var basechange = IdentityMatrix(4);
-	var mindir = 0;
-	for(var index=0; index<3; index++)
-	{
-		if(Math.abs(this.axis.Get(index))<Math.abs(this.axis.Get(mindir)))
-		{
-			mindir = index;
-		}
-	}
-	var xx = new Vector([0.0, 0.0, 0.0]);
-	xx.Set(mindir, 1.0);
-	xx = this.axis.Cross(xx).Normalized();
+	var xx = this.axis.GetOrthogonnal();
 	var yy = this.axis.Cross(xx).Normalized();
 	for(var index=0; index<3; index++)
 	{

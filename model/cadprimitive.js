@@ -1,10 +1,6 @@
 // Object handling CADPrimitives identifers reservation, so that each new CADPrimitive has a unic identifier
-var Intentifiers = 
+var Identifiers = 
 {
-	Sphere : 1,
-	Cylinder : 1,
-	PointCloud : 1,
-	Mesh : 1,
 	GetIdentifier : function(primitive)
 	{
 		for(var identifier in this)
@@ -16,14 +12,15 @@ var Intentifiers =
 				return primitive;
 			}
 		}
-		throw 'Cannot generate identifier for CADPrimitive "'+identifier+'"';
+		this[primitive] = 1;
+		return primitive+"-"+this[primitive];
 	}
 }
 
 //CADPrimitive class
 function CADPrimitive(primitive)
 {
-	this.name = Intentifiers.GetIdentifier(primitive);
+	this.name = Identifiers.GetIdentifier(primitive);
 	this.material = new Material([0.3, 0.75, 0.3]);
 	this.selected = false;
 	this.visible = true;

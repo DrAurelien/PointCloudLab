@@ -97,6 +97,24 @@ Vector.prototype.Cross = function(v)
 	]);
 }
 
+//Returns a vector orthogonnal to this one
+Vector.prototype.GetOrthogonnal = function()
+{
+	var mindir = 0;
+	var coords = [];
+	for(var index=0; index<this.coordinates.length; index++)
+	{
+		if(Math.abs(this.coordinates[index])<Math.abs(this.coordinates[mindir]))
+		{
+			mindir = index;
+		}
+		coords.push(0.0);
+	}
+	var tmp = new Vector(coords);
+	tmp.Set(mindir, 1.0);
+	return this.Cross(tmp).Normalized();
+}
+
 //Comptute squared norm
 Vector.prototype.SqrNorm = function()
 {
