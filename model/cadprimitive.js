@@ -3,16 +3,14 @@ var Identifiers =
 {
 	GetIdentifier : function(primitive)
 	{
-		for(var identifier in this)
+		if(primitive in this)
 		{
-			if(identifier == primitive)
-			{
-				primitive += "-"+this[identifier];
-				this[identifier]++;
-				return primitive;
-			}
+			this[primitive]++;
 		}
-		this[primitive] = 1;
+		else
+		{
+			this[primitive] = 1;
+		}
 		return primitive+"-"+this[primitive];
 	}
 }
