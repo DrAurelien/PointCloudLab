@@ -119,13 +119,11 @@ Torus.prototype.Draw = function(drawingContext)
 
 Torus.prototype.GetBoundingBox = function()
 {
-	var projx = new Vector([this.axis.Get(0), this.axis.Get(2)]).Normalized();
-	var projy = new Vector([this.axis.Get(1), this.axis.Get(2)]).Normalized();
-	var projz = new Vector([this.axis.Get(0), this.axis.Get(1)]);
+	var proj = new Vector([this.axis.Get(0), this.axis.Get(1)]);
 	var size = new Vector([
-		projx.Get(1)*this.greatRadius+this.smallRadius,
-		projy.Get(1)*this.greatRadius+this.smallRadius,
-		projz.Norm()*this.greatRadius+this.smallRadius
+		Math.sqrt(1-(this.axis.Get(0)*this.axis.Get(0)))*this.greatRadius+this.smallRadius,
+		Math.sqrt(1-(this.axis.Get(1)*this.axis.Get(1)))*this.greatRadius+this.smallRadius,
+		proj.Norm()*this.greatRadius+this.smallRadius
 	]);
 	var bb = new BoundingBox();
 	bb.Set(this.center, size.Times(2.0));
