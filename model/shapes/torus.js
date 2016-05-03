@@ -84,19 +84,22 @@ Torus.prototype.ComputeMesh = function(sampling)
 		this.mesh.Reserve(2 * sampling * sampling);
 		for(var ii=0; ii<sampling; ii++)
 		{
+			var ia = ii*sampling;
+			var ib = ((ii+1)%sampling)*sampling;
 			for(var jj=0; jj<sampling; jj++)
 			{
-				this.mesh.PushFace([
-				((ii+1)%sampling)*sampling +jj,
-					ii*sampling + ((jj+1)%sampling),
-					ii*sampling + jj
-				]);
-				
-				this.mesh.PushFace([
-					((ii+1)%sampling)*sampling + ((jj+1)%sampling),
-					((ii+1)%sampling)*sampling + jj,
-					ii*sampling + ((jj+1)%sampling)
-				]);
+				var ja = jj;
+				var jb = ((jj+1)%sampling);
+				//            [ia]        [ib]
+				//   [ja] ---- aa -------- ba
+				//             |           |
+				//   [jb] ---- ab -------- bb
+				var aa = ia + ja;
+				var ab = ia + jb;s
+				var bb = ib + jb;
+				var ba = ib + ja;
+				this.mesh.PushFace([ab, aa, ba]);
+				this.mesh.PushFace([ab, ba, bb]);
 			}
 		}
 		this.mesh.ComputeNormals();
@@ -106,24 +109,26 @@ Torus.prototype.ComputeMesh = function(sampling)
 
 Torus.prototype.Draw = function(drawingContext)
 {	
-	this.ComputeMesh(30);
+	this.ComputeMesh(drawingContext.sampling);
 	
 	if(this.mesh)
 	{
-		this.mesh.Draw(drawingContext);
+		this.DrawMesh(this.mesh, drawingContext);
 	}
 }
 
 Torus.prototype.GetBoundingBox = function()
 {
-	//TODO : improve
+	var projx = new Vector([this.axis.Get(0), this.axis.Get(2)]).Normalized();
+	var projy = new Vector([this.axis.Get(1), this.axis.Get(2)]).Normalized();
+	var projz = new Vector([this.axis.Get(0), this.axis.Get(1)]);
 	var size = new Vector([
-		this.greatRadius+this.smallRadius,
-		this.greatRadius+this.smallRadius,
-		this.greatRadius+this.smallRadius
+		projx.Get(1)*this.greatRadius+this.smallRadius,
+		projy.Get(1)*this.greatRadius+this.smallRadius,
+		projz.Norm()*this.greatRadius+this.smallRadius
 	]);
 	var bb = new BoundingBox();
-	bb.Set(this.center, size);
+	bb.Set(this.center, size.Times(2.0));
 	return bb;
 }
 

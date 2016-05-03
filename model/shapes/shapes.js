@@ -8,6 +8,22 @@ function Shape(shape)
 Shape.prototype = Object.create(CADPrimitive.prototype);
 Shape.prototype.constructor = Shape;
 
+
+Shape.prototype.DrawMesh = function(mesh, drawingContext)
+{
+	if(this.visible)
+	{
+		mesh.material = this.material;
+		mesh.Draw(drawingContext);
+		
+		if(this.selected)
+		{
+			var box = this.GetBoundingBox();
+			box.Draw(drawingContext);
+		}
+	}
+}
+
 Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 {
 	if(this.visible)
