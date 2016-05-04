@@ -367,6 +367,7 @@ function Renderer(renderingArea, refreshCallback)
 						renderer.camera.Rotate(dx, dy);
 						break;
 					case 2: //Middle mouse
+						renderer.camera.Zoom(dy/10);
 						break;
 					case 3: //Right mouse
 						renderer.camera.Pan(dx, dy);
