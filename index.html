@@ -55,7 +55,7 @@
 				
 				 lightingCoef = ( AmbiantCoef +
 					max(DiffuseCoef * dot(Normal, lightVect), 0.0) +
-					max(SpecularCoef * pow(dot(eyeVect, reflVec), GlossyPow), 0.0)
+					SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow)
 					//) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
 					) / 3.0;
 			}
