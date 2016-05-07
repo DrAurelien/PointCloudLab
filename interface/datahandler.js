@@ -115,30 +115,36 @@ function DataHandler(dataWindow, updateCallback)
 				label : objectName,
 				callback : function()
 				{
-					var createdObject = null;
+					function HandleResult(createdObject)
+					{
+						if(createdObject)
+						{
+							scene.objects.push(createdObject);
+							scene.Select(createdObject);
+							dataHandler.currentItem = createdObject;
+							if(dataHandler.updateCallback != null)
+							{
+								dataHandler.updateCallback();
+							}
+						}
+					}
+					
 					switch(objectName)
 					{
 						case 'Sphere' :
-							createdObject = new Sphere(new Vector([0, 0, 0]), 1);
+							HandleResult(new Sphere(new Vector([0, 0, 0]), 1));
 							break;
 						case 'Cylinder' :
-							createdObject = new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1);
+							HandleResult(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1));
 							break;
 						case 'Torus' :
-							createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1);
+							HandleResult(createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
 							break;
 						case 'Scan from current viewpoint':
-							createdObject = Interface.sceneRenderer.ScanFromCurrentViewPoint(scene);
+							Interface.sceneRenderer.ScanFromCurrentViewPoint(scene, HandleResult);
 							break;
-						default : break;
-					}
-					
-					scene.objects.push(createdObject);
-					scene.Select(createdObject);
-					dataHandler.currentItem = createdObject;
-					if(dataHandler.updateCallback != null)
-					{
-						dataHandler.updateCallback();
+						default :
+							break;
 					}
 				}
 			};

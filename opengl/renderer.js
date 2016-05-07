@@ -472,36 +472,65 @@ function Renderer(renderingArea, refreshCallback)
 		return null;
 	};
 	
-	this.ScanFromCurrentViewPoint = function(scene)
+	
+	this.ScanFromCurrentViewPoint = function(scene, resultHandler)
 	{
+		var self = this;
 		var resolution =
 		{
 			width : 1024,
-			height : 768
+			height : 768,
+			currenti : 0,
+			currentj : 0,
+			next : function()
+			{
+				this.currentj++;
+				if(this.currentj >= this.height)
+				{
+					this.currentj = 0;
+					this.currenti ++;
+				}
+				if(this.currenti < this.width)
+				{
+					return {
+						current : this.currenti * this.width + this.currentj,
+						total : this.width * this.height
+					};
+				}
+				return null;
+			},
+			log : function()
+			{
+				return '' + this.width + 'x' + this.height;
+			}
 		};
 		
 		var cloud = new PointCloud();
 		cloud.Reserve(resolution.width * resolution.height);
 		
-		for(var iWidth=0; iWidth<resolution.width; iWidth++)
-		{
-			for(var iHeight=0; iHeight<resolution.height; iHeight++)
+		function GenerateScanRay()
+		{			
+			var ray = self.GetRay(
+				self.camera.screen.width * (resolution.currenti / resolution.width),
+				self.camera.screen.height * (resolution.currentj / resolution.height)
+			);
+			var intersection = self.ResolveRayIntersection(ray, scene);
+			if(intersection)
 			{
-				var ray = this.GetRay(
-					this.camera.screen.width * (iWidth / resolution.width),
-					this.camera.screen.height * (iHeight / resolution.height)
-				);
-				
-				var intersection = this.ResolveRayIntersection(ray, scene);
-				
-				if(intersection)
-				{
-					var point = ray.from.Plus(ray.dir.Times(intersection.depth));
-					cloud.PushPoint(point);
-				}
+				var point = ray.from.Plus(ray.dir.Times(intersection.depth));
+				cloud.PushPoint(point);
+			}
+			return resolution.next();
+		}
+		
+		function HandleResult()
+		{
+			if(resultHandler)
+			{
+				resultHandler(cloud);
 			}
 		}
 		
-		return cloud;
+		LongProcess('Scanning the scene (' + resolution.log() + ')', GenerateScanRay, HandleResult);
 	};
 };
