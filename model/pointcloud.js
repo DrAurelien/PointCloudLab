@@ -133,7 +133,7 @@ PointCloud.prototype.Draw = function(drawingContext)
 	
 	drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.Size());
 	
-	if(this.selected)
+	if(this.selected && this.pointssize > 0)
 	{
 		this.boundingbox.Draw(drawingContext);
 	}

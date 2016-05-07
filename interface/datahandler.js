@@ -126,6 +126,10 @@ function DataHandler(dataWindow, updateCallback)
 							break;
 						case 'Torus' :
 							createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1);
+							break;
+						case 'Scan from current viewpoint':
+							createdObject = Interface.sceneRenderer.ScanFromCurrentViewPoint(scene);
+							break;
 						default : break;
 					}
 					
@@ -144,7 +148,8 @@ function DataHandler(dataWindow, updateCallback)
 		[
 			CreateItem('Sphere'),
 			CreateItem('Cylinder'),
-			CreateItem('Torus')
+			CreateItem('Torus'),
+			CreateItem('Scan from current viewpoint')
 		]);
 		
 		var containerCell = document.createElement('td');

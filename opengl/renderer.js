@@ -428,15 +428,17 @@ function Renderer(renderingArea, refreshCallback)
 		this.drawingContext.renderingArea.height = height;
 	};
 	
-	this.PickObject = function(x, y, scene)
+	this.GetRay = function(x, y)
 	{
 		var point = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
-		var ray = 
-		{
+		return {
 			from : this.camera.at,
 			dir : point.Minus(this.camera.at).Normalized()
 		};
-		
+	};
+	
+	this.ResolveRayIntersection = function(ray, scene)
+	{
 		var picked = null;
 		for(var index=0; index<scene.objects.length; index++)
 		{
@@ -455,11 +457,51 @@ function Renderer(renderingArea, refreshCallback)
 				}
 			}
 		}
+		return picked;
+	};
+	
+	this.PickObject = function(x, y, scene)
+	{
+		var ray = this.GetRay(x, y);
+		var picked = this.ResolveRayIntersection(ray, scene);
 		
 		if(picked != null)
 		{
 			return picked.object;
 		}
 		return null;
-	}
+	};
+	
+	this.ScanFromCurrentViewPoint = function(scene)
+	{
+		var resolution =
+		{
+			width : 1024,
+			height : 768
+		};
+		
+		var cloud = new PointCloud();
+		cloud.Reserve(resolution.width * resolution.height);
+		
+		for(var iWidth=0; iWidth<resolution.width; iWidth++)
+		{
+			for(var iHeight=0; iHeight<resolution.height; iHeight++)
+			{
+				var ray = this.GetRay(
+					this.camera.screen.width * (iWidth / resolution.width),
+					this.camera.screen.height * (iHeight / resolution.height)
+				);
+				
+				var intersection = this.ResolveRayIntersection(ray, scene);
+				
+				if(intersection)
+				{
+					var point = ray.from.Plus(ray.dir.Times(intersection.depth));
+					cloud.PushPoint(point);
+				}
+			}
+		}
+		
+		return cloud;
+	};
 };

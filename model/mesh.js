@@ -165,6 +165,12 @@ Mesh.prototype.Draw = function(drawingContext)
 		drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.gl.UNSIGNED_SHORT, 0);
 	}
 	
+	//Wire rendering
+	if(drawingContext.rendering.Wire())
+	{
+		drawingContext.gl.drawElements(drawingContext.gl.LINES, this.size, drawingContext.gl.UNSIGNED_SHORT, 0);
+	}
+	
 	if(this.selected)
 	{
 		this.GetBoundingBox().Draw(drawingContext);
