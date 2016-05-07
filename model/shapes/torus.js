@@ -148,5 +148,32 @@ Torus.prototype.GetWorldToInnerBaseMatrix = function()
 
 Torus.prototype.RayIntersection = function(ray)
 {
-	return [];
+	var worldToBase = this.GetWorldToInnerBaseMatrix();
+	var innerFrom = new Vector(worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1]))).values);
+	var innerDir = new Vector(worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0]))).values);
+	
+	var grr = this.greatRadius*this.greatRadius;
+	var srr = this.smallRadius*this.smallRadius;
+	
+	var alpha = innerDir.Dot(innerDir);
+	var beta = 2.0*innerDir.Dot(innerFrom);
+	var gamma = innerFrom.Dot(innerFrom) + grr - srr;
+	
+	innerDir.Set(0, 0);
+	innerFrom.Set(0, 0);
+	
+	var eta = innerDir.Dot(innerDir);
+	var mu = 2.0*innerDir.Dot(innerFrom);
+	var nu = innerFrom.Dot(innerFrom);
+	
+	//Quartic defining the equation of the torus
+	var quartic = new Polynomial([
+		(gamma*gamma) - (4.0*grr*nu),
+		(2.0*beta*gamma) - (4.0*grr*mu),
+		(beta*beta) + (2.0*alpha*gamma) - (4.0*grr*eta),
+		2.0*alpha*eta,
+		alpha*alpha
+	]);
+	
+	return quartic.FindRealRoots();
 }
