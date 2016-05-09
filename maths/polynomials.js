@@ -6,17 +6,17 @@ function Polynomial(coefs)
 
 Polynomial.prototype.Degree = function()
 {
-	return coefficients.length;
+	return this.coefficients.length-1;
 }
 
 Polynomial.prototype.Evaluate = function(x)
 {
-	var result = 0;
-	var yy = 1;
-	for(var index=0; index<this.coefficients.length; index++)
+	var index = this.coefficients.length-1;
+	var result = index>=0 ? this.coefficients[index] : 0.0;
+	while(index>0)
 	{
-		result += yy * this.coefficients[index];
-		yy *= x;
+		index--;
+		result = result*x + this.coefficients[index];
 	}
 	return result;
 }
@@ -24,7 +24,7 @@ Polynomial.prototype.Evaluate = function(x)
 Polynomial.prototype.Derivate = function()
 {
 	var coefs = [];
-	for(var index=1; index<this.coefficients; index++)
+	for(var index=1; index<this.coefficients.length; index++)
 	{
 		coefs.push(index*this.coefficients[index]);
 	}
@@ -32,11 +32,50 @@ Polynomial.prototype.Derivate = function()
 	return new Polynomial(coefs);
 }
 
-Polynomial.prototype.FindRealRoots = function()
+//Devide current polynomial by (x - a)
+Polynomial.prototype.Deflate = function(a)
+{
+	var index = this.coefficients.length-1;
+	var coef = [];
+	var remainder = 0.0;
+	if(index > 0)
+	{
+		coef = new Array(index);
+		remainder = this.coefficients[index];
+		do
+		{
+			index--;
+			coef[index] = remainder;
+			remainder = this.coefficients[index] + remainder*a;
+		} while(index>0);
+	}
+	new Polynomial(coef);
+}
+
+Polynomial.prototype.FindRealRoots = function(initialGuess)
 {
 	var result = [];
-	
-	//TODO (Laguerre's method ?)
+	var degree = this.Degree();
+	var root = initialGuess;
+	var polynomial = this;
+
+	while (root != null && result.length < degree)
+	{
+		var firstOrderDerivative = polynomial.Derivate();
+		var secondOrderDerivative = firstOrderDerivative.Derivate();
+		var solver = new IterativeRootFinder([
+			function(x) {return polynomial.Evaluate(x);},
+			function(x) {return firstOrderDerivative.Evaluate(x);},
+			function(x) {return secondOrderDerivative.Evaluate(x);}
+		]);
+		root = solver.Run(root, HalleyStep);
+		
+		if(root !== null)
+		{
+			result.push(root);
+			polynomial = polynomial.Deflate(root);
+		}
+	} 
 	
 	return result;
 }

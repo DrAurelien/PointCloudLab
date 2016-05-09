@@ -149,8 +149,11 @@ Torus.prototype.GetWorldToInnerBaseMatrix = function()
 Torus.prototype.RayIntersection = function(ray)
 {
 	var worldToBase = this.GetWorldToInnerBaseMatrix();
-	var innerFrom = new Vector(worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1]))).values);
-	var innerDir = new Vector(worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0]))).values);
+	var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
+	var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+	
+	innerDir = new Vector([innerDir.GetValue(0,0),innerDir.GetValue(1,0),innerDir.GetValue(2,0)]);
+	innerFrom = new Vector([innerFrom.GetValue(0,0),innerFrom.GetValue(1,0),innerFrom.GetValue(2,0)]);
 	
 	var grr = this.greatRadius*this.greatRadius;
 	var srr = this.smallRadius*this.smallRadius;
@@ -159,8 +162,8 @@ Torus.prototype.RayIntersection = function(ray)
 	var beta = 2.0*innerDir.Dot(innerFrom);
 	var gamma = innerFrom.Dot(innerFrom) + grr - srr;
 	
-	innerDir.Set(0, 0);
-	innerFrom.Set(0, 0);
+	innerDir.Set(2, 0);
+	innerFrom.Set(2, 0);
 	
 	var eta = innerDir.Dot(innerDir);
 	var mu = 2.0*innerDir.Dot(innerFrom);
@@ -171,9 +174,9 @@ Torus.prototype.RayIntersection = function(ray)
 		(gamma*gamma) - (4.0*grr*nu),
 		(2.0*beta*gamma) - (4.0*grr*mu),
 		(beta*beta) + (2.0*alpha*gamma) - (4.0*grr*eta),
-		2.0*alpha*eta,
+		2.0*alpha*beta,
 		alpha*alpha
 	]);
 	
-	return quartic.FindRealRoots();
+	return quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
 }
