@@ -49,7 +49,7 @@ Polynomial.prototype.Deflate = function(a)
 			remainder = this.coefficients[index] + remainder*a;
 		} while(index>0);
 	}
-	new Polynomial(coef);
+	return new Polynomial(coef);
 }
 
 Polynomial.prototype.FindRealRoots = function(initialGuess)
