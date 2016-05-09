@@ -184,6 +184,12 @@ function DataHandler(dataWindow, updateCallback)
 			var currentObject = scene.objects[index];
 			var item = document.createElement('div');
 			item.className = (currentObject == this.currentItem)?'SelectedSceneItem':'SceneItem';
+			
+			var visibilityIcon = document.createElement('i');
+			visibilityIcon.className = 'fa fa-eye' + (currentObject.visible ? '' : '-slash');
+			visibilityIcon.style.marginRight = '20px';
+			item.appendChild(visibilityIcon);
+			
 			var itemContent = document.createTextNode(currentObject.name);
 			item.appendChild(itemContent);
 			
@@ -212,7 +218,31 @@ function DataHandler(dataWindow, updateCallback)
 				}
 			}
 			
+			function ViewClicked(object, icon, target)
+			{
+				this.object = object;
+				this.target = target;
+				
+				this.Callback = function(event)
+				{
+					var self = this;
+					return function()
+					{
+						self.object.visible = ! self.object.visible;
+						if(self.target.updateCallback != null)
+						{
+							self.target.updateCallback();
+						}
+						else
+						{
+							self.target.RefreshContent(scene);
+						}
+					}
+				}
+			}
+			
 			item.onclick = new ItemClicked(currentObject, this).Callback();
+			visibilityIcon.onclick = new ViewClicked(currentObject, visibilityIcon, this).Callback();
 			
 			this.dataArea.appendChild(item);
 		}
