@@ -1,17 +1,38 @@
 function ComboBox(label, options)
 {
-	var button = document.createElement('div');
-	button.className = 'ComboButton';
-	var buttonLabel = document.createTextNode(label);
-	button.appendChild(buttonLabel);
-	
-	function CreateComboList()
+	function GetPopup(owner)
 	{
-		var popup = document.createElement('div');
-		popup.className = 'ComboList';
-		var rect = this.getBoundingClientRect();
+		var popup = document.getElementById('ComboBoxPopup');
+		if(popup)
+		{
+			if(popup.owner === owner)
+			{
+				popup.parentNode.removeChild(popup);
+				return null;
+			}
+			while(popup.firstChild)
+			{
+				popup.removeChild(popup.firstChild);
+			}
+		}
+		else
+		{
+			var popup = document.createElement('div');
+			popup.className = 'ComboList';
+			popup.id = 'ComboBoxPopup';
+			document.body.appendChild(popup);
+		}
+		
+		var rect = owner.getBoundingClientRect();
 		popup.style.top = rect.bottom;
 		popup.style.left = rect.left;
+		popup.owner = owner;
+		
+		return popup;
+	}
+	
+	function FillComboList(popup)
+	{
 		for(var index=0; index<options.length; index++)
 		{
 			var item = document.createElement('div');
@@ -42,17 +63,19 @@ function ComboBox(label, options)
 			
 			item.onclick = new ItemClicked(popup, options[index].callback).Callback();
 			popup.appendChild(item);
-			document.body.appendChild(popup);
 		}
 		
-		//Delete popup when clicking again
-		button.onclick = function()
-		{
-			popup.parentNode.removeChild(popup);
-			button.onclick = CreateComboList;
-		}
+		return popup;
 	}
 	
-	button.onclick = CreateComboList;
+	var button = new Button(label, function() {
+			var popup = GetPopup(this);
+			if(popup)
+			{
+				FillComboList(popup);
+			}
+		}
+	);
+	
 	return button;
 }
