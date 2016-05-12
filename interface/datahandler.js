@@ -99,6 +99,80 @@ function DataHandler(dataWindow, updateCallback)
 	
 	this.RefreshData = function(scene)
 	{
+	
+		function Refresh(dataHandler)
+		{
+			if(dataHandler.updateCallback != null)
+			{
+				dataHandler.updateCallback();
+			}
+			else
+			{
+				dataHandler.RefreshContent(scene);
+			}
+		}
+		
+		function ItemClicked(object, target)
+		{
+			this.object = object;
+			this.target = target;
+			
+			this.Callback = function(event)
+			{
+				var self = this;
+				return function()
+				{
+					self.target.currentItem = self.object;
+					scene.Select(self.object);
+					Refresh(self.target);
+				}
+			}
+		}
+		
+		function ViewClicked(object, icon, target)
+		{
+			this.object = object;
+			this.target = target;
+			
+			this.Callback = function(event)
+			{
+				var self = this;
+				return function()
+				{
+					self.object.visible = ! self.object.visible;
+					Refresh(self.target);
+				}
+			}
+		}
+		
+		function DeletionClicked(object, target)
+		{
+			this.object = object;
+			this.target = target;
+			
+			this.Callback = function()
+			{
+				var self = this;
+				return function(event)
+				{
+					event = event ||window.event;
+					
+					scene.Remove(self.object);
+					self.target.currentItem = null;
+					Refresh(self.target);
+					
+					if (event.stopPropagation) {
+					  event.stopPropagation();
+					}
+					else {
+					  event.cancelBubble = true;
+					}
+				}
+			}
+		}
+		
+		//-----------------------------------------------------
+		
 		this.dataArea.innerHTML = '';
 		
 		var container = document.createElement('table');
@@ -186,63 +260,23 @@ function DataHandler(dataWindow, updateCallback)
 			item.className = (currentObject == this.currentItem)?'SelectedSceneItem':'SceneItem';
 			
 			var visibilityIcon = document.createElement('i');
-			visibilityIcon.className = 'fa fa-eye' + (currentObject.visible ? '' : '-slash');
-			visibilityIcon.style.marginRight = '20px';
+			visibilityIcon.className = 'ItemAction fa fa-eye' + (currentObject.visible ? '' : '-slash');
 			item.appendChild(visibilityIcon);
 			
+			var deletionIcon = document.createElement('i');
+			deletionIcon.className = 'ItemAction fa fa-close';
+			item.appendChild(deletionIcon);
+			
+			var itemContentContainer = document.createElement('span');
+			itemContentContainer.className = 'ItemNameContainer';
+			
 			var itemContent = document.createTextNode(currentObject.name);
-			item.appendChild(itemContent);
-			
-			//Javascript closure : create an object to avoid closure issues
-			function ItemClicked(object, target)
-			{
-				this.object = object;
-				this.target = target;
-				
-				this.Callback = function(event)
-				{
-					var self = this;
-					return function()
-					{
-						self.target.currentItem = self.object;
-						scene.Select(self.object);
-						if(self.target.updateCallback != null)
-						{
-							self.target.updateCallback();
-						}
-						else
-						{
-							self.target.RefreshContent(scene);
-						}
-					}
-				}
-			}
-			
-			function ViewClicked(object, icon, target)
-			{
-				this.object = object;
-				this.target = target;
-				
-				this.Callback = function(event)
-				{
-					var self = this;
-					return function()
-					{
-						self.object.visible = ! self.object.visible;
-						if(self.target.updateCallback != null)
-						{
-							self.target.updateCallback();
-						}
-						else
-						{
-							self.target.RefreshContent(scene);
-						}
-					}
-				}
-			}
+			itemContentContainer.appendChild(itemContent);
+			item.appendChild(itemContentContainer);
 			
 			item.onclick = new ItemClicked(currentObject, this).Callback();
 			visibilityIcon.onclick = new ViewClicked(currentObject, visibilityIcon, this).Callback();
+			deletionIcon.onclick = new DeletionClicked(currentObject, this).Callback();
 			
 			this.dataArea.appendChild(item);
 		}
@@ -251,11 +285,11 @@ function DataHandler(dataWindow, updateCallback)
 	this.RefreshProperties = function()
 	{
 		this.HandlePropertiesWindowVisibility();
+		this.propertiesArea.innerHTML = '';
 		if(this.currentItem != null)
 		{
 			var currentProperties = this.currentItem.GetProperties();
 			var table = this.DisplayProperties(currentProperties);
-			this.propertiesArea.innerHTML = '';
 			this.propertiesArea.appendChild(table);
 			
 			var applyButton = document.createElement('div');

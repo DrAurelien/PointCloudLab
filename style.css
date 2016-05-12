@@ -206,3 +206,8 @@ div.ProgressBar
 	z-index : 3;
 	border-radius: 5px;
 }
+
+.ItemAction
+{
+	margin-right : 5px;
+}
