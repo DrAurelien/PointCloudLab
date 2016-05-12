@@ -1,6 +1,7 @@
 function DataHandler(dataWindow, updateCallback)
 {
 	this.window = dataWindow;
+	this.dataToolbar = null;
 	this.dataArea = null;
 	this.propertiesArea = null;
 	this.visibility = null;
@@ -10,6 +11,34 @@ function DataHandler(dataWindow, updateCallback)
 	
 	this.Initialize = function(scene)
 	{
+		var dataHandler = this;
+		//Data toolbar
+		this.dataToolbar = Toolbar([
+			//Items creation button
+			ComboBox('New',
+			[
+				this.GetItemCreator('Sphere', scene),
+				this.GetItemCreator('Cylinder', scene),
+				this.GetItemCreator('Torus', scene),
+				this.GetItemCreator('Scan from current viewpoint', scene)
+			]),
+			//File import button
+			FileOpener('Open', function(createdObject) {
+				if(createdObject != null)
+				{
+					scene.objects.push(createdObject);
+					scene.Select(createdObject);
+					dataHandler.currentItem = createdObject;
+					if(dataHandler.updateCallback != null)
+					{
+						dataHandler.updateCallback();
+					}
+				}
+			})
+		]);
+		this.dataToolbar.className = 'DataToolbar';
+		this.window.appendChild(this.dataToolbar);
+		
 		//Data visualization
 		this.dataArea = document.createElement('div');
 		this.dataArea.className = 'DataArea';
@@ -90,6 +119,49 @@ function DataHandler(dataWindow, updateCallback)
 		}
 	};
 	
+	
+	this.GetItemCreator = function(objectName, scene)
+	{
+		var dataHandler = this;
+		return {
+			label : objectName,
+			callback : function()
+			{
+				function HandleResult(createdObject)
+				{
+					if(createdObject)
+					{
+						scene.objects.push(createdObject);
+						scene.Select(createdObject);
+						dataHandler.currentItem = createdObject;
+						if(dataHandler.updateCallback != null)
+						{
+							dataHandler.updateCallback();
+						}
+					}
+				}
+				
+				switch(objectName)
+				{
+					case 'Sphere' :
+						HandleResult(new Sphere(new Vector([0, 0, 0]), 1));
+						break;
+					case 'Cylinder' :
+						HandleResult(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1));
+						break;
+					case 'Torus' :
+						HandleResult(createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
+						break;
+					case 'Scan from current viewpoint':
+						Interface.sceneRenderer.ScanFromCurrentViewPoint(scene, HandleResult);
+						break;
+					default :
+						break;
+				}
+			}
+		};
+	};
+	
 	//Refresh content of data and properties views
 	this.RefreshContent = function(scene)
 	{
@@ -99,7 +171,6 @@ function DataHandler(dataWindow, updateCallback)
 	
 	this.RefreshData = function(scene)
 	{
-	
 		function Refresh(dataHandler)
 		{
 			if(dataHandler.updateCallback != null)
@@ -157,15 +228,18 @@ function DataHandler(dataWindow, updateCallback)
 				{
 					event = event ||window.event;
 					
-					scene.Remove(self.object);
-					self.target.currentItem = null;
-					Refresh(self.target);
-					
-					if (event.stopPropagation) {
-					  event.stopPropagation();
-					}
-					else {
-					  event.cancelBubble = true;
+					if(confirm('Are you sure you want to delete "' + self.object.name + '" ?'))
+					{
+						scene.Remove(self.object);
+						self.target.currentItem = null;
+						Refresh(self.target);
+						
+						if (event.stopPropagation) {
+						  event.stopPropagation();
+						}
+						else {
+						  event.cancelBubble = true;
+						}
 					}
 				}
 			}
@@ -173,86 +247,13 @@ function DataHandler(dataWindow, updateCallback)
 		
 		//-----------------------------------------------------
 		
-		this.dataArea.innerHTML = '';
-		
-		var container = document.createElement('table');
-		container.width = '100%';
-		var containerRow = document.createElement('tr');
-		container.appendChild(containerRow);
-		this.dataArea.appendChild(container);
-		
-		//Buttons
-		var dataHandler = this;
-		function CreateItem(objectName)
+		//Clear dataArea content
+		while(this.dataArea.firstChild)
 		{
-			return {
-				label : objectName,
-				callback : function()
-				{
-					function HandleResult(createdObject)
-					{
-						if(createdObject)
-						{
-							scene.objects.push(createdObject);
-							scene.Select(createdObject);
-							dataHandler.currentItem = createdObject;
-							if(dataHandler.updateCallback != null)
-							{
-								dataHandler.updateCallback();
-							}
-						}
-					}
-					
-					switch(objectName)
-					{
-						case 'Sphere' :
-							HandleResult(new Sphere(new Vector([0, 0, 0]), 1));
-							break;
-						case 'Cylinder' :
-							HandleResult(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1));
-							break;
-						case 'Torus' :
-							HandleResult(createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
-							break;
-						case 'Scan from current viewpoint':
-							Interface.sceneRenderer.ScanFromCurrentViewPoint(scene, HandleResult);
-							break;
-						default :
-							break;
-					}
-				}
-			};
+			this.dataArea.removeChild(this.dataArea.firstChild);
 		}
 		
-		var createCombo = ComboBox('New',
-		[
-			CreateItem('Sphere'),
-			CreateItem('Cylinder'),
-			CreateItem('Torus'),
-			CreateItem('Scan from current viewpoint')
-		]);
-		
-		var containerCell = document.createElement('td');
-		containerRow.appendChild(containerCell);
-		containerCell.appendChild(createCombo);
-		
-		var openButton = FileOpener('Open', function(createdObject) {
-			if(createdObject != null)
-			{
-				scene.objects.push(createdObject);
-				scene.Select(createdObject);
-				dataHandler.currentItem = createdObject;
-				if(dataHandler.updateCallback != null)
-				{
-					dataHandler.updateCallback();
-				}
-			}
-		});
-		var containerCell = document.createElement('td');
-		containerRow.appendChild(containerCell);
-		containerCell.appendChild(openButton);
-		
-		//Scene
+		//List scene objects
 		for(var index=0; index<scene.objects.length; index++)
 		{
 			var currentObject = scene.objects[index];

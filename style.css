@@ -46,7 +46,7 @@ div.DataWindowHandle:hover
 	background-color : lightgray;
 }
 
-div.DataArea, div.PropertiesArea
+div.DataToolbar, div.DataArea, div.PropertiesArea
 {
 	border : 1ps solid black;
 	margin : 0px;
@@ -210,4 +210,10 @@ div.ProgressBar
 .ItemAction
 {
 	margin-right : 5px;
+	font-size : 120%;
+}
+
+.ItemAction:hover
+{
+	color: red;
 }
