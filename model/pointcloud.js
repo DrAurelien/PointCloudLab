@@ -55,6 +55,11 @@ PointCloud.prototype.GetPoint = function(i)
 		this.points[index++]]);
 }
 
+PointCloud.prototype.GetPointCoordinate = function(i, j)
+{
+	return this.points[3*i+j]
+}
+
 PointCloud.prototype.Size = function()
 {
 	return this.pointssize/3;
