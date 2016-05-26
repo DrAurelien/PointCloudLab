@@ -101,15 +101,99 @@ KDTree.prototype.LoopOverPoints = function(cellData, callback)
 	var nbPoints = cellData.toIndex - cellData.fromIndex;
 	for(var index=0; index<nbPoints; index++)
 	{
-		callback(this.cloud.GetPoint(this.indices[index]));
+		callback(this.indices[index]);
 	}
 }
 
-
-KDTree.prototype.FindNearestNeighbours = function(queryPoint, k, cellData)
+KDTree.prototype.FindNearestNeighbours = function(queryPoint, k, cellData, knn)
 {
 	if(!k)
 		k = 1;
+	
+	var self = this;
 	if(!cellData)
+	{
 		cellData = this.root;
+	}
+	if(!knn)
+	{
+		knn = {
+			knn : [],
+			
+			//Get the distance from the further point to the query point
+			GetDistance : function()
+			{
+				if(this.knn.length == 0)
+					return null;
+				return this.knn[this.knn.length-1].distance;
+			}
+			
+			//Try to push a candidate
+			Push : function(index, distance)
+			{
+				var cursor = this.knn.length;
+				while(cursor >= 0 && distance<this.knn[cursor].distance)
+				{
+					cursor--;
+				}
+				if(cursor<k)
+				{
+					this.knn = this.knn.splice(cursor, 0, {index:index, distance:distance});
+					if(this.knn.length > k)
+					{
+						this.knn = this.knn.splice(k);
+					}
+					return true;
+				}
+				return false;
+			}
+		}
+	}
+	
+	function HandleKNN(index)
+	{
+		var distance = self.cloud.GetPoint(index).Minus(queryPoint).SqrNorm();
+		params.Push(index, distance);
+	}
+	
+	function Test(cell, knn)
+	{
+		var maxDistance = knn.GetDistance();
+		
+		if(maxDistance != null)
+		{
+			var distance = Math.abs(queryPoint.Get(cell.direction) - cell.cutValue);
+			distance = distance * distance;
+			return (distance < maxDistance);
+		}
+		return true;
+	}
+	
+	//Handle inner nodes
+	if(cellData.left && cellData.Right)
+	{
+		if(queryPoint.Get(cellData.direction) < cellData.cutValue)
+		{
+			this.FindNearestNeighbours(queryPoint, k, cellData.left, knn);
+			if(Test(cellData, knn)
+			{
+				this.FindNearestNeighbours(queryPoint, k, cellData.right, knn);
+			}
+		}
+		else
+		{
+			this.FindNearestNeighbours(queryPoint, k, cellData.right, knn);
+			if(Test(cellData, knn)
+			{
+				this.FindNearestNeighbours(queryPoint, k, cellData.left, knn);
+			}
+		}
+	}
+	//Handle leaves
+	else
+	{
+		this.LoopOverPoints(cellData, HandleKNN);
+	}
+	
+	return knn.knn;
 }
