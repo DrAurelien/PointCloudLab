@@ -154,11 +154,3 @@ KDTree.prototype.Log = function(cellData)
 	
 	return xmlNode;
 }
-
-function TestNbh(cloud)
-{
-	var tree = new KDTree(cloud);
-	var nbh = new KNearestNeighbours(10);
-	tree.FindNearestNeighbours(new Vector([1,1,1]), nbh);
-	return nbh;	
-}

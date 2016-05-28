@@ -7,6 +7,7 @@ function PointCloud()
 	this.boundingbox = new BoundingBox();
 	this.glPointsBuffer = null;
 	this.glNormalsBuffer = null;
+	this.tree = null;
 	CADPrimitive.call(this, 'PointCloud');
 }
 
@@ -27,6 +28,7 @@ PointCloud.prototype.PushPoint = function(p)
 		this.points[this.pointssize++] = p.Get(index);
 	}
 	this.boundingbox.Add(p);
+	this.tree = null;
 }
 
 PointCloud.prototype.Reserve = function(capacity)
@@ -144,6 +146,17 @@ PointCloud.prototype.Draw = function(drawingContext)
 	}
 }
 
+PointCloud.prototype.KNearestNeighbours = function(queryPoint, k)
+{
+	if(!this.tree)
+	{
+		this.tree = new KDTree(this);
+	}
+	
+	var knn = new KNearestNeighbours(k);
+	this.tree.FindNearestNeighbours(queryPoint, knn);
+	return knn.Neighbours();
+}
 
 PointCloud.prototype.RayIntersection = function(ray)
 {
