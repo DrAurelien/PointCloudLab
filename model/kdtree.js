@@ -32,9 +32,9 @@ KDTree.prototype.GetIndices = function(start, nbItems, direction)
 	return array;
 }
 
-KDTree.prototype.SetIndices = function(start, nbItems, array)
+KDTree.prototype.SetIndices = function(start, array)
 {
-	for(var index=0; index<nbItems; index++)
+	for(var index=0; index<array.length; index++)
 	{
 		this.indices[start + index] = array[index].index;
 	}
@@ -53,9 +53,9 @@ KDTree.prototype.Split = function(fromIndex, toIndex, direction)
 		var nbItems = toIndex - fromIndex;
 
 		//Sort the indices in increasing coordinate order (given the current direction)
-		var subIndices = this.GetIndices(fromIndex, toIndex, direction);
+		var subIndices = this.GetIndices(fromIndex, nbItems, direction);
 		subIndices = subIndices.sort(compare);
-		this.SetIndices(fromIndex, nbItems, subIndices);
+		this.SetIndices(fromIndex, subIndices);
 		
 		var cellData = {
 			fromIndex : fromIndex,
@@ -67,7 +67,7 @@ KDTree.prototype.Split = function(fromIndex, toIndex, direction)
 		{
 			var cutIndex = Math.ceil(nbItems/2);
 			var nextDirection = (direction+1)%3;
-			cellData.cutValue = (subIndices[cutIndex-1] + subIndices[cutIndex]) / 2.0;
+			cellData.cutValue = (subIndices[cutIndex-1].coord + subIndices[cutIndex].coord) / 2.0;
 			
 			cutIndex += fromIndex;
 			var left = this.Split(fromIndex, cutIndex, nextDirection);
@@ -82,6 +82,48 @@ KDTree.prototype.Split = function(fromIndex, toIndex, direction)
 	}
 	
 	return null;
+}
+
+KDTree.prototype.FindNearestNeighbours = function(queryPoint, nbh, cell)
+{
+	if(!cell)
+	{
+		cell = this.root;
+		nbh.Initialize(queryPoint, this.cloud);
+	}
+	
+	
+	//Handle inner nodes
+	if(cell.left && cell.right)
+	{
+		var distToThreshold = Math.abs(queryPoint.Get(cell.direction) - cell.cutValue);
+		
+		//Determine which cell should be explored first
+		var first = cell.right;
+		var second = cell.left;
+		if(queryPoint.Get(cell.direction) < cell.cutValue)
+		{
+			first = cell.left;
+			second = cell.right;
+		}
+		
+		//Explore cells
+		this.FindNearestNeighbours(queryPoint, nbh, first);
+		if(nbh.Accept(distToThreshold))
+		{
+			this.FindNearestNeighbours(queryPoint, nbh, second);
+		}
+	}
+	//Handle leaves
+	else
+	{
+		for(var index=cell.fromIndex; index<cell.toIndex; index++)
+		{
+			nbh.Push(this.indices[index]);
+		}
+	}
+	
+	return nbh.Neighbours();
 }
 
 KDTree.prototype.Log = function(cellData)
@@ -111,57 +153,6 @@ KDTree.prototype.Log = function(cellData)
 	}
 	
 	return xmlNode;
-}
-
-KDTree.prototype.LoopOverPoints = function(cellData, callback)
-{
-	var nbPoints = cellData.toIndex - cellData.fromIndex;
-	for(var index=0; index<nbPoints; index++)
-	{
-		callback(this.indices[index]);
-	}
-}
-
-KDTree.prototype.FindNearestNeighbours = function(queryPoint, nbh, cell)
-{
-	if(!cell)
-	{
-		cell = this.root;
-	}
-	
-	nbh.Initialize(queryPoint, this.cloud);
-	
-	//Handle inner nodes
-	if(cell.left && cell.right)
-	{
-		var distToThreshold = Math.abs(queryPoint.Get(cell.direction) - cell.cutValue);
-		
-		//Explore left, then right
-		if(queryPoint.Get(cell.direction) < cell.cutValue)
-		{
-			this.FindNearestNeighbours(queryPoint, nbh, cell.left);
-			if(nbh.Accept(distToThreshold))
-			{
-				this.FindNearestNeighbours(queryPoint, nbh, cell.right);
-			}
-		}
-		//Explore right, then left
-		else
-		{
-			this.FindNearestNeighbours(queryPoint, nbh, cell.right);
-			if(nbh.Accept(distToThreshold))
-			{
-				this.FindNearestNeighbours(queryPoint, nbh, cell.left);
-			}
-		}
-	}
-	//Handle leaves
-	else
-	{
-		this.LoopOverPoints(cell, function(index) { nbh.Push(index) });
-	}
-	
-	return nbh.Neighbours();
 }
 
 function TestNbh(cloud)
