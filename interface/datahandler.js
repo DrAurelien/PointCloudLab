@@ -202,6 +202,7 @@ function DataHandler(dataWindow, updateCallback)
 			}
 		}
 		
+		//When left - clicking an item
 		function ItemClicked(object, target)
 		{
 			this.object = object;
@@ -219,6 +220,26 @@ function DataHandler(dataWindow, updateCallback)
 			}
 		}
 		
+		//When right - clicking an item
+		function ItemMenu(object, owner, target)
+		{
+			this.object = object;
+			this.target = target;
+			
+			this.Callback = function(event)
+			{
+				event = event ||window.event;
+				var self = this;
+				return function()
+				{
+					var actions = self.object.GetActions(function(){Refresh(self.target)});
+					Popup(owner, actions);
+					return false;
+				}
+			}
+		}
+		
+		//When clicking the visibility icon next to an item
 		function ViewClicked(object, icon, target)
 		{
 			this.object = object;
@@ -235,6 +256,7 @@ function DataHandler(dataWindow, updateCallback)
 			}
 		}
 		
+		//When clickin the deletion icon next to an item
 		function DeletionClicked(object, target)
 		{
 			this.object = object;
@@ -295,6 +317,7 @@ function DataHandler(dataWindow, updateCallback)
 			item.appendChild(itemContentContainer);
 			
 			item.onclick = new ItemClicked(currentObject, this).Callback();
+			item.oncontextmenu = new ItemMenu(currentObject, itemContentContainer, this).Callback();
 			visibilityIcon.onclick = new ViewClicked(currentObject, visibilityIcon, this).Callback();
 			deletionIcon.onclick = new DeletionClicked(currentObject, this).Callback();
 			

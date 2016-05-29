@@ -246,3 +246,14 @@ PointCloud.prototype.ComputeNormals = function(k, onDone)
 		onDone
 	);
 }
+
+PointCloud.prototype.GetActions = function(onDone)
+{
+	var cloud = this;
+	return [
+		{
+			label : 'Compute normals',
+			callback : function() { cloud.ComputeNormals(0, onDone) }
+		}
+	];
+}

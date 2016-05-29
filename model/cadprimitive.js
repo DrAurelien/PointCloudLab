@@ -39,6 +39,11 @@ CADPrimitive.prototype.GetProperties = function()
 	return properties;
 }
 
+CADPrimitive.prototype.GetActions = function(onDone)
+{
+	return [];
+}
+
 //Returns a property defining the "vector" parameter
 CADPrimitive.prototype.MakeVectorProperty = function(vector)
 {

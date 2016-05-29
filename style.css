@@ -92,7 +92,7 @@ div.Button:hover, div.ComboButton:hover, div.FileOpener:hover
 	border : 1px solid darkgray;
 }
 
-div.ComboList
+div.Popup
 {
 	position : fixed;
 	background-color : lightgray;
@@ -103,12 +103,12 @@ div.ComboList
 	border : 1px solid darkgray;
 }
 
-div.ComboOption
+div.PopupOption
 {
 	cursor : pointer;
 }
 
-div.ComboOption:hover
+div.PopupOption:hover
 {
 	background-color : darkgray;
 }
