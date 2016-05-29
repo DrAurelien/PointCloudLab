@@ -90,6 +90,21 @@ Matrix.prototype.GetRowVector = function(row)
 	return new Vector(values);
 }
 
+Matrix.prototype.IsDiagonnal = function(error)
+{
+	for(var ii=0; ii<this.height; ii++)
+	{
+		for(var jj=0; jj<this.width; jj++)
+		{
+			if(ii != jj && Math.abs(this.GetValue(ii, jj)) > error)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 Matrix.prototype.LUDecomposition = function()
 {
 	if(this.width != this.height)
@@ -317,6 +332,46 @@ Matrix.prototype.QRDecomposition = function()
 	}
 	
 	return QR;
+}
+
+
+Matrix.prototype.EigenDecomposition = function()
+{
+	if(this.width != this.height)
+	{
+		return null;
+	}
+	
+	var matrix = this;
+	var eigenVectors = IdentityMatrix(this.width);
+	for(var index = 0; index <= 100; index++)
+	{
+		var QR = matrix.QRDecomposition();
+		matrix = QR.R.Multiply(QR.Q);
+		eigenVectors = eigenVectors.Multiply(QR.Q);
+		
+		if(matrix.IsDiagonnal(1.0e-8))
+		{
+			var result = [];
+			
+			for(var ii=0; ii<this.width; ii++)
+			{
+				result.push({
+					eigenValue : matrix.GetValue(ii, ii),
+					eigenVector : eigenVectors.GetColumnVector(ii)
+				});
+			}
+			
+			function Compare(a, b)
+			{
+				return (a.eigenValue < b.eigenValue) ? -1 : ((a.eigenValue > b.eigenValue) ? 1 : 0);
+			}
+			result = result.sort(Compare);
+			
+			return result;
+		}
+	}
+	return null;
 }
 
 ///////////////////////////////////////

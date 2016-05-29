@@ -150,6 +150,7 @@ PointCloud.prototype.KNearestNeighbours = function(queryPoint, k)
 {
 	if(!this.tree)
 	{
+		console.log('Computing KD-Tree for point cloud "' + this.name + '"');
 		this.tree = new KDTree(this);
 	}
 	
@@ -161,4 +162,87 @@ PointCloud.prototype.KNearestNeighbours = function(queryPoint, k)
 PointCloud.prototype.RayIntersection = function(ray)
 {
 	return [];
+}
+
+PointCloud.prototype.ComputeNormal = function(index, k)
+{
+	if(index>=this.Size())
+	{
+		return null;
+	}
+	
+	//Get the K-nearest neighbours (including the query point)
+	var point = this.GetPoint(index);
+	var knn = this.KNearestNeighbours(point, k+1);
+	
+	//Compute the covariance matrix
+	var covariance = NullMatrix(3, 3);
+	var center = new Vector([0, 0, 0]);
+	for(var ii=0; ii<knn.length; ii++)
+	{
+		center = center.Plus(this.GetPoint(knn[ii].index));
+	}
+	center = center.Times(1/knn.length);
+	for(var kk=0; kk<knn.length; kk++)
+	{
+		var vec = this.GetPoint(knn[kk].index).Minus(center);
+		for(var ii=0; ii<3; ii++)
+		{
+			for(var jj=0; jj<3; jj++)
+			{
+				covariance.SetValue(ii, jj,
+					covariance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj))
+				);
+			}
+		}
+	}
+	
+	//The normal is the eigenvector having the smallest eigenvalue in the covariance matrix
+	var eigen = covariance.EigenDecomposition();
+	if(eigen)
+	{
+		return eigen[0].eigenVector.Normalized();
+	}
+	return null;
+}
+
+PointCloud.prototype.ComputeNormals = function(k, onDone)
+{
+	if(!k)
+	{
+		k = 30;
+	}
+	
+	if(this.normals.length != this.points.length)
+	{
+		this.normals = new Array(this.points.length);
+	}
+	
+	var index=0;
+	var cloud = this;
+	var summary = { success : 0, failure: 0 };
+	LongProcess('Computing normals', function()
+		{
+			if(index >= cloud.Size())
+			{
+				console.log('Successfully computed ' + summary.success + ' normals (' + summary.failure + ' failures)');
+				return null;
+			}
+			
+			var normal = cloud.ComputeNormal(index, k);
+			if(normal)
+			{
+				summary.success++;
+				cloud.PushNormal(normal);
+			}
+			else
+			{
+				summary.failure++;
+				cloud.PushNormal(new Vector([0,0,0]));
+			}
+			index++;
+			return {current : index, total : cloud.Size()};
+		},
+		onDone
+	);
 }
