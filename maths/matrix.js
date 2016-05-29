@@ -70,6 +70,26 @@ Matrix.prototype.Transposed = function()
 	return transposed;
 }
 
+Matrix.prototype.GetColumnVector = function(col)
+{
+	var values = new Array(this.height);
+	for(var index=0; index<this.height; index++)
+	{
+		values[index] = this.GetValue(index, col);
+	}
+	return new Vector(values);
+}
+
+Matrix.prototype.GetRowVector = function(row)
+{
+	var values = new Array(this.width);
+	for(var index=0; index<this.width; index++)
+	{
+		values[index] = this.GetValue(row, index);
+	}
+	return new Vector(values);
+}
+
 Matrix.prototype.LUDecomposition = function()
 {
 	if(this.width != this.height)
@@ -109,6 +129,7 @@ Matrix.prototype.LUDecomposition = function()
 			return result;
 		}
 	};
+	
 	for(var ii=0; ii<this.height; ii++)
 	{
 		for(var jj=0; jj<this.width; jj++)
@@ -244,6 +265,58 @@ Matrix.prototype.Log = function()
 		line += ' |';
 		console.log(line);
 	}
+}
+
+Matrix.prototype.QRDecomposition = function()
+{
+	//Naive method :
+	//https://en.wikipedia.org/wiki/QR_decomposition
+	if(this.width != this.height)
+	{
+		return null;
+	}
+	
+	var QR =
+	{
+		Q : NullMatrix(this.width, this.width),
+		R : NullMatrix(this.width, this.width)
+	};
+	
+	function Projection(e, a)
+	{
+		return e.Times(e.Dot(a) / e.Dot(e));
+	}
+	
+	var vects = [];
+	var normalized = [];
+	for(var ii=0; ii<this.width; ii++)
+	{
+		var vec = this.GetColumnVector(ii);
+		var current = vec;
+		if(ii > 0)
+		{
+			//Compute vec - sum[jj<ii](proj(vects[jj], vec))
+			for(var jj = 0; jj<ii; jj++)
+			{
+				var proj = vects[jj].Times( vects[jj].Dot(vec) / vects[jj].Dot(vects[jj]) );
+				current = current.Minus(proj);
+			}
+		}
+		vects.push( current );
+		
+		current = current.Normalized()
+		normalized.push(current);
+		for(var jj=0; jj<vec.Dimension(); jj++)
+		{
+			QR.Q.SetValue(jj, ii, current.Get(jj));
+			if(jj<=ii)
+			{
+				QR.R.SetValue(jj, ii, normalized[jj].Dot(vec));
+			}
+		}
+	}
+	
+	return QR;
 }
 
 ///////////////////////////////////////
