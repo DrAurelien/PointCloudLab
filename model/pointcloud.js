@@ -52,9 +52,9 @@ PointCloud.prototype.GetPoint = function(i)
 {
 	var index = 3*i;
 	return new Vector([
-		this.points[index++],
-		this.points[index++],
-		this.points[index++]]);
+		this.points[index],
+		this.points[index+1],
+		this.points[index+2]]);
 }
 
 PointCloud.prototype.GetPointCoordinate = function(i, j)
@@ -85,9 +85,14 @@ PointCloud.prototype.GetNormal = function(i)
 {
 	var index = 3*i;
 	return new Vector(
-		this.normals[index++],
-		this.normals[index++],
-		this.normals[index++]);
+		this.normals[index],
+		this.normals[index+1],
+		this.normals[index+2]);
+}
+
+PointCloud.prototype.HasNormals = function()
+{
+	return (this.normalssize == this.pointssize);
 }
 
 PointCloud.prototype.ClearNormals = function()
@@ -114,7 +119,7 @@ PointCloud.prototype.PrepareRendering = function(drawingContext)
 	drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, this.glPointsBuffer);
 	drawingContext.gl.vertexAttribPointer(drawingContext.points, 3, drawingContext.gl.FLOAT, false, 0, 0);
 	
-	if(this.normalssize == this.pointssize)
+	if(this.HasNormals())
 	{
 		drawingContext.EnableNormals(true);
 		if(!this.glNormalsBuffer)
@@ -174,25 +179,31 @@ PointCloud.prototype.ComputeNormal = function(index, k)
 	//Get the K-nearest neighbours (including the query point)
 	var point = this.GetPoint(index);
 	var knn = this.KNearestNeighbours(point, k+1);
-	
+
 	//Compute the covariance matrix
 	var covariance = NullMatrix(3, 3);
 	var center = new Vector([0, 0, 0]);
 	for(var ii=0; ii<knn.length; ii++)
 	{
-		center = center.Plus(this.GetPoint(knn[ii].index));
+		if(knn[ii].index != index)
+		{
+			center = center.Plus(this.GetPoint(knn[ii].index));
+		}
 	}
-	center = center.Times(1/knn.length);
+	center = center.Times(1/(knn.length-1));
 	for(var kk=0; kk<knn.length; kk++)
 	{
-		var vec = this.GetPoint(knn[kk].index).Minus(center);
-		for(var ii=0; ii<3; ii++)
+		if(knn[kk].index != index)
 		{
-			for(var jj=0; jj<3; jj++)
+			var vec = this.GetPoint(knn[kk].index).Minus(center);
+			for(var ii=0; ii<3; ii++)
 			{
-				covariance.SetValue(ii, jj,
-					covariance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj))
-				);
+				for(var jj=0; jj<3; jj++)
+				{
+					covariance.SetValue(ii, jj,
+						covariance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj))
+					);
+				}
 			}
 		}
 	}
@@ -203,6 +214,8 @@ PointCloud.prototype.ComputeNormal = function(index, k)
 	{
 		return eigen[0].eigenVector.Normalized();
 	}
+	
+	
 	return null;
 }
 
@@ -221,7 +234,7 @@ PointCloud.prototype.ComputeNormals = function(k, onDone)
 	var index=0;
 	var cloud = this;
 	var summary = { success : 0, failure: 0 };
-	LongProcess('Computing normals', function()
+	LongProcess('Computing normals (' + this.Size() + ' data points)', function()
 		{
 			if(index >= cloud.Size())
 			{
@@ -250,10 +263,21 @@ PointCloud.prototype.ComputeNormals = function(k, onDone)
 PointCloud.prototype.GetActions = function(onDone)
 {
 	var cloud = this;
-	return [
-		{
+	var result = [];
+	
+	if(this.HasNormals())
+	{
+		result.push({
+			label : 'Clear normals',
+			callback : function() { cloud.ClearNormals(); if(onDone) onDone(); }
+		});
+	}
+	else
+	{
+		result.push({
 			label : 'Compute normals',
 			callback : function() { cloud.ComputeNormals(0, onDone) }
-		}
-	];
+		});
+	}
+	return result;
 }

@@ -344,7 +344,7 @@ Matrix.prototype.EigenDecomposition = function()
 	
 	var matrix = this;
 	var eigenVectors = IdentityMatrix(this.width);
-	for(var index = 0; index <= 100; index++)
+	for(var index = 0; index <= 200; index++)
 	{
 		var QR = matrix.QRDecomposition();
 		matrix = QR.R.Multiply(QR.Q);
@@ -352,26 +352,27 @@ Matrix.prototype.EigenDecomposition = function()
 		
 		if(matrix.IsDiagonnal(1.0e-8))
 		{
-			var result = [];
-			
-			for(var ii=0; ii<this.width; ii++)
-			{
-				result.push({
-					eigenValue : matrix.GetValue(ii, ii),
-					eigenVector : eigenVectors.GetColumnVector(ii)
-				});
-			}
-			
-			function Compare(a, b)
-			{
-				return (a.eigenValue < b.eigenValue) ? -1 : ((a.eigenValue > b.eigenValue) ? 1 : 0);
-			}
-			result = result.sort(Compare);
-			
-			return result;
+			break;
 		}
 	}
-	return null;
+	
+	//Return the best result we got, anyway (might not have converged in the main loop)
+	var result = [];
+	for(var ii=0; ii<this.width; ii++)
+	{
+		result.push({
+			eigenValue : matrix.GetValue(ii, ii),
+			eigenVector : eigenVectors.GetColumnVector(ii)
+		});
+	}
+	
+	function Compare(a, b)
+	{
+		return (a.eigenValue < b.eigenValue) ? -1 : ((a.eigenValue > b.eigenValue) ? 1 : 0);
+	}
+	result = result.sort(Compare);
+	
+	return result;
 }
 
 ///////////////////////////////////////
