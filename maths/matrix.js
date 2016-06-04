@@ -297,11 +297,6 @@ Matrix.prototype.QRDecomposition = function()
 		R : NullMatrix(this.width, this.width)
 	};
 	
-	function Projection(e, a)
-	{
-		return e.Times(e.Dot(a) / e.Dot(e));
-	}
-	
 	var vects = [];
 	var normalized = [];
 	for(var ii=0; ii<this.width; ii++)
@@ -319,7 +314,7 @@ Matrix.prototype.QRDecomposition = function()
 		}
 		vects.push( current );
 		
-		current = current.Normalized()
+		current = current.Normalized();
 		normalized.push(current);
 		for(var jj=0; jj<vec.Dimension(); jj++)
 		{

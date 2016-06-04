@@ -84,10 +84,18 @@ PointCloud.prototype.PushNormal = function(n)
 PointCloud.prototype.GetNormal = function(i)
 {
 	var index = 3*i;
-	return new Vector(
+	return new Vector([
 		this.normals[index],
 		this.normals[index+1],
-		this.normals[index+2]);
+		this.normals[index+2]]);
+}
+
+PointCloud.prototype.InvertNormal = function(i)
+{
+	for(index=0; index<3; index++)
+	{
+		this.normals[3*i+index] = -this.normals[3*i+index];
+	}
 }
 
 PointCloud.prototype.HasNormals = function()
@@ -171,11 +179,6 @@ PointCloud.prototype.RayIntersection = function(ray)
 
 PointCloud.prototype.ComputeNormal = function(index, k)
 {
-	if(index>=this.Size())
-	{
-		return null;
-	}
-	
 	//Get the K-nearest neighbours (including the query point)
 	var point = this.GetPoint(index);
 	var knn = this.KNearestNeighbours(point, k+1);
@@ -209,14 +212,62 @@ PointCloud.prototype.ComputeNormal = function(index, k)
 	}
 	
 	//The normal is the eigenvector having the smallest eigenvalue in the covariance matrix
+	for(var ii=0; ii<3; ii++)
+	{
+		//Check no column is null in the covariance matrix
+		if(covariance.GetColumnVector(ii).SqrNorm() <= 1.0e-12)
+		{
+			var result = new Vector([0, 0, 0]);
+			result.Set(ii, 1);
+			return result;
+		}
+	}
 	var eigen = covariance.EigenDecomposition();
 	if(eigen)
 	{
 		return eigen[0].eigenVector.Normalized();
 	}
-	
-	
+		
 	return null;
+}
+
+
+PointCloud.prototype.HarmonizeNormal = function(index, k, done)
+{
+	if(!done[index])
+	{
+		var point = this.GetPoint(index);
+		var normal = this.GetNormal(index);
+		var knn = this.KNearestNeighbours(point, k+1);
+		
+		var votes =
+		{
+			pros : 0,
+			cons : 0
+		};
+		
+		for(var ii = 0; ii<knn.length; ii++)
+		{
+			if(done[knn[ii].index])
+			{
+				var nnormal = this.GetNormal(knn[ii].index);
+				var s = nnormal.Dot(normal);
+				if(s < 0)
+				{
+					votes.cons++;
+				}
+				else
+				{
+					votes.pros++;
+				}
+			}
+		}
+		if(votes.pros < votes.cons)
+		{
+			this.InvertNormal(index);
+		}
+		done[index] = true;
+	}
 }
 
 PointCloud.prototype.ComputeNormals = function(k, onDone)
@@ -226,38 +277,67 @@ PointCloud.prototype.ComputeNormals = function(k, onDone)
 		k = 30;
 	}
 	
-	if(this.normals.length != this.points.length)
+	var cloud = this;
+	
+	function Harmonize()
 	{
-		this.normals = new Array(this.points.length);
+		var index = 0;
+		var done = new Array(cloud.Size());
+		for(var ii=0; ii<cloud.Size(); ii++)
+		{
+			done[ii] = false;
+		}
+		
+		LongProcess('Harmonizing normals (' + cloud.Size() + ' data points)', function()
+			{
+				if(index >= cloud.Size())
+				{
+					return null;
+				}
+				cloud.HarmonizeNormal(index, k, done);
+				index++;
+				return {current : index, total : cloud.Size()};
+			},
+			onDone
+		);
 	}
 	
-	var index=0;
-	var cloud = this;
-	var summary = { success : 0, failure: 0 };
-	LongProcess('Computing normals (' + this.Size() + ' data points)', function()
+	function Compute()
+	{
+		var index = 0;
+		if(cloud.normals.length != cloud.points.length)
 		{
-			if(index >= cloud.Size())
+			cloud.normals = new Array(cloud.points.length);
+		}
+		cloud.ClearNormals();
+	
+		LongProcess('Computing normals (' + cloud.Size() + ' data points)', function()
 			{
-				console.log('Successfully computed ' + summary.success + ' normals (' + summary.failure + ' failures)');
-				return null;
-			}
-			
-			var normal = cloud.ComputeNormal(index, k);
-			if(normal)
-			{
-				summary.success++;
+				if(index >= cloud.Size())
+				{
+					return null;
+				}
+				var normal = cloud.ComputeNormal(index, k);
 				cloud.PushNormal(normal);
-			}
-			else
-			{
-				summary.failure++;
-				cloud.PushNormal(new Vector([0,0,0]));
-			}
-			index++;
-			return {current : index, total : cloud.Size()};
-		},
-		onDone
-	);
+				index++;
+				return {current : index, total : cloud.Size()};
+			},
+			Harmonize
+		);
+	}
+	
+	Compute();
+}
+
+PointCloud.prototype.GaussianSphere = function()
+{
+	var gsphere = new PointCloud();
+	gsphere.Reserve(this.Size());
+	for(var index=0; index<this.Size(); index++)
+	{
+		gsphere.PushPoint(this.GetNormal(index));
+	}
+	return gsphere;
 }
 
 PointCloud.prototype.GetActions = function(onDone)
@@ -267,6 +347,11 @@ PointCloud.prototype.GetActions = function(onDone)
 	
 	if(this.HasNormals())
 	{
+		result.push({
+			label : 'Gaussian sphere',
+			callback : function() { var gsphere = cloud.GaussianSphere(); if(onDone) onDone(gsphere); }
+		});
+		
 		result.push({
 			label : 'Clear normals',
 			callback : function() { cloud.ClearNormals(); if(onDone) onDone(); }

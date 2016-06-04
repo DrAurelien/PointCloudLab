@@ -87,7 +87,6 @@ function DataHandler(dataWindow, updateCallback)
 		this.handle.style.height = this.window.style.height;
 		
 		this.HandlePropertiesWindowVisibility();
-		
 	};
 	
 	this.HandlePropertiesWindowVisibility = function()
@@ -138,6 +137,19 @@ function DataHandler(dataWindow, updateCallback)
 		}
 	};
 	
+	this.AddCreatedObject = function(scene, createdObject)
+	{
+		if(createdObject)
+		{
+			scene.objects.push(createdObject);
+			scene.Select(createdObject);
+			this.currentItem = createdObject;
+			if(this.updateCallback != null)
+			{
+				this.updateCallback();
+			}
+		}
+	}
 	
 	this.GetItemCreator = function(objectName, scene)
 	{
@@ -145,34 +157,23 @@ function DataHandler(dataWindow, updateCallback)
 		return {
 			label : objectName,
 			callback : function()
-			{
-				function HandleResult(createdObject)
-				{
-					if(createdObject)
-					{
-						scene.objects.push(createdObject);
-						scene.Select(createdObject);
-						dataHandler.currentItem = createdObject;
-						if(dataHandler.updateCallback != null)
-						{
-							dataHandler.updateCallback();
-						}
-					}
-				}
-				
+			{	
 				switch(objectName)
 				{
 					case 'Sphere' :
-						HandleResult(new Sphere(new Vector([0, 0, 0]), 1));
+						dataHandler.AddCreatedObject(scene, new Sphere(new Vector([0, 0, 0]), 1));
 						break;
 					case 'Cylinder' :
-						HandleResult(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1));
+						dataHandler.AddCreatedObject(scene, new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1));
 						break;
 					case 'Torus' :
-						HandleResult(createdObject = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
+						dataHandler.AddCreatedObject(scene, new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
 						break;
 					case 'Scan from current viewpoint':
-						Interface.sceneRenderer.ScanFromCurrentViewPoint(scene, HandleResult);
+						Interface.sceneRenderer.ScanFromCurrentViewPoint(scene,
+							function(scan) {
+								dataHandler.AddCreatedObject(scene, scan);
+							});
 						break;
 					default :
 						break;
@@ -232,7 +233,19 @@ function DataHandler(dataWindow, updateCallback)
 				var self = this;
 				return function()
 				{
-					var actions = self.object.GetActions(function(){Refresh(self.target)});
+					var actions = self.object.GetActions(
+						function(createdObject)
+						{
+							if(createdObject)
+							{
+								self.target.AddCreatedObject(scene, createdObject);
+							}
+							else
+							{
+								Refresh(self.target)
+							}
+						}
+					);
 					Popup(owner, actions);
 					return false;
 				}
