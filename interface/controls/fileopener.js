@@ -10,9 +10,16 @@ function FileOpener(label, filehandler)
 	
 	var button = ComboBox(label, [
 		{
-			label : "PLY mesh",
+			label : "PLY Mesh",
 			callback : function() {
 				input.accept = ".ply";
+				input.click();
+			}
+		},
+		{
+			label : "CSV Point cloud",
+			callback : function() {
+				input.accept = ".csv";
 				input.click();
 			}
 		}

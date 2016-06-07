@@ -15,9 +15,28 @@ function BinaryReader(buffer)
 	this.innerendianness = (new Int16Array(buffer)[0] === 256 ? Endianness.LittleEndian : Endianness.BigEndian);
 }
 
+BinaryReader.prototype.Reset = function()
+{
+	this.cursor = 0;
+}
+
 BinaryReader.prototype.Eof = function()
 {
 	return (this.cursor >= this.stream.byteLength) || (this.stream[this.cursor] == 3);
+}
+
+BinaryReader.prototype.CountAsciiOccurences = function(asciichar)
+{
+	var count = 0;
+	this.Reset();
+	while(!this.Eof())
+	{
+		if(this.GetNextAsciiChar() == asciichar)
+		{
+			count++;
+		}
+	}
+	return count;
 }
 
 BinaryReader.prototype.GetAsciiLine = function()
@@ -55,9 +74,9 @@ BinaryReader.prototype.GetAsciiUntil = function(stops)
 	{
 		result += this.GetNextAsciiChar();
 	}
-	while(this.cursor < this.stream.byteLength && !Stop(this.GetCurrentAsciiChar()))
+	while(!this.Eof() && !Stop(this.GetCurrentAsciiChar()))
 	
-	while(Stop(this.GetCurrentAsciiChar()))
+	while(!this.Eof() && Stop(this.GetCurrentAsciiChar()))
 	{
 		this.GetNextAsciiChar();
 	}

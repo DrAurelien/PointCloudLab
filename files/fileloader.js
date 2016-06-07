@@ -11,23 +11,33 @@ function LoadFile(file, loadedcallback)
 			
 			event = event || window.event;
 			var fileContent = event.target.result;
+			var loader = null;
 			switch(extension)
 			{
-				case 'txt':
 				case 'ply':
 					if(fileContent)
 					{
 						loader = new PlyLoader(fileContent);
-						function ResultCallback()
-						{
-							loadedcallback(loader.result);
-						}
-						loader.Load(ResultCallback);
+					}
+					break;
+				case 'csv':
+					if(fileContent)
+					{
+						loader = new CsvLoader(fileContent);
 					}
 					break;
 				default:
 					alert('The file extension \"'+extension+'\" is not handled.');
 					break;
+			}
+			
+			if(loader)
+			{				
+				function ResultCallback()
+				{
+					loadedcallback(loader.result);
+				}
+				loader.Load(ResultCallback);
 			}
 		}
 		
