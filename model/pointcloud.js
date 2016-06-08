@@ -340,6 +340,35 @@ PointCloud.prototype.GaussianSphere = function()
 	return gsphere;
 }
 
+
+PointCloud.prototype.GetCSVData = function()
+{
+	var result = 'x;y;z;';
+	if(this.HasNormals())
+	{
+		result += ';nx;ny;nz';
+	}
+	result += '\n';
+	
+	for(var index=0; index<this.Size(); index++)
+	{
+		var point = this.GetPoint(index);
+		result += point.Get(0) + ';' +
+				point.Get(1) + ';' +
+				point.Get(2);
+				
+		if(this.HasNormals())
+		{
+			var normal = this.GetNormal(index);
+			result += normal.Get(0) + ';' +
+					normal.Get(1) + ';' +
+					normal.Get(2);
+		}
+		result += '\n';
+	}
+	return result;
+}
+
 PointCloud.prototype.GetActions = function(onDone)
 {
 	var cloud = this;
@@ -364,5 +393,10 @@ PointCloud.prototype.GetActions = function(onDone)
 			callback : function() { cloud.ComputeNormals(0, onDone) }
 		});
 	}
+	
+	result.push({
+			label : 'Export',
+			callback : function() { ExportFile(cloud.name + '.csv', cloud.GetCSVData()); }
+	});
 	return result;
 }

@@ -34,25 +34,6 @@ function DataHandler(dataWindow, updateCallback)
 						dataHandler.updateCallback();
 					}
 				}
-			}),
-			//Scene export
-			Button('Export', function() {
-				var link = document.createElement('a');
-				
-				link.onclick = function()
-				{
-					var content = JSON.stringify(scene);
-					var contentData = 'data:application/csv;charset=utf-8,' 
-								   + encodeURIComponent(content);
-					this.href = contentData;
-					this.target = '_blank';
-					this.download = 'filename.txt';
-					if(this.parent)
-					{
-						this.parent.removeChild(this);
-					}
-				}
-				link.click();
 			})
 		]);
 		this.dataToolbar.className = 'DataToolbar';
