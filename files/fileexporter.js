@@ -1,12 +1,12 @@
-function ExportFile(filename, filecontent)
+function ExportFile(filename, filecontent, filetype)
 {
 	var link = document.createElement('a');
 	
 	link.onclick = function()
 	{
-		var contentData = 'data:application/csv;charset=utf-8,' 
-					   + encodeURIComponent(filecontent);
-		this.href = contentData;
+		var url = window.URL;
+		var blob = new Blob([filecontent], {type:filetype});
+		this.href = url.createObjectURL(blob);
 		this.target = '_blank';
 		this.download = filename;
 		if(this.parent)
