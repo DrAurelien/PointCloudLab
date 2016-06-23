@@ -136,7 +136,7 @@ Cylinder.prototype.SetGeometry = function(geometry)
 	
 	if('Height' in geometry)
 	{
-		this.height = this.ParseRealProperty(geometry.Radius);
+		this.height = this.ParseRealProperty(geometry.Height);
 	}
 	
 	if(this.center == null || this.axis == null || this.radius == null || this.height == null)

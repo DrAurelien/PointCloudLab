@@ -385,6 +385,21 @@ PointCloud.prototype.GetActions = function(onDone)
 			label : 'Clear normals',
 			callback : function() { cloud.ClearNormals(); if(onDone) onDone(); }
 		});
+		
+		result.push({
+			label : 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape (sphere or cylinder)',
+			callback: function() {
+				if(!cloud.ransac)
+				{
+					cloud.ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
+				}
+				var sphere = cloud.ransac.FindBestFittingShape();
+				if(onDone)
+				{
+					onDone(sphere);
+				}
+			}
+		});
 	}
 	else
 	{
@@ -397,18 +412,6 @@ PointCloud.prototype.GetActions = function(onDone)
 	result.push({
 			label : 'Export',
 			callback : function() { ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv'); }
-	});
-	
-	result.push({
-		label : 'Detect a shape (sphere or cylinder)',
-		callback: function() {
-			var ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
-			var sphere = ransac.FindBestFittingShape();
-			if(onDone)
-			{
-				onDone(sphere);
-			}
-		}
 	});
 	
 	return result;

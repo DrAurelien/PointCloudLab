@@ -5,6 +5,12 @@ function Ransac(cloud, generators)
 	this.nbPoints = 3;
 	this.nbFailure = 100;
 	this.noise = 0.1;
+	this.ignore = new Array(this.cloud.Size());
+	
+	for(var ii=0; ii<this.cloud.Size(); ii++)
+	{
+		this.ignore[ii] = false;
+	}
 }
 
 Ransac.prototype.FindBestFittingShape = function()
@@ -27,6 +33,11 @@ Ransac.prototype.FindBestFittingShape = function()
 		}
 	}
 	
+	for(var ii=0; ii<best.points.length; ii++)
+	{
+		this.ignore[best.points[ii]] = true;
+	}
+	
 	return best.shape;
 }
 
@@ -37,18 +48,21 @@ Ransac.prototype.PickPoints = function()
 	while(points.length < this.nbPoints)
 	{
 		var index = Math.floor(Math.random()*this.cloud.Size());
-		for(var ii=0; ii<points.length; ii++)
+		if(!this.ignore[index])
 		{
-			if(index === points[ii].index)
-				index = null;
-		}
-		if(index != null && index < this.cloud.Size())
-		{
-			points.push({
-				index : index,
-				point : this.cloud.GetPoint(index),
-				normal : this.cloud.GetNormal(index)
-			});
+			for(var ii=0; ii<points.length; ii++)
+			{
+				if(index === points[ii].index)
+					index = null;
+			}
+			if(index != null && index < this.cloud.Size())
+			{
+				points.push({
+					index : index,
+					point : this.cloud.GetPoint(index),
+					normal : this.cloud.GetNormal(index)
+				});
+			}
 		}
 	}
 	
@@ -73,10 +87,11 @@ Ransac.prototype.GenerateCandidate = function(points)
 	for(var ii=0; ii<candidates.length; ii++)
 	{
 		var score = this.ComputeShapeScore(candidates[ii]);
-		if(candidate == null || candidate.score > score)
+		if(candidate == null || candidate.score > score.score)
 		{
 			candidate = {
-				score : score,
+				score : score.score,
+				points : score.points,
 				shape : candidates[ii]
 			};
 		}
@@ -87,13 +102,25 @@ Ransac.prototype.GenerateCandidate = function(points)
 
 Ransac.prototype.ComputeShapeScore = function(shape)
 {
-	var score = 0;
+	var score = {
+		score : 0,
+		points : []
+	};
 	for(var ii=0; ii<this.cloud.Size(); ii++)
 	{
-		var dist = shape.Distance(this.cloud.GetPoint(ii));
-		if(dist > this.noise)
-			dist = this.noise;
-		score += dist * dist;
+		if(!this.ignore[ii])
+		{
+			var dist = shape.Distance(this.cloud.GetPoint(ii));
+			if(dist > this.noise)
+			{
+				dist = this.noise;
+			}
+			else
+			{
+				score.points.push(ii);
+			}
+			score.score += dist * dist;
+		}
 	}
 	return score;
 }
