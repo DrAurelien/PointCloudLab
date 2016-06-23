@@ -264,3 +264,13 @@ Cylinder.prototype.RayIntersection = function(ray)
 	}
 	return tt;
 }
+
+Cylinder.prototype.Distance = function(point)
+{
+	var delta = point.Minus(this.center);
+	var hyp = delta.SqrNorm();
+	var adj = this.axis.Dot(delta);
+	var op = Math.sqrt(hyp - (adj*adj));
+	
+	return Math.abs(op - this.radius);
+}

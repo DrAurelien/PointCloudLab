@@ -400,9 +400,9 @@ PointCloud.prototype.GetActions = function(onDone)
 	});
 	
 	result.push({
-		label : 'Detect a sphere',
+		label : 'Detect a shape (sphere or cylinder)',
 		callback: function() {
-			var ransac = new Ransac(cloud, [RansacSphere]);
+			var ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
 			var sphere = ransac.FindBestFittingShape();
 			if(onDone)
 			{

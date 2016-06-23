@@ -114,3 +114,21 @@ function RansacSphere(points)
 	
 	return new Sphere(center, radius);
 }
+
+function RansacCylinder(points)
+{
+	var r1 = {
+		point : points[0].point,
+		direction : points[0].normal
+	};
+	var r2 = {
+		point : points[1].point,
+		direction : points[1].normal
+	};
+	
+	var center = LinesIntersection(r1, r2);
+	var axis = r1.direction.Cross(r2.direction);
+	var radius = 0.5 * (r1.point.Minus(center).Norm() + r2.point.Minus(center).Norm());
+	
+	return new Cylinder(center, axis, radius, 1.0);
+}
