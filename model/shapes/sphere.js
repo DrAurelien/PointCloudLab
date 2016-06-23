@@ -206,3 +206,8 @@ Sphere.prototype.RayIntersection = function(ray)
 	
 	return tt;
 }
+
+Sphere.prototype.Distance = function(point)
+{
+	return Math.abs(point.Minus(this.center).Norm() - this.radius);
+}

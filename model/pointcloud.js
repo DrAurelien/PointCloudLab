@@ -398,5 +398,18 @@ PointCloud.prototype.GetActions = function(onDone)
 			label : 'Export',
 			callback : function() { ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv'); }
 	});
+	
+	result.push({
+		label : 'Detect a sphere',
+		callback: function() {
+			var ransac = new Ransac(cloud, [RansacSphere]);
+			var sphere = ransac.FindBestFittingShape();
+			if(onDone)
+			{
+				onDone(sphere);
+			}
+		}
+	});
+	
 	return result;
 }
