@@ -386,20 +386,23 @@ PointCloud.prototype.GetActions = function(onDone)
 			callback : function() { cloud.ClearNormals(); if(onDone) onDone(); }
 		});
 		
-		result.push({
-			label : 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape (sphere or cylinder)',
-			callback: function() {
-				if(!cloud.ransac)
-				{
-					cloud.ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
+		if(!(cloud.ransac && cloud.ransac.IsDone()))
+		{
+			result.push({
+				label : 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape (sphere or cylinder)',
+				callback: function() {
+					if(!cloud.ransac)
+					{
+						cloud.ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
+					}
+					var sphere = cloud.ransac.FindBestFittingShape();
+					if(onDone)
+					{
+						onDone(sphere);
+					}
 				}
-				var sphere = cloud.ransac.FindBestFittingShape();
-				if(onDone)
-				{
-					onDone(sphere);
-				}
-			}
-		});
+			});
+		}
 	}
 	else
 	{

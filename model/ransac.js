@@ -13,6 +13,18 @@ function Ransac(cloud, generators)
 	}
 }
 
+Ransac.prototype.IsDone = function()
+{
+	for(var ii=0; ii<this.ignore.length; ii++)
+	{
+		if(!this.ignore[ii])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 Ransac.prototype.FindBestFittingShape = function()
 {
 	var nbTrials = 0;
@@ -32,6 +44,8 @@ Ransac.prototype.FindBestFittingShape = function()
 			}
 		}
 	}
+	
+	best.shape.ComputeBounds(best.points, this.cloud);
 	
 	for(var ii=0; ii<best.points.length; ii++)
 	{
@@ -139,7 +153,9 @@ function RansacSphere(points)
 	var center = LinesIntersection(r1, r2);
 	var radius = 0.5 * (r1.point.Minus(center).Norm() + r2.point.Minus(center).Norm());
 	
-	return new Sphere(center, radius);
+	var result = new Sphere(center, radius);
+	result.ComputeBounds = function(points, cloud) {};
+	return result;
 }
 
 function RansacCylinder(points)
@@ -157,5 +173,26 @@ function RansacCylinder(points)
 	var axis = r1.direction.Cross(r2.direction);
 	var radius = 0.5 * (r1.point.Minus(center).Norm() + r2.point.Minus(center).Norm());
 	
-	return new Cylinder(center, axis, radius, 1.0);
+	var result = new Cylinder(center, axis, radius, 1.0);
+	result.ComputeBounds = function(points, cloud)
+	{
+		var min = 0;
+		var max = 0;
+		for(var ii=0; ii<points.length; ii++)
+		{
+			var d = cloud.GetPoint(points[ii]).Minus(this.center).Dot(this.axis);
+			if(ii==0 || d < min)
+			{
+				min = d;
+			}
+			if(ii == 0 || d > max)
+			{
+				max = d;
+			}
+		}
+		var d = 0.5*(min+max);
+		this.center = this.center.Plus(this.axis.Times(d));
+		this.height = max - min;
+	};
+	return result;
 }
