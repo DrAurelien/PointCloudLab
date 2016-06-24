@@ -34,6 +34,9 @@ function DataHandler(dataWindow, updateCallback)
 						dataHandler.updateCallback();
 					}
 				}
+			}),
+			Button('?', function() {
+				window.open('help.html', '_blank');
 			})
 		]);
 		this.dataToolbar.className = 'DataToolbar';

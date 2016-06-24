@@ -1,0 +1,57 @@
+﻿<html>
+	<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" type="text/css" href="../style.css">
+		<title>Help page - CADLab</title>
+	</head>
+	
+	<body>
+		<div style="margin:auto; width:800px;">
+		<h1>Contenu de la fenêtre</h1>
+		<p>La fenêtre se divise en deux parties :
+			<ul>
+				<li>Le panneau de commandes, à gauche de l'écran. Ce panneau peut être masqué en cliquant sur la "poignée", à sa droite.</li>
+				<li>La partie de visualisation de la scène, occupant la totalité de la fenêtre (fond noire)</li>
+			</ul>
+		</p>
+		
+		<h1>Fenêtre de visualisation</h1>
+		<p>Vous avez la possibilité de déplacer la "caméra" permettant de visualiser la scène, en utilisant les commandes suivantes :
+		<ul>
+			<li>Maintenir le bouton gauche de la souris : tourner autour du centre de visualisation.</li>
+			<li>Maintenir le bouton droit de la souris : déplacer la caméra en translation latérale ou verticale.</li>
+			<li>Rouler la molette de la souris : (dé)zoomer</li>
+		</ul>
+		</p>
+		
+		<h1>Fonctionnement</h1>
+		<p>Ce module permet de :
+			<ul>
+				<li>Créer des primitives géographiques : sphère, cylindre, tore. Pour ajouter une nouvelle forme à la scène, cliquez sur le bouton "New" dans le panneau de commandes, et choisissez l'objet souhaité dans la liste déroulante.</li>
+				<li>Importer des maillages ou des nuages de points. Pour importer un objet, cliquez sur "Open", puis sélectionnez le menu approprié dans la liste déroulante. Iniduqez ensuite l'emplacement du fichier sur votre disque, puis validez la sélection. L'import de fichiers peut prendre du temps.</li>
+				<li>Modifier les paramètres des primitives (géométrie, couleur). Pour ce faire, cliquez sur la primitive dans la partie visualisation (ne fonctionne pas pour les maillages ou les nuages de points) ou dans la fenêtre de commandes. Les propriétés de l'objet sélectionné apparaissent alors dans la partie inférieure du panneau de commande. Modifiez les paramètres comme vous le souhaitez, puis cliquez sur "Apply" pour appliquer les modifications.</li>
+				<li>"Scanner" virtuellement la scnène. Le "scan" permet d'échantillonner la scène sous forme de nuage de points, depuis le point de vue courant, tout comme le ferait un scanner laser. Les nuages de points et le mallages ne peuvent pas être scannés. Le scan peut prendre un certain temps (une barre de progression indique l'avancement du processus). A l'issu du scan, le nuage de points résultant est ajouté à la scène.</li>
+			</ul>
+		</p>
+		
+		<h1>Opérations sur les nuages de points</h1>
+		<p>En effectuant un click droit sur un nuage de points dans le panneau de commandes, une liste déroulante donne accès à un certain nombre d"opérations avancées sur les nuages de points :
+			<ul>
+				<li>Calcul des vecteur normaux à la surface échantillonnée.</li>
+				<li>Export du nuage sous forme de fichier CSV.</li>
+				<li>Détection de formes (sphères et cylindres) dans le nuage de points, via l'algorithm RANSAC. Chaque appel à cette commande permet la détection d'une nouvelle forme dans le nuage (jusqu'à ce que tous les points du nuage soient associés à une forme).</li>
+			</ul>
+		</p>
+		
+		<h1>Formats de fichiers</h1>
+		<p>Les maillages doivent être stockés dans des fichiers <a href="https://fr.wikipedia.org/wiki/Format_de_fichier_de_polygones">PLY</a>.</p>
+		<p>Les nuages de points, quant à eux, doivent être stockés dans des fichier <a href="https://fr.wikipedia.org/wiki/Comma-separated_values">CSV</a>, formattés comme suit :
+			<ul>
+				<li>Chaque ligne du fichier décrit un point du nuage, ainsi que le vecteur normal qui lui est associé si il y en a</li>
+				<li>Les éléments de chaque ligne sont séparés par des point-virgules.</li>
+				<li>La première ligne du fichier constitue l'en-tête. Son contenu décrit les libellés des colonnes. Les colonnes attendues sont les suivantes : 'x', 'y' et 'z' (obligatoires) décrivent les coordonnées des points, tandis que 'nx', 'ny' et 'nz' (facultatives) décrivent les coordonnées de vecteurs normaux à la surface.</li>
+			</ul>
+		</p>
+		</div>
+	</body>
+</html>
