@@ -395,11 +395,7 @@ PointCloud.prototype.GetActions = function(onDone)
 					{
 						cloud.ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
 					}
-					var sphere = cloud.ransac.FindBestFittingShape();
-					if(onDone)
-					{
-						onDone(sphere);
-					}
+					cloud.ransac.FindBestFittingShape(onDone);
 				}
 			});
 		}

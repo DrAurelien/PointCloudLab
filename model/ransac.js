@@ -25,16 +25,29 @@ Ransac.prototype.IsDone = function()
 	return true;
 }
 
-Ransac.prototype.FindBestFittingShape = function()
+Ransac.prototype.FindBestFittingShape = function(onDone)
 {
+	var progress = 0;
 	var nbTrials = 0;
 	var best = null;
+	var ransac = this;
 	
-	while(nbTrials < this.nbFailure)
+	function RansacStep()
 	{
-		var points = this.PickPoints();
-		var candidate = this.GenerateCandidate(points);
+		if(nbTrials>=ransac.nbFailure)
+		{
+			return null;
+		}
+		
+		var points = ransac.PickPoints();
+		var candidate = ransac.GenerateCandidate(points);
+		
 		nbTrials ++;
+		if(nbTrials > progress)
+		{
+			progress = nbTrials;
+		}
+		
 		if(candidate != null)
 		{
 			if(best == null || best.score > candidate.score)
@@ -43,16 +56,23 @@ Ransac.prototype.FindBestFittingShape = function()
 				nbTrials = 0;
 			}
 		}
+		
+		return {current : progress, total : ransac.nbFailure};
 	}
 	
-	best.shape.ComputeBounds(best.points, this.cloud);
-	
-	for(var ii=0; ii<best.points.length; ii++)
+	function FinalizeResult()
 	{
-		this.ignore[best.points[ii]] = true;
+		best.shape.ComputeBounds(best.points, ransac.cloud);
+		
+		for(var ii=0; ii<best.points.length; ii++)
+		{
+			ransac.ignore[best.points[ii]] = true;
+		}
+		
+		onDone(best.shape);
 	}
 	
-	return best.shape;
+	LongProcess('Searching for a shape', RansacStep, FinalizeResult);
 }
 
 Ransac.prototype.PickPoints = function()
