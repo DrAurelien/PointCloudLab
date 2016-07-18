@@ -48,7 +48,6 @@ div.DataWindowHandle:hover
 
 div.DataToolbar, div.DataArea, div.PropertiesArea
 {
-	border : 1ps solid black;
 	margin : 0px;
 	padding : 10px;
 	overflow : auto;
@@ -111,6 +110,27 @@ div.PopupOption
 div.PopupOption:hover
 {
 	background-color : darkgray;
+}
+
+div.Dialog
+{
+	position : fixed;
+	left : 400px;
+	top : 200px;
+	display : inline-block;
+	background-color : white;
+	border-radius: 3px;
+	padding : 10px;
+	opacity : 0.95;
+	z-index : 200;
+	border : 1px solid black;
+	margin : auto;
+	overflow : auto;
+}
+
+table.DialogContent
+{
+	width : 100%;
 }
 
 input.FileOpener

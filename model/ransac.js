@@ -1,7 +1,7 @@
 function Ransac(cloud, generators)
 {
 	this.cloud = cloud;
-	this.generators = generators;
+	this.generators = generators ? generators : null;
 	this.nbPoints = 3;
 	this.nbFailure = 100;
 	this.noise = 0.1;
@@ -11,6 +11,11 @@ function Ransac(cloud, generators)
 	{
 		this.ignore[ii] = false;
 	}
+}
+
+Ransac.prototype.SetGenerators = function(generators)
+{
+	this.generators = generators;
 }
 
 Ransac.prototype.IsDone = function()

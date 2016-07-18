@@ -386,16 +386,64 @@ PointCloud.prototype.GetActions = function(onDone)
 			callback : function() { cloud.ClearNormals(); if(onDone) onDone(); }
 		});
 		
+		if(cloud.ransac)
+		{
+			result.push({
+				label : 'Reset detection',
+				callback : function() { cloud.ransac = null; if(onDone) onDone(); }
+			});
+		}
+		
 		if(!(cloud.ransac && cloud.ransac.IsDone()))
 		{
 			result.push({
-				label : 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape (sphere or cylinder)',
+				label : 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape',
 				callback: function() {
 					if(!cloud.ransac)
 					{
-						cloud.ransac = new Ransac(cloud, [RansacSphere, RansacCylinder]);
+						cloud.ransac = new Ransac(cloud);
+						var dialog = new Dialog(
+							function(properties)
+							{
+								try
+								{
+									cloud.ransac.nbFailure = parseInt(properties.GetValue('Failures'));
+									cloud.ransac.noise = parseFloat(properties.GetValue('Noise'));
+								}
+								catch(exc)
+								{
+									return false;
+								}
+								var generators = [];
+								if(properties.GetValue('Spheres'))
+								{
+									generators.push(RansacSphere);
+								}
+								if(properties.GetValue('Cylinders'))
+								{
+									generators.push(RansacCylinder);
+								}
+								cloud.ransac.SetGenerators(generators);
+								
+								cloud.ransac.FindBestFittingShape(onDone);
+								return true;
+							},
+							function()
+							{
+								cloud.ransac = null;
+								return true;
+							}
+						);
+						dialog.InsertValue('Failures', cloud.ransac.nbFailure);
+						dialog.InsertValue('Noise', cloud.ransac.noise);
+						dialog.InsertTitle('Shapes to detect');
+						dialog.InsertCheckBox('Spheres', true);
+						dialog.InsertCheckBox('Cylinders', true);
 					}
-					cloud.ransac.FindBestFittingShape(onDone);
+					else
+					{
+						cloud.ransac.FindBestFittingShape(onDone);	
+					}
 				}
 			});
 		}
