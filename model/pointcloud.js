@@ -415,6 +415,10 @@ PointCloud.prototype.GetActions = function(onDone)
 									return false;
 								}
 								var generators = [];
+								if(properties.GetValue('Planes'))
+								{
+									generators.push(RansacPlane);
+								}
 								if(properties.GetValue('Spheres'))
 								{
 									generators.push(RansacSphere);
@@ -437,6 +441,7 @@ PointCloud.prototype.GetActions = function(onDone)
 						dialog.InsertValue('Failures', cloud.ransac.nbFailure);
 						dialog.InsertValue('Noise', cloud.ransac.noise);
 						dialog.InsertTitle('Shapes to detect');
+						dialog.InsertCheckBox('Planes', true);
 						dialog.InsertCheckBox('Spheres', true);
 						dialog.InsertCheckBox('Cylinders', true);
 					}

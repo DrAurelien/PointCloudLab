@@ -164,6 +164,31 @@ Ransac.prototype.ComputeShapeScore = function(shape)
 	return score;
 }
 
+function RansacPlane(points)
+{
+	var result = new Plane(points[0].point, points[0].normal, 0);
+	result.ComputeBounds = function(points, cloud)
+	{
+		this.center = new Vector([0, 0, 0]);
+		for(var ii=0; ii<points.length; ii++)
+		{
+			this.center = this.center.Plus(cloud.GetPoint(points[ii]));
+		}
+		this.center = this.center.Times(1.0/points.length);
+		this.patchRadius = 0;
+		for(var ii=0; ii<points.length; ii++)
+		{
+			var d = cloud.GetPoint(points[ii]).Minus(this.center).SqrNorm();
+			if(d > this.patchRadius)
+			{
+				this.patchRadius = d;
+			}
+		}
+		this.patchRadius = Math.sqrt(this.patchRadius);
+	};
+	return result;
+}
+
 function RansacSphere(points)
 {
 	var r1 = {

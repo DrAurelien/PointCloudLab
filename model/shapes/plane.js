@@ -78,6 +78,11 @@ Plane.prototype.ComputeMesh = function(sampling)
 	}
 }
 
+Plane.prototype.Distance = function(point)
+{
+	return Math.abs(point.Minus(this.center).Dot(this.normal));
+}
+
 Plane.prototype.Draw = function(drawingContext)
 {	
 	this.ComputeMesh(drawingContext.sampling);
