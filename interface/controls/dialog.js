@@ -28,8 +28,11 @@ function Dialog(onAccept, onCancel)
 		};
 	}
 	
-	cell.appendChild(Button('Ok', ApplyAndClose(onAccept)));
-	cell.appendChild(Button('Cancel', ApplyAndClose(onCancel)));
+	var toolbar = Toolbar([
+		Button('Ok', ApplyAndClose(onAccept)),
+		Button('Cancel', ApplyAndClose(onCancel))
+	]);
+	cell.appendChild(toolbar);
 	
 	document.body.appendChild(this.window);
 }
@@ -54,7 +57,11 @@ Dialog.prototype.InsertItem = function(title, control)
 
 Dialog.prototype.InsertTitle = function(title, defaultValue)
 {
-	return this.InsertItem(title);
+	var row = this.InsertItem(title);
+	var cell = row.cells[0];
+	cell.style.fontWeight = 'bold';
+	cell.style.textDecoration = 'underline';
+	return row;
 }
 
 Dialog.prototype.InsertValue = function(title, defaultValue)

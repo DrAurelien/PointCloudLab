@@ -17,6 +17,7 @@ function DataHandler(dataWindow, updateCallback)
 			//Items creation button
 			ComboBox('New',
 			[
+				this.GetItemCreator('Plane', scene),
 				this.GetItemCreator('Sphere', scene),
 				this.GetItemCreator('Cylinder', scene),
 				this.GetItemCreator('Torus', scene),
@@ -144,6 +145,9 @@ function DataHandler(dataWindow, updateCallback)
 			{	
 				switch(objectName)
 				{
+					case 'Plane' :
+						dataHandler.AddCreatedObject(scene, new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1));
+						break;
 					case 'Sphere' :
 						dataHandler.AddCreatedObject(scene, new Sphere(new Vector([0, 0, 0]), 1));
 						break;

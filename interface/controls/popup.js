@@ -27,7 +27,6 @@ function Popup(owner, options)
 		popup.style.top = rect.bottom;
 		popup.style.left = rect.left;
 		popup.owner = owner;
-		
 		return popup;
 	}
 	
