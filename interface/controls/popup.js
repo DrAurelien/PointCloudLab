@@ -27,6 +27,10 @@ function Popup(owner, options)
 		popup.style.top = rect.bottom;
 		popup.style.left = rect.left;
 		popup.owner = owner;
+		popup.onmouseleave = function()
+		{
+			popup.parentNode.removeChild(popup);
+		}
 		return popup;
 	}
 	
