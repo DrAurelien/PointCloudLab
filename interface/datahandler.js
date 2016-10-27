@@ -78,7 +78,7 @@ function DataHandler(dataWindow, updateCallback)
 	{
 		if(this.currentItem != null)
 		{
-			var height = this.window.clientHeight/2;
+			var height = (this.window.clientHeight - this.dataToolbar.getBoundingClientRect().height) / 2;
 			this.dataArea.style.height = height;
 			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
