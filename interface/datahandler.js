@@ -15,14 +15,22 @@ function DataHandler(dataWindow, updateCallback)
 		//Data toolbar
 		this.dataToolbar = Toolbar([
 			//Items creation button
-			ComboBox('New',
-			[
-				this.GetItemCreator('Plane', scene),
-				this.GetItemCreator('Sphere', scene),
-				this.GetItemCreator('Cylinder', scene),
-				this.GetItemCreator('Torus', scene),
-				this.GetItemCreator('Scan from current viewpoint', scene)
-			]),
+			ComboBox('New', function()
+				{
+					var itemsCreationMenu = [
+						dataHandler.GetItemCreator('Plane', scene),
+						dataHandler.GetItemCreator('Sphere', scene),
+						dataHandler.GetItemCreator('Cylinder', scene),
+						dataHandler.GetItemCreator('Torus', scene)
+					];
+					
+					if(scene.objects && scene.objects.length)
+					{
+						itemsCreationMenu.push(dataHandler.GetItemCreator('Scan from current viewpoint', scene));
+					}
+					return itemsCreationMenu;
+				}
+			),
 			//File import button
 			FileOpener('Open', function(createdObject) {
 				if(createdObject != null)

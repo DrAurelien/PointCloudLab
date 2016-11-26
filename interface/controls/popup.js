@@ -36,11 +36,12 @@ function Popup(owner, options)
 	
 	function FillPopupList(popup)
 	{
-		for(var index=0; index<options.length; index++)
+		var popupContent = ((typeof options == 'function') ? options() : options);
+		for(var index=0; index<popupContent.length; index++)
 		{
 			var item = document.createElement('div');
 			item.className = 'PopupOption';
-			var itemLabel = document.createTextNode(options[index].label);
+			var itemLabel = document.createTextNode(popupContent[index].label);
 			item.appendChild(itemLabel);
 			
 			//Javascript closure : create an object to avoid closure issues
@@ -64,7 +65,7 @@ function Popup(owner, options)
 				}
 			}
 			
-			item.onclick = new ItemClicked(popup, options[index].callback).Callback();
+			item.onclick = new ItemClicked(popup, popupContent[index].callback).Callback();
 			popup.appendChild(item);
 		}
 		

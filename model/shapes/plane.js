@@ -51,31 +51,29 @@ Plane.prototype.SetGeometry = function(geometry)
 
 Plane.prototype.ComputeMesh = function(sampling)
 {
-	if(!this.mesh)
+	var points = new PointCloud();
+	points.Reserve(sampling+1);
+	
+	var xx = this.normal.GetOrthogonnal();
+	var yy = this.normal.Cross(xx).Normalized();
+	for(var ii=0; ii<sampling; ii++)
 	{
-		var points = new PointCloud();
-		points.Reserve(sampling+1);
-		
-		var xx = this.normal.GetOrthogonnal();
-		var yy = this.normal.Cross(xx).Normalized();
-		for(var ii=0; ii<sampling; ii++)
-		{
-			var phi = 2.0*ii*Math.PI/sampling;
-			var c = Math.cos(phi);
-			var s = Math.sin(phi);
-			var radiusVect = xx.Times(c).Plus(yy.Times(s));
-			points.PushPoint(this.center.Plus(radiusVect.Times(this.patchRadius)));
-		}
-		points.PushPoint(this.center);
-		
-		this.mesh = new Mesh(points);
-		this.mesh.Reserve(sampling);
-		for(var ii=0; ii<sampling; ii++)
-		{
-			this.mesh.PushFace([ii, sampling, (ii+1)%sampling]);
-		}
-		this.mesh.ComputeNormals();
+		var phi = 2.0*ii*Math.PI/sampling;
+		var c = Math.cos(phi);
+		var s = Math.sin(phi);
+		var radiusVect = xx.Times(c).Plus(yy.Times(s));
+		points.PushPoint(this.center.Plus(radiusVect.Times(this.patchRadius)));
 	}
+	points.PushPoint(this.center);
+	
+	var mesh = new Mesh(points);
+	mesh.Reserve(sampling);
+	for(var ii=0; ii<sampling; ii++)
+	{
+		mesh.PushFace([ii, sampling, (ii+1)%sampling]);
+	}
+	mesh.ComputeNormals();
+	return mesh;
 }
 
 Plane.prototype.Distance = function(point)
@@ -84,13 +82,12 @@ Plane.prototype.Distance = function(point)
 }
 
 Plane.prototype.Draw = function(drawingContext)
-{	
-	this.ComputeMesh(drawingContext.sampling);
-	
-	if(this.mesh)
+{
+	if(!this.mesh)
 	{
-		this.DrawMesh(this.mesh, drawingContext);
+		this.mesh = this.ComputeMesh(drawingContext.sampling);
 	}
+	this.DrawMesh(this.mesh, drawingContext);
 }
 
 Plane.prototype.GetBoundingBox = function()

@@ -57,64 +57,60 @@ Torus.prototype.SetGeometry = function(geometry)
 
 Torus.prototype.ComputeMesh = function(sampling)
 {
-	if(!this.mesh)
+	var points = new PointCloud();
+	points.Reserve(sampling*sampling);
+	
+	var xx = this.axis.GetOrthogonnal();
+	var yy = this.axis.Cross(xx).Normalized();
+	for(var ii=0; ii<sampling; ii++)
 	{
-		var points = new PointCloud();
-		points.Reserve(sampling*sampling);
-		
-		var xx = this.axis.GetOrthogonnal();
-		var yy = this.axis.Cross(xx).Normalized();
-		for(var ii=0; ii<sampling; ii++)
+		var phi = 2.0*ii*Math.PI/sampling;
+		var c = Math.cos(phi);
+		var s = Math.sin(phi);
+		var radiusVect = xx.Times(c).Plus(yy.Times(s));
+		var faceCenter = this.center.Plus(radiusVect.Times(this.greatRadius));
+		for(var jj=0; jj<sampling; jj++)
 		{
-			var phi = 2.0*ii*Math.PI/sampling;
-			var c = Math.cos(phi);
-			var s = Math.sin(phi);
-			var radiusVect = xx.Times(c).Plus(yy.Times(s));
-			var faceCenter = this.center.Plus(radiusVect.Times(this.greatRadius));
-			for(var jj=0; jj<sampling; jj++)
-			{
-				var theta = 2.0*jj*Math.PI/sampling;
-				var ct = Math.cos(theta);
-				var st = Math.sin(theta);
-				points.PushPoint(faceCenter.Plus(radiusVect.Times(this.smallRadius*ct)).Plus(this.axis.Times(this.smallRadius*st)));
-			}
+			var theta = 2.0*jj*Math.PI/sampling;
+			var ct = Math.cos(theta);
+			var st = Math.sin(theta);
+			points.PushPoint(faceCenter.Plus(radiusVect.Times(this.smallRadius*ct)).Plus(this.axis.Times(this.smallRadius*st)));
 		}
-		
-		this.mesh = new Mesh(points);
-		this.mesh.Reserve(2 * sampling * sampling);
-		for(var ii=0; ii<sampling; ii++)
-		{
-			var ia = ii*sampling;
-			var ib = ((ii+1)%sampling)*sampling;
-			for(var jj=0; jj<sampling; jj++)
-			{
-				var ja = jj;
-				var jb = ((jj+1)%sampling);
-				//            [ia]        [ib]
-				//   [ja] ---- aa -------- ba
-				//             |           |
-				//   [jb] ---- ab -------- bb
-				var aa = ia + ja;
-				var ab = ia + jb;s
-				var bb = ib + jb;
-				var ba = ib + ja;
-				this.mesh.PushFace([ab, aa, ba]);
-				this.mesh.PushFace([ab, ba, bb]);
-			}
-		}
-		this.mesh.ComputeNormals();
-		//this.mesh = points;
 	}
+	
+	var mesh = new Mesh(points);
+	mesh.Reserve(2 * sampling * sampling);
+	for(var ii=0; ii<sampling; ii++)
+	{
+		var ia = ii*sampling;
+		var ib = ((ii+1)%sampling)*sampling;
+		for(var jj=0; jj<sampling; jj++)
+		{
+			var ja = jj;
+			var jb = ((jj+1)%sampling);
+			//            [ia]        [ib]
+			//   [ja] ---- aa -------- ba
+			//             |           |
+			//   [jb] ---- ab -------- bb
+			var aa = ia + ja;
+			var ab = ia + jb;s
+			var bb = ib + jb;
+			var ba = ib + ja;
+			mesh.PushFace([ab, aa, ba]);
+			mesh.PushFace([ab, ba, bb]);
+		}
+	}
+	mesh.ComputeNormals();
+	return mesh;
 }
 
 Torus.prototype.Draw = function(drawingContext)
-{	
-	this.ComputeMesh(drawingContext.sampling);
-	
-	if(this.mesh)
+{
+	if(!this.mesh)
 	{
-		this.DrawMesh(this.mesh, drawingContext);
+		this.mesh = this.ComputeMesh(drawingContext.sampling);
 	}
+	this.DrawMesh(this.mesh, drawingContext);
 }
 
 Torus.prototype.GetBoundingBox = function()

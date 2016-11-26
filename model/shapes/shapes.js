@@ -73,3 +73,40 @@ Shape.prototype.DrawUnitShape = function(unitShape, drawingContext)
 		}
 	}
 }
+
+Shape.prototype.GetActions = function(onDone)
+{
+	var shape = this;
+	var result = [];
+	if(this.ComputeMesh)
+	{
+		result.push({
+			label : 'Create mesh',
+			callback : function() {
+				var dialog = new Dialog(
+					function(properties)
+					{
+						var sampling;
+						try
+						{
+							sampling = parseInt(properties.GetValue('Sampling'));
+						}
+						catch(exc)
+						{
+							return false;
+						}
+						var mesh = shape.ComputeMesh(sampling);
+						onDone(mesh);
+						return true;
+					},
+					function()
+					{
+						return true;
+					}
+				);
+				dialog.InsertValue('Sampling', 30);
+			}
+		});
+	}
+	return result;
+}
