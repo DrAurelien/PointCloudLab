@@ -50,6 +50,7 @@ Cylinder.prototype.SetGeometry = function(geometry)
 	}
 	
 	this.axis = this.axis.Normalized();
+	this.mesh = null;
 	
 	return true;
 }

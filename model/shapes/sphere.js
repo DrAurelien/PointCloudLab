@@ -34,6 +34,7 @@ Sphere.prototype.SetGeometry= function(geometry)
 	{
 		return false;
 	}
+	this.mesh = null;
 	return true;
 };
 
@@ -71,8 +72,8 @@ Sphere.prototype.ComputeMesh = function(sampling)
 	var points = new PointCloud();
 	points.Reserve(sampling*halfSampling+2);
 	
-	points.PushPoint(new Vector([0, 0, 1]));
-	points.PushPoint(new Vector([0, 0, -1]));
+	points.PushPoint(this.center.Plus(new Vector([0, 0, 1])));
+	points.PushPoint(this.center.Plus(new Vector([0, 0, -1])));
 	//Spherical coordinates
 	for(var jj=0; jj<halfSampling; jj++)
 	{

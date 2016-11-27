@@ -180,5 +180,41 @@ Mesh.prototype.Draw = function(drawingContext)
 
 Mesh.prototype.RayIntersection = function(ray)
 {
-	return [];
+	function LineFaceIntersection(line, face)
+	{
+		//Compute line / face intersection
+		//solve line.from + t * line.dir
+		var normal = face[1].Minus(face[0]).Cross(face[2].Minus(face[0]));
+		var dd = normal.Dot(face[0]);
+		var nn = line.dir.Dot(normal);
+		if(Math.abs(nn) < 1e-6)
+		{
+			return null;
+		}
+		var tt = (dd - line.from.Dot(normal)) / nn;
+		
+		var point = line.from.Plus(line.dir.Times(tt));
+		
+		//Check the point is inside the triangle
+		for(var ii=0; ii<3; ii++)
+		{
+			var test = point.Minus(face[ii]).Cross(face[(ii+1)%3].Minus(face[ii]));
+			if(test.Dot(normal) > 0)
+			{
+				return null;
+			}
+		}
+		return tt;
+	}
+	
+	var result = [];
+	for(var ii=0; ii<this.Size(); ii++)
+	{
+		var tt = LineFaceIntersection(ray, this.GetFace(ii).points);
+		if(tt !== null)
+		{
+			result.push(tt);
+		}
+	}
+	return result;
 }
