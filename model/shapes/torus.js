@@ -104,15 +104,6 @@ Torus.prototype.ComputeMesh = function(sampling)
 	return mesh;
 }
 
-Torus.prototype.Draw = function(drawingContext)
-{
-	if(!this.mesh)
-	{
-		this.mesh = this.ComputeMesh(drawingContext.sampling);
-	}
-	this.DrawMesh(this.mesh, drawingContext);
-}
-
 Torus.prototype.GetBoundingBox = function()
 {
 	var proj = new Vector([this.axis.Get(0), this.axis.Get(1)]);

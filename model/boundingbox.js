@@ -1,4 +1,4 @@
-//Drawable unit sphere centered at (0,0,0)
+//Drawable unit box at (0,0,0)
 var UnitBoundingBoxPoints =
 {
 	points : [],

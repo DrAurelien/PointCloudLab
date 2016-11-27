@@ -1,97 +1,3 @@
-//Drawable unit sphere centered at (0,0,0)
-var UnitSpherePoints =
-{
-	points : [],
-	indices : [],
-	pointsBuffer : null,
-	normalsBuffer : null,
-	indexBuffer : null,
-	sampling : 0,
-	elements : [],
-	
-	Sample : function(sampling, glContext)
-	{
-		if(sampling != this.sampling)
-		{
-			this.sampling = sampling;
-			
-			//Poles
-			this.points = [
-				0, 0, 1,
-				0, 0, -1
-			];
-			//Spherical coordinates
-			var halfSampling = Math.ceil(sampling/2);
-			for(var jj=1; jj<halfSampling; jj++)
-			{
-				for(var ii=0; ii<sampling; ii++)
-				{
-					var phi = jj*Math.PI/halfSampling;
-					var theta = 2.0*ii*Math.PI/sampling;
-					this.points = this.points.concat([
-						Math.cos(theta) * Math.sin(phi),
-						Math.sin(theta) * Math.sin(phi),
-						Math.cos(phi)
-					]);
-				}
-			}
-			
-			this.elements = [];
-			//poles indices
-			var firstSliceShift = 2;
-			var lastSliceShift = (halfSampling-2)*sampling+firstSliceShift;
-			//North
-			var northPole = new Array(sampling+2)
-			var southPole = new Array(sampling+2)
-			northPole[0] = 0;
-			southPole[0] = 1;
-			for(var ii=0; ii<sampling; ii++)
-			{
-				northPole[1+ii] = ii+firstSliceShift;
-				southPole[1+ii] = ii+lastSliceShift;
-			}
-			northPole[1+sampling] = firstSliceShift;
-			southPole[1+sampling] = lastSliceShift;
-			this.elements.push({from : this.indices.length, count : northPole.length, type : glContext.TRIANGLE_FAN});
-			this.indices = northPole;
-			this.elements.push({from : this.indices.length, count : southPole.length, type : glContext.TRIANGLE_FAN});
-			this.indices = this.indices.concat(southPole);
-			
-			//strips
-			var nbStrips = halfSampling-2;
-			for(var jj=0; jj<nbStrips; jj++)
-			{
-				var strip = new Array(2*(sampling+1));
-				var fromSliceShift = firstSliceShift+(jj*sampling);
-				var toSliceShift = firstSliceShift+((jj+1)*sampling);
-				for(var ii=0; ii<sampling; ii++)
-				{
-					strip[2*ii] = fromSliceShift+ii;
-					strip[2*ii+1] = toSliceShift+ii;
-				}
-				strip[2*sampling] = firstSliceShift+(jj*sampling);
-				strip[2*sampling+1] = firstSliceShift+((jj+1)*sampling);
-				this.elements.push({from : this.indices.length, count : strip.length, type : glContext.TRIANGLE_STRIP});
-				this.indices = this.indices.concat(strip);
-			}
-			
-			//Create webgl buffers
-			//positions buffer
-			console.log('   Creating sphere points buffer ('+this.points.length/3+' points)');
-			this.pointsBuffer = glContext.createBuffer();
-			glContext.bindBuffer(glContext.ARRAY_BUFFER, this.pointsBuffer);
-			glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(this.points), glContext.STATIC_DRAW);
-			//indices buffer
-			console.log('   Creating sphere indices buffer');
-			this.indexBuffer = glContext.createBuffer();
-			glContext.bindBuffer(glContext.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-			glContext.bufferData(glContext.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), glContext.STATIC_DRAW);
-			//normals buffer
-			this.normalsBuffer = this.pointsBuffer;
-		}
-	}
-}
-
 //Sphere class
 function Sphere(center, radius)
 {
@@ -131,20 +37,6 @@ Sphere.prototype.SetGeometry= function(geometry)
 	return true;
 };
 
-Sphere.prototype.Draw = function(drawingContext)
-{
-	var shapetransform = IdentityMatrix(4);
-	for(var index=0; index<3; index++)
-	{
-		shapetransform.SetValue(index, index, this.radius);
-		shapetransform.SetValue(index, 3, this.center.Get(index));
-	}
-	
-	drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, drawingContext.gl.FALSE, new Float32Array(shapetransform.values));
-	
-	this.DrawUnitShape(UnitSpherePoints, drawingContext);
-};
-
 Sphere.prototype.GetBoundingBox = function()
 {
 	var size = new Vector([1, 1, 1]).Times(2*this.radius);
@@ -171,6 +63,71 @@ Sphere.prototype.GetInnerBaseToWorldMatrix = function()
 		matrix.SetValue(index, 3, this.center.Get(index));
 	}
 	return matrix;
+}
+
+Sphere.prototype.ComputeMesh = function(sampling)
+{
+	var halfSampling = Math.ceil(sampling/2);
+	var points = new PointCloud();
+	points.Reserve(sampling*halfSampling+2);
+	
+	points.PushPoint(new Vector([0, 0, 1]));
+	points.PushPoint(new Vector([0, 0, -1]));
+	//Spherical coordinates
+	for(var jj=0; jj<halfSampling; jj++)
+	{
+		for(var ii=0; ii<sampling; ii++)
+		{
+			var phi = ((jj+1)*Math.PI)/(halfSampling+1);
+			var theta = 2.0*ii*Math.PI/sampling;
+			var radial = new Vector([
+				Math.cos(theta) * Math.sin(phi),
+				Math.sin(theta) * Math.sin(phi),
+				Math.cos(phi)
+			]);
+			points.PushPoint(this.center.Plus(radial.Times(this.radius)));
+		}
+	}
+	
+	var mesh = new Mesh(points);
+	mesh.Reserve(2 * sampling  + (halfSampling-1) * sampling);
+	
+	//North pole
+	var northShift = 2;
+	for(var ii=0; ii<sampling; ii++)
+	{
+		mesh.PushFace([ii+northShift, 0, ((ii+1)%sampling)+northShift]);
+	}
+	//South pole
+	var southShift = (halfSampling-1)*sampling+northShift;
+	for(var ii=0; ii<sampling; ii++)
+	{
+		mesh.PushFace([1, ii+southShift, ((ii+1)%sampling)+southShift]);
+	}
+	//Strips
+	for(var jj=0; (jj+1)<halfSampling; jj++)
+{
+		var ja = jj*sampling;
+		var jb = (jj+1)*sampling;
+		for(var ii=0; ii<sampling; ii++)
+		{
+			var ia = ii;
+			var ib = (ii+1)%sampling;
+			//            [ia]        [ib]
+			//   [ja] ---- aa -------- ba
+			//             |           |
+			//   [jb] ---- ab -------- bb
+			var aa = ia + ja + northShift;
+			var ab = ia + jb + northShift;
+			var bb = ib + jb + northShift;
+			var ba = ib + ja + northShift;
+			mesh.PushFace([ab, aa, ba]);
+			mesh.PushFace([ab, ba, bb]);
+		}
+	}
+	mesh.ComputeNormals();
+	
+	return mesh;
 }
 
 Sphere.prototype.RayIntersection = function(ray)

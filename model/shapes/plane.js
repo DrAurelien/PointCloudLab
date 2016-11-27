@@ -81,15 +81,6 @@ Plane.prototype.Distance = function(point)
 	return Math.abs(point.Minus(this.center).Dot(this.normal));
 }
 
-Plane.prototype.Draw = function(drawingContext)
-{
-	if(!this.mesh)
-	{
-		this.mesh = this.ComputeMesh(drawingContext.sampling);
-	}
-	this.DrawMesh(this.mesh, drawingContext);
-}
-
 Plane.prototype.GetBoundingBox = function()
 {
 	var size = new Vector([
