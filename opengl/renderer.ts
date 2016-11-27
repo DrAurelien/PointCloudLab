@@ -11,7 +11,7 @@ class Renderer {
     camera: Camera;
     private mousetracker: MouseTracker;
 
-    constructor(public renderingArea: HTMLCanvasElement, public refreshCallback: Function, scene : Scene) {
+    constructor(public renderingArea: HTMLCanvasElement, public refreshCallback: Function, scene : any) {
         this.drawingcontext = new DrawingContext(renderingArea, refreshCallback);
         this.camera = new Camera(this.drawingcontext);
 
@@ -102,7 +102,7 @@ class Renderer {
     }
     
 
-    Draw(scene : Scene) : void {
+    Draw(scene : any) : void {
         var gl = this.drawingcontext.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -122,14 +122,14 @@ class Renderer {
         return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
     }
 
-    ResolveRayIntersection(ray: Ray, scene: Scene) : Picking {
+    ResolveRayIntersection(ray: Ray, scene: any) : Picking {
         let picked : any = null;
-        for (var index = 0; index < scene.items.length; index++) {
-            if (scene.items[index].visible) {
-                var intersections = scene.items[index].RayIntersection(ray);
+        for (var index = 0; index < scene.objects.length; index++) {
+            if (scene.objects[index].visible) {
+                var intersections = scene.objects[index].RayIntersection(ray);
                 for (var ii = 0; ii < intersections.length; ii++) {
                     if (picked == null || picked.depth > intersections[ii]) {
-                        picked = new Picking(scene.items[index], intersections[ii]);
+                        picked = new Picking(scene.objects[index], intersections[ii]);
                     }
                 }
             }

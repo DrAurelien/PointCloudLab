@@ -22,18 +22,34 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="interface\controls\button.ts" />
+    <TypeScriptCompile Include="interface\controls\combobox.ts" />
+    <TypeScriptCompile Include="interface\controls\control.ts" />
+    <TypeScriptCompile Include="interface\controls\popup.ts" />
+    <TypeScriptCompile Include="interface\controls\toolbar.ts" />
+    <TypeScriptCompile Include="interface\datahandler.ts" />
+    <TypeScriptCompile Include="interface\interface.ts" />
     <TypeScriptCompile Include="maths\eigendecomposition.ts" />
     <TypeScriptCompile Include="maths\ludecomposition.ts" />
     <TypeScriptCompile Include="maths\matrix.ts" />
     <TypeScriptCompile Include="maths\qrdecomposition.ts" />
     <TypeScriptCompile Include="maths\ray.ts" />
     <TypeScriptCompile Include="maths\vector.ts" />
+    <TypeScriptCompile Include="model\cadprimitive.ts" />
+    <TypeScriptCompile Include="model\pointcloud.ts" />
+    <TypeScriptCompile Include="model\scene.ts" />
+    <TypeScriptCompile Include="model\shapes\cylinder.ts" />
+    <TypeScriptCompile Include="model\shapes\plane.ts" />
+    <TypeScriptCompile Include="model\shapes\shape.ts" />
+    <TypeScriptCompile Include="model\shapes\sphere.ts" />
+    <TypeScriptCompile Include="model\shapes\torus.ts" />
     <TypeScriptCompile Include="opengl\camera.ts" />
     <TypeScriptCompile Include="opengl\drawingcontext.ts" />
     <TypeScriptCompile Include="opengl\picking.ts" />
     <TypeScriptCompile Include="opengl\renderer.ts" />
     <TypeScriptCompile Include="opengl\renderingtype.ts" />
     <Content Include="index.html" />
+    <Content Include="style.css" />
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>

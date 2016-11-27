@@ -1,0 +1,239 @@
+﻿body
+{
+	overflow : hidden;
+	padding : 0px;
+	margin : 0px;
+	font-size : 11px;
+	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+canvas
+{
+	position : fixed;
+	top : 0px;
+	left : 0px;
+	margin : 0px;
+}
+
+div.DataWindow
+{
+	position : fixed;
+	left : 10px;
+	top : 10px;
+	width : 300px;
+	overflow : hidden;
+	margin : 0px;
+	padding : 0px;
+	background-color : white;
+	opacity : 0.8;
+	z-index : 1;
+	border-radius: 7px;
+}
+
+div.DataWindowHandle
+{
+	position : absolute;
+	right : 0px;
+	top : 0px;
+	width : 7px;
+	background-color : gray;
+	opacity : 0.8;
+	z-index: 2;
+}
+
+div.DataWindowHandle:hover
+{
+	background-color : lightgray;
+}
+
+div.DataToolbar, div.DataArea, div.PropertiesArea
+{
+	margin : 0px;
+	padding : 10px;
+	overflow : auto;
+}
+
+div.SceneItem, div.SelectedSceneItem
+{
+	padding-left : 10px;
+	cursor : pointer;
+}
+
+div.SelectedSceneItem
+{
+	background-color : black;
+	color : white;
+	font-weight : bold;
+}
+
+div.SceneItem:hover
+{
+	background-color : lightgray;
+}
+
+div.Button, div.ComboButton, div.FileOpener
+{
+	width : 70px;
+	height : 17px;
+	text-align : center;
+	vertical-align : middle;
+	background-color : darkgray;
+	border : 1px solid lightgray;
+	background-color : lightgray;
+	border-radius: 3px;
+	margin : auto;
+	cursor : pointer;
+}
+
+div.Button:hover, div.ComboButton:hover, div.FileOpener:hover
+{
+	background-color : lightgray;
+	border : 1px solid darkgray;
+}
+
+div.Popup
+{
+	position : fixed;
+	background-color : lightgray;
+	border-radius: 3px;
+	padding : 10px;
+	opacity : 1;
+	z-index : 100;
+	border : 1px solid darkgray;
+}
+
+div.PopupOption
+{
+	cursor : pointer;
+}
+
+div.PopupOption:hover
+{
+	background-color : darkgray;
+}
+
+div.Dialog
+{
+	position : fixed;
+	left : 400px;
+	top : 200px;
+	display : inline-block;
+	background-color : white;
+	border-radius: 3px;
+	padding : 10px;
+	opacity : 0.95;
+	z-index : 200;
+	border : 1px solid black;
+	margin : auto;
+	overflow : auto;
+}
+
+table.DialogContent
+{
+	width : 100%;
+}
+
+input.FileOpener
+{
+	display : none;
+}
+
+table.Properties
+{
+	padding : 0px;
+    border-spacing : 5px;
+}
+
+td
+{
+	vertical-align: top;
+	font-size : 11px;
+	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	padding : 0px;
+	padding-left : 10px;
+	margin : 0px;
+}
+
+td.PropertyComplexValue
+{
+	border : 1px solid lightgray;
+	border-right : 0px;
+}
+
+td.PropertyName
+{
+	font-weight : bold;
+}
+
+input.PropertyValue
+{
+	font-size : 11px;
+	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	border : 0px;
+	margin : 0px;
+	padding : 0px;
+}
+
+input.PropertyValue:hover
+{
+	background-color : lightgray;
+}
+
+div.ProgressControl
+{
+	position : fixed;
+	right : 10px;
+	bottom : 10px;
+	width : 500px;
+	height : 40px;
+	overflow : hidden;
+	margin : 0px;
+	padding : 0px;
+	background-color : white;
+	opacity : 0.8;
+	z-index : 1;
+	border-radius: 7px;
+}
+
+div.ProgressMessage
+{
+	width : 450px;
+	height : 20px;
+	overflow : hidden;
+	margin : auto;
+}
+
+div.ProgressContainer
+{
+	width : 450px;
+	height : 10px;
+	overflow : hidden;
+	margin : auto;
+	padding : 0px;
+	background-color : darkgray;
+	z-index : 2;
+	border-radius: 5px;
+}
+
+div.ProgressBar
+{
+	width : 0px;
+	height : 10px;
+	overflow : hidden;
+	margin : 0px;
+	padding : 0px;
+	background-color : green;
+	z-index : 3;
+	border-radius: 5px;
+}
+
+.ItemAction
+{
+	margin-right : 5px;
+	font-size : 120%;
+}
+
+.ItemAction:hover
+{
+	color: red;
+}
