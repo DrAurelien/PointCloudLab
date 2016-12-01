@@ -64,10 +64,13 @@
             gl_FragColor = vec4(Color * lightingCoef, 1);
             }
         </script>
+        <!--TOOLS-->
+		<script type="text/javascript" src="tools/longprocess.js"></script>
         <!--MATHS-->
         <script type="text/javascript" src="maths/vector.js"></script>
         <script type="text/javascript" src="maths/matrix.js"></script>
         <!-- RENDERING-->
+		<script type="text/javascript" src="opengl/materials.js"></script>
         <script type="text/javascript" src="opengl/drawingcontext.js"></script>
         <script type="text/javascript" src="opengl/renderer.js"></script>
         <script type="text/javascript" src="opengl/camera.js"></script>
@@ -75,7 +78,11 @@
         <script type="text/javascript" src="opengl/picking.js"></script>
         <!-- MODEL -->
         <script type="text/javascript" src="model/cadprimitive.js"></script>
-        <script type="text/javascript" src="model/pointcloud.js"></script>
+		<script type="text/javascript" src="model/boundingbox.js"></script>
+		<script type="text/javascript" src="model/kdtree.js"></script>
+		<script type="text/javascript" src="model/neighbourhood.js"></script>
+		<script type="text/javascript" src="model/pointcloud.js"></script>
+        <script type="text/javascript" src="model/mesh.js"></script>
         <script type="text/javascript" src="model/shapes/shape.js"></script>
         <script type="text/javascript" src="model/shapes/plane.js"></script>
         <script type="text/javascript" src="model/shapes/sphere.js"></script>
@@ -83,10 +90,12 @@
         <script type="text/javascript" src="model/shapes/torus.js"></script>
         <script type="text/javascript" src="model/scene.js"></script>
         <!--INTERFACE-->
+		<script type="text/javascript" src="interface/controls/nameprovider.js"></script>
         <script type="text/javascript" src="interface/controls/control.js"></script>
         <script type="text/javascript" src="interface/controls/button.js"></script>
         <script type="text/javascript" src="interface/controls/combobox.js"></script>
         <script type="text/javascript" src="interface/controls/toolbar.js"></script>
+		<script type="text/javascript" src="interface/controls/progressbar.js"></script>
         <script type="text/javascript" src="interface/controls/popup.js"></script>
         <script type="text/javascript" src="interface/datahandler.js"></script>
         <script type="text/javascript" src="interface/interface.js"></script>

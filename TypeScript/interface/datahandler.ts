@@ -10,23 +10,9 @@
 		var dataHandler = this;
 		//Data toolbar
         this.dataToolbar = new Toolbar([
-			//Items creation button
-			new ComboBox('New', function ()
-				{
-					var itemsCreationMenu = [
-						dataHandler.GetItemCreator('Plane', scene),
-						dataHandler.GetItemCreator('Sphere', scene),
-						dataHandler.GetItemCreator('Cylinder', scene),
-						dataHandler.GetItemCreator('Torus', scene)
-					];
-
-                    if (scene.items && scene.items.length)
-					{
-						itemsCreationMenu.push(dataHandler.GetItemCreator('Scan from current viewpoint', scene));
-					}
-					return itemsCreationMenu;
-				}
-			)/*
+            //Items creation button
+            new ComboBox('New', this.GetItemCreationControler(scene))
+            /*
 			//File import button
 			FileOpener('Open', function(createdObject) {
 				if(createdObject != null)
@@ -69,7 +55,24 @@
 		};
 		
 		this.RefreshContent(scene);
-	}
+    }
+
+    GetItemCreationControler(scene: Scene): Function {
+        let dataHandler = this;
+        return function () {
+            var itemsCreationMenu = [
+                dataHandler.GetItemCreator('Plane', scene),
+                dataHandler.GetItemCreator('Sphere', scene),
+                dataHandler.GetItemCreator('Cylinder', scene),
+                dataHandler.GetItemCreator('Torus', scene)
+            ];
+
+            if (scene.items && scene.items.length) {
+                itemsCreationMenu.push(dataHandler.GetItemCreator('Scan from current viewpoint', scene));
+            }
+            return itemsCreationMenu;
+        };
+    }
 	
 	Resize(width : number, height : number) : void {
         //this.window.style.height = height-2*this.window.offsetTop);

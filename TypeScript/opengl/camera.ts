@@ -151,9 +151,9 @@ class Camera {
         var w = new Vector(render.Multiply(u).values);
         return w.Times(1. / w.Get(3));
         //Viewport
-        w.Set(0, (w.Get(0) + 1.0) * this.screen.width / 2.0);
-        w.Set(1, (w.Get(1) + 1.0) * this.screen.height / 2.0);
-        return w
+       // w.Set(0, (w.Get(0) + 1.0) * this.screen.width / 2.0);
+        //w.Set(1, (w.Get(1) + 1.0) * this.screen.height / 2.0);
+        //return w
     }
 
     ComputeInvertedProjection(p: Vector): Vector {
