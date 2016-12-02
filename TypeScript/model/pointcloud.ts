@@ -7,6 +7,7 @@
 	glPointsBuffer: WebGLBuffer;
 	glNormalsBuffer: WebGLBuffer;
 	tree: KDTree = null;
+	ransac: Object;
 
 	constructor() {
 		super(NameProvider.GetName('PointCloud'));
@@ -312,32 +313,39 @@
 		return result;
 	}
 
-	GetActions(onDone: Function): Object {
-		var cloud = this;
-		var result = [];
+	GetActions(onDone: Function): Action[] {
+		let cloud = this;
+		let result : Action[] = [];
 
+		function gaussianSpehereCallback() {
+			var gsphere = cloud.GaussianSphere();
+			if (onDone)
+				onDone(gsphere);
+		}
+
+		function clearNormalCallback() {
+			cloud.ClearNormals();
+			if (onDone)
+				onDone();
+		}
+
+		function resetDetectionCallback() {
+			cloud.ransac = null;
+			if (onDone)
+				onDone();
+		}
+		
 		if (this.HasNormals()) {
-			result.push({
-				label: 'Gaussian sphere',
-				callback: function () { var gsphere = cloud.GaussianSphere(); if (onDone) onDone(gsphere); }
-			});
-
-			result.push({
-				label: 'Clear normals',
-				callback: function () { cloud.ClearNormals(); if (onDone) onDone(); }
-			});
+			result.push(new Action('Gaussian sphere', gaussianSpehereCallback));
+			result.push(new Action('Clear normals', clearNormalCallback));
 
 			if (cloud.ransac) {
-				result.push({
-					label: 'Reset detection',
-					callback: function () { cloud.ransac = null; if (onDone) onDone(); }
-				});
+				result.push(new Action('Reset detection', resetDetectionCallback));
 			}
-
+		}
+			/*
 			if (!(cloud.ransac && cloud.ransac.IsDone())) {
-				result.push({
-					label: 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape',
-					callback: function () {
+				result.push(new Action('Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape', () => {
 						if (!cloud.ransac) {
 							cloud.ransac = new Ransac(cloud);
 							var dialog = new Dialog(
@@ -393,7 +401,7 @@
 		result.push({
 			label: 'Export',
 			callback: function () { ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv'); }
-		});
+		});*/
 
 		return result;
 	}
