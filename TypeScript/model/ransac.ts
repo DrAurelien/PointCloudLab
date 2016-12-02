@@ -4,7 +4,7 @@
 	noise: number;
 	private ignore: boolean[];
 
-	constructor(private cloud, private generators: Function[] = null) {
+	constructor(private cloud, private generators: ShapeGenerator[] = null) {
 		this.nbPoints = 3;
 		this.nbFailure = 100;
 		this.noise = 0.1;
@@ -14,7 +14,7 @@
 		}
 	}
 
-	SetGenerators(generators: Function[]): void {
+	SetGenerators(generators: ShapeGenerator[]): void {
 		this.generators = generators;
 	}
 
@@ -134,77 +134,37 @@
 		return score;
 	}
 
-	static RansacPlane(points: PickedPoints[]) {
+	static RansacPlane(points: PickedPoints[]) : Shape {
 		var result = new Plane(points[0].point, points[0].normal, 0);
-		result.ComputeBounds = function (points, cloud) {
-			this.center = new Vector([0, 0, 0]);
-			for (var ii = 0; ii < points.length; ii++) {
-				this.center = this.center.Plus(cloud.GetPoint(points[ii]));
-			}
-			this.center = this.center.Times(1.0 / points.length);
-			this.patchRadius = 0;
-			for (var ii = 0; ii < points.length; ii++) {
-				var d = cloud.GetPoint(points[ii]).Minus(this.center).SqrNorm();
-				if (d > this.patchRadius) {
-					this.patchRadius = d;
-				}
-			}
-			this.patchRadius = Math.sqrt(this.patchRadius);
-		};
 		return result;
 	}
 
-	static RansacSphere(points: PickedPoints[]) {
-		var r1 = {
-			point: points[0].point,
-			direction: points[0].normal
-		};
-		var r2 = {
-			point: points[1].point,
-			direction: points[1].normal
-		};
+	static RansacSphere(points: PickedPoints[]) : Shape {
+		var r1 = new Ray(points[0].point, points[0].normal);
+		var r2 = new Ray(points[1].point, points[1].normal);
 
-		var center = LinesIntersection(r1, r2);
-		var radius = 0.5 * (r1.point.Minus(center).Norm() + r2.point.Minus(center).Norm());
+		var center = Geometry.LinesIntersection(r1, r2);
+		var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
 
 		var result = new Sphere(center, radius);
-		result.ComputeBounds = function (points, cloud) { };
 		return result;
 	}
 
-	static RansacCylinder(points: PickedPoints[]) {
-		var r1 = {
-			point: points[0].point,
-			direction: points[0].normal
-		};
-		var r2 = {
-			point: points[1].point,
-			direction: points[1].normal
-		};
+	static RansacCylinder(points: PickedPoints[]): Shape {
+		var r1 = new Ray(points[0].point, points[0].normal);
+		var r2 = new Ray(points[1].point, points[1].normal);
 
-		var center = LinesIntersection(r1, r2);
-		var axis = r1.direction.Cross(r2.direction);
-		var radius = 0.5 * (r1.point.Minus(center).Norm() + r2.point.Minus(center).Norm());
+		var center = Geometry.LinesIntersection(r1, r2);
+		var axis = r1.dir.Cross(r2.dir);
+		var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
 
 		var result = new Cylinder(center, axis, radius, 1.0);
-		result.ComputeBounds = function (points, cloud) {
-			var min = 0;
-			var max = 0;
-			for (var ii = 0; ii < points.length; ii++) {
-				var d = cloud.GetPoint(points[ii]).Minus(this.center).Dot(this.axis);
-				if (ii == 0 || d < min) {
-					min = d;
-				}
-				if (ii == 0 || d > max) {
-					max = d;
-				}
-			}
-			var d = 0.5 * (min + max);
-			this.center = this.center.Plus(this.axis.Times(d));
-			this.height = max - min;
-		};
 		return result;
 	}
+}
+
+interface ShapeGenerator {
+	(points: PickedPoints[]): Shape;
 }
 
 class PickedPoints {

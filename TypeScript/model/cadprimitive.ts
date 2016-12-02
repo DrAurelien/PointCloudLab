@@ -4,8 +4,9 @@
 	selected: boolean;
 
     constructor(public name: string) {
-		visible = true;
-		selected = false;
+		this.material = new Material([0.0, 1.0, 0.0]);
+		this.visible = true;
+		this.selected = false;
     }
 
     abstract RayIntersection(ray: Ray) : number[];
