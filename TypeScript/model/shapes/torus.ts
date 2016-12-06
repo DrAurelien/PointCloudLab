@@ -3,39 +3,25 @@
         super('Torus');
     }
 
-	GetGeometry(): Object {
-		return {
-			Center: this.MakeVectorProperty(this.center),
-			Axis: this.MakeVectorProperty(this.axis),
-			'Great Radius': this.greatRadius,
-			'Small Radius': this.smallRadius
-		};
+	GetGeometry(): Properties {
+		let geometry = new Properties();
+		geometry.PushVector('Center', this.center);
+		geometry.PushVector('Axis', this.axis);
+		geometry.Push('Great Radius', this.greatRadius);
+		geometry.Push('Small Radius', this.smallRadius);
+		return geometry;
 	}
 
-	SetGeometry(geometry: Object) {
-		if ('Center' in geometry) {
-			this.center = this.ParseVectorProperty(geometry.Center);
-		}
-
-		if ('Axis' in geometry) {
-			this.axis = this.ParseVectorProperty(geometry.Axis);
-		}
-
-		if ('Great Radius' in geometry) {
-			this.greatRadius = this.ParseRealProperty(geometry['Great Radius']);
-		}
-
-		if ('Small Radius' in geometry) {
-			this.smallRadius = this.ParseRealProperty(geometry['Small Radius']);
-		}
-
+	SetGeometry(geometry: Properties) {
+		this.center = geometry.GetAsVector('Center');
+		this.axis = geometry.GetAsVector('Axis');
+		this.greatRadius = geometry.GetAsFloat('Great Radius');
+		this.smallRadius = geometry.GetAsFloat('Small Radius');
 		if (this.center == null || this.axis == null || this.greatRadius == null || this.smallRadius == null) {
 			return false;
 		}
-
 		this.axis = this.axis.Normalized();
 		this.mesh = null;
-
 		return true;
 	}
 
@@ -141,5 +127,10 @@
 		]);
 
 		return quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+	}
+
+	Distance(point: Vector): number {
+		//TODO
+		return 0;
 	}
 }

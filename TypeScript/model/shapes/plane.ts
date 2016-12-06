@@ -3,35 +3,24 @@
         super('Plane');
     }
 
-	GetGeometry(): Object {
-		return {
-			Center: this.MakeVectorProperty(this.center),
-			Normal: this.MakeVectorProperty(this.normal),
-			'Patch Radius': this.patchRadius,
-		};
+	GetGeometry(): Properties {
+		let geometry = new Properties();
+		geometry.PushVector('Center', this.center);
+		geometry.PushVector('Normal', this.normal);
+		geometry.Push('Patch Radius', this.patchRadius);
+		return geometry;
 	}
 
-	SetGeometry(geometry: Object) {
-		if ('Center' in geometry) {
-			this.center = this.ParseVectorProperty(geometry.Center);
-		}
+	SetGeometry(geometry: Properties) {
 
-		if ('Normal' in geometry) {
-			this.normal = this.ParseVectorProperty(geometry.Normal);
-		}
-
-		if ('Patch Radius' in geometry) {
-			this.patchRadius = this.ParseRealProperty(geometry['Patch Radius']);
-		}
-
-
+		this.center = geometry.GetAsVector('Center');
+		this.normal = geometry.GetAsVector('Normal');
+		this.patchRadius = geometry.GetAsFloat('Patch Radius');
 		if (this.center == null || this.normal == null || this.patchRadius == null) {
 			return false;
 		}
-
 		this.normal = this.normal.Normalized();
 		this.mesh = null;
-
 		return true;
 	}
 

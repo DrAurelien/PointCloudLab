@@ -13,26 +13,18 @@ var Torus = (function (_super) {
         this.smallRadius = smallRadius;
     }
     Torus.prototype.GetGeometry = function () {
-        return {
-            Center: this.MakeVectorProperty(this.center),
-            Axis: this.MakeVectorProperty(this.axis),
-            'Great Radius': this.greatRadius,
-            'Small Radius': this.smallRadius
-        };
+        var geometry = new Properties();
+        geometry.PushVector('Center', this.center);
+        geometry.PushVector('Axis', this.axis);
+        geometry.Push('Great Radius', this.greatRadius);
+        geometry.Push('Small Radius', this.smallRadius);
+        return geometry;
     };
     Torus.prototype.SetGeometry = function (geometry) {
-        if ('Center' in geometry) {
-            this.center = this.ParseVectorProperty(geometry.Center);
-        }
-        if ('Axis' in geometry) {
-            this.axis = this.ParseVectorProperty(geometry.Axis);
-        }
-        if ('Great Radius' in geometry) {
-            this.greatRadius = this.ParseRealProperty(geometry['Great Radius']);
-        }
-        if ('Small Radius' in geometry) {
-            this.smallRadius = this.ParseRealProperty(geometry['Small Radius']);
-        }
+        this.center = geometry.GetAsVector('Center');
+        this.axis = geometry.GetAsVector('Axis');
+        this.greatRadius = geometry.GetAsFloat('Great Radius');
+        this.smallRadius = geometry.GetAsFloat('Small Radius');
         if (this.center == null || this.axis == null || this.greatRadius == null || this.smallRadius == null) {
             return false;
         }
@@ -131,6 +123,10 @@ var Torus = (function (_super) {
             alpha * alpha
         ]);
         return quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+    };
+    Torus.prototype.Distance = function (point) {
+        //TODO
+        return 0;
     };
     return Torus;
 }(Shape));

@@ -8,8 +8,8 @@
 	}
 	abstract GetBoundingBox(): BoundingBox;
 
-    abstract GetGeometry(): Object;
-    abstract SetGeometry(geometry: Object): void;
+    abstract GetGeometry(): Properties;
+    abstract SetGeometry(geometry: Properties): void;
 
     abstract ComputeMesh(sampling: number): Mesh;
 

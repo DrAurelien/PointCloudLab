@@ -3,39 +3,25 @@
         super('Cylinder');
     }
 
-	GetGeometry(): Object {
-		return {
-			Center: this.MakeVectorProperty(this.center),
-			Axis: this.MakeVectorProperty(this.axis),
-			Radius: this.radius,
-			Height: this.height
-		};
+	GetGeometry(): Properties {
+		let geometry = new Properties();
+		geometry.PushVector('Center', this.center);
+		geometry.PushVector('Axis', this.axis);
+		geometry.Push('Radius', this.radius);
+		geometry.Push('Height', this.height);
+		return geometry;
 	}
 
-	SetGeometry(geometry: Object) {
-		if ('Center' in geometry) {
-			this.center = this.ParseVectorProperty(geometry.Center);
-		}
-
-		if ('Axis' in geometry) {
-			this.axis = this.ParseVectorProperty(geometry.Axis);
-		}
-
-		if ('Radius' in geometry) {
-			this.radius = this.ParseRealProperty(geometry.Radius);
-		}
-
-		if ('Height' in geometry) {
-			this.height = this.ParseRealProperty(geometry.Height);
-		}
-
+	SetGeometry(geometry: Properties) {
+		this.center = geometry.GetAsVector('Center');
+		this.axis = geometry.GetAsVector('Axis');
+		this.radius = geometry.GetAsFloat('Radius');
+		this.height = geometry.GetAsFloat('Height');
 		if (this.center == null || this.axis == null || this.radius == null || this.height == null) {
 			return false;
 		}
-
 		this.axis = this.axis.Normalized();
 		this.mesh = null;
-
 		return true;
 	}
 

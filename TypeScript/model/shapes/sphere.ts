@@ -3,22 +3,16 @@
         super('Sphere');
     }
 
-	GetGeometry(): Object {
-		return {
-			Center: this.MakeVectorProperty(this.center),
-			Radius: this.radius
-		};
+	GetGeometry(): Properties {
+		let geometry = new Properties();
+		geometry.PushVector('Center', this.center);
+		geometry.Push('Radius', this.radius);
+		return geometry;
 	};
 
-	SetGeometry(geometry: Object) {
-		if ('Center' in geometry) {
-			this.center = this.ParseVectorProperty(geometry.Center);
-		}
-
-		if ('Radius' in geometry) {
-			this.radius = this.ParseRealProperty(geometry.Radius);
-		}
-
+	SetGeometry(geometry: Properties) {
+		this.center = geometry.GetAsVector('Center');
+		this.radius = geometry.GetAsFloat('Radius');
 		if (this.center == null || this.radius == null) {
 			return false;
 		}
