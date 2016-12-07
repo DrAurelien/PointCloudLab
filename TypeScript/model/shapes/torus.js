@@ -30,6 +30,7 @@ var Torus = (function (_super) {
         }
         this.axis = this.axis.Normalized();
         this.mesh = null;
+        this.boundingbox = null;
         return true;
     };
     Torus.prototype.ComputeMesh = function (sampling) {
@@ -74,7 +75,7 @@ var Torus = (function (_super) {
         mesh.ComputeNormals();
         return mesh;
     };
-    Torus.prototype.GetBoundingBox = function () {
+    Torus.prototype.ComputeBoundingBox = function () {
         var proj = new Vector([this.axis.Get(0), this.axis.Get(1)]);
         var size = new Vector([
             Math.sqrt(1 - (this.axis.Get(0) * this.axis.Get(0))) * this.greatRadius + this.smallRadius,

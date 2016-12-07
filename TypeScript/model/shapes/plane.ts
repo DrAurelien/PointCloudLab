@@ -21,6 +21,7 @@
 		}
 		this.normal = this.normal.Normalized();
 		this.mesh = null;
+		this.boundingbox = null;
 		return true;
 	}
 
@@ -52,7 +53,7 @@
 		return Math.abs(point.Minus(this.center).Dot(this.normal));
 	}
 
-	GetBoundingBox(): BoundingBox {
+	ComputeBoundingBox(): BoundingBox {
 		var size = new Vector([
 			2 * Math.abs(this.patchRadius * Math.sin(Math.acos(this.normal.Get(0)))),
 			2 * Math.abs(this.patchRadius * Math.sin(Math.acos(this.normal.Get(1)))),

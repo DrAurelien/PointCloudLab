@@ -1,7 +1,6 @@
 ﻿class Mesh extends CADPrimitive {
     faces: number[];
     size: number;
-    boundingbox: BoundingBox;
     glIndexBuffer: WebGLBuffer;
 
     constructor(public pointcloud: PointCloud) {

@@ -1,5 +1,5 @@
 ﻿class DrawingContext {
-    sampling: Number = 30;
+    sampling: number = 30;
     gl: WebGLRenderingContext;
     shaders: WebGLShader;
     projection: WebGLUniformLocation;

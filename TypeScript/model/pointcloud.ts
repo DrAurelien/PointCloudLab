@@ -3,7 +3,6 @@
 	pointssize: number;
 	normals: number[];
 	normalssize: number;
-	boundingbox: BoundingBox;
 	glPointsBuffer: WebGLBuffer;
 	glNormalsBuffer: WebGLBuffer;
 	tree: KDTree = null;
@@ -95,10 +94,6 @@
 
 	ClearNormals(): void {
 		this.normalssize = 0;
-	}
-
-	GetBoundingBox = function () {
-		return this.boundingbox;
 	}
 
 	PrepareRendering(drawingContext: DrawingContext) {

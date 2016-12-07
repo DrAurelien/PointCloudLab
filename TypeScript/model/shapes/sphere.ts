@@ -17,10 +17,11 @@
 			return false;
 		}
 		this.mesh = null;
+		this.boundingbox = null;
 		return true;
 	};
 
-	GetBoundingBox(): BoundingBox {
+	ComputeBoundingBox(): BoundingBox {
 		var size = new Vector([1, 1, 1]).Times(2 * this.radius);
 		var bb = new BoundingBox();
 		bb.Set(this.center, size);

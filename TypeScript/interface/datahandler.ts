@@ -1,10 +1,10 @@
 ﻿class DataHandler {
     dataToolbar: Toolbar;
-    dataArea;
-    propertiesArea;
-    visibility;
-    handle;
-    currentItem;
+    dataArea: HTMLDivElement;
+    propertiesArea: HTMLDivElement;
+    visibility: DataGandlerVisibility;
+    handle: HTMLDivElement;
+    currentItem: CADPrimitive;
 
     constructor(public window: HTMLDivElement, public updateCallback: Function, scene: Scene) {
 		var dataHandler = this;
@@ -48,11 +48,8 @@
 		this.handle = document.createElement('div');
 		this.handle.className = 'DataWindowHandle';
 		this.window.appendChild(this.handle);
-		
-		this.visibility = {
-			visible : true,
-			widthToRestore : this.window.style.width
-		};
+
+		this.visibility = new DataGandlerVisibility(true, this.window.style.width);
 		
 		this.RefreshContent(scene);
     }
@@ -87,10 +84,10 @@
 		if(this.currentItem != null)
         {
             let height: number = (this.window.clientHeight - this.dataToolbar.GetElement().getBoundingClientRect().height) / 2;
-			this.dataArea.style.height = height;
+			this.dataArea.style.height = height+'px';
 			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
-			this.dataArea.style.height = height;
+			this.dataArea.style.height = height + 'px';
 			this.propertiesArea.style.height = this.dataArea.style.height;
 			this.dataArea.style.borderBottom = '1px solid lightGray';
 			this.propertiesArea.style.borderTop = '1px solid darkGray';
@@ -98,10 +95,10 @@
 		else
         {
             let height: number = this.window.clientHeight;
-			this.dataArea.style.height = height;
+			this.dataArea.style.height = height + 'px';
 			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
-			this.dataArea.style.height = height;
+			this.dataArea.style.height = height + 'px';
 			this.propertiesArea.style.height = "0px";
 			this.dataArea.style.borderBottom = '';
 			this.propertiesArea.style.borderTop = '';
@@ -112,7 +109,7 @@
 	{
 		if(this.visibility.visible)
 		{
-			this.window.style.width = this.handle.scrollWidth;
+			this.window.style.width = this.handle.scrollWidth + 'px';
             this.window.style.paddingRight = '0px';
 			this.visibility.visible = false;
 			this.handle.style.cursor = 'e-resize';
@@ -122,7 +119,7 @@
 		else
 		{
 			this.window.style.width = this.visibility.widthToRestore;
-			this.window.style.paddingRight = this.handle.scrollWidth;
+			this.window.style.paddingRight = this.handle.scrollWidth + 'px';
 			this.visibility.visible = true;
 			this.handle.style.cursor = 'w-resize';
 			this.dataArea.style.display= 'block';
@@ -349,7 +346,7 @@
 			var applyLabel = document.createTextNode('Apply');
 			applyButton.appendChild(applyLabel);
 			
-			var self = this;
+			let self = this;
 			applyButton.onclick = function()
 			{
 				var propertiesTable = null;
@@ -437,4 +434,8 @@
 		}
 		return properties;
 	}
+}
+
+class DataGandlerVisibility {
+	constructor(public visible: boolean, public widthToRestore: string) { }
 }

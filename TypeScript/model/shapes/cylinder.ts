@@ -22,10 +22,11 @@
 		}
 		this.axis = this.axis.Normalized();
 		this.mesh = null;
+		this.boundingbox = null;
 		return true;
 	}
 
-	GetBoundingBox(): BoundingBox {
+	ComputeBoundingBox(): BoundingBox {
 		var size = new Vector([
 			2 * Math.abs(0.5 * this.height * this.axis.Get(0) + this.radius * Math.sin(Math.acos(this.axis.Get(0)))),
 			2 * Math.abs(0.5 * this.height * this.axis.Get(1) + this.radius * Math.sin(Math.acos(this.axis.Get(1)))),

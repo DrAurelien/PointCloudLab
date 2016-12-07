@@ -24,6 +24,10 @@
 		this.Push(key, vec);
 	}
 
+	PushProperties(key: string, value: Properties): void {
+		this.Push(key, value.storage);
+	}
+
 	Get(key: string): any {
 		return this.current[key];
 	}
