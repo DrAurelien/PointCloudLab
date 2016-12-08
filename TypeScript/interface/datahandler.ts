@@ -337,8 +337,8 @@
 		this.propertiesArea.innerHTML = '';
 		if(this.currentItem != null)
 		{
-			var currentProperties = this.currentItem.GetProperties();
-			var table = this.DisplayProperties(currentProperties);
+			let currentProperties = this.currentItem.GetProperties();
+			let table = currentProperties.GetElement();
 			this.propertiesArea.appendChild(table);
 			
 			var applyButton = document.createElement('div');
@@ -372,47 +372,6 @@
 			this.propertiesArea.appendChild(applyButton);
 		}
 	}
-	
-    //Computes the table showing the properties in parameter
-    DisplayProperties(properties): HTMLTableElement
-	{
-		var table = document.createElement('table');
-		table.className = 'Properties';
-		for(var property in properties)
-		{
-			var row = document.createElement('tr');
-			row.className = 'Property';
-			
-			var leftCol = document.createElement('td');
-			leftCol.className = 'PropertyName';
-			var leftColContent = document.createTextNode(property);
-			leftCol.appendChild(leftColContent);
-			row.appendChild(leftCol);
-			
-			var rightCol = document.createElement('td');
-			var rightColContent;
-			if(properties[property] instanceof Object)
-			{
-				rightCol.className = 'PropertyComplexValue';
-				rightColContent = this.DisplayProperties(properties[property]);
-			}
-			else
-			{
-				rightCol.className = 'PropertyValue';
-				rightColContent = document.createElement('input');
-				rightColContent.type = 'text';
-				rightColContent.width=20;
-				rightColContent.className = 'PropertyValue';
-				rightColContent.value = properties[property];
-			}
-			rightCol.appendChild(rightColContent);
-			row.appendChild(rightCol);
-			
-			table.appendChild(row);
-		}
-		
-		return table;
-	};
 
     GetCurrentProperties(propertiesTable: HTMLTableElement): any
 	{

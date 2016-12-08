@@ -11,7 +11,7 @@
 		return geometry;
 	}
 
-	SetGeometry(geometry: Properties) {
+	SetGeometry(geometry: Properties) : boolean {
 
 		this.center = geometry.GetAsVector('Center');
 		this.normal = geometry.GetAsVector('Normal');

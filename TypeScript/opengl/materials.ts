@@ -10,66 +10,31 @@
 		drawingContext.gl.uniform1f(drawingContext.glossy, this.glossy);
 	}
 
-	GetProperties(): Object {
-		return {
-			'Color': {
-				'Red': this.baseColor[0],
-				'Green': this.baseColor[1],
-				'Blue': this.baseColor[2]
-			},
-			'Ambiant': this.ambiant,
-			'Diffuse': this.diffuse,
-			'Specular': this.specular,
-			'Glossy': this.glossy
-		};
+	GetProperties(): Properties {
+		let properties = new Properties();
+		let color = new Properties();
+		color.Push('Red', this.baseColor[0]);
+		color.Push('Green', this.baseColor[1]);
+		color.Push('Blue', this.baseColor[2]);
+		properties.PushProperties('Color', color);
+		properties.Push('Ambiant', this.ambiant);
+		properties.Push('Diffuse', this.diffuse);
+		properties.Push('Specular', this.specular);
+		properties.Push('Glossy', this.glossy);
+		return properties;
 	}
 
-	SetProperties(properties: Object): boolean {
-		try {
-			if ('Color' in properties) {
-				this.baseColor = [
-					parseFloat(properties['Color']['Red']),
-					parseFloat(properties['Color']['Green']),
-					parseFloat(properties['Color']['Blue'])
-				];
-				for (let index = 0; index < 3; index++) {
-					if (isNaN(this.baseColor[index])) {
-						return false;
-					}
-				}
-			}
-
-			if ('Ambiant' in properties) {
-				this.ambiant = parseFloat(properties['Ambiant']);
-				if (isNaN(this.ambiant)) {
-					return false;
-				}
-			}
-
-			if ('Diffuse' in properties) {
-				this.diffuse = parseFloat(properties['Diffuse']);
-				if (isNaN(this.diffuse)) {
-					return false;
-				}
-			}
-
-			if ('Specular' in properties) {
-				this.specular = parseFloat(properties['Specular']);
-				if (isNaN(this.specular)) {
-					return false;
-				}
-			}
-
-			if ('Glossy' in properties) {
-				this.glossy = parseFloat(properties['Glossy']);
-				if (isNaN(this.glossy)) {
-					return false;
-				}
-			}
-		}
-		catch (exception) {
-			return false;
-		}
+	SetProperties(properties: Properties): boolean {
+		let color = properties.GetAsProperties('Color');
+		this.baseColor = [
+			color.GetAsFloat('Red'),
+			color.GetAsFloat('Green'),
+			color.GetAsFloat('Blue')
+		];
+		this.ambiant = properties.GetAsFloat('Ambiant');
+		this.diffuse = properties.GetAsFloat('Diffuse');
+		this.specular = properties.GetAsFloat('Specular');
+		this.glossy = properties.GetAsFloat('Glossy');
 		return true;
 	}
 }

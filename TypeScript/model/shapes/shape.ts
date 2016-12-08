@@ -8,7 +8,7 @@
 	}
 
     abstract GetGeometry(): Properties;
-    abstract SetGeometry(geometry: Properties): void;
+    abstract SetGeometry(geometry: Properties): boolean;
 
     abstract ComputeMesh(sampling: number): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
@@ -42,8 +42,11 @@
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
 		let geometry = this.GetGeometry();
-		properties.Select();
-		properties.PushProperties('Geometry', properties);
+		properties.PushProperties('Geometry', geometry);
 		return properties;
+	}
+
+	SetProperties(properties: Properties): boolean {
+		return this.SetGeometry(properties.GetAsProperties('Geometry')) && super.SetProperties(properties);
 	}
 }

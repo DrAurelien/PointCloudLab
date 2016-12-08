@@ -17,7 +17,6 @@
 		this.boundingbox = new BoundingBox();
 		this.glPointsBuffer = null;
 		this.glNormalsBuffer = null;
-		CADPrimitive.call(this, 'PointCloud');
 	}
 
 	PushPoint(p: Vector): void {

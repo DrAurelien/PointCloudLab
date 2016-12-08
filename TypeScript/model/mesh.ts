@@ -5,6 +5,8 @@
 
     constructor(public pointcloud: PointCloud) {
         super(NameProvider.GetName('Mesh'));
+		this.faces = [];
+		this.size = 0;
     }
 
     PushFace(f: number[]): void {
@@ -30,21 +32,19 @@
 		this.faces = faces;
 	}
 
-	GetFace(i: number) {
+	GetFace(i: number) : Face {
 		let index = 3 * i;
 		let indices = [
 			this.faces[index++],
 			this.faces[index++],
 			this.faces[index++]
 		];
-		return {
-			indices: indices,
-			points: [
+		return new Face(indices, [
 				this.pointcloud.GetPoint(indices[0]),
 				this.pointcloud.GetPoint(indices[1]),
 				this.pointcloud.GetPoint(indices[2])
 			]
-		};
+		);
 	}
 
 	Size(): number {
@@ -177,5 +177,10 @@
 			}
 		}
 		return result;
+	}
+}
+
+class Face {
+	constructor(public indices : number[], public points : Vector[]) {
 	}
 }

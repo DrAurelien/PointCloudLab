@@ -32,7 +32,7 @@
     <TypeScriptCompile Include="interface\datahandler.ts" />
     <TypeScriptCompile Include="interface\interface.ts" />
     <TypeScriptCompile Include="interface\nameprovider.ts" />
-    <TypeScriptCompile Include="interface\properties.ts" />
+    <TypeScriptCompile Include="interface\controls\properties.ts" />
     <TypeScriptCompile Include="maths\eigendecomposition.ts" />
     <TypeScriptCompile Include="maths\geometry.ts" />
     <TypeScriptCompile Include="maths\ludecomposition.ts" />

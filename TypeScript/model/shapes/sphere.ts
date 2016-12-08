@@ -10,7 +10,7 @@
 		return geometry;
 	};
 
-	SetGeometry(geometry: Properties) {
+	SetGeometry(geometry: Properties) : boolean {
 		this.center = geometry.GetAsVector('Center');
 		this.radius = geometry.GetAsFloat('Radius');
 		if (this.center == null || this.radius == null) {
