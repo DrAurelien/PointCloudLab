@@ -34,10 +34,7 @@
                     return function () {
                         //Call the functino
                         self.callbackFunction();
-                        //Close the popup
-                        if (self.popup.parentNode) {
-                            self.popup.parentNode.removeChild(self.popup);
-                        }
+						Popup.DestroyCurrent();
                     }
                 }
             }

@@ -22,10 +22,15 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="files\binaryreader.ts" />
+    <TypeScriptCompile Include="files\csvloader.ts" />
+    <TypeScriptCompile Include="files\fileloader.ts" />
+    <TypeScriptCompile Include="files\plyloader.ts" />
     <TypeScriptCompile Include="interface\actions.ts" />
     <TypeScriptCompile Include="interface\controls\button.ts" />
     <TypeScriptCompile Include="interface\controls\combobox.ts" />
     <TypeScriptCompile Include="interface\controls\control.ts" />
+    <TypeScriptCompile Include="interface\controls\fileopener.ts" />
     <TypeScriptCompile Include="interface\controls\popup.ts" />
     <TypeScriptCompile Include="interface\controls\progressbar.ts" />
     <TypeScriptCompile Include="interface\controls\toolbar.ts" />
@@ -74,6 +79,7 @@
       <DependentUpon>web.config</DependentUpon>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
   </PropertyGroup>

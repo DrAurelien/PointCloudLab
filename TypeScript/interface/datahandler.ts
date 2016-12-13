@@ -6,18 +6,17 @@
     handle: HTMLDivElement;
     currentItem: CADPrimitive;
 
-    constructor(public window: HTMLDivElement, public updateCallback: Function, scene: Scene) {
-		var dataHandler = this;
+    constructor(public container: HTMLDivElement, public updateCallback: Function, scene: Scene) {
+		let dataHandler = this;
 		//Data toolbar
         this.dataToolbar = new Toolbar([
             //Items creation button
-            new ComboBox('New', this.GetItemCreationControler(scene))
-            /*
+            new ComboBox('New', this.GetItemCreationControler(scene)),
 			//File import button
-			FileOpener('Open', function(createdObject) {
+			new FileOpener('Open', function(createdObject) {
 				if(createdObject != null)
 				{
-					scene.objects.push(createdObject);
+					scene.items.push(createdObject);
 					scene.Select(createdObject);
 					dataHandler.currentItem = createdObject;
 					if(dataHandler.updateCallback != null)
@@ -26,30 +25,31 @@
 					}
 				}
 			}),
-			Button('?', function() {
+			//Help
+			new Button('?', function () {
 				window.open('help.html', '_blank');
-			})*/
+			})
         ]);
         let dataToolbarElement = this.dataToolbar.GetElement();
         dataToolbarElement.className = 'DataToolbar';
-        this.window.appendChild(dataToolbarElement);
+        this.container.appendChild(dataToolbarElement);
 		
 		//Data visualization
 		this.dataArea = document.createElement('div');
 		this.dataArea.className = 'DataArea';
-		this.window.appendChild(this.dataArea);
+		this.container.appendChild(this.dataArea);
 		
 		//Properties visualization
 		this.propertiesArea = document.createElement('div');
 		this.propertiesArea.className = 'PropertiesArea';
-		this.window.appendChild(this.propertiesArea);
+		this.container.appendChild(this.propertiesArea);
 		
 		//Window handle
 		this.handle = document.createElement('div');
 		this.handle.className = 'DataWindowHandle';
-		this.window.appendChild(this.handle);
+		this.container.appendChild(this.handle);
 
-		this.visibility = new DataGandlerVisibility(true, this.window.style.width);
+		this.visibility = new DataGandlerVisibility(true, this.container.style.width);
 		
 		this.RefreshContent(scene);
     }
@@ -73,8 +73,8 @@
 	
 	Resize(width : number, height : number) : void {
         //this.window.style.height = height-2*this.window.offsetTop);
-        this.window.clientHeight = height - 2 * this.window.offsetTop;
-		this.handle.style.height = this.window.style.height;
+        this.container.style.height = (height - 2 * this.container.offsetTop)+'px';
+		this.handle.style.height = this.container.style.height;
 		
 		this.HandlePropertiesWindowVisibility();
 	}
@@ -83,7 +83,7 @@
 	{
 		if(this.currentItem != null)
         {
-            let height: number = (this.window.clientHeight - this.dataToolbar.GetElement().getBoundingClientRect().height) / 2;
+            let height: number = (this.container.clientHeight - this.dataToolbar.GetElement().getBoundingClientRect().height) / 2;
 			this.dataArea.style.height = height+'px';
 			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
@@ -94,7 +94,7 @@
 		}
 		else
         {
-            let height: number = this.window.clientHeight;
+            let height: number = this.container.clientHeight;
 			this.dataArea.style.height = height + 'px';
 			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
@@ -109,8 +109,8 @@
 	{
 		if(this.visibility.visible)
 		{
-			this.window.style.width = this.handle.scrollWidth + 'px';
-            this.window.style.paddingRight = '0px';
+			this.container.style.width = this.handle.scrollWidth + 'px';
+            this.container.style.paddingRight = '0px';
 			this.visibility.visible = false;
 			this.handle.style.cursor = 'e-resize';
 			this.dataArea.style.display= 'none';
@@ -118,8 +118,8 @@
 		}
 		else
 		{
-			this.window.style.width = this.visibility.widthToRestore;
-			this.window.style.paddingRight = this.handle.scrollWidth + 'px';
+			this.container.style.width = this.visibility.widthToRestore;
+			this.container.style.paddingRight = this.handle.scrollWidth + 'px';
 			this.visibility.visible = true;
 			this.handle.style.cursor = 'w-resize';
 			this.dataArea.style.display= 'block';
@@ -340,42 +340,32 @@
 			let currentProperties = this.currentItem.GetProperties();
 			let table = currentProperties.GetElement();
 			this.propertiesArea.appendChild(table);
-			
-			var applyButton = document.createElement('div');
-			applyButton.className = 'button';
-			var applyLabel = document.createTextNode('Apply');
-			applyButton.appendChild(applyLabel);
-			
+
 			let self = this;
-			applyButton.onclick = function()
-			{
+			let applyButton = new Button('Apply', function () {
 				var propertiesTable = null;
-				for(var index=0; index<self.propertiesArea.children.length && propertiesTable==null; index++)
-				{
-					if(self.propertiesArea.children[index].tagName.toLowerCase() == 'table')
-					{
+				for (var index = 0; index < self.propertiesArea.children.length && propertiesTable == null; index++) {
+					if (self.propertiesArea.children[index].tagName.toLowerCase() == 'table') {
 						propertiesTable = self.propertiesArea.children[index];
 					}
 				}
-				var properties = self.GetCurrentProperties(propertiesTable);
-				var oldProperties = self.currentItem.GetProperties();
-				if(!self.currentItem.SetProperties(properties))
-				{
+				let properties = self.GetCurrentProperties(propertiesTable);
+				let oldProperties = self.currentItem.GetProperties();
+				if (!self.currentItem.SetProperties(properties)) {
 					alert("Invalid properties. The submitted modifications are not taken into account");
 					self.currentItem.SetProperties(oldProperties);
 				}
-				if(self.updateCallback != null)
-				{
+				if (self.updateCallback != null) {
 					self.updateCallback();
 				}
-			};
-			this.propertiesArea.appendChild(applyButton);
+			});
+			this.propertiesArea.appendChild(applyButton.GetElement());
 		}
 	}
 
-    GetCurrentProperties(propertiesTable: HTMLTableElement): any
+    GetCurrentProperties(propertiesTable: HTMLTableElement): Properties
 	{
-        var properties = {};
+        let properties = new Properties();
         for (var index = 0; index < propertiesTable.rows.length; index++)
         {
             let propertyRow: HTMLTableRowElement = <HTMLTableRowElement>propertiesTable.rows[index];
@@ -384,11 +374,11 @@
             let propertyValueElement = porpertyValueCol.children[0];
 			if(propertyValueElement.tagName.toLowerCase() == 'input')
 			{
-				properties[porpertyNameCol.textContent] = (<HTMLInputElement>propertyValueElement).value;
+				properties.Push(porpertyNameCol.textContent, (<HTMLInputElement>propertyValueElement).value);
 			}
 			else
 			{
-				properties[porpertyNameCol.textContent] = this.GetCurrentProperties(<HTMLTableElement>propertyValueElement);
+				properties.PushProperties(porpertyNameCol.textContent, this.GetCurrentProperties(<HTMLTableElement>propertyValueElement));
 			}
 		}
 		return properties;
