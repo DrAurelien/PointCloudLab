@@ -16,9 +16,9 @@
 				let loader: FileLoader = null;
 				switch (extension) {
 					case 'ply':
-						/*if (fileContent) {
+						if (fileContent) {
 							loader = new PlyLoader(fileContent);
-						}*/
+						}
 						break;
 					case 'csv':
 						if (fileContent) {
