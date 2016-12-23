@@ -30,6 +30,7 @@
     <TypeScriptCompile Include="interface\controls\button.ts" />
     <TypeScriptCompile Include="interface\controls\combobox.ts" />
     <TypeScriptCompile Include="interface\controls\control.ts" />
+    <TypeScriptCompile Include="interface\controls\dataitem.ts" />
     <TypeScriptCompile Include="interface\controls\fileopener.ts" />
     <TypeScriptCompile Include="interface\controls\popup.ts" />
     <TypeScriptCompile Include="interface\controls\progressbar.ts" />

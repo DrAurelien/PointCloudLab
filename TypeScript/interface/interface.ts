@@ -21,7 +21,7 @@
         document.body.appendChild(dataVewing);
 
         var self = this;
-        this.dataHandler = new DataHandler(dataVewing, function () { self.Refresh(scene); }, scene);
+        this.dataHandler = new DataHandler(dataVewing, function () { self.Refresh(scene); }, scene, this);
 
         this.dataHandler.handle.onclick = function (event) {
             self.dataHandler.SwitchVisibility();

@@ -31,4 +31,8 @@
 		this.visible = properties.Get('Visible') == '1';
 		return this.material.SetProperties(properties.GetAsProperties('Material'));
 	}
+
+	GetActions(onDone : Function): any {
+		return  {};
+	}
 }

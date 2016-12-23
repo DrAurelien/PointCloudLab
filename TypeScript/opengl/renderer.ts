@@ -147,7 +147,6 @@ class Renderer {
         return null;
     }
 
-    /*
     ScanFromCurrentViewPoint(scene: any, resultHandler: Function) {
         var self = this;
         var resolution =
@@ -197,6 +196,6 @@ class Renderer {
             }
         }
 
-        LongProcess('Scanning the scene (' + resolution.log() + ')', GenerateScanRay, HandleResult);
-    }*/
+        LongProcess.Run('Scanning the scene (' + resolution.log() + ')', GenerateScanRay, HandleResult);
+    }
 }

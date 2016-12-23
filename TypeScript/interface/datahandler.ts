@@ -6,7 +6,7 @@
     handle: HTMLDivElement;
     currentItem: CADPrimitive;
 
-    constructor(public container: HTMLDivElement, public updateCallback: Function, scene: Scene) {
+    constructor(public container: HTMLDivElement, public updateCallback: Function, scene: Scene, private view : Interface) {
 		let dataHandler = this;
 		//Data toolbar
         this.dataToolbar = new Toolbar([
@@ -163,7 +163,7 @@
 						dataHandler.AddCreatedObject(scene, new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
 						break;
 					case 'Scan from current viewpoint':
-						this.sceneRenderer.ScanFromCurrentViewPoint(scene,
+						dataHandler.view.sceneRenderer.ScanFromCurrentViewPoint(scene,
 							function(scan) {
 								dataHandler.AddCreatedObject(scene, scan);
 							});
@@ -184,116 +184,6 @@
 
     RefreshData(scene: Scene) : void
 	{
-		function Refresh(dataHandler)
-		{
-			if(dataHandler.updateCallback != null)
-			{
-				dataHandler.updateCallback();
-			}
-			else
-			{
-				dataHandler.RefreshContent(scene);
-			}
-		}
-		
-		//When left - clicking an item
-		function ItemClicked(object, target)
-		{
-			this.object = object;
-			this.target = target;
-			
-			this.Callback = function(event)
-			{
-			var self = this;
-				return function()
-				{
-					self.target.currentItem = self.object;
-					scene.Select(self.object);
-					Refresh(self.target);
-				}
-			}
-		}
-		
-		//When right - clicking an item
-		function ItemMenu(object, owner, target)
-		{
-			this.object = object;
-			this.target = target;
-			
-			this.Callback = function(event)
-			{
-				event = event ||window.event;
-				var self = this;
-				return function()
-				{
-					var actions = self.object.GetActions(
-						function(createdObject)
-						{
-							if(createdObject)
-							{
-								self.target.AddCreatedObject(scene, createdObject);
-							}
-							else
-							{
-								Refresh(self.target)
-							}
-						}
-                        );
-                    Popup.CreatePopup(owner, actions);
-					return false;
-				}
-			}
-		}
-		
-		//When clicking the visibility icon next to an item
-		function ViewClicked(object, icon, target)
-		{
-			this.object = object;
-			this.target = target;
-			
-			this.Callback = function(event)
-			{
-				var self = this;
-				return function()
-				{
-					self.object.visible = ! self.object.visible;
-					Refresh(self.target);
-				}
-			}
-		}
-		
-		//When clickin the deletion icon next to an item
-		function DeletionClicked(object, target)
-		{
-			this.object = object;
-			this.target = target;
-			
-			this.Callback = function()
-			{
-				var self = this;
-				return function(event)
-				{
-					event = event ||window.event;
-					
-					if(confirm('Are you sure you want to delete "' + self.object.name + '" ?'))
-					{
-						scene.Remove(self.object);
-						self.target.currentItem = null;
-						Refresh(self.target);
-						
-						if (event.stopPropagation) {
-						  event.stopPropagation();
-						}
-						else {
-						  event.cancelBubble = true;
-						}
-					}
-				}
-			}
-		}
-		
-		//-----------------------------------------------------
-		
 		//Clear dataArea content
 		while(this.dataArea.firstChild)
 		{
@@ -303,31 +193,8 @@
         //List scene objects
         for (var index = 0; index < scene.items.length; index++)
         {
-            let currentObject: CADPrimitive = scene.items[index];
-            let item: HTMLDivElement = <HTMLDivElement>document.createElement('div');
-			item.className = (currentObject == this.currentItem)?'SelectedSceneItem':'SceneItem';
-			
-			let visibilityIcon = document.createElement('i');
-			visibilityIcon.className = 'ItemAction fa fa-eye' + (currentObject.visible ? '' : '-slash');
-			item.appendChild(visibilityIcon);
-			
-			let deletionIcon = document.createElement('i');
-			deletionIcon.className = 'ItemAction fa fa-close';
-			item.appendChild(deletionIcon);
-			
-			let itemContentContainer = document.createElement('span');
-			itemContentContainer.className = 'ItemNameContainer';
-			
-			let itemContent = document.createTextNode(currentObject.name);
-			itemContentContainer.appendChild(itemContent);
-			item.appendChild(itemContentContainer);
-			
-			item.onclick = new ItemClicked(currentObject, this).Callback();
-			item.oncontextmenu = new ItemMenu(currentObject, itemContentContainer, this).Callback();
-			visibilityIcon.onclick = new ViewClicked(currentObject, visibilityIcon, this).Callback();
-			deletionIcon.onclick = new DeletionClicked(currentObject, this).Callback();
-			
-			this.dataArea.appendChild(item);
+			let item = new DataItem(scene.items[index], this, scene);
+			this.dataArea.appendChild(item.GetElement());
 		}
 	}
 	

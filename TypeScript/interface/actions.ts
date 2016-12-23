@@ -3,6 +3,6 @@
 	}
 
 	Run() {
-		return this.callback;
+		return this.callback();
 	}
 }
