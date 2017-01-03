@@ -49,8 +49,6 @@ class Camera {
 			
         //Lighting
         context.gl.uniform3fv(context.eyeposition, new Float32Array(this.at.Flatten()));
-        context.gl.uniform3fv(context.lightposition, new Float32Array([100.0, 100.0, 100.0])); //TODO : parameter light
-			
         context.gl.viewport(0, 0, this.screen.width, this.screen.height);
         context.gl.clear(context.gl.COLOR_BUFFER_BIT | context.gl.DEPTH_BUFFER_BIT);
     }

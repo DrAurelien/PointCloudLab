@@ -9,11 +9,15 @@
 class Renderer {
     drawingcontext: DrawingContext;
     camera: Camera;
+	light: Sphere;
     private mousetracker: MouseTracker;
 
     constructor(public renderingArea: HTMLCanvasElement, public refreshCallback: Function, scene : Scene) {
         this.drawingcontext = new DrawingContext(renderingArea, refreshCallback);
         this.camera = new Camera(this.drawingcontext);
+
+		this.light = new Sphere(new Vector([10.0, 10.0, 10.0]), 0.1);
+		this.light.material = new Material([1.0, 1.0, 1.0], 0.0, 3.0, 0.0, 1.0);
 
         this.mousetracker = null;
         this.Draw(scene);
@@ -106,10 +110,17 @@ class Renderer {
         var gl = this.drawingcontext.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        this.camera.InititalizeDrawingContext(this.drawingcontext);
+		//Set the light position
+        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightposition, new Float32Array(this.light.center.coordinates));
+
+		//Set the camera position
+		this.camera.InititalizeDrawingContext(this.drawingcontext);
+
+		//Perform rendering
         if (scene) {
             scene.Draw(this.drawingcontext);
         }
+		this.light.Draw(this.drawingcontext);
     }
     
     Resize(width : number, height : number) : void {

@@ -16,11 +16,11 @@
             varying highp vec3 Normal;
 
             void main(void) {
-            gl_PointSize = 5.0;
-            gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
+				gl_PointSize = 5.0;
+				gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
 
-            Position = VertexPosition;
-            Normal = NormalVector;
+				Position = VertexPosition;
+				Normal = NormalVector;
             }
         </script>
         <script id="FragmentShader" type="x-shader/x-fragment">
@@ -39,29 +39,29 @@
 
             void main(void) {
 
-            highp float lightingCoef;
+				highp float lightingCoef;
 
-            if(UseNormals == 0)
-            {
-            lightingCoef = 1.0;
-            }
-            else
-            {
-            //Phong lighting
-            highp vec3 eyeVect = EyePosition - Position;
-            eyeVect /= length(eyeVect);
-            highp vec3 lightVect = LightPosition - Position;
-            lightVect /= length(lightVect);
-            highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
-            reflVec /= length(reflVec);
+				if(UseNormals == 0)
+				{
+					lightingCoef = 1.0;
+				}
+				else
+				{
+					//Phong lighting
+					highp vec3 eyeVect = EyePosition - Position;
+					eyeVect /= length(eyeVect);
+					highp vec3 lightVect = LightPosition - Position;
+					lightVect /= length(lightVect);
+					highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
+					reflVec /= length(reflVec);
 
-            lightingCoef = ( AmbiantCoef +
-            max(DiffuseCoef * dot(Normal, lightVect), 0.0) +
-            SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow)
-            //) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
-            ) / 3.0;
-            }
-            gl_FragColor = vec4(Color * lightingCoef, 1);
+					lightingCoef = AmbiantCoef;
+					lightingCoef += max(DiffuseCoef * dot(Normal, lightVect), 0.0);
+					lightingCoef += SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
+					//lightingCoef /= (AmbiantCoef+DiffuseCoef+SpecularCoef);
+					lightingCoef /= 3.0;
+				}
+				gl_FragColor = vec4(Color * lightingCoef, 1);
             }
         </script>
         <!--TOOLS-->

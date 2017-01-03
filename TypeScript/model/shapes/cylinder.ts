@@ -90,12 +90,12 @@
 		//North pole
 		var northShift = 2;
 		for (var ii = 0; ii < sampling; ii++) {
-			mesh.PushFace([ii + northShift, 0, ((ii + 1) % sampling) + northShift]);
+			mesh.PushFace([0, ii + northShift, ((ii + 1) % sampling) + northShift]);
 		}
 		//South pole
 		var southShift = sampling + 2;
 		for (var ii = 0; ii < sampling; ii++) {
-			mesh.PushFace([1, ii + southShift, ((ii + 1) % sampling) + southShift]);
+			mesh.PushFace([ii + southShift, 1, ((ii + 1) % sampling) + southShift]);
 		}
 		//Strips
 		var shift = southShift + sampling;
@@ -108,8 +108,8 @@
 			var ab = ia + jb + shift;
 			var bb = ib + jb + shift;
 			var ba = ib + ja + shift;
-			mesh.PushFace([ab, aa, ba]);
-			mesh.PushFace([ab, ba, bb]);
+			mesh.PushFace([aa, ab, ba]);
+			mesh.PushFace([ba, ab, bb]);
 		}
 		mesh.ComputeNormals();
 		return mesh;

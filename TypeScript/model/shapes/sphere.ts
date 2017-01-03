@@ -49,8 +49,8 @@
 		var points = new PointCloud();
 		points.Reserve(sampling * halfSampling + 2);
 
-		points.PushPoint(this.center.Plus(new Vector([0, 0, 1])));
-		points.PushPoint(this.center.Plus(new Vector([0, 0, -1])));
+		points.PushPoint(this.center.Plus(new Vector([0, 0, this.radius])));
+		points.PushPoint(this.center.Plus(new Vector([0, 0, -this.radius])));
 		//Spherical coordinates
 		for (var jj = 0; jj < halfSampling; jj++) {
 			for (var ii = 0; ii < sampling; ii++) {
@@ -71,12 +71,12 @@
 		//North pole
 		var northShift = 2;
 		for (var ii = 0; ii < sampling; ii++) {
-			mesh.PushFace([ii + northShift, 0, ((ii + 1) % sampling) + northShift]);
+			mesh.PushFace([0, ii + northShift, ((ii + 1) % sampling) + northShift]);
 		}
 		//South pole
 		var southShift = (halfSampling - 1) * sampling + northShift;
 		for (var ii = 0; ii < sampling; ii++) {
-			mesh.PushFace([1, ii + southShift, ((ii + 1) % sampling) + southShift]);
+			mesh.PushFace([ii + southShift, 1, ((ii + 1) % sampling) + southShift]);
 		}
 		//Strips
 		for (var jj = 0; (jj + 1) < halfSampling; jj++) {
@@ -93,8 +93,8 @@
 				var ab = ia + jb + northShift;
 				var bb = ib + jb + northShift;
 				var ba = ib + ja + northShift;
-				mesh.PushFace([ab, aa, ba]);
-				mesh.PushFace([ab, ba, bb]);
+				mesh.PushFace([aa, ab, ba]);
+				mesh.PushFace([ba, ab, bb]);
 			}
 		}
 		mesh.ComputeNormals();
