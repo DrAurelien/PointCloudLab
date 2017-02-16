@@ -1,5 +1,5 @@
 ﻿abstract class CADPrimitive {
-    owner: Group;
+    owner: CADGroup;
 	material: Material;
 	visible: boolean;
     selected: boolean;

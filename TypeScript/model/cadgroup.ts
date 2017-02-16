@@ -1,21 +1,23 @@
-﻿class Group extends CADPrimitive {
+﻿class CADGroup extends CADPrimitive {
     children: CADPrimitive[];
     folded: boolean;
 
-    constructor(name: string) {
-        super(name);
+    constructor(name?: string) {
+        super(name || NameProvider.GetName('Group'));
 		this.children = [];
 		this.folded = false;
     }
 
     Draw(drawingContext: DrawingContext): void {
-        for (var index = 0; index < this.children.length; index++) {
-            this.children[index].Draw(drawingContext);
-        }
+		if (this.visible) {
+			for (var index = 0; index < this.children.length; index++) {
+				this.children[index].Draw(drawingContext);
+			}
 
-		if (this.selected) {
-			var box = this.GetBoundingBox();
-			box.Draw(drawingContext);
+			if (this.selected) {
+				var box = this.GetBoundingBox();
+				box.Draw(drawingContext);
+			}
 		}
     }
 

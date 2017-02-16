@@ -1,8 +1,8 @@
 ﻿class Scene {
-    root: Group;
+    root: CADGroup;
 
     constructor() {
-        this.root = new Group("Scene");
+        this.root = new CADGroup("Scene");
     }
 
     Select(item: CADPrimitive): void {

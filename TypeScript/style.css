@@ -53,9 +53,13 @@ div.DataToolbar, div.DataArea, div.PropertiesArea
 	overflow : auto;
 }
 
-div.SceneItem, div.SelectedSceneItem
+div.TreeItemContainer
 {
 	padding-left : 10px;
+}
+
+div.SceneItem
+{
 	cursor : pointer;
 }
 

@@ -1,30 +1,36 @@
 ﻿class DataItem implements Control {
-	container : HTMLDivElement;
+	container: HTMLDivElement;
+	itemContentContainer: HTMLDivElement;
 
 	constructor(public item: CADPrimitive, private dataHandler: DataHandler, private scene: Scene) {
 		this.container = <HTMLDivElement>document.createElement('div');
-		this.container.className = (this.item == this.dataHandler.currentItem) ? 'SelectedSceneItem' : 'SceneItem';
+		this.container.className = 'TreeItemContainer';
+
+		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
+		this.container.appendChild(this.itemContentContainer);
+
+		this.itemContentContainer.className = (this.item == this.dataHandler.currentItem) ? 'SelectedSceneItem' : 'SceneItem';
 
 		let visibilityIcon = document.createElement('i');
 		visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
-		this.container.appendChild(visibilityIcon);
+		this.itemContentContainer.appendChild(visibilityIcon);
 
 		let deletionIcon = null;
 		if (this.item.owner) {
 			deletionIcon = document.createElement('i');
 			deletionIcon.className = 'ItemAction fa fa-close';
-			this.container.appendChild(deletionIcon);
+			this.itemContentContainer.appendChild(deletionIcon);
 		}
 
-		let itemContentContainer = document.createElement('span');
-		itemContentContainer.className = 'ItemNameContainer';
+		let itemNameContainer = document.createElement('span');
+		itemNameContainer.className = 'ItemNameContainer';
 
 		let itemContent = document.createTextNode(this.item.name);
-		itemContentContainer.appendChild(itemContent);
-		this.container.appendChild(itemContentContainer);
+		itemNameContainer.appendChild(itemContent);
+		this.itemContentContainer.appendChild(itemNameContainer);
 
-		this.container.onclick = this.ItemClicked();
-		this.container.oncontextmenu = this.ItemMenu();
+		this.itemContentContainer.onclick = this.ItemClicked();
+		this.itemContentContainer.oncontextmenu = this.ItemMenu();
 		visibilityIcon.onclick = this.ViewClicked();
 		if (deletionIcon) {
 			deletionIcon.onclick = this.DeletionClicked();
@@ -33,7 +39,7 @@
 		let children = this.item.GetChildren();
 		for (let index = 0; index < children.length; index++) {
 			let son = new DataItem(children[index], dataHandler, scene);
-			this.container.appendChild(son.container);
+			this.container.appendChild(son.GetContainerElement());
 		}
 	}
 
@@ -111,6 +117,10 @@
 	}
 
 	GetElement(): HTMLElement {
+		return this.itemContentContainer;
+	}
+
+	GetContainerElement(): HTMLElement {
 		return this.container;
 	}
 }

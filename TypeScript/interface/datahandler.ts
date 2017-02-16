@@ -58,6 +58,7 @@
         let dataHandler = this;
         return function () {
             var itemsCreationMenu = [
+                dataHandler.GetItemCreator('Group', scene),
                 dataHandler.GetItemCreator('Plane', scene),
                 dataHandler.GetItemCreator('Sphere', scene),
                 dataHandler.GetItemCreator('Cylinder', scene),
@@ -128,11 +129,16 @@
 		}
 	}
 
-    AddCreatedObject = function (scene: Scene, createdObject: CADPrimitive)
+    AddCreatedObject(scene: Scene, createdObject: CADPrimitive)
 	{
 		if(createdObject)
         {
-            scene.root.Add(createdObject);
+			if (this.currentItem && this.currentItem instanceof CADGroup) {
+				(<CADGroup>this.currentItem).Add(createdObject)
+			}
+			else {
+				scene.root.Add(createdObject);
+			}
 			scene.Select(createdObject);
 			this.currentItem = createdObject;
 			if(this.updateCallback != null)
@@ -151,6 +157,9 @@
             {
 				switch(objectName)
 				{
+					case 'Group':
+						dataHandler.AddCreatedObject(scene, new CADGroup());
+						break;
 					case 'Plane' :
 						dataHandler.AddCreatedObject(scene, new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1));
 						break;
@@ -192,7 +201,7 @@
 		}
 
 		let item = new DataItem(scene.root, this, scene);
-		this.dataArea.appendChild(item.GetElement());
+		this.dataArea.appendChild(item.GetContainerElement());
 	}
 	
 	RefreshProperties() : void
