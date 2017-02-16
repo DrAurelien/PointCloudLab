@@ -9,9 +9,12 @@
 		visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
 		this.container.appendChild(visibilityIcon);
 
-		let deletionIcon = document.createElement('i');
-		deletionIcon.className = 'ItemAction fa fa-close';
-		this.container.appendChild(deletionIcon);
+		let deletionIcon = null;
+		if (this.item.owner) {
+			deletionIcon = document.createElement('i');
+			deletionIcon.className = 'ItemAction fa fa-close';
+			this.container.appendChild(deletionIcon);
+		}
 
 		let itemContentContainer = document.createElement('span');
 		itemContentContainer.className = 'ItemNameContainer';
@@ -23,7 +26,15 @@
 		this.container.onclick = this.ItemClicked();
 		this.container.oncontextmenu = this.ItemMenu();
 		visibilityIcon.onclick = this.ViewClicked();
-		deletionIcon.onclick = this.DeletionClicked();
+		if (deletionIcon) {
+			deletionIcon.onclick = this.DeletionClicked();
+		}
+
+		let children = this.item.GetChildren();
+		for (let index = 0; index < children.length; index++) {
+			let son = new DataItem(children[index], dataHandler, scene);
+			this.container.appendChild(son.container);
+		}
 	}
 
 	Refresh() {
@@ -42,6 +53,7 @@
 			self.dataHandler.currentItem = self.item;
 			self.scene.Select(self.item);
 			self.Refresh();
+			self.CancelBubbling(event);
 		}
 	}
 
@@ -49,7 +61,7 @@
 	ItemMenu(): (ev: PointerEvent) => any {
 		let self = this;
 		return function (event: PointerEvent) {
-			var actions = self.item.GetActions(
+			let actions = self.item.GetActions(
 				function (createdObject) {
 					if (createdObject) {
 						self.dataHandler.AddCreatedObject(self.scene, createdObject);
@@ -60,6 +72,7 @@
 				}
 			);
 			Popup.CreatePopup(self, actions);
+			self.CancelBubbling(event);
 			return false;
 		}
 	}
@@ -80,17 +93,20 @@
 			event = event || <MouseEvent>window.event;
 
 			if (confirm('Are you sure you want to delete "' + self.item.name + '" ?')) {
-				self.scene.Remove(self.item);
+				self.item.owner.Remove(self.item);
 				self.dataHandler.currentItem = null;
 				self.Refresh();
-
-				if (event.stopPropagation) {
-					event.stopPropagation();
-				}
-				else {
-					event.cancelBubble = true;
-				}
+				self.CancelBubbling(event);
 			}
+		}
+	}
+
+	private CancelBubbling(event: MouseEvent): void {
+		if (event.stopPropagation) {
+			event.stopPropagation();
+		}
+		else {
+			event.cancelBubble = true;
 		}
 	}
 

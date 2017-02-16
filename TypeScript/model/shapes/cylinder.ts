@@ -115,7 +115,7 @@
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray) : number[] {
+	RayIntersections(ray: Ray) : number[] {
 		var worldToBase = this.GetWorldToInnerBaseMatrix();
 		var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
 		var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));

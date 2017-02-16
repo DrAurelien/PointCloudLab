@@ -1,18 +1,20 @@
 ﻿abstract class CADPrimitive {
+    owner: Group;
 	material: Material;
 	visible: boolean;
-	selected: boolean;
-	protected boundingbox: BoundingBox;
+    selected: boolean;
+    protected boundingbox: BoundingBox;
 
     constructor(public name: string) {
+        this.owner = null;
 		this.material = new Material([0.0, 1.0, 0.0]);
 		this.visible = true;
 		this.selected = false;
 		this.boundingbox = null;
     }
 
-	abstract Draw(drawingContext: DrawingContext): void;
-    abstract RayIntersection(ray: Ray): number[];
+    abstract Draw(drawingContext: DrawingContext): void;
+    abstract RayIntersection(ray: Ray): Picking;
 	
 	GetBoundingBox(): BoundingBox {
 		return this.boundingbox;
@@ -32,7 +34,19 @@
 		return this.material.SetProperties(properties.GetAsProperties('Material'));
 	}
 
-	GetActions(onDone : Function): any {
-		return  {};
+	GetActions(onDone: Function): Action[] {
+		return [];
+    }
+
+	GetChildren(): CADPrimitive[] {
+		return [];
 	}
+
+    Apply(proc: CADProcedure): boolean {
+        return proc(this);
+    }
+}
+
+interface CADProcedure {
+    (primitive: CADPrimitive): boolean;
 }

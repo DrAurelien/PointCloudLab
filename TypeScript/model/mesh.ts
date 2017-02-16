@@ -145,35 +145,12 @@
 		}
 	}
 
-	RayIntersection(ray: Ray) : number[] {
-		function LineFaceIntersection(line, face) {
-			//Compute line / face intersection
-			//solve line.from + t * line.dir
-			let normal = face[1].Minus(face[0]).Cross(face[2].Minus(face[0]));
-			let dd = normal.Dot(face[0]);
-			let nn = line.dir.Dot(normal);
-			if (Math.abs(nn) < 1e-6) {
-				return null;
-			}
-			let tt = (dd - line.from.Dot(normal)) / nn;
-
-			let point = line.from.Plus(line.dir.Times(tt));
-
-			//Check the point is inside the triangle
-			for (let ii = 0; ii < 3; ii++) {
-				let test = point.Minus(face[ii]).Cross(face[(ii + 1) % 3].Minus(face[ii]));
-				if (test.Dot(normal) > 0) {
-					return null;
-				}
-			}
-			return tt;
-		}
-
-		let result = [];
+    RayIntersection(ray: Ray): Picking {
+        let result = new Picking(this);
 		for (let ii = 0; ii < this.Size(); ii++) {
-			let tt = LineFaceIntersection(ray, this.GetFace(ii).points);
+            let tt = this.GetFace(ii).LineFaceIntersection(ray);
 			if (tt !== null) {
-				result.push(tt);
+				result.Add(tt);
 			}
 		}
 		return result;
@@ -182,5 +159,28 @@
 
 class Face {
 	constructor(public indices : number[], public points : Vector[]) {
-	}
+    }
+
+    LineFaceIntersection(line: Ray) : number {
+        //Compute line / face intersection
+        //solve line.from + t * line.dir
+        let normal = this.points[1].Minus(this.points[0]).Cross(this.points[2].Minus(this.points[0]));
+        let dd = normal.Dot(this.points[0]);
+        let nn = line.dir.Dot(normal);
+        if (Math.abs(nn) < 1e-6) {
+            return null;
+        }
+        let tt = (dd - line.from.Dot(normal)) / nn;
+
+        let point = line.from.Plus(line.dir.Times(tt));
+
+        //Check the point is inside the triangle
+        for (let ii = 0; ii < 3; ii++) {
+            let test = point.Minus(this.points[ii]).Cross(this.points[(ii + 1) % 3].Minus(this.points[ii]));
+            if (test.Dot(normal) > 0) {
+                return null;
+            }
+        }
+        return tt;
+    }
 }

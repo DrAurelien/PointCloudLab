@@ -52,7 +52,7 @@
         this.current = null;
     }
 
-    static CreatePopup(owner: Control, options): Popup {
+    static CreatePopup(owner: Control, options: Action[]): Popup {
         Popup.DestroyCurrent();
         this.current = new Popup(owner, options);
         return this.current;

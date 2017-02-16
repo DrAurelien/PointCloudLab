@@ -96,7 +96,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	RayIntersection(ray: Ray): number[] {
+	RayIntersections(ray: Ray): number[] {
 		var worldToBase = this.GetWorldToInnerBaseMatrix();
 		var innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
 		var innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));

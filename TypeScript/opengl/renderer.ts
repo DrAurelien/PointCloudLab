@@ -133,26 +133,15 @@ class Renderer {
         return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
     }
 
-    ResolveRayIntersection(ray: Ray, scene: Scene) : Picking {
-        let picked : any = null;
-        for (var index = 0; index < scene.items.length; index++) {
-            if (scene.items[index].visible) {
-                var intersections = scene.items[index].RayIntersection(ray);
-                for (var ii = 0; ii < intersections.length; ii++) {
-                    if (picked == null || picked.depth > intersections[ii]) {
-                        picked = new Picking(scene.items[index], intersections[ii]);
-                    }
-                }
-            }
-        }
-        return picked;
+    ResolveRayIntersection(ray: Ray, scene: Scene): Picking {
+		return scene.root.RayIntersection(ray);
     }
 
-    PickObject(x: number, y: number, scene: any) : any {
+    PickObject(x: number, y: number, scene: any): any {
         let ray : Ray = this.GetRay(x, y);
         let picked = this.ResolveRayIntersection(ray, scene);
 
-        if (picked != null) {
+        if (picked != null && picked.HasIntersection()) {
             return picked.object;
         }
         return null;
@@ -194,8 +183,8 @@ class Renderer {
                 self.camera.screen.height * (resolution.currentj / resolution.height)
                 );
             var intersection = self.ResolveRayIntersection(ray, scene);
-            if (intersection) {
-                var point = ray.from.Plus(ray.dir.Times(intersection.depth));
+            if (intersection && intersection.HasIntersection) {
+                var point = ray.from.Plus(ray.dir.Times(intersection.distance));
                 cloud.PushPoint(point);
             }
             return resolution.next();

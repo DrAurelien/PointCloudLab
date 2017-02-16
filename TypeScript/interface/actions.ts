@@ -1,8 +1,8 @@
 ﻿class Action {
-	constructor(public label: string, private callback: Function) {
+	constructor(public label: string, protected callback: Function = () => { }) {
 	}
 
-	Run() {
+	Run() : Function {
 		return this.callback();
 	}
 }

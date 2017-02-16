@@ -16,7 +16,7 @@
 			new FileOpener('Open', function(createdObject) {
 				if(createdObject != null)
 				{
-					scene.items.push(createdObject);
+					scene.root.Add(createdObject);
 					scene.Select(createdObject);
 					dataHandler.currentItem = createdObject;
 					if(dataHandler.updateCallback != null)
@@ -64,7 +64,8 @@
                 dataHandler.GetItemCreator('Torus', scene)
             ];
 
-            if (scene.items && scene.items.length) {
+			let scannable = !scene.root.Apply(p => !(p instanceof Shape || p instanceof Mesh) );
+            if (scannable) {
                 itemsCreationMenu.push(dataHandler.GetItemCreator('Scan from current viewpoint', scene));
             }
             return itemsCreationMenu;
@@ -131,7 +132,7 @@
 	{
 		if(createdObject)
         {
-            scene.items.push(createdObject);
+            scene.root.Add(createdObject);
 			scene.Select(createdObject);
 			this.currentItem = createdObject;
 			if(this.updateCallback != null)
@@ -189,13 +190,9 @@
 		{
 			this.dataArea.removeChild(this.dataArea.firstChild);
 		}
-		
-        //List scene objects
-        for (var index = 0; index < scene.items.length; index++)
-        {
-			let item = new DataItem(scene.items[index], this, scene);
-			this.dataArea.appendChild(item.GetElement());
-		}
+
+		let item = new DataItem(scene.root, this, scene);
+		this.dataArea.appendChild(item.GetElement());
 	}
 	
 	RefreshProperties() : void

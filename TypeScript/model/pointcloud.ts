@@ -6,7 +6,7 @@
 	glPointsBuffer: WebGLBuffer;
 	glNormalsBuffer: WebGLBuffer;
 	tree: KDTree = null;
-	ransac: Object;
+	ransac: Ransac;
 
 	constructor() {
 		super(NameProvider.GetName('PointCloud'));
@@ -145,8 +145,8 @@
 		return knn.Neighbours();
 	}
 
-	RayIntersection(ray: Ray): number[] {
-		return [];
+    RayIntersection(ray: Ray): Picking {
+        return new Picking(this);
 	}
 
 	ComputeNormal(index: number, k: number): Vector {
@@ -310,93 +310,131 @@
 	GetActions(onDone: Function): Action[] {
 		let cloud = this;
 		let result : Action[] = [];
-
-		function gaussianSpehereCallback() {
-			var gsphere = cloud.GaussianSphere();
-			if (onDone)
-				onDone(gsphere);
-		}
-
-		function clearNormalCallback() {
-			cloud.ClearNormals();
-			if (onDone)
-				onDone();
-		}
-
-		function resetDetectionCallback() {
-			cloud.ransac = null;
-			if (onDone)
-				onDone();
-		}
 		
 		if (this.HasNormals()) {
-			result.push(new Action('Gaussian sphere', gaussianSpehereCallback));
-			result.push(new Action('Clear normals', clearNormalCallback));
+			result.push(new GaussianSphereAction(cloud, onDone));
+			result.push(new ClearNormalsAction(cloud, onDone));
 
 			if (cloud.ransac) {
-				result.push(new Action('Reset detection', resetDetectionCallback));
+				result.push(new ResetDetectionAction(cloud, onDone));
 			}
-		}
-			/*
 			if (!(cloud.ransac && cloud.ransac.IsDone())) {
-				result.push(new Action('Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape', () => {
-						if (!cloud.ransac) {
-							cloud.ransac = new Ransac(cloud);
-							var dialog = new Dialog(
-								function (properties) {
-									try {
-										cloud.ransac.nbFailure = parseInt(properties.GetValue('Failures'));
-										cloud.ransac.noise = parseFloat(properties.GetValue('Noise'));
-									}
-									catch (exc) {
-										return false;
-									}
-									var generators = [];
-									if (properties.GetValue('Planes')) {
-										generators.push(RansacPlane);
-									}
-									if (properties.GetValue('Spheres')) {
-										generators.push(RansacSphere);
-									}
-									if (properties.GetValue('Cylinders')) {
-										generators.push(RansacCylinder);
-									}
-									cloud.ransac.SetGenerators(generators);
-
-									cloud.ransac.FindBestFittingShape(onDone);
-									return true;
-								},
-								function () {
-									cloud.ransac = null;
-									return true;
-								}
-							);
-							dialog.InsertValue('Failures', cloud.ransac.nbFailure);
-							dialog.InsertValue('Noise', cloud.ransac.noise);
-							dialog.InsertTitle('Shapes to detect');
-							dialog.InsertCheckBox('Planes', true);
-							dialog.InsertCheckBox('Spheres', true);
-							dialog.InsertCheckBox('Cylinders', true);
-						}
-						else {
-							cloud.ransac.FindBestFittingShape(onDone);
-						}
-					}
-				});
+				result.push(new RansacDetectionAction(cloud, onDone));
 			}
 		}
 		else {
-			result.push({
-				label: 'Compute normals',
-				callback: function () { cloud.ComputeNormals(0, onDone) }
-			});
+			result.push(new ComputeNormalsAction(cloud, onDone));
 		}
 
-		result.push({
-			label: 'Export',
-			callback: function () { ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv'); }
-		});*/
+		result.push(new ExportFileAction(cloud, onDone));
 
 		return result;
+	}
+}
+
+class ComputeNormalsAction extends Action {
+	constructor(cloud: PointCloud, onDone: Function) {
+		super('Compute normals');
+
+		this.callback = function () {
+			cloud.ComputeNormals(0, onDone);
+		};
+	}
+}
+
+class GaussianSphereAction extends Action {
+	constructor(cloud: PointCloud, onDone: Function) {
+		super('Compute gaussian sphere');
+
+		this.callback = function () {
+			var gsphere = cloud.GaussianSphere();
+			if (onDone)
+				onDone(gsphere);
+		};
+	}
+}
+
+class ClearNormalsAction extends Action {
+	constructor(cloud: PointCloud, onDone: Function) {
+		super('Clear normals');
+
+		this.callback = function clearNormalCallback() {
+			cloud.ClearNormals();
+			if (onDone)
+				onDone();
+		};
+	}
+}
+
+class ExportFileAction extends Action {
+	constructor(cloud: PointCloud, onDone: Function) {
+		super('Export file');
+
+		this.callback = function () {
+			//ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv');
+		}
+	}
+}
+
+class ResetDetectionAction extends Action {
+	constructor(cloud: PointCloud, onDone: Function) {
+		super('Reset detection');
+
+		this.callback = function () {
+			cloud.ransac = null;
+			if (onDone)
+				onDone();
+		};
+	}
+}
+
+class RansacDetectionAction extends Action {
+	constructor(cloud: PointCloud, onDone: Function) {
+		super('Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape');
+
+		this.callback = function() {
+			if (!cloud.ransac) {
+				cloud.ransac = new Ransac(cloud);
+				var dialog = new Dialog(
+					function (properties) {
+						try {
+							cloud.ransac.nbFailure = parseInt(properties.GetValue('Failures'));
+							cloud.ransac.noise = parseFloat(properties.GetValue('Noise'));
+						}
+						catch (exc) {
+							return false;
+						}
+
+						var generators = [];
+						if (properties.GetValue('Planes')) {
+							generators.push(Ransac.RansacPlane);
+						}
+						if (properties.GetValue('Spheres')) {
+							generators.push(Ransac.RansacSphere);
+						}
+						if (properties.GetValue('Cylinders')) {
+							generators.push(Ransac.RansacCylinder);
+						}
+						cloud.ransac.SetGenerators(generators);
+
+						cloud.ransac.FindBestFittingShape(onDone);
+						return true;
+					},
+					function () {
+						cloud.ransac = null;
+						return true;
+					}
+				);
+				dialog.InsertValue('Failures', cloud.ransac.nbFailure);
+				dialog.InsertValue('Noise', cloud.ransac.noise);
+				dialog.InsertTitle('Shapes to detect');
+				dialog.InsertCheckBox('Planes', true);
+				dialog.InsertCheckBox('Spheres', true);
+				dialog.InsertCheckBox('Cylinders', true);
+			}
+			else {
+				cloud.ransac.FindBestFittingShape(onDone);
+			}
+		}
 	}
 }

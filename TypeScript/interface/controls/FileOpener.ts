@@ -59,20 +59,14 @@
 		}
 
 		let combo = new ComboBox(this.label, [
-			{
-				label: "PLY Mesh",
-				callback: function () {
-					input.accept = ".ply";
-					input.click();
-				}
-			},
-			{
-				label: "CSV Point cloud",
-				callback: function () {
-					input.accept = ".csv";
-					input.click();
-				}
-			}
+			new Action('PLY Mesh', function () {
+				input.accept = '.ply';
+				input.click();
+			}),
+			new Action('CSV Point cloud', function () {
+				input.accept = '.csv';
+				input.click();
+			})
 		]);
 
 		let button = combo.GetElement();

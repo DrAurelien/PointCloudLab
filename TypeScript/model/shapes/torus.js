@@ -99,7 +99,7 @@ var Torus = (function (_super) {
         }
         return basechange.Multiply(translation);
     };
-    Torus.prototype.RayIntersection = function (ray) {
+    Torus.prototype.RayIntersections = function (ray) {
         var worldToBase = this.GetWorldToInnerBaseMatrix();
         var innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
         var innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
