@@ -307,9 +307,9 @@
 		return result;
 	}
 
-	GetActions(onDone: Function): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
 		let cloud = this;
-		let result : Action[] = [];
+		let result: Action[] = super.GetActions(dataHandler, onDone);
 		
 		if (this.HasNormals()) {
 			result.push(new GaussianSphereAction(cloud, onDone));

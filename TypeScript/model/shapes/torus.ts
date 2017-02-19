@@ -1,6 +1,6 @@
 ﻿class Torus extends Shape {
-    constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number) {
-        super('Torus');
+    constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number, owner: CADGroup=null) {
+        super(NameProvider.GetName('Torus'), owner);
     }
 
 	GetGeometry(): Properties {

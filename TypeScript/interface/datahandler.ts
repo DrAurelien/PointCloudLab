@@ -10,8 +10,6 @@
 		let dataHandler = this;
 		//Data toolbar
         this.dataToolbar = new Toolbar([
-            //Items creation button
-            new ComboBox('New', this.GetItemCreationControler(scene)),
 			//File import button
 			new FileOpener('Open', function(createdObject) {
 				if(createdObject != null)
@@ -54,25 +52,6 @@
 		this.RefreshContent(scene);
     }
 
-    GetItemCreationControler(scene: Scene): Function {
-        let dataHandler = this;
-        return function () {
-            var itemsCreationMenu = [
-                dataHandler.GetItemCreator('Group', scene),
-                dataHandler.GetItemCreator('Plane', scene),
-                dataHandler.GetItemCreator('Sphere', scene),
-                dataHandler.GetItemCreator('Cylinder', scene),
-                dataHandler.GetItemCreator('Torus', scene)
-            ];
-
-			let scannable = !scene.root.Apply(p => !(p instanceof Shape || p instanceof Mesh) );
-            if (scannable) {
-                itemsCreationMenu.push(dataHandler.GetItemCreator('Scan from current viewpoint', scene));
-            }
-            return itemsCreationMenu;
-        };
-    }
-	
 	Resize(width : number, height : number) : void {
         //this.window.style.height = height-2*this.window.offsetTop);
         this.container.style.height = (height - 2 * this.container.offsetTop)+'px';
@@ -148,43 +127,10 @@
 		}
 	}
 
-    GetItemCreator(objectName: string, scene: Scene)
-	{
-		var dataHandler = this;
-		return {
-			label : objectName,
-			callback : function()
-            {
-				switch(objectName)
-				{
-					case 'Group':
-						dataHandler.AddCreatedObject(scene, new CADGroup());
-						break;
-					case 'Plane' :
-						dataHandler.AddCreatedObject(scene, new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1));
-						break;
-					case 'Sphere' :
-						dataHandler.AddCreatedObject(scene, new Sphere(new Vector([0, 0, 0]), 1));
-						break;
-					case 'Cylinder' :
-						dataHandler.AddCreatedObject(scene, new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1));
-						break;
-					case 'Torus' :
-						dataHandler.AddCreatedObject(scene, new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1));
-						break;
-					case 'Scan from current viewpoint':
-						dataHandler.view.sceneRenderer.ScanFromCurrentViewPoint(scene,
-							function(scan) {
-								dataHandler.AddCreatedObject(scene, scan);
-							});
-						break;
-					default :
-						break;
-				}
-			}
-		};
+	GetSceneRenderer(): Renderer{
+		return this.view.sceneRenderer;
 	}
-	
+
     //Refresh content of data and properties views
     RefreshContent(scene: Scene): void
 	{

@@ -1,6 +1,6 @@
 ﻿class Cylinder extends Shape {
-    constructor(public center: Vector, public axis: Vector, public radius: number, public height: number) {
-        super('Cylinder');
+    constructor(public center: Vector, public axis: Vector, public radius: number, public height: number, owner: CADGroup = null) {
+        super(NameProvider.GetName('Cylinder'), owner);
     }
 
 	GetGeometry(): Properties {

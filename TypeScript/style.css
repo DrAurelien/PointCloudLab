@@ -58,7 +58,7 @@ div.TreeItemContainer
 	padding-left : 10px;
 }
 
-div.SceneItem
+div.SceneItem, div.SelectedSceneItem
 {
 	cursor : pointer;
 }

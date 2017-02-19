@@ -1,12 +1,10 @@
 ﻿abstract class CADPrimitive {
-    owner: CADGroup;
 	material: Material;
 	visible: boolean;
     selected: boolean;
     protected boundingbox: BoundingBox;
 
-    constructor(public name: string) {
-        this.owner = null;
+    constructor(public name: string, public owner: CADGroup = null) {
 		this.material = new Material([0.0, 1.0, 0.0]);
 		this.visible = true;
 		this.selected = false;
@@ -34,19 +32,30 @@
 		return this.material.SetProperties(properties.GetAsProperties('Material'));
 	}
 
-	GetActions(onDone: Function): Action[] {
-		return [];
+	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+		let self = this;
+		let result: Action[] = [];
+		if (this.owner) {
+			result.push(new Action('Remove', () => { self.owner.Remove(self); return onDone(null); }));
+		}
+		if (this.visible) {
+			result.push(new Action('Hide', () => { self.visible = false; return onDone(null); }));
+		}
+		else {
+			result.push(new Action('Show', () => { self.visible = true; return onDone(null); }));
+		}
+		return result;
     }
 
 	GetChildren(): CADPrimitive[] {
 		return [];
 	}
 
-    Apply(proc: CADProcedure): boolean {
+    Apply(proc: CADPrimitiveHandler): boolean {
         return proc(this);
     }
 }
 
-interface CADProcedure {
+interface CADPrimitiveHandler {
     (primitive: CADPrimitive): boolean;
 }

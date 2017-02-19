@@ -15,6 +15,10 @@
 		visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
 		this.itemContentContainer.appendChild(visibilityIcon);
 
+		let menuIcon = document.createElement('i');
+		menuIcon.className = 'ItemAction fa fa-ellipsis-h';
+		this.itemContentContainer.appendChild(menuIcon);
+
 		let deletionIcon = null;
 		if (this.item.owner) {
 			deletionIcon = document.createElement('i');
@@ -31,6 +35,7 @@
 
 		this.itemContentContainer.onclick = this.ItemClicked();
 		this.itemContentContainer.oncontextmenu = this.ItemMenu();
+		menuIcon.onclick = this.ItemMenu();
 		visibilityIcon.onclick = this.ViewClicked();
 		if (deletionIcon) {
 			deletionIcon.onclick = this.DeletionClicked();
@@ -68,6 +73,7 @@
 		let self = this;
 		return function (event: PointerEvent) {
 			let actions = self.item.GetActions(
+				self.dataHandler,
 				function (createdObject) {
 					if (createdObject) {
 						self.dataHandler.AddCreatedObject(self.scene, createdObject);
@@ -75,6 +81,7 @@
 					else {
 						self.Refresh();
 					}
+					return true;
 				}
 			);
 			Popup.CreatePopup(self, actions);

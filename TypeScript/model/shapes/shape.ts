@@ -2,8 +2,8 @@
     visible: boolean;
 	mesh: Mesh;
 
-	constructor(name: string) {
-		super(name);
+	constructor(name: string, owner: CADGroup) {
+		super(name, owner);
 		this.mesh = null;
 	}
 

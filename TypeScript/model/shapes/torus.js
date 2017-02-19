@@ -5,8 +5,9 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var Torus = (function (_super) {
     __extends(Torus, _super);
-    function Torus(center, axis, greatRadius, smallRadius) {
-        _super.call(this, 'Torus');
+    function Torus(center, axis, greatRadius, smallRadius, owner) {
+        if (owner === void 0) { owner = null; }
+        _super.call(this, NameProvider.GetName('Torus'), owner);
         this.center = center;
         this.axis = axis;
         this.greatRadius = greatRadius;

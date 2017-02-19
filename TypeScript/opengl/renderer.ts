@@ -133,13 +133,13 @@ class Renderer {
         return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
     }
 
-    ResolveRayIntersection(ray: Ray, scene: Scene): Picking {
-		return scene.root.RayIntersection(ray);
+    ResolveRayIntersection(ray: Ray, root: CADGroup): Picking {
+		return root.RayIntersection(ray);
     }
 
-    PickObject(x: number, y: number, scene: any): any {
+    PickObject(x: number, y: number, scene: Scene): CADPrimitive {
         let ray : Ray = this.GetRay(x, y);
-        let picked = this.ResolveRayIntersection(ray, scene);
+        let picked = this.ResolveRayIntersection(ray, scene.root);
 
         if (picked != null && picked.HasIntersection()) {
             return picked.object;
@@ -147,7 +147,7 @@ class Renderer {
         return null;
     }
 
-    ScanFromCurrentViewPoint(scene: any, resultHandler: Function) {
+    ScanFromCurrentViewPoint(group: CADGroup, resultHandler: Function) {
         var self = this;
         var resolution =
             {
@@ -182,7 +182,7 @@ class Renderer {
                 self.camera.screen.width * (resolution.currenti / resolution.width),
                 self.camera.screen.height * (resolution.currentj / resolution.height)
                 );
-            var intersection = self.ResolveRayIntersection(ray, scene);
+            var intersection = self.ResolveRayIntersection(ray, group);
             if (intersection && intersection.HasIntersection) {
                 var point = ray.from.Plus(ray.dir.Times(intersection.distance));
                 cloud.PushPoint(point);

@@ -2,8 +2,8 @@
     children: CADPrimitive[];
     folded: boolean;
 
-    constructor(name?: string) {
-        super(name || NameProvider.GetName('Group'));
+    constructor(name?: string, owner: CADGroup = null) {
+        super(name || NameProvider.GetName('Group'), owner);
 		this.children = [];
 		this.folded = false;
     }
@@ -65,7 +65,7 @@
         return this.boundingbox;
     }
 
-    Apply(proc: CADProcedure): boolean {
+    Apply(proc: CADPrimitiveHandler): boolean {
         if (!super.Apply(proc)) {
 			return false;
 		}
@@ -82,4 +82,30 @@
 			return this.children;
 		}
 	}
+
+	private IsScannable(): boolean {
+		return !this.Apply(p => !(p instanceof Shape || p instanceof Mesh));
+	}
+
+	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+		let result: Action[] = super.GetActions(dataHandler, onDone);
+
+		result.push(new Action('New group', () => onDone(new CADGroup(NameProvider.GetName('Group'), this))));
+		result.push(new Action('New plane', () => onDone(new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, this))));
+		result.push(new Action('New sphere', () => onDone(new Sphere(new Vector([0, 0, 0]), 1, this))));
+		result.push(new Action('New cylinder', () => onDone(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, this))));
+		result.push(new Action('New torus', () => onDone(new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, this))));
+
+		if (this.IsScannable()) {
+			let self = this;
+			result.push(new Action('Scan from current viewpoint', () => {
+				dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(this, (cloud) => {
+					self.Add(cloud);
+					onDone(cloud);
+				});
+				return true;
+			}));
+		}
+		return result;
+    }
 }
