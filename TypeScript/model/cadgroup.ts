@@ -81,6 +81,7 @@
 		if (!this.folded) {
 			return this.children;
 		}
+		return [];
 	}
 
 	private IsScannable(): boolean {
@@ -88,13 +89,27 @@
 	}
 
 	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+		let self = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
-		result.push(new Action('New group', () => onDone(new CADGroup(NameProvider.GetName('Group'), this))));
-		result.push(new Action('New plane', () => onDone(new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, this))));
-		result.push(new Action('New sphere', () => onDone(new Sphere(new Vector([0, 0, 0]), 1, this))));
-		result.push(new Action('New cylinder', () => onDone(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, this))));
-		result.push(new Action('New torus', () => onDone(new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, this))));
+		if (this.folded) {
+			result.push(new Action('Unfold', () => {
+				self.folded = false;
+				return onDone(null);
+			}));
+		}
+		else {
+			result.push(new Action('Fold', () => {
+				self.folded = true;
+				return onDone(null);
+			}));
+		}
+
+		result.push(new Action('New group', () => onDone(new CADGroup(NameProvider.GetName('Group'), self))));
+		result.push(new Action('New plane', () => onDone(new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self))));
+		result.push(new Action('New sphere', () => onDone(new Sphere(new Vector([0, 0, 0]), 1, self))));
+		result.push(new Action('New cylinder', () => onDone(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self))));
+		result.push(new Action('New torus', () => onDone(new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self))));
 
 		if (this.IsScannable()) {
 			let self = this;

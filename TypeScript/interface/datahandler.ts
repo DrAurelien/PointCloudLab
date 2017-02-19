@@ -112,12 +112,15 @@
 	{
 		if(createdObject)
         {
-			if (this.currentItem && this.currentItem instanceof CADGroup) {
-				(<CADGroup>this.currentItem).Add(createdObject)
+			//If the object does not have an owner, affect one
+			if (!createdObject.owner) {
+				let owner: CADGroup = scene.root;
+				if (this.currentItem && this.currentItem instanceof CADGroup) {
+					owner = (<CADGroup>this.currentItem);
+				}
+				owner.Add(createdObject);
 			}
-			else {
-				scene.root.Add(createdObject);
-			}
+			//Select the new item, and make it the current active object
 			scene.Select(createdObject);
 			this.currentItem = createdObject;
 			if(this.updateCallback != null)

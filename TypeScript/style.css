@@ -231,10 +231,17 @@ div.ProgressBar
 	border-radius: 5px;
 }
 
+.ItemIcon
+{
+	margin-right : 5px;
+	font-size : 120%;
+	float: left;
+}
 .ItemAction
 {
 	margin-right : 5px;
 	font-size : 120%;
+	float: right;
 }
 
 .ItemAction:hover

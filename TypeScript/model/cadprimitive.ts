@@ -1,14 +1,19 @@
 ﻿abstract class CADPrimitive {
+	owner: CADGroup;
 	material: Material;
 	visible: boolean;
     selected: boolean;
     protected boundingbox: BoundingBox;
 
-    constructor(public name: string, public owner: CADGroup = null) {
+    constructor(public name: string, owner: CADGroup = null) {
 		this.material = new Material([0.0, 1.0, 0.0]);
 		this.visible = true;
 		this.selected = false;
 		this.boundingbox = null;
+		this.owner = null;
+		if (owner) {
+			owner.Add(this);
+		}
     }
 
     abstract Draw(drawingContext: DrawingContext): void;

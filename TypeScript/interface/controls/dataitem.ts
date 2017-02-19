@@ -7,9 +7,19 @@
 		this.container.className = 'TreeItemContainer';
 
 		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
+		this.itemContentContainer.className = (this.item == this.dataHandler.currentItem) ? 'SelectedSceneItem' : 'SceneItem';
 		this.container.appendChild(this.itemContentContainer);
 
-		this.itemContentContainer.className = (this.item == this.dataHandler.currentItem) ? 'SelectedSceneItem' : 'SceneItem';
+		let itemIcon = document.createElement('i');
+		if (this.item instanceof CADGroup) {
+			itemIcon.className = 'ItemIcon fa fa-folder' + ((<CADGroup>this.item).folded ? '' : '-open');
+			itemIcon.onclick = this.ItemFolded();
+			this.itemContentContainer.ondblclick = this.ItemFolded();
+		}
+		else {
+			itemIcon.className = 'ItemIcon fa fa-cube';
+		}
+		this.itemContentContainer.appendChild(itemIcon);
 
 		let visibilityIcon = document.createElement('i');
 		visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
@@ -54,6 +64,17 @@
 		}
 		else {
 			this.dataHandler.RefreshContent(this.scene);
+		}
+	}
+
+	//CAD Group folding management - When clickin a group icon
+	ItemFolded(): (ev: MouseEvent) => any {
+		let self = this;
+		return function (event: MouseEvent) {
+			let group = <CADGroup>self.item;
+			group.folded = !group.folded;
+			self.Refresh();
+			self.CancelBubbling(event);
 		}
 	}
 
