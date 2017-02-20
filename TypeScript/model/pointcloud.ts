@@ -370,13 +370,12 @@ class GaussianSphereAction extends Action {
 	}
 }
 
-
 class ExportFileAction extends Action {
 	constructor(cloud: PointCloud, onDone: Function) {
 		super('Export file');
 
 		this.callback = function () {
-			//ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv');
+			FileExporter.ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv');
 		}
 	}
 }

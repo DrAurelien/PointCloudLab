@@ -24,6 +24,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="files\binaryreader.ts" />
     <TypeScriptCompile Include="files\csvloader.ts" />
+    <TypeScriptCompile Include="files\fileexporter.ts" />
     <TypeScriptCompile Include="files\fileloader.ts" />
     <TypeScriptCompile Include="files\plyloader.ts" />
     <TypeScriptCompile Include="interface\actions.ts" />
