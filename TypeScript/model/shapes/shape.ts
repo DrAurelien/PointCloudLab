@@ -22,6 +22,9 @@
 		return this.boundingbox;
 	}
 
+	ComputeBounds(points: number[], cloud: PointCloud): void {
+	}
+
 	Draw(drawingContext: DrawingContext) {
 		if (!this.mesh) {
 			this.mesh = this.ComputeMesh(drawingContext.sampling);
