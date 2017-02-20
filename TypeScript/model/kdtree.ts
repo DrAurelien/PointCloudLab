@@ -70,10 +70,10 @@
 		return null;
 	}
 
-	FindNearestNeighbours = function (queryPoint, nbh, cell) {
+	FindNearestNeighbours(queryPoint: Vector, nbh: Neighbourhood, cell: CellData) {
 		if (!cell) {
 			cell = this.root;
-			nbh.Initialize(queryPoint, this.cloud);
+			nbh.Initialize(this.cloud, queryPoint);
 		}
 
 

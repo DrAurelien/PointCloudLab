@@ -14,7 +14,7 @@
 		return new Neighbour(distance, pointIndex);
 	}
 
-	protected Accept(distance: number) :boolean {
+	Accept(distance: number) :boolean {
 		var sqrdist = distance * distance;
 		var maxdist = this.GetSqrDistance();
 		if (maxdist === null || sqrdist <= maxdist) {
@@ -24,6 +24,7 @@
 	}
 
 	abstract GetSqrDistance(): number;
+	abstract Push(index: number) : void;
 
 	Neighbours(): Neighbour[] {
 		return this.neighbours;

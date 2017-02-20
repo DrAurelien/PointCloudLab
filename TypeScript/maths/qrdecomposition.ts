@@ -9,6 +9,9 @@
             throw 'Cannot compute QR decomposition for non square matrix';
         }
 
+		this.Q = Matrix.Null(matrix.width, matrix.width);
+		this.R = Matrix.Null(matrix.width, matrix.width);
+
         let vects : Vector[] = [];
         let normalized :Vector[] = [];
         for (let ii : number = 0; ii < matrix.width; ii++) {
