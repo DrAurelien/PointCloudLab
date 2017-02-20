@@ -78,17 +78,17 @@
 		return basechange.Multiply(translation);
 	}
 
-	RayIntersections(ray: Ray): number[] {
-		var worldToBase = this.GetWorldToInnerBaseMatrix();
-		var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+	RayIntersection(ray: Ray): Picking {
+		let worldToBase = this.GetWorldToInnerBaseMatrix();
+		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
+		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
 
 		//solve [t] : p[t].z = 0
-		var result = [];
-		var tt = -innerFrom.GetValue(2, 0) / innerDir.GetValue(2, 0);
-		var point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(tt));
+		let result = new Picking(this);
+		let tt = -innerFrom.GetValue(2, 0) / innerDir.GetValue(2, 0);
+		let point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(tt));
 		if (point.Get(0) * point.Get(0) + point.Get(1) * point.Get(1) <= (this.patchRadius * this.patchRadius)) {
-			result.push(tt);
+			result.Add(tt);
 		}
 		return result;
 	}

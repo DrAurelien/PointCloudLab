@@ -3,7 +3,7 @@
 	static indexBuffer: WebGLBuffer = null;
 	static drawnElements: GLBufferElement[];
 
-    constructor(public min?: Vector, public max?: Vector) {
+    constructor(public min: Vector = null, public max: Vector = null) {
     }
 
 	private static InititalizeGL(glContext: WebGLRenderingContext) :void {
@@ -76,30 +76,36 @@
 		}
 	}
 
+	IsValid(): boolean {
+		return (this.min != null && this.max != null);
+	}
+
 	Draw(drawingContext: DrawingContext): void {
-		drawingContext.EnableNormals(false);
-		BoundingBox.InititalizeGL(drawingContext.gl);
+		if (this.IsValid()) {
+			drawingContext.EnableNormals(false);
+			BoundingBox.InititalizeGL(drawingContext.gl);
 
-		var material = new Material([1.0, 1.0, 0.0]);
-		material.InitializeLightingModel(drawingContext);
+			var material = new Material([1.0, 1.0, 0.0]);
+			material.InitializeLightingModel(drawingContext);
 
-		let size = this.GetSize();
-		let center = this.GetCenter();
-		let shapetransform = Matrix.Identity(4);
-		for (let index = 0; index < 3; index++) {
-			shapetransform.SetValue(index, index, size.Get(index));
-			shapetransform.SetValue(index, 3, center.Get(index));
-		}
+			let size = this.GetSize();
+			let center = this.GetCenter();
+			let shapetransform = Matrix.Identity(4);
+			for (let index = 0; index < 3; index++) {
+				shapetransform.SetValue(index, index, size.Get(index));
+				shapetransform.SetValue(index, 3, center.Get(index));
+			}
 
-		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, false, new Float32Array(shapetransform.values));
+			drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, false, new Float32Array(shapetransform.values));
 
-		drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, BoundingBox.pointsBuffer);
-		drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
-		drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, BoundingBox.indexBuffer);
-		let sizeOfUnisgnedShort = 2;
-		for (var index = 0; index < BoundingBox.drawnElements.length; index++) {
-			let element = BoundingBox.drawnElements[index];
-			drawingContext.gl.drawElements(element.type, element.count, drawingContext.gl.UNSIGNED_SHORT, sizeOfUnisgnedShort * element.from);
+			drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, BoundingBox.pointsBuffer);
+			drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
+			drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, BoundingBox.indexBuffer);
+			let sizeOfUnisgnedShort = 2;
+			for (var index = 0; index < BoundingBox.drawnElements.length; index++) {
+				let element = BoundingBox.drawnElements[index];
+				drawingContext.gl.drawElements(element.type, element.count, drawingContext.gl.UNSIGNED_SHORT, sizeOfUnisgnedShort * element.from);
+			}
 		}
 	}
 }

@@ -22,41 +22,41 @@
 	};
 
 	ComputeBoundingBox(): BoundingBox {
-		var size = new Vector([1, 1, 1]).Times(2 * this.radius);
-		var bb = new BoundingBox();
+		let size = new Vector([1, 1, 1]).Times(2 * this.radius);
+		let bb = new BoundingBox();
 		bb.Set(this.center, size);
 		return bb;
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
-		var matrix = Matrix.Identity(4);
-		for (var index = 0; index < 3; index++) {
+		let matrix = Matrix.Identity(4);
+		for (let index = 0; index < 3; index++) {
 			matrix.SetValue(index, 3, -this.center.Get(index));
 		}
 		return matrix;
 	}
 
 	GetInnerBaseToWorldMatrix(): Matrix {
-		var matrix = Matrix.Identity(4);
-		for (var index = 0; index < 3; index++) {
+		let matrix = Matrix.Identity(4);
+		for (let index = 0; index < 3; index++) {
 			matrix.SetValue(index, 3, this.center.Get(index));
 		}
 		return matrix;
 	}
 
 	ComputeMesh(sampling: number) : Mesh {
-		var halfSampling = Math.ceil(sampling / 2);
-		var points = new PointCloud();
+		let halfSampling = Math.ceil(sampling / 2);
+		let points = new PointCloud();
 		points.Reserve(sampling * halfSampling + 2);
 
 		points.PushPoint(this.center.Plus(new Vector([0, 0, this.radius])));
 		points.PushPoint(this.center.Plus(new Vector([0, 0, -this.radius])));
 		//Spherical coordinates
-		for (var jj = 0; jj < halfSampling; jj++) {
-			for (var ii = 0; ii < sampling; ii++) {
-				var phi = ((jj + 1) * Math.PI) / (halfSampling + 1);
-				var theta = 2.0 * ii * Math.PI / sampling;
-				var radial = new Vector([
+		for (let jj = 0; jj < halfSampling; jj++) {
+			for (let ii = 0; ii < sampling; ii++) {
+				let phi = ((jj + 1) * Math.PI) / (halfSampling + 1);
+				let theta = 2.0 * ii * Math.PI / sampling;
+				let radial = new Vector([
 					Math.cos(theta) * Math.sin(phi),
 					Math.sin(theta) * Math.sin(phi),
 					Math.cos(phi)
@@ -65,34 +65,34 @@
 			}
 		}
 
-		var mesh = new Mesh(points);
+		let mesh = new Mesh(points);
 		mesh.Reserve(2 * sampling + (halfSampling - 1) * sampling);
 
 		//North pole
-		var northShift = 2;
-		for (var ii = 0; ii < sampling; ii++) {
+		let northShift = 2;
+		for (let ii = 0; ii < sampling; ii++) {
 			mesh.PushFace([0, ii + northShift, ((ii + 1) % sampling) + northShift]);
 		}
 		//South pole
-		var southShift = (halfSampling - 1) * sampling + northShift;
-		for (var ii = 0; ii < sampling; ii++) {
+		let southShift = (halfSampling - 1) * sampling + northShift;
+		for (let ii = 0; ii < sampling; ii++) {
 			mesh.PushFace([ii + southShift, 1, ((ii + 1) % sampling) + southShift]);
 		}
 		//Strips
-		for (var jj = 0; (jj + 1) < halfSampling; jj++) {
-			var ja = jj * sampling;
-			var jb = (jj + 1) * sampling;
-			for (var ii = 0; ii < sampling; ii++) {
-				var ia = ii;
-				var ib = (ii + 1) % sampling;
+		for (let jj = 0; (jj + 1) < halfSampling; jj++) {
+			let ja = jj * sampling;
+			let jb = (jj + 1) * sampling;
+			for (let ii = 0; ii < sampling; ii++) {
+				let ia = ii;
+				let ib = (ii + 1) % sampling;
 				//            [ia]        [ib]
 				//   [ja] ---- aa -------- ba
 				//             |           |
 				//   [jb] ---- ab -------- bb
-				var aa = ia + ja + northShift;
-				var ab = ia + jb + northShift;
-				var bb = ib + jb + northShift;
-				var ba = ib + ja + northShift;
+				let aa = ia + ja + northShift;
+				let ab = ia + jb + northShift;
+				let bb = ib + jb + northShift;
+				let ba = ib + ja + northShift;
 				mesh.PushFace([aa, ab, ba]);
 				mesh.PushFace([ba, ab, bb]);
 			}
@@ -102,16 +102,16 @@
 		return mesh;
 	}
 
-	RayIntersections(ray: Ray) : number[] {
-		var worldToBase = this.GetWorldToInnerBaseMatrix();
-		var innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		var innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+	RayIntersection(ray: Ray): Picking {
+		let worldToBase = this.GetWorldToInnerBaseMatrix();
+		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
+		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
 
 		//Solve [t] : sqrnorm(innerFrom[i]+t*innerDir[i])=radius
-		var aa = 0;
-		var bb = 0;
-		var cc = 0;
-		for (var index = 0; index < 3; index++) {
+		let aa = 0;
+		let bb = 0;
+		let cc = 0;
+		for (let index = 0; index < 3; index++) {
 			aa += innerDir.GetValue(index, 0) * innerDir.GetValue(index, 0);
 			bb += 2.0 * innerDir.GetValue(index, 0) * innerFrom.GetValue(index, 0);
 			cc += innerFrom.GetValue(index, 0) * innerFrom.GetValue(index, 0);
@@ -119,17 +119,17 @@
 
 		//Solve [t] : aa.t^2 + bb.t + cc = radius
 		cc -= this.radius * this.radius;
-		var dd = bb * bb - 4.0 * aa * cc;
-		var tt = [];
+		let dd = bb * bb - 4.0 * aa * cc;
+		let result = new Picking(this);
 		if (Math.abs(dd) < 0.0000001) {
-			tt.push(-bb / 2.0 * aa);
+			result.Add(-bb / 2.0 * aa);
 		}
 		else if (dd > 0.) {
-			tt.push((-bb + Math.sqrt(dd)) / (2.0 * aa));
-			tt.push((-bb - Math.sqrt(dd)) / (2.0 * aa));
+			result.Add((-bb + Math.sqrt(dd)) / (2.0 * aa));
+			result.Add((-bb - Math.sqrt(dd)) / (2.0 * aa));
 		}
 
-		return tt;
+		return result;
 	}
 
 	Distance(point: Vector): number {

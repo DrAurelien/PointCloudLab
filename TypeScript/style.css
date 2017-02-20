@@ -111,6 +111,22 @@ div.PopupOption
 	cursor : pointer;
 }
 
+div.PopupOptionInactive
+{
+	color : darkgray;
+}
+
+div.PopupSeparator
+{
+	height : 0px;
+	width : 100%;
+	padding : 0px;
+	margin : 0px;
+	margin-top : 0.2em;
+	margin-bottom : 0.2em;
+	border-bottom : 1px solid darkgray;
+}
+
 div.PopupOption:hover
 {
 	background-color : darkgray;

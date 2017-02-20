@@ -13,18 +13,7 @@
     abstract ComputeMesh(sampling: number): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
 
-    protected abstract RayIntersections(ray: Ray): number[];
-
 	abstract Distance(point: Vector): number;
-
-    RayIntersection(ray: Ray): Picking {
-        let distances = this.RayIntersections(ray);
-        let result = new Picking(this);
-        for (var index = 0; index < distances.length; index++) {
-            result.Add(distances[index]);
-        }
-        return result;
-    }
 
 	GetBoundingBox(): BoundingBox{
 		if (!this.boundingbox) {

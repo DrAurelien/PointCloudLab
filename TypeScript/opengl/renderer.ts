@@ -183,7 +183,7 @@ class Renderer {
                 self.camera.screen.height * (resolution.currentj / resolution.height)
                 );
             var intersection = self.ResolveRayIntersection(ray, group);
-            if (intersection && intersection.HasIntersection) {
+            if (intersection && intersection.HasIntersection()) {
                 var point = ray.from.Plus(ray.dir.Times(intersection.distance));
                 cloud.PushPoint(point);
             }

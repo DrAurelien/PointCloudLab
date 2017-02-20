@@ -26,7 +26,7 @@
         for (var index = 0; index < this.children.length; index++) {
             if (this.children[index].visible) {
                 let intersection = this.children[index].RayIntersection(ray);
-                if (picked == null || intersection.Compare(picked) < 0) {
+                if (picked == null || (intersection && intersection.Compare(picked) < 0)) {
                     picked = intersection;
                 }
             }
@@ -59,8 +59,11 @@
     GetBoundingBox(): BoundingBox {
         this.boundingbox = new BoundingBox();
         for (var index = 0; index < this.children.length; index++) {
-            this.boundingbox.Add(this.children[index].GetBoundingBox().min);
-            this.boundingbox.Add(this.children[index].GetBoundingBox().max);
+			let bb = this.children[index].GetBoundingBox();
+			if (bb.IsValid()) {
+				this.boundingbox.Add(bb.min);
+				this.boundingbox.Add(bb.max);
+			}
         }
         return this.boundingbox;
     }
@@ -92,6 +95,8 @@
 		let self = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
+		result.push(null);
+
 		if (this.folded) {
 			result.push(new Action('Unfold', () => {
 				self.folded = false;
@@ -105,22 +110,28 @@
 			}));
 		}
 
+		result.push(null);
 		result.push(new Action('New group', () => onDone(new CADGroup(NameProvider.GetName('Group'), self))));
 		result.push(new Action('New plane', () => onDone(new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self))));
 		result.push(new Action('New sphere', () => onDone(new Sphere(new Vector([0, 0, 0]), 1, self))));
 		result.push(new Action('New cylinder', () => onDone(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self))));
 		result.push(new Action('New torus', () => onDone(new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self))));
+		result.push(new Action('Scan from current viewpoint', this.GetScanFunction(dataHandler, onDone)));
+		
+		return result;
+    }
 
+	private GetScanFunction(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Function {
 		if (this.IsScannable()) {
 			let self = this;
-			result.push(new Action('Scan from current viewpoint', () => {
-				dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(this, (cloud) => {
+			return function () {
+				dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(self, (cloud) => {
 					self.Add(cloud);
 					onDone(cloud);
 				});
 				return true;
-			}));
+			};
 		}
-		return result;
-    }
+		return null;
+	}
 }

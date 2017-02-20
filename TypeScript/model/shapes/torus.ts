@@ -27,41 +27,41 @@
 	}
 
 	ComputeMesh(sampling: number) : Mesh {
-		var points = new PointCloud();
+		let points = new PointCloud();
 		points.Reserve(sampling * sampling);
 
-		var xx = this.axis.GetOrthogonnal();
-		var yy = this.axis.Cross(xx).Normalized();
-		for (var ii = 0; ii < sampling; ii++) {
-			var phi = 2.0 * ii * Math.PI / sampling;
-			var c = Math.cos(phi);
-			var s = Math.sin(phi);
-			var radiusVect = xx.Times(c).Plus(yy.Times(s));
-			var faceCenter = this.center.Plus(radiusVect.Times(this.greatRadius));
-			for (var jj = 0; jj < sampling; jj++) {
-				var theta = 2.0 * jj * Math.PI / sampling;
-				var ct = Math.cos(theta);
-				var st = Math.sin(theta);
+		let xx = this.axis.GetOrthogonnal();
+		let yy = this.axis.Cross(xx).Normalized();
+		for (let ii = 0; ii < sampling; ii++) {
+			let phi = 2.0 * ii * Math.PI / sampling;
+			let c = Math.cos(phi);
+			let s = Math.sin(phi);
+			let radiusVect = xx.Times(c).Plus(yy.Times(s));
+			let faceCenter = this.center.Plus(radiusVect.Times(this.greatRadius));
+			for (let jj = 0; jj < sampling; jj++) {
+				let theta = 2.0 * jj * Math.PI / sampling;
+				let ct = Math.cos(theta);
+				let st = Math.sin(theta);
 				points.PushPoint(faceCenter.Plus(radiusVect.Times(this.smallRadius * ct)).Plus(this.axis.Times(this.smallRadius * st)));
 			}
 		}
 
-		var mesh = new Mesh(points);
+		let mesh = new Mesh(points);
 		mesh.Reserve(2 * sampling * sampling);
-		for (var ii = 0; ii < sampling; ii++) {
-			var ia = ii * sampling;
-			var ib = ((ii + 1) % sampling) * sampling;
-			for (var jj = 0; jj < sampling; jj++) {
-				var ja = jj;
-				var jb = ((jj + 1) % sampling);
+		for (let ii = 0; ii < sampling; ii++) {
+			let ia = ii * sampling;
+			let ib = ((ii + 1) % sampling) * sampling;
+			for (let jj = 0; jj < sampling; jj++) {
+				let ja = jj;
+				let jb = ((jj + 1) % sampling);
 				//            [ia]        [ib]
 				//   [ja] ---- aa -------- ba
 				//             |           |
 				//   [jb] ---- ab -------- bb
-				var aa = ia + ja;
-				var ab = ia + jb; s
-				var bb = ib + jb;
-				var ba = ib + ja;
+				let aa = ia + ja;
+				let ab = ia + jb;
+				let bb = ib + jb;
+				let ba = ib + ja;
 				mesh.PushFace([ab, aa, ba]);
 				mesh.PushFace([ab, ba, bb]);
 			}
@@ -71,23 +71,23 @@
 	}
 
 	ComputeBoundingBox(): BoundingBox {
-		var proj = new Vector([this.axis.Get(0), this.axis.Get(1)]);
-		var size = new Vector([
+		let proj = new Vector([this.axis.Get(0), this.axis.Get(1)]);
+		let size = new Vector([
 			Math.sqrt(1 - (this.axis.Get(0) * this.axis.Get(0))) * this.greatRadius + this.smallRadius,
 			Math.sqrt(1 - (this.axis.Get(1) * this.axis.Get(1))) * this.greatRadius + this.smallRadius,
 			proj.Norm() * this.greatRadius + this.smallRadius
 		]);
-		var bb = new BoundingBox();
+		let bb = new BoundingBox();
 		bb.Set(this.center, size.Times(2.0));
 		return bb;
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
-		var translation = Matrix.Identity(4);
-		var basechange = Matrix.Identity(4);
-		var xx = this.axis.GetOrthogonnal();
-		var yy = this.axis.Cross(xx).Normalized();
-		for (var index = 0; index < 3; index++) {
+		let translation = Matrix.Identity(4);
+		let basechange = Matrix.Identity(4);
+		let xx = this.axis.GetOrthogonnal();
+		let yy = this.axis.Cross(xx).Normalized();
+		for (let index = 0; index < 3; index++) {
 			basechange.SetValue(0, index, xx.Get(index));
 			basechange.SetValue(1, index, yy.Get(index));
 			basechange.SetValue(2, index, this.axis.Get(index));
@@ -96,30 +96,30 @@
 		return basechange.Multiply(translation);
 	}
 
-	RayIntersections(ray: Ray): number[] {
-		var worldToBase = this.GetWorldToInnerBaseMatrix();
-		var innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		var innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+	RayIntersection(ray: Ray): Picking {
+		let worldToBase = this.GetWorldToInnerBaseMatrix();
+		let innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
+		let innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
 
 		let innerDir = new Vector([innerDirMatrix.GetValue(0, 0), innerDirMatrix.GetValue(1, 0), innerDirMatrix.GetValue(2, 0)]);
 		let innerFrom = new Vector([innerFromMatrix.GetValue(0, 0), innerFromMatrix.GetValue(1, 0), innerFromMatrix.GetValue(2, 0)]);
 
-		var grr = this.greatRadius * this.greatRadius;
-		var srr = this.smallRadius * this.smallRadius;
+		let grr = this.greatRadius * this.greatRadius;
+		let srr = this.smallRadius * this.smallRadius;
 
-		var alpha = innerDir.Dot(innerDir);
-		var beta = 2.0 * innerDir.Dot(innerFrom);
-		var gamma = innerFrom.Dot(innerFrom) + grr - srr;
+		let alpha = innerDir.Dot(innerDir);
+		let beta = 2.0 * innerDir.Dot(innerFrom);
+		let gamma = innerFrom.Dot(innerFrom) + grr - srr;
 
 		innerDir.Set(2, 0);
 		innerFrom.Set(2, 0);
 
-		var eta = innerDir.Dot(innerDir);
-		var mu = 2.0 * innerDir.Dot(innerFrom);
-		var nu = innerFrom.Dot(innerFrom);
+		let eta = innerDir.Dot(innerDir);
+		let mu = 2.0 * innerDir.Dot(innerFrom);
+		let nu = innerFrom.Dot(innerFrom);
 
 		//Quartic defining the equation of the torus
-		var quartic = new Polynomial([
+		let quartic = new Polynomial([
 			(gamma * gamma) - (4.0 * grr * nu),
 			(2.0 * beta * gamma) - (4.0 * grr * mu),
 			(beta * beta) + (2.0 * alpha * gamma) - (4.0 * grr * eta),
@@ -127,7 +127,12 @@
 			alpha * alpha
 		]);
 
-		return quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+		let roots = quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+		let result = new Picking(this);
+		for (let index = 0; index < roots.length; index++) {
+			result.Add(roots[index]);
+		}
+		return result;
 	}
 
 	Distance(point: Vector): number {

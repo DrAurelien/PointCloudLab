@@ -66,7 +66,6 @@ var Torus = (function (_super) {
                 //   [jb] ---- ab -------- bb
                 var aa = ia + ja;
                 var ab = ia + jb;
-                s;
                 var bb = ib + jb;
                 var ba = ib + ja;
                 mesh.PushFace([ab, aa, ba]);
@@ -100,7 +99,7 @@ var Torus = (function (_super) {
         }
         return basechange.Multiply(translation);
     };
-    Torus.prototype.RayIntersections = function (ray) {
+    Torus.prototype.RayIntersection = function (ray) {
         var worldToBase = this.GetWorldToInnerBaseMatrix();
         var innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
         var innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
@@ -124,7 +123,12 @@ var Torus = (function (_super) {
             2.0 * alpha * beta,
             alpha * alpha
         ]);
-        return quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+        var roots = quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+        var result = new Picking(this);
+        for (var index = 0; index < roots.length; index++) {
+            result.Add(roots[index]);
+        }
+        return result;
     };
     Torus.prototype.Distance = function (point) {
         //TODO

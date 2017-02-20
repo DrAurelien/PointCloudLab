@@ -4,7 +4,7 @@
 	noise: number;
 	private ignore: boolean[];
 
-	constructor(private cloud, private generators: ShapeGenerator[] = null) {
+	constructor(private cloud : PointCloud, private generators: ShapeGenerator[] = null) {
 		this.nbPoints = 3;
 		this.nbFailure = 100;
 		this.noise = 0.1;
