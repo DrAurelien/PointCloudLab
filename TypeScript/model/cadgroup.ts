@@ -112,14 +112,21 @@
 
 		result.push(null);
 		result.push(new Action('New group', () => onDone(new CADGroup(NameProvider.GetName('Group'), self))));
-		result.push(new Action('New plane', () => onDone(new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self))));
-		result.push(new Action('New sphere', () => onDone(new Sphere(new Vector([0, 0, 0]), 1, self))));
-		result.push(new Action('New cylinder', () => onDone(new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self))));
-		result.push(new Action('New torus', () => onDone(new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self))));
+		result.push(new Action('New plane', this.GetShapeCreator(() => new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self), dataHandler, onDone)));
+		result.push(new Action('New sphere', this.GetShapeCreator(() => new Sphere(new Vector([0, 0, 0]), 1, self), dataHandler, onDone)));
+		result.push(new Action('New cylinder', this.GetShapeCreator(() => new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self), dataHandler, onDone)));
+		result.push(new Action('New torus', this.GetShapeCreator(() => new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self), dataHandler, onDone)));
 		result.push(new Action('Scan from current viewpoint', this.GetScanFunction(dataHandler, onDone)));
 		
 		return result;
     }
+
+	private GetShapeCreator(creator: ShapeCreator, dataHandler: DataHandler, onDone: CADPrimitiveHandler): Function {
+		return function () {
+			let shape = creator();
+			shape.PrepareForDrawing(dataHandler.GetSceneRenderer().drawingcontext, onDone);
+		}
+	}
 
 	private GetScanFunction(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Function {
 		if (this.IsScannable()) {
@@ -127,7 +134,9 @@
 			return function () {
 				dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(self, (cloud) => {
 					self.Add(cloud);
-					onDone(cloud);
+					if (onDone) {
+						onDone(cloud);
+					}
 				});
 				return true;
 			};

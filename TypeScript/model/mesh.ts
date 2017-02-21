@@ -51,7 +51,11 @@
 		return this.size / 3;
 	}
 
-	ComputeNormals(): void {
+	ClearNormals() {
+		this.pointcloud.ClearNormals();
+	}
+
+	ComputeNormals(onDone: CADPrimitiveHandler): void {
 		let nbFaces = this.Size();
 		let nbPoints = this.pointcloud.Size();
 		let normals = new Array(nbPoints);
@@ -99,11 +103,18 @@
 					}
 					self.pointcloud.PushNormal(normals[index++].Normalized());
 					return { current: index, total: nbPoints };
+				},
+				function () {
+					if (onDone) {
+						onDone(self);
+					}
 				}
 			);
 		}
 
-		Initialize();
+		if (!this.pointcloud.HasNormals()) {
+			Initialize();
+		}
 	}
 
 	GetBoundingBox(): BoundingBox {

@@ -51,7 +51,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling:number) : Mesh {
+	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler) : Mesh {
 		let points = new PointCloud();
 		points.Reserve(4 * sampling + 2);
 
@@ -111,7 +111,10 @@
 			mesh.PushFace([aa, ab, ba]);
 			mesh.PushFace([ba, ab, bb]);
 		}
-		mesh.ComputeNormals();
+
+		let self = this;
+		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+
 		return mesh;
 	}
 

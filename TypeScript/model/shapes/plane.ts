@@ -25,27 +25,30 @@
 		return true;
 	}
 
-	ComputeMesh(sampling: number): Mesh {
-		var points = new PointCloud();
+	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh {
+		let points = new PointCloud();
 		points.Reserve(sampling + 1);
 
-		var xx = this.normal.GetOrthogonnal();
-		var yy = this.normal.Cross(xx).Normalized();
-		for (var ii = 0; ii < sampling; ii++) {
-			var phi = 2.0 * ii * Math.PI / sampling;
-			var c = Math.cos(phi);
-			var s = Math.sin(phi);
-			var radiusVect = xx.Times(c).Plus(yy.Times(s));
+		let xx = this.normal.GetOrthogonnal();
+		let yy = this.normal.Cross(xx).Normalized();
+		for (let ii = 0; ii < sampling; ii++) {
+			let phi = 2.0 * ii * Math.PI / sampling;
+			let c = Math.cos(phi);
+			let s = Math.sin(phi);
+			let radiusVect = xx.Times(c).Plus(yy.Times(s));
 			points.PushPoint(this.center.Plus(radiusVect.Times(this.patchRadius)));
 		}
 		points.PushPoint(this.center);
 
-		var mesh = new Mesh(points);
+		let mesh = new Mesh(points);
 		mesh.Reserve(sampling);
-		for (var ii = 0; ii < sampling; ii++) {
+		for (let ii = 0; ii < sampling; ii++) {
 			mesh.PushFace([ii, sampling, (ii + 1) % sampling]);
 		}
-		mesh.ComputeNormals();
+
+		let self = this;
+		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+
 		return mesh;
 	}
 
@@ -54,22 +57,22 @@
 	}
 
 	ComputeBoundingBox(): BoundingBox {
-		var size = new Vector([
+		let size = new Vector([
 			2 * Math.abs(this.patchRadius * Math.sin(Math.acos(this.normal.Get(0)))),
 			2 * Math.abs(this.patchRadius * Math.sin(Math.acos(this.normal.Get(1)))),
 			2 * Math.abs(this.patchRadius * Math.sin(Math.acos(this.normal.Get(2))))
 		]);
-		var bb = new BoundingBox();
+		let bb = new BoundingBox();
 		bb.Set(this.center, size);
 		return bb;
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
-		var translation = Matrix.Identity(4);
-		var basechange = Matrix.Identity(4);
-		var xx = this.normal.GetOrthogonnal();
-		var yy = this.normal.Cross(xx).Normalized();
-		for (var index = 0; index < 3; index++) {
+		let translation = Matrix.Identity(4);
+		let basechange = Matrix.Identity(4);
+		let xx = this.normal.GetOrthogonnal();
+		let yy = this.normal.Cross(xx).Normalized();
+		for (let index = 0; index < 3; index++) {
 			basechange.SetValue(0, index, xx.Get(index));
 			basechange.SetValue(1, index, yy.Get(index));
 			basechange.SetValue(2, index, this.normal.Get(index));
@@ -95,13 +98,13 @@
 
 	ComputeBounds(points: number[], cloud: PointCloud): void {
 		this.center = new Vector([0, 0, 0]);
-		for (var ii = 0; ii < points.length; ii++) {
+		for (let ii = 0; ii < points.length; ii++) {
 			this.center = this.center.Plus(cloud.GetPoint(points[ii]));
 		}
 		this.center = this.center.Times(1.0 / points.length);
 		this.patchRadius = 0;
-		for (var ii = 0; ii < points.length; ii++) {
-			var d = cloud.GetPoint(points[ii]).Minus(this.center).SqrNorm();
+		for (let ii = 0; ii < points.length; ii++) {
+			let d = cloud.GetPoint(points[ii]).Minus(this.center).SqrNorm();
 			if (d > this.patchRadius) {
 				this.patchRadius = d;
 			}

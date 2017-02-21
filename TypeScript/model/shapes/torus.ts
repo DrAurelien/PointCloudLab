@@ -26,7 +26,7 @@
 		return true;
 	}
 
-	ComputeMesh(sampling: number) : Mesh {
+	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling * sampling);
 
@@ -66,7 +66,10 @@
 				mesh.PushFace([ab, ba, bb]);
 			}
 		}
-		mesh.ComputeNormals();
+
+		let self = this;
+		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+
 		return mesh;
 	}
 

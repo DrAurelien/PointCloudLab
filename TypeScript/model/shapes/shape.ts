@@ -10,7 +10,7 @@
     abstract GetGeometry(): Properties;
     abstract SetGeometry(geometry: Properties): boolean;
 
-    abstract ComputeMesh(sampling: number): Mesh;
+    abstract ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
 
 	abstract Distance(point: Vector): number;
@@ -25,11 +25,16 @@
 	ComputeBounds(points: number[], cloud: PointCloud): void {
 	}
 
-	Draw(drawingContext: DrawingContext) {
+	PrepareForDrawing(drawingContext: DrawingContext, onDone: CADPrimitiveHandler = null) {
 		if (!this.mesh) {
-			this.mesh = this.ComputeMesh(drawingContext.sampling);
+			this.mesh = this.ComputeMesh(drawingContext.sampling, onDone);
 		}
+	}
+
+	Draw(drawingContext: DrawingContext) {
 		if (this.visible) {
+			this.PrepareForDrawing(drawingContext);
+
 			this.mesh.material = this.material;
 			this.mesh.Draw(drawingContext);
 
@@ -50,4 +55,8 @@
 	SetProperties(properties: Properties): boolean {
 		return this.SetGeometry(properties.GetAsProperties('Geometry')) && super.SetProperties(properties);
 	}
+}
+
+interface ShapeCreator {
+	(): Shape;
 }

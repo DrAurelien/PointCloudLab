@@ -34,7 +34,7 @@ var Torus = (function (_super) {
         this.boundingbox = null;
         return true;
     };
-    Torus.prototype.ComputeMesh = function (sampling) {
+    Torus.prototype.ComputeMesh = function (sampling, onDone) {
         var points = new PointCloud();
         points.Reserve(sampling * sampling);
         var xx = this.axis.GetOrthogonnal();
@@ -72,7 +72,10 @@ var Torus = (function (_super) {
                 mesh.PushFace([ab, ba, bb]);
             }
         }
-        mesh.ComputeNormals();
+        var self = this;
+        mesh.ComputeNormals(function (mesh) { if (onDone) {
+            onDone(self);
+        } return true; });
         return mesh;
     };
     Torus.prototype.ComputeBoundingBox = function () {
