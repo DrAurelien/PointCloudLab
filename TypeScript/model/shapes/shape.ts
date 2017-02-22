@@ -55,8 +55,42 @@
 	SetProperties(properties: Properties): boolean {
 		return this.SetGeometry(properties.GetAsProperties('Geometry')) && super.SetProperties(properties);
 	}
+
+	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+		let result = super.GetActions(dataHandler, onDone);
+
+		result.push(null);
+		result.push(new CreateShapeMeshAction(this, dataHandler, onDone));
+		return result;
+	}
 }
 
 interface ShapeCreator {
 	(): Shape;
+}
+
+class CreateShapeMeshAction extends Action {
+	constructor(shape : Shape, dataHandler : DataHandler, onDone : CADPrimitiveHandler) {
+		super('Create shape mesh');
+
+		this.callback = function () {
+			let dialog = new Dialog(
+				//Ok has been clicked
+				(properties) => {
+					let sampling = parseInt(properties.GetValue('Sampling'));
+					let mesh = shape.ComputeMesh(sampling, (shape) => {
+						if (onDone) {
+							return onDone(mesh);
+						}
+						return true;
+					});
+					return true;
+				},
+				//Cancel has been clicked
+				() => true
+			);
+
+			dialog.InsertValue('Sampling', dataHandler.GetSceneRenderer().drawingcontext.sampling);
+		}
+	}
 }

@@ -1,7 +1,7 @@
 ﻿class Dialog implements Control {
 	container: HTMLDivElement;
 
-	constructor(onAccept: Function, onCancel: Function) {
+	constructor(onAccept: DialogResultHandler, onCancel: DialogResultHandler) {
 		this.container = document.createElement('div');
 		this.container.className = 'Dialog';
 
@@ -94,4 +94,8 @@
     GetElement(): HTMLElement {
 		return this.container;
 	}
+}
+
+interface DialogResultHandler {
+	(dialog: Dialog): boolean;
 }
