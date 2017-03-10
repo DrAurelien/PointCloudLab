@@ -1,4 +1,4 @@
-﻿abstract class Shape extends CADPrimitive{
+﻿abstract class Shape extends CADPrimitive {
     visible: boolean;
 	mesh: Mesh;
 
@@ -9,7 +9,7 @@
 
     abstract GetGeometry(): Properties;
 
-    abstract ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh;
+    abstract ComputeMesh(sampling: number, onDone: CADNodeHandler): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
 
 	abstract Distance(point: Vector): number;
@@ -24,7 +24,7 @@
 	ComputeBounds(points: number[], cloud: PointCloud): void {
 	}
 
-	PrepareForDrawing(drawingContext: DrawingContext, onDone: CADPrimitiveHandler = null) {
+	PrepareForDrawing(drawingContext: DrawingContext, onDone: CADNodeHandler = null) {
 		if (!this.mesh) {
 			this.mesh = this.ComputeMesh(drawingContext.sampling, onDone);
 		}
@@ -50,7 +50,7 @@
 		return properties;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
 		let result = super.GetActions(dataHandler, onDone);
 
 		result.push(null);
@@ -80,7 +80,7 @@ interface ShapeCreator {
 }
 
 class CreateShapeMeshAction extends Action {
-	constructor(shape : Shape, dataHandler : DataHandler, onDone : CADPrimitiveHandler) {
+	constructor(shape : Shape, dataHandler : DataHandler, onDone : CADNodeHandler) {
 		super('Create shape mesh');
 
 		this.callback = function () {

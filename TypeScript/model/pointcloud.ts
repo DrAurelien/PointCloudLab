@@ -307,7 +307,7 @@
 		return result;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
 		let cloud = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
@@ -331,6 +331,16 @@
 		result.push(new ExportFileAction(cloud, onDone));
 
 		return result;
+	}
+
+	GetProperties(): Properties {
+		let properties = super.GetProperties();
+
+		let points = new NumberProperty('Points', this.Size(), null);
+		points.SetReadonly();
+		properties.Push(points);
+
+		return properties;
 	}
 }
 

@@ -4,7 +4,7 @@
     propertiesArea: HTMLDivElement;
     visibility: DataGandlerVisibility;
     handle: HTMLDivElement;
-    currentItem: CADPrimitive;
+    currentItem: CADNode;
 
     constructor(public container: HTMLDivElement, public updateCallback: Function, scene: Scene, private view : Interface) {
 		let dataHandler = this;
@@ -108,7 +108,7 @@
 		}
 	}
 
-    AddCreatedObject(scene: Scene, createdObject: CADPrimitive)
+    AddCreatedObject(scene: Scene, createdObject: CADNode)
 	{
 		if(createdObject)
         {

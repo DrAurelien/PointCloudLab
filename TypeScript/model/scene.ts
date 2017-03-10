@@ -5,7 +5,7 @@
         this.root = new CADGroup("Scene");
     }
 
-    Select(item: CADPrimitive): void {
+    Select(item: CADNode): void {
 		this.root.Apply(p => {
 			p.selected = (p === item);
 			return true;

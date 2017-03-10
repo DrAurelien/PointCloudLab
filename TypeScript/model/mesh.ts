@@ -55,7 +55,7 @@
 		this.pointcloud.ClearNormals();
 	}
 
-	ComputeNormals(onDone: CADPrimitiveHandler): void {
+	ComputeNormals(onDone: CADNodeHandler): void {
 		let nbFaces = this.Size();
 		let nbPoints = this.pointcloud.Size();
 		let normals = new Array(nbPoints);
@@ -165,6 +165,20 @@
 			}
 		}
 		return result;
+	}
+
+	GetProperties(): Properties {
+		let properties = super.GetProperties();
+
+		let points = new NumberProperty('Points', this.pointcloud.Size(), null);
+		points.SetReadonly();
+		let faces = new NumberProperty('Faces', this.Size(), null);
+		faces.SetReadonly();
+
+		properties.Push(points);
+		properties.Push(faces);
+
+		return properties;
 	}
 }
 

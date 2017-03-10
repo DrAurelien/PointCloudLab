@@ -2,7 +2,7 @@
 	container: HTMLDivElement;
 	itemContentContainer: HTMLDivElement;
 
-	constructor(public item: CADPrimitive, private dataHandler: DataHandler, private scene: Scene) {
+	constructor(public item: CADNode, private dataHandler: DataHandler, private scene: Scene) {
 		this.container = <HTMLDivElement>document.createElement('div');
 		this.container.className = 'TreeItemContainer';
 
@@ -106,6 +106,9 @@
 				}
 			);
 			Popup.CreatePopup(self, actions);
+			self.dataHandler.currentItem = self.item;
+			self.scene.Select(self.item);
+			self.Refresh();
 			self.CancelBubbling(event);
 			return false;
 		}

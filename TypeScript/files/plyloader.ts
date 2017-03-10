@@ -169,7 +169,7 @@ class PlyElements {
 class PlyLoader {
 	private reader: BinaryReader;
 	private elements: PlyElements;
-	public result: CADPrimitive;
+	public result: CADNode;
 
 	constructor(content: ArrayBuffer) {
 		this.reader = new BinaryReader(content);

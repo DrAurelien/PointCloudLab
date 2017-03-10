@@ -61,6 +61,7 @@
     <TypeScriptCompile Include="maths\vector.ts" />
     <TypeScriptCompile Include="model\boundingbox.ts" />
     <TypeScriptCompile Include="model\cadgroup.ts" />
+    <TypeScriptCompile Include="model\cadnode.ts" />
     <TypeScriptCompile Include="model\cadprimitive.ts" />
     <TypeScriptCompile Include="model\kdtree.ts" />
     <TypeScriptCompile Include="model\mesh.ts" />

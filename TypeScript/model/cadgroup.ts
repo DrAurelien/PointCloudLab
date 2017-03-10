@@ -1,5 +1,5 @@
-﻿class CADGroup extends CADPrimitive {
-    children: CADPrimitive[];
+﻿class CADGroup extends CADNode {
+    children: CADNode[];
     folded: boolean;
 
     constructor(name?: string, owner: CADGroup = null) {
@@ -34,7 +34,7 @@
         return picked;
     }
 
-    Add(son: CADPrimitive): void {
+    Add(son: CADNode): void {
         if (son.owner) {
             son.owner.Remove(son);
         }
@@ -42,7 +42,7 @@
         this.children.push(son);
     }
 
-    Remove(son: CADPrimitive): void {
+    Remove(son: CADNode): void {
         let position = -1;
         for (var index = 0; position < 0 && index < this.children.length; index++) {
             if (this.children[index] === son) {
@@ -68,7 +68,7 @@
         return this.boundingbox;
     }
 
-    Apply(proc: CADPrimitiveHandler): boolean {
+    Apply(proc: CADNodeHandler): boolean {
         if (!super.Apply(proc)) {
 			return false;
 		}
@@ -80,18 +80,18 @@
 		return true;
     }
 
-	GetChildren(): CADPrimitive[] {
+	GetChildren(): CADNode[] {
 		if (!this.folded) {
 			return this.children;
 		}
 		return [];
 	}
 
-	private IsScannable(): boolean {
+	IsScannable(): boolean {
 		return !this.Apply(p => !(p instanceof Shape || p instanceof Mesh));
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
 		let self = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
@@ -116,31 +116,64 @@
 		result.push(new Action('New sphere', this.GetShapeCreator(() => new Sphere(new Vector([0, 0, 0]), 1, self), dataHandler, onDone)));
 		result.push(new Action('New cylinder', this.GetShapeCreator(() => new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self), dataHandler, onDone)));
 		result.push(new Action('New torus', this.GetShapeCreator(() => new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self), dataHandler, onDone)));
-		result.push(new Action('Scan from current viewpoint', this.GetScanFunction(dataHandler, onDone)));
+		result.push(new ScanFromCurrentViewPointAction(this, dataHandler, onDone));
 		
 		return result;
     }
 
-	private GetShapeCreator(creator: ShapeCreator, dataHandler: DataHandler, onDone: CADPrimitiveHandler): Function {
+	private GetShapeCreator(creator: ShapeCreator, dataHandler: DataHandler, onDone: CADNodeHandler): Function {
 		return function () {
 			let shape = creator();
 			shape.PrepareForDrawing(dataHandler.GetSceneRenderer().drawingcontext, onDone);
 		}
 	}
 
-	private GetScanFunction(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Function {
-		if (this.IsScannable()) {
-			let self = this;
-			return function () {
-				dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(self, (cloud) => {
-					self.Add(cloud);
-					if (onDone) {
-						onDone(cloud);
-					}
-				});
-				return true;
-			};
+	GetProperties(): Properties {
+		let properties = super.GetProperties();
+
+		let children = new NumberProperty('Children', this.children.length, null);
+		children.SetReadonly();
+		properties.Push(children);
+
+		return properties;
+	}
+}
+
+class ScanFromCurrentViewPointAction extends Action {
+	constructor(group: CADGroup, dataHandler: DataHandler, onDone: CADNodeHandler) {
+		super('Scan from current viewpoint');
+
+		let hSamplingTitle = 'Horizontal Sampling';
+		let vSamplingTitle = 'Vertical Sampling';
+
+		if (group.IsScannable()) {
+			this.callback = function () {
+				let dialog = new Dialog(
+					//Ok has been clicked
+					(properties) => {
+						let hsampling = parseInt(properties.GetValue(hSamplingTitle));
+						let vsampling = parseInt(properties.GetValue(vSamplingTitle));
+						if (isNaN(hsampling) || isNaN(vsampling) || hsampling < 0 || vsampling < 0) {
+							return false;
+						}
+
+						dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(group, hsampling, vsampling,
+							(cloud) => {
+								group.Add(cloud);
+								if (onDone) {
+									onDone(cloud);
+								}
+							}
+						);
+						return true;
+					},
+					//Cancel has been clicked
+					() => true
+				);
+
+				dialog.InsertValue(hSamplingTitle, 1084);
+				dialog.InsertValue(vSamplingTitle, 768);
+			}
 		}
-		return null;
 	}
 }

@@ -13,7 +13,7 @@
 		return geometry;
 	}
 
-	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh {
+	ComputeMesh(sampling: number, onDone: CADNodeHandler): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling * sampling);
 

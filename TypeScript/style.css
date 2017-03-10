@@ -186,7 +186,7 @@ td.PropertyName
 	font-weight : bold;
 }
 
-input.PropertyValue
+input.PropertyValue, input.PropertyValueReadonly
 {
 	font-size : 11px;
 	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;

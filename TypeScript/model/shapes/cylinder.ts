@@ -38,7 +38,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler) : Mesh {
+	ComputeMesh(sampling: number, onDone: CADNodeHandler) : Mesh {
 		let points = new PointCloud();
 		points.Reserve(4 * sampling + 2);
 

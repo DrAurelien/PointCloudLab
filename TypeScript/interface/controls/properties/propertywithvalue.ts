@@ -21,5 +21,10 @@
 		return this.container;
 	}
 
+	SetReadonly(value: boolean = true) {
+		this.input.readOnly = value;
+		this.input.className = 'PropertyValue' + (value ? 'Readonly' : '');
+	}
+
 	abstract GetValue(): any;
 }

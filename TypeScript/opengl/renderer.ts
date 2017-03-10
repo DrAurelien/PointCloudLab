@@ -137,7 +137,7 @@ class Renderer {
 		return root.RayIntersection(ray);
     }
 
-    PickObject(x: number, y: number, scene: Scene): CADPrimitive {
+    PickObject(x: number, y: number, scene: Scene): CADNode {
         let ray : Ray = this.GetRay(x, y);
         let picked = this.ResolveRayIntersection(ray, scene.root);
 
@@ -147,12 +147,12 @@ class Renderer {
         return null;
     }
 
-    ScanFromCurrentViewPoint(group: CADGroup, resultHandler: Function) {
+    ScanFromCurrentViewPoint(group: CADGroup, hsampling:number, vsampling:number, resultHandler: Function) {
         var self = this;
         var resolution =
             {
-                width: 1024,
-                height: 768,
+                width: hsampling,
+                height: vsampling,
                 currenti: 0,
                 currentj: 0,
                 next: function () {

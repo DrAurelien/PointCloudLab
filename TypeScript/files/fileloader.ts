@@ -1,5 +1,5 @@
 ﻿abstract class FileLoader {
-	public result: CADPrimitive;
+	public result: CADNode;
 
 	constructor() {
 	}

@@ -1,7 +1,7 @@
 ﻿class Picking {
     distance: number;
 
-    constructor(public object: CADPrimitive) {
+    constructor(public object: CADNode) {
         this.distance = null;
     }
 

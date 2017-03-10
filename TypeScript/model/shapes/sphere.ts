@@ -34,7 +34,7 @@
 		return matrix;
 	}
 
-	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler) : Mesh {
+	ComputeMesh(sampling: number, onDone: CADNodeHandler) : Mesh {
 		let halfSampling = Math.ceil(sampling / 2);
 		let points = new PointCloud();
 		points.Reserve(sampling * halfSampling + 2);
