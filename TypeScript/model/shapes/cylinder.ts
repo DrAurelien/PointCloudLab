@@ -4,26 +4,13 @@
     }
 
 	GetGeometry(): Properties {
+		let self = this;
 		let geometry = new Properties();
-		geometry.PushVector('Center', this.center);
-		geometry.PushVector('Axis', this.axis);
-		geometry.Push('Radius', this.radius);
-		geometry.Push('Height', this.height);
+		geometry.Push(new VectorProperty('Center', this.center, false, self.GeometryChangeHandler()));
+		geometry.Push(new VectorProperty('Axis', this.axis, true, self.GeometryChangeHandler()));
+		geometry.Push(new NumberProperty('Radius', this.radius, self.GeometryChangeHandler((value) => this.radius = value)));
+		geometry.Push(new NumberProperty('Height', this.height, self.GeometryChangeHandler((value) => this.height = value)));
 		return geometry;
-	}
-
-	SetGeometry(geometry: Properties) : boolean {
-		this.center = geometry.GetAsVector('Center');
-		this.axis = geometry.GetAsVector('Axis');
-		this.radius = geometry.GetAsFloat('Radius');
-		this.height = geometry.GetAsFloat('Height');
-		if (this.center == null || this.axis == null || this.radius == null || this.height == null) {
-			return false;
-		}
-		this.axis = this.axis.Normalized();
-		this.mesh = null;
-		this.boundingbox = null;
-		return true;
 	}
 
 	ComputeBoundingBox(): BoundingBox {

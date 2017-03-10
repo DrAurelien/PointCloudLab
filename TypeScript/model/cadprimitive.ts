@@ -22,19 +22,14 @@
 	GetBoundingBox(): BoundingBox {
 		return this.boundingbox;
 	}
-	
-	GetProperties(): Properties {
-		let properties = new Properties();
-		properties.Push('Name', this.name);
-		properties.Push('Visible', this.visible ? "1" : "0");
-		properties.PushProperties('Material', this.material.GetProperties());
-		return properties;
-	}
 
-	SetProperties(properties: Properties): boolean {
-		this.name = properties.Get('Name');
-		this.visible = properties.Get('Visible') == '1';
-		return this.material.SetProperties(properties.GetAsProperties('Material'));
+	GetProperties(): Properties {
+		let self = this;
+		let properties = new Properties();
+		properties.Push(new StringProperty('Name', this.name, (newName) => self.name = newName));
+		properties.Push(new BooleanProperty('Visible', this.visible, (newVilibility) => self.visible = newVilibility));
+		properties.Push(new PropertyGroup('Material', this.material.GetProperties()));
+		return properties;
 	}
 
 	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {

@@ -4,26 +4,13 @@
     }
 
 	GetGeometry(): Properties {
+		let self = this;
 		let geometry = new Properties();
-		geometry.PushVector('Center', this.center);
-		geometry.PushVector('Axis', this.axis);
-		geometry.Push('Great Radius', this.greatRadius);
-		geometry.Push('Small Radius', this.smallRadius);
+		geometry.Push(new VectorProperty('Center', this.center, false, this.GeometryChangeHandler()));
+		geometry.Push(new VectorProperty('Axis', this.axis, true, this.GeometryChangeHandler()));
+		geometry.Push(new NumberProperty('Great Radius', this.greatRadius, this.GeometryChangeHandler((value) => self.greatRadius=value )));
+		geometry.Push(new NumberProperty('Small Radius', this.smallRadius, this.GeometryChangeHandler((value) => self.smallRadius=value)));
 		return geometry;
-	}
-
-	SetGeometry(geometry: Properties) : boolean {
-		this.center = geometry.GetAsVector('Center');
-		this.axis = geometry.GetAsVector('Axis');
-		this.greatRadius = geometry.GetAsFloat('Great Radius');
-		this.smallRadius = geometry.GetAsFloat('Small Radius');
-		if (this.center == null || this.axis == null || this.greatRadius == null || this.smallRadius == null) {
-			return false;
-		}
-		this.axis = this.axis.Normalized();
-		this.mesh = null;
-		this.boundingbox = null;
-		return true;
 	}
 
 	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh {

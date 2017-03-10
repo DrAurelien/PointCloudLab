@@ -111,6 +111,13 @@
         return this.Times(1 / this.Norm());
     }
 
+	Normalize() {
+		let norm = this.Norm();
+        for (let index: number = 0; index < this.coordinates.length; index++) {
+			this.coordinates[index] /= norm;
+		}
+	}
+
     Log = function () {
         let message : string = '| ';
         for (let index :number = 0; index < this.coordinates.length; index++) {

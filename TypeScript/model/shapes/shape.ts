@@ -8,7 +8,6 @@
 	}
 
     abstract GetGeometry(): Properties;
-    abstract SetGeometry(geometry: Properties): boolean;
 
     abstract ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
@@ -47,13 +46,8 @@
 
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
-		let geometry = this.GetGeometry();
-		properties.PushProperties('Geometry', geometry);
+		properties.Push(new PropertyGroup('Geometry', this.GetGeometry()));
 		return properties;
-	}
-
-	SetProperties(properties: Properties): boolean {
-		return this.SetGeometry(properties.GetAsProperties('Geometry')) && super.SetProperties(properties);
 	}
 
 	GetActions(dataHandler: DataHandler, onDone: CADPrimitiveHandler): Action[] {
@@ -62,6 +56,22 @@
 		result.push(null);
 		result.push(new CreateShapeMeshAction(this, dataHandler, onDone));
 		return result;
+	}
+
+	protected Invalidate()
+	{
+		this.mesh = null;
+		this.boundingbox = null;
+	}
+
+	protected GeometryChangeHandler(update?: PropertyChangeHandler): PropertyChangeHandler{
+		let self = this;
+		return function (value) {
+			if (update) {
+				update(value);
+			}
+			self.Invalidate();
+		};
 	}
 }
 

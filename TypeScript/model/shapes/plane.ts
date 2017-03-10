@@ -3,26 +3,14 @@
         super(NameProvider.GetName('Plane'), owner);
     }
 
+	private Updaye
 	GetGeometry(): Properties {
+		let self = this
 		let geometry = new Properties();
-		geometry.PushVector('Center', this.center);
-		geometry.PushVector('Normal', this.normal);
-		geometry.Push('Patch Radius', this.patchRadius);
+		geometry.Push(new VectorProperty('Center', this.center, false, self.GeometryChangeHandler()));
+		geometry.Push(new VectorProperty('Normal', this.normal, true, self.GeometryChangeHandler()));
+		geometry.Push(new NumberProperty('Patch Radius', this.patchRadius, self.GeometryChangeHandler((value) => self.patchRadius = value)));
 		return geometry;
-	}
-
-	SetGeometry(geometry: Properties) : boolean {
-
-		this.center = geometry.GetAsVector('Center');
-		this.normal = geometry.GetAsVector('Normal');
-		this.patchRadius = geometry.GetAsFloat('Patch Radius');
-		if (this.center == null || this.normal == null || this.patchRadius == null) {
-			return false;
-		}
-		this.normal = this.normal.Normalized();
-		this.mesh = null;
-		this.boundingbox = null;
-		return true;
 	}
 
 	ComputeMesh(sampling: number, onDone: CADPrimitiveHandler): Mesh {

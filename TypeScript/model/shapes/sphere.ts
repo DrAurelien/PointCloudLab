@@ -4,23 +4,13 @@
     }
 
 	GetGeometry(): Properties {
+		let self = this;
 		let geometry = new Properties();
-		geometry.PushVector('Center', this.center);
-		geometry.Push('Radius', this.radius);
+		geometry.Push(new VectorProperty('Center', this.center, false, this.GeometryChangeHandler()));
+		geometry.Push(new NumberProperty('Radius', this.radius, this.GeometryChangeHandler((value) => self.radius = value)));
 		return geometry;
 	};
-
-	SetGeometry(geometry: Properties) : boolean {
-		this.center = geometry.GetAsVector('Center');
-		this.radius = geometry.GetAsFloat('Radius');
-		if (this.center == null || this.radius == null) {
-			return false;
-		}
-		this.mesh = null;
-		this.boundingbox = null;
-		return true;
-	};
-
+	
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([1, 1, 1]).Times(2 * this.radius);
 		let bb = new BoundingBox();

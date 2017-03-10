@@ -160,50 +160,10 @@
 		if(this.currentItem != null)
 		{
 			let currentProperties = this.currentItem.GetProperties();
+			currentProperties.onChange = this.updateCallback;
 			let table = currentProperties.GetElement();
 			this.propertiesArea.appendChild(table);
-
-			let self = this;
-			let applyButton = new Button('Apply', function () {
-				var propertiesTable = null;
-				for (var index = 0; index < self.propertiesArea.children.length && propertiesTable == null; index++) {
-					if (self.propertiesArea.children[index].tagName.toLowerCase() == 'table') {
-						propertiesTable = self.propertiesArea.children[index];
-					}
-				}
-				let properties = self.GetCurrentProperties(propertiesTable);
-				let oldProperties = self.currentItem.GetProperties();
-				if (!self.currentItem.SetProperties(properties)) {
-					alert("Invalid properties. The submitted modifications are not taken into account");
-					self.currentItem.SetProperties(oldProperties);
-				}
-				if (self.updateCallback != null) {
-					self.updateCallback();
-				}
-			});
-			this.propertiesArea.appendChild(applyButton.GetElement());
 		}
-	}
-
-    GetCurrentProperties(propertiesTable: HTMLTableElement): Properties
-	{
-        let properties = new Properties();
-        for (var index = 0; index < propertiesTable.rows.length; index++)
-        {
-            let propertyRow: HTMLTableRowElement = <HTMLTableRowElement>propertiesTable.rows[index];
-            let porpertyNameCol: HTMLTableCellElement = <HTMLTableCellElement>propertyRow.cells[0];
-            let porpertyValueCol: HTMLTableCellElement = <HTMLTableCellElement>propertyRow.cells[1];
-            let propertyValueElement = porpertyValueCol.children[0];
-			if(propertyValueElement.tagName.toLowerCase() == 'input')
-			{
-				properties.Push(porpertyNameCol.textContent, (<HTMLInputElement>propertyValueElement).value);
-			}
-			else
-			{
-				properties.PushProperties(porpertyNameCol.textContent, this.GetCurrentProperties(<HTMLTableElement>propertyValueElement));
-			}
-		}
-		return properties;
 	}
 }
 
