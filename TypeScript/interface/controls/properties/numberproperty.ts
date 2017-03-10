@@ -1,6 +1,7 @@
-﻿class NumberProperty extends StringProperty {
+﻿class NumberProperty extends PropertyWithValue
+{
 	constructor(name: string, value: number, handler: PropertyChangeHandler) {
-		super(name, value.toString(), handler);
+		super(name, 'text', value.toString(), handler);
 	}
 
 	GetValue(): number {

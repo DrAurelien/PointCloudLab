@@ -44,11 +44,11 @@
 	GetElement(): HTMLElement {
 		var table = document.createElement('table');
 		table.className = 'Properties';
-		for (let index = 0; index < this.properties.length; index++)
-		{
+		for (let index = 0; index < this.properties.length; index++) {
 			let property = this.properties[index];
 			let row = document.createElement('tr');
 			row.className = 'Property';
+			table.appendChild(row);
 
 			let leftCol = document.createElement('td');
 			leftCol.className = 'PropertyName';
@@ -56,12 +56,24 @@
 			leftCol.appendChild(leftColContent);
 			row.appendChild(leftCol);
 
-			let rightCol = document.createElement('td');
-			rightCol.className = 'PropertyValue';
-			rightCol.appendChild(property.GetElement());
-			row.appendChild(rightCol);
+			if (property instanceof PropertyGroup) {
+				leftCol.colSpan = 2;
+				let row = document.createElement('tr');
+				row.className = 'Property';
+				table.appendChild(row);
 
-			table.appendChild(row);
+				let col = document.createElement('td');
+				col.colSpan = 2;
+				col.className = 'PropertyCompound';
+				col.appendChild(property.GetElement());
+				row.appendChild(col);
+			}
+			else {
+				let rightCol = document.createElement('td');
+				rightCol.className = 'PropertyValue';
+				rightCol.appendChild(property.GetElement());
+				row.appendChild(rightCol);
+			}
 		}
 
 		return table;

@@ -1,5 +1,5 @@
 ﻿class PropertyGroup extends Property {
-	protected properties: Properties;
+	public properties: Properties;
 
 	constructor(name: string, properties?: Properties, handler: PropertyChangeHandler = null) {
 		super(name, handler);

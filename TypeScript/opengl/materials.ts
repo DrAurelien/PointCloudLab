@@ -12,18 +12,13 @@
 
 	GetProperties(): Properties {
 		let self = this;
-		let properties = new Properties;
 
-		let color = new PropertyGroup('Color');
-		properties.Push(color);
-		color.Add(new NumberProperty('Red', self.baseColor[0], (red) => self.baseColor[0] = red));
-		color.Add(new NumberProperty('Green', self.baseColor[1], (green) => self.baseColor[1] = green));
-		color.Add(new NumberProperty('Blue', self.baseColor[2], (blue) => self.baseColor[2] = blue));
-		
-		properties.Push(new NumberProperty('Ambiant', self.ambiant, (value) => self.ambiant = value));
-		properties.Push(new NumberProperty('Diffuse', self.diffuse, (value) => self.diffuse = value));
-		properties.Push(new NumberProperty('Specular', self.specular, (value) => self.specular = value));
-		properties.Push(new NumberProperty('Glossy', self.glossy, (value) => self.glossy = value));
+		let properties = new Properties;
+		properties.Push(new ColorProperty('Color', self.baseColor, (value) => self.baseColor = value));
+		properties.Push(new NumberInRangeProperty('Ambiant', self.ambiant, 0, 10, (value) => self.ambiant = value));
+		properties.Push(new NumberInRangeProperty('Diffuse', self.diffuse, 0, 10, (value) => self.diffuse = value));
+		properties.Push(new NumberInRangeProperty('Specular', self.specular, 0, 10, (value) => self.specular = value));
+		properties.Push(new NumberInRangeProperty('Glossy', self.glossy, 0, 10, (value) => self.glossy = value));
 
 		return properties;
 	}

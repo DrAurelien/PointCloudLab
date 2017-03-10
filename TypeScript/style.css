@@ -161,7 +161,7 @@ input.FileOpener
 table.Properties
 {
 	padding : 0px;
-    border-spacing : 5px;
+    border-spacing : 0px;
 }
 
 td
@@ -174,10 +174,11 @@ td
 	margin : 0px;
 }
 
-td.PropertyComplexValue
+td.PropertyCompound
 {
-	border : 1px solid lightgray;
-	border-right : 0px;
+	margin : 0px;
+	padding : 0px;
+	padding-left : 2em;
 }
 
 td.PropertyName

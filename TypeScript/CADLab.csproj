@@ -34,12 +34,15 @@
     <TypeScriptCompile Include="interface\controls\dataitem.ts" />
     <TypeScriptCompile Include="interface\controls\dialog.ts" />
     <TypeScriptCompile Include="interface\controls\fileopener.ts" />
+    <TypeScriptCompile Include="interface\controls\properties\colorproperty.ts" />
+    <TypeScriptCompile Include="interface\controls\properties\numberinrangeproperty.ts" />
     <TypeScriptCompile Include="interface\controls\properties\numberproperty.ts" />
     <TypeScriptCompile Include="interface\controls\popup.ts" />
     <TypeScriptCompile Include="interface\controls\progressbar.ts" />
     <TypeScriptCompile Include="interface\controls\properties\property.ts" />
     <TypeScriptCompile Include="interface\controls\properties\booleanproperty.ts" />
     <TypeScriptCompile Include="interface\controls\properties\propertygroup.ts" />
+    <TypeScriptCompile Include="interface\controls\properties\propertywithvalue.ts" />
     <TypeScriptCompile Include="interface\controls\properties\vectorproperty.ts" />
     <TypeScriptCompile Include="interface\controls\properties\stringproperty.ts" />
     <TypeScriptCompile Include="interface\controls\toolbar.ts" />
@@ -80,6 +83,7 @@
     <Content Include="style.css" />
     <Content Include="web.config" />
     <TypeScriptCompile Include="tools\longprocess.ts" />
+    <TypeScriptCompile Include="tools\stringutils.ts" />
   </ItemGroup>
   <ItemGroup>
     <None Include="web.Debug.config">

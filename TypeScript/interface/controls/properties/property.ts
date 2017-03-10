@@ -1,7 +1,8 @@
 ﻿abstract class Property implements Control
 {
-	owner : Properties;
-	constructor(public name: string, private changeHandler: PropertyChangeHandler) {
+	owner: Properties;
+
+	constructor(public name: string, protected changeHandler: PropertyChangeHandler) {
 	}
 
 	abstract GetElement(): HTMLElement;
