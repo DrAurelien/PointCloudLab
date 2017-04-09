@@ -76,6 +76,13 @@
 		}
 	}
 
+	AddBoundingBox(bb: BoundingBox): void {
+		if (bb && bb.IsValid()) {
+			this.Add(bb.min);
+			this.Add(bb.max);
+		}
+	}
+
 	IsValid(): boolean {
 		return (this.min != null && this.max != null);
 	}

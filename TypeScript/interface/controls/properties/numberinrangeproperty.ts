@@ -5,6 +5,7 @@
 
 		this.input.min = min.toString();
 		this.input.max = max.toString();
+		this.input.step = '0.1';
 	}
 
 	GetValue(): number {

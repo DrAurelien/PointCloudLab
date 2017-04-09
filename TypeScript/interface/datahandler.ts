@@ -23,6 +23,7 @@
 					}
 				}
 			}),
+			new ComboBox('View', [new CenterCameraAction(scene, view)]),
 			//Help
 			new Button('?', function () {
 				window.open('help.html', '_blank');
@@ -169,4 +170,21 @@
 
 class DataGandlerVisibility {
 	constructor(public visible: boolean, public widthToRestore: string) { }
+}
+
+class CenterCameraAction extends Action {
+	constructor(private scene: Scene, view: Interface) {
+		super('Center camera on selection', function (onDone) {
+			let selectionbb = scene.GetSelectionBoundingBox();
+			if (selectionbb && selectionbb.IsValid()) {
+				view.sceneRenderer.camera.to = selectionbb.GetCenter();
+				view.sceneRenderer.Draw(scene);
+			}
+		});
+	}
+
+	HasAction(): boolean {
+		let selectionbb = this.scene.GetSelectionBoundingBox();
+		return (selectionbb && selectionbb.IsValid());
+	}
 }
