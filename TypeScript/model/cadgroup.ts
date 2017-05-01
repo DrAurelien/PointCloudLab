@@ -141,7 +141,7 @@
 
 class ScanFromCurrentViewPointAction extends Action {
 	constructor(group: CADGroup, dataHandler: DataHandler, onDone: CADNodeHandler) {
-		super('Scan from current viewpoint');
+		super('Scan from current viewpoint', null, 'Create an new point cloud by simulating a LIDAR scanning of the group contents, from the current view point');
 
 		let hSamplingTitle = 'Horizontal Sampling';
 		let vSamplingTitle = 'Vertical Sampling';

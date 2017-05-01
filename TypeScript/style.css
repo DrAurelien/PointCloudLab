@@ -132,6 +132,21 @@ div.PopupOption:hover
 	background-color : darkgray;
 }
 
+div.Hint
+{
+	position : fixed;
+	right : 10px;
+	top : 10px;
+	width : 500px;
+	overflow : hidden;
+	margin : 0px;
+	padding : 1em;
+	background-color : white;
+	opacity : 0.8;
+	z-index : 1;
+	border-radius: 7px;
+}
+
 div.Dialog
 {
 	position : fixed;
@@ -248,9 +263,14 @@ div.ProgressBar
 	border-radius: 5px;
 }
 
+.ButtonIcon
+{
+	margin-right : 1em;
+}
+
 .ItemIcon
 {
-	margin-right : 5px;
+	margin-right : 1em;
 	font-size : 120%;
 	float: left;
 }

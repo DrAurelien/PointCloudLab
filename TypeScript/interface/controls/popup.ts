@@ -1,9 +1,10 @@
 ﻿class Popup implements Control
 {
     popupContainer: HTMLDivElement;
+	items: any[];
     static current: Popup;
 
-    constructor(public owner: Control, options: any) {
+    constructor(public owner: Control, private actions: any) {
 
         this.popupContainer = document.createElement('div');
         this.popupContainer.className = 'Popup';
@@ -18,39 +19,16 @@
 
         document.body.appendChild(this.popupContainer);
 
-        let popupContent : Action[] = <Action[]>((typeof options == 'function') ? options() : options);
+		this.items = [];
+        let popupContent : Action[] = <Action[]>((typeof actions == 'function') ? actions() : actions);
         for (let index: number = 0; index < popupContent.length; index++) {
-			let action = popupContent[index];
-
-			let item = document.createElement('div');
-			if (action) {
-				item.className = 'PopupOption';
-				if (action.HasAction()) {
-					item.onclick = this.ItemClicked(action);
-				}
-				else {
-					item.className += 'Inactive';
-				}
-
-				let itemLabel = document.createTextNode(action.label);
-				item.appendChild(itemLabel);
-			}
-			else {
-				item.className = 'PopupSeparator';
-			}
-
-            this.popupContainer.appendChild(item);
+			let popupItem = new PopupItem(popupContent[index]);
+			this.items.push(PopupItem);
+            this.popupContainer.appendChild(popupItem.GetElement());
         }
     }
 
-	private ItemClicked(action: Action): (event: MouseEvent) => any {
-		return function () {
-			action.Run();
-			Popup.DestroyCurrent();
-		}
-	}
-
-    private static DestroyCurrent(): void {
+    static DestroyCurrent(): void {
         if (this.current) {
             let popupElement = this.current.GetElement();
             popupElement.parentNode.removeChild(popupElement);
@@ -58,9 +36,9 @@
         this.current = null;
     }
 
-    static CreatePopup(owner: Control, options: Action[]): Popup {
+    static CreatePopup(owner: Control, actions: Action[]): Popup {
         Popup.DestroyCurrent();
-        this.current = new Popup(owner, options);
+        this.current = new Popup(owner, actions);
         return this.current;
     }
 

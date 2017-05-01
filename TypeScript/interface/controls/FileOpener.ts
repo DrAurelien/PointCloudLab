@@ -1,5 +1,5 @@
 ﻿class FileOpener implements Control {
-	constructor(public label: string, public filehandler: Function) {
+	constructor(public label: string, public filehandler: Function, private hintMessage? : string) {
 	}
 
 	LoadFile(file: File) {
@@ -62,12 +62,12 @@
 			new Action('PLY Mesh', function () {
 				input.accept = '.ply';
 				input.click();
-			}),
+			}, 'Load a mesh object from a PLY file. Find more about the ply file format on http://paulbourke.net/dataformats/ply/'),
 			new Action('CSV Point cloud', function () {
 				input.accept = '.csv';
 				input.click();
-			})
-		]);
+			}, 'Load a point cloud from a CSV file (a semi-colon-separated line for each point). The CSV header is mandatory : "x", "y" and "z" specify the points coordinates, while "nx", "ny" and "nz" specify the normals coordinates.')
+		], this.hintMessage);
 
 		let button = combo.GetElement();
 		button.appendChild(input);

@@ -1,5 +1,6 @@
 ﻿class Action {
-	constructor(public label: string, protected callback: Function = null, public icon?: string) {
+	constructor(public label: string, protected callback: Function = null, public hintMessage?: string) {
+
 	}
 
 	HasAction(): boolean {

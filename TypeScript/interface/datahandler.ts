@@ -11,7 +11,7 @@
 		//Data toolbar
         this.dataToolbar = new Toolbar([
 			//File import button
-			new FileOpener('Open', function(createdObject) {
+			new FileOpener('[Icon:file-o] Open', function(createdObject) {
 				if(createdObject != null)
 				{
 					scene.root.Add(createdObject);
@@ -22,8 +22,11 @@
 						dataHandler.updateCallback();
 					}
 				}
-			}),
-			new ComboBox('View', [new CenterCameraAction(scene, view)]),
+			}, 'Load data from a file'),
+			new ComboBox('[Icon:video-camera] View',
+				[new CenterCameraAction(scene, view)],
+				'Handle the camera position'
+			),
 			//Help
 			new Button('?', function () {
 				window.open('help.html', '_blank');
@@ -180,7 +183,7 @@ class CenterCameraAction extends Action {
 				view.sceneRenderer.camera.to = selectionbb.GetCenter();
 				view.sceneRenderer.Draw(scene);
 			}
-		});
+		}, 'Change the camera viewing direction so that it points to the selected object(s)');
 	}
 
 	HasAction(): boolean {
