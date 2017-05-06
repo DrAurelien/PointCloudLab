@@ -174,4 +174,18 @@ class Camera {
         }
         return w;
     }
+
+	CenterOnBox(box: BoundingBox): boolean {
+		if (box && box.IsValid()) {
+			let radius = box.GetSize().Norm() / 2.0;
+			this.to = box.GetCenter();
+			if (radius) {
+				let direction = this.to.Minus(this.at).Normalized();
+				let dist = radius / Math.tan(this.fov / 2.);
+				this.at = this.to.Minus(direction.Times(dist));
+			}
+			return true;
+		}
+		return false;
+	}
 }

@@ -26,8 +26,12 @@
 	}
 
 	private ItemClicked(action: Action): (event: MouseEvent) => any {
+		let self = this;
 		return function () {
 			action.Run();
+			if (self.hint) {
+				self.hint.Hide();
+			}
 			Popup.DestroyCurrent();
 		}
 	}
