@@ -1,5 +1,5 @@
 ﻿class Material {
-	constructor(public baseColor: number[], public diffuse: number = 1.0, public ambiant: number = 1.0, public specular: number = 1.0, public glossy: number = 8.0) {
+	constructor(public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.2, public specular: number = 0.4, public glossy: number = 10.0) {
 	}
 
 	InitializeLightingModel(drawingContext: DrawingContext): void {
@@ -15,10 +15,10 @@
 
 		let properties = new Properties;
 		properties.Push(new ColorProperty('Color', self.baseColor, (value) => self.baseColor = value));
-		properties.Push(new NumberInRangeProperty('Ambiant', self.ambiant, 0, 10, (value) => self.ambiant = value));
-		properties.Push(new NumberInRangeProperty('Diffuse', self.diffuse, 0, 10, (value) => self.diffuse = value));
-		properties.Push(new NumberInRangeProperty('Specular', self.specular, 0, 10, (value) => self.specular = value));
-		properties.Push(new NumberInRangeProperty('Glossy', self.glossy, 0, 10, (value) => self.glossy = value));
+		properties.Push(new NumberInRangeProperty('Ambiant', self.ambiant * 100.0, 0, 100, 1, (value) => self.ambiant = value / 100.0));
+		properties.Push(new NumberInRangeProperty('Diffuse', self.diffuse * 100.0, 0, 100, 1, (value) => self.diffuse = value / 100.0));
+		properties.Push(new NumberInRangeProperty('Specular', self.specular * 100.0, 0, 100, 1, (value) => self.specular = value / 100.0));
+		properties.Push(new NumberInRangeProperty('Glossy', self.glossy, 0, 100, 1, (value) => self.glossy = value));
 
 		return properties;
 	}
