@@ -22,12 +22,17 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="controler\actions\cameracenter.ts" />
+    <TypeScriptCompile Include="controler\actions\pointclouddetection.ts" />
+    <TypeScriptCompile Include="controler\actions\pointcloudexport.ts" />
+    <TypeScriptCompile Include="controler\actions\pointcloudnormals.ts" />
+    <TypeScriptCompile Include="controler\actions\scanfromcurrentviewpoint.ts" />
     <TypeScriptCompile Include="files\binaryreader.ts" />
     <TypeScriptCompile Include="files\csvloader.ts" />
     <TypeScriptCompile Include="files\fileexporter.ts" />
     <TypeScriptCompile Include="files\fileloader.ts" />
     <TypeScriptCompile Include="files\plyloader.ts" />
-    <TypeScriptCompile Include="interface\actions.ts" />
+    <TypeScriptCompile Include="controler\actions.ts" />
     <TypeScriptCompile Include="interface\controls\button.ts" />
     <TypeScriptCompile Include="interface\controls\combobox.ts" />
     <TypeScriptCompile Include="interface\controls\control.ts" />
@@ -77,8 +82,11 @@
     <TypeScriptCompile Include="model\shapes\sphere.ts" />
     <TypeScriptCompile Include="model\shapes\torus.ts" />
     <TypeScriptCompile Include="opengl\camera.ts" />
+    <TypeScriptCompile Include="controler\cameracontroler.ts" />
+    <TypeScriptCompile Include="controler\mousecontroler.ts" />
     <TypeScriptCompile Include="opengl\drawingcontext.ts" />
     <TypeScriptCompile Include="opengl\materials.ts" />
+    <TypeScriptCompile Include="controler\mousetracker.ts" />
     <TypeScriptCompile Include="opengl\picking.ts" />
     <TypeScriptCompile Include="opengl\renderer.ts" />
     <TypeScriptCompile Include="opengl\renderingtype.ts" />

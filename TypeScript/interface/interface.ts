@@ -1,6 +1,7 @@
 ﻿class Interface {
     sceneRenderer: Renderer;
     dataHandler: DataHandler;
+	currentControler: MouseControler;
 
     constructor(scene: Scene) {
         let appInterface: Interface = this;
@@ -30,18 +31,22 @@
 
     InitializeRenderer(scene: Scene) {
         //Create a canvas to display the scene
-        var sceneRenderingArea = document.createElement('canvas');
+        let sceneRenderingArea = document.createElement('canvas');
         sceneRenderingArea.className = 'SceneRendering';
         document.body.appendChild(sceneRenderingArea);
 		
         //Create the scene handler
-        let self: Interface = this;
-        function Refresh(selectedItems) {
-            self.dataHandler.currentItem = selectedItems;
-            self.Refresh(scene);
-        }
-        this.sceneRenderer = new Renderer(sceneRenderingArea, Refresh, scene);
+        this.sceneRenderer = new Renderer(sceneRenderingArea);
+		this.sceneRenderer.Draw(scene);
+
+		//Create controler
+		this.currentControler = new CameraControler(this, scene, sceneRenderingArea);
     }
+
+	UpdateSelectedElement(selectedItem: CADNode, scene: Scene) {
+		this.dataHandler.currentItem = selectedItem;
+		this.Refresh(scene);
+	}
 
     Refresh(scene: Scene): void {
         this.dataHandler.Resize(window.innerWidth, window.innerHeight);

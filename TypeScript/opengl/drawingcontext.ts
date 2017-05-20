@@ -18,7 +18,7 @@
     glossy: WebGLUniformLocation;
     rendering: RenderingType;
 
-    constructor(public renderingArea: HTMLCanvasElement, public refreshCallback: Function) {
+    constructor(public renderingArea: HTMLCanvasElement) {
         this.rendering = new RenderingType();
 
         console.log('Initializing gl context');

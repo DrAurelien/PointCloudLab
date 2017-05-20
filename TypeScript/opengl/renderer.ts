@@ -1,108 +1,14 @@
-﻿class MouseTracker {
-    date: Date;
-
-    constructor(public x: number, public y: number, public button: number) {
-        this.date = new Date();
-    }
-}
-
-class Renderer {
-    drawingcontext: DrawingContext;
-    camera: Camera;
+﻿class Renderer {
+	drawingcontext: DrawingContext;
+	camera: Camera;
 	light: Sphere;
-    private mousetracker: MouseTracker;
 
-    constructor(public renderingArea: HTMLCanvasElement, public refreshCallback: Function, scene : Scene) {
-        this.drawingcontext = new DrawingContext(renderingArea, refreshCallback);
+    constructor(public renderingArea: HTMLCanvasElement) {
+        this.drawingcontext = new DrawingContext(renderingArea);
         this.camera = new Camera(this.drawingcontext);
 
 		this.light = new Sphere(new Vector([10.0, 10.0, 10.0]), 0.1);
 		this.light.material = new Material([1.0, 1.0, 1.0], 0.0, 3.0, 0.0, 1.0);
-
-        this.mousetracker = null;
-        this.Draw(scene);
-
-        var renderer = this;
-
-        this.drawingcontext.renderingArea.oncontextmenu = function (event: Event) {
-            event = event || window.event;
-            event.preventDefault();
-            return false;
-        };
-
-        this.drawingcontext.renderingArea.onmousedown = function (event: MouseEvent) {
-            event = <MouseEvent>(event || window.event);
-            renderer.mousetracker = new MouseTracker(event.clientX, event.clientY, event.which);
-        };
-
-
-        this.drawingcontext.renderingArea.onmouseup = function (event : MouseEvent) {
-            event = <MouseEvent>(event || window.event);
-            var now = new Date();
-            if (renderer.mousetracker != null) {
-                if (now.getTime() - renderer.mousetracker.date.getTime() < 200) {
-                    var selected = renderer.PickObject(event.clientX, event.clientY, scene);
-                    scene.Select(selected);
-                    refreshCallback(selected);
-                }
-            }
-            renderer.mousetracker = null;
-        };
-
-        this.drawingcontext.renderingArea.onmousemove = function (event: MouseEvent) {
-            event = <MouseEvent>(event || window.event);
-
-            var dx = 0, dy = 0;
-            if (renderer.mousetracker) {
-                dx = event.clientX - renderer.mousetracker.x;
-                //Screen coordinate system is top-left (oriented down) while camera is oriented up
-                dy = renderer.mousetracker.y - event.clientY;
-                renderer.mousetracker.x = event.clientX;
-                renderer.mousetracker.y = event.clientY;
-
-                switch (renderer.mousetracker.button) {
-                    case 1: //Left mouse
-                        renderer.camera.Rotate(dx, dy);
-                        break;
-                    case 2: //Middle mouse
-                        renderer.camera.Zoom(dy / 10);
-                        break;
-                    case 3: //Right mouse
-                        renderer.camera.Pan(dx, dy);
-                        break;
-                    default:
-                        return true;
-                }
-
-                renderer.Draw(scene);
-            }
-            return true;
-        };
-
-        this.drawingcontext.renderingArea.onmousewheel = function (event: MouseWheelEvent) {
-            event = <MouseWheelEvent>(event || window.event);
-            renderer.camera.Zoom(event.wheelDelta / 100);
-            renderer.Draw(scene);
-        };
-
-        document.onkeypress = function (event: KeyboardEvent) {
-            event = <KeyboardEvent>(event || window.event);
-            var key = event.key ? event.key.charCodeAt(0) : event.keyCode;
-            switch (key) {
-                case 'p'.charCodeAt(0):
-                    renderer.drawingcontext.rendering.Point(!renderer.drawingcontext.rendering.Point());
-                    break;
-                case 'w'.charCodeAt(0):
-                    renderer.drawingcontext.rendering.Wire(!renderer.drawingcontext.rendering.Wire());
-                    break;
-                case 's'.charCodeAt(0):
-                    renderer.drawingcontext.rendering.Surface(!renderer.drawingcontext.rendering.Surface());
-                    break;
-                default:
-                    return true;
-            }
-            renderer.Draw(scene);
-        };
     }
     
 
