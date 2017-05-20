@@ -2,7 +2,7 @@
     dataToolbar: Toolbar;
     dataArea: HTMLDivElement;
     propertiesArea: HTMLDivElement;
-    visibility: DataGandlerVisibility;
+    visibility: DataHandlerVisibility;
     handle: HTMLDivElement;
     currentItem: CADNode;
 
@@ -51,7 +51,7 @@
 		this.handle.className = 'DataWindowHandle';
 		this.container.appendChild(this.handle);
 
-		this.visibility = new DataGandlerVisibility(true, this.container.style.width);
+		this.visibility = new DataHandlerVisibility(true, this.container.style.width);
 		
 		this.RefreshContent(scene);
     }
@@ -89,26 +89,34 @@
 			this.propertiesArea.style.borderTop = '';
 		}
 	}
-	
-	SwitchVisibility() : void
+
+	Hide() {
+		this.container.style.width = this.handle.scrollWidth + 'px';
+		this.container.style.paddingRight = '0px';
+		this.visibility.visible = false;
+		this.handle.style.cursor = 'e-resize';
+		this.dataArea.style.display = 'none';
+		this.propertiesArea.style.display = 'none';
+	}
+
+	Show() {
+		this.container.style.width = this.visibility.widthToRestore;
+		this.container.style.paddingRight = this.handle.scrollWidth + 'px';
+		this.visibility.visible = true;
+		this.handle.style.cursor = 'w-resize';
+		this.dataArea.style.display = 'block';
+		this.propertiesArea.style.display = 'block';
+	}
+
+	SwitchVisibility()
 	{
 		if(this.visibility.visible)
 		{
-			this.container.style.width = this.handle.scrollWidth + 'px';
-            this.container.style.paddingRight = '0px';
-			this.visibility.visible = false;
-			this.handle.style.cursor = 'e-resize';
-			this.dataArea.style.display= 'none';
-			this.propertiesArea.style.display = 'none';
+			this.Hide();
 		}
 		else
 		{
-			this.container.style.width = this.visibility.widthToRestore;
-			this.container.style.paddingRight = this.handle.scrollWidth + 'px';
-			this.visibility.visible = true;
-			this.handle.style.cursor = 'w-resize';
-			this.dataArea.style.display= 'block';
-			this.propertiesArea.style.display = 'block';
+			this.Show();
 		}
 	}
 
@@ -171,6 +179,6 @@
 	}
 }
 
-class DataGandlerVisibility {
+class DataHandlerVisibility {
 	constructor(public visible: boolean, public widthToRestore: string) { }
 }

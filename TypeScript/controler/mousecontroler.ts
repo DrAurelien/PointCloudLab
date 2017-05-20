@@ -13,6 +13,7 @@
 		targetElement.onmousedown = function (event: MouseEvent) {
 			event = <MouseEvent>(event || window.event);
 			self.mousetracker = new MouseTracker(event);
+			self.StartMouseEvent();
 		};
 
 		targetElement.onmouseup = function (event: MouseEvent) {
@@ -21,6 +22,7 @@
 				self.HandleClick(self.mousetracker);
 			}
 			self.mousetracker = null;
+			self.EndMouseEvent();
 		};
 
 		targetElement.onmousemove = function (event: MouseEvent) {
@@ -49,4 +51,7 @@
 	protected abstract HandleClick(tracker: MouseTracker): boolean;
 	protected abstract HandleWheel(delta: number): boolean;
 	protected abstract HandleKey(key: number): boolean;
+
+	protected StartMouseEvent() { }
+	protected EndMouseEvent() { }
 }

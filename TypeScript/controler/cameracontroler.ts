@@ -1,10 +1,13 @@
 ﻿class CameraControler extends MouseControler {
+	private datahandlervisibility: boolean;
+
 	constructor(private view: Interface, private scene: Scene, targetElement: HTMLElement) {
 		super(targetElement);
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
 		let renderer = this.view.sceneRenderer;
+		let datahandler = this.view.dataHandler;
 
 		switch (displacement.button) {
 			case 1: //Left mouse
@@ -19,8 +22,10 @@
 			default:
 				return true;
 		}
-
+		
+		datahandler.Hide();
 		renderer.Draw(this.scene);
+
 		return true;
 	}
 
@@ -70,4 +75,14 @@
 		renderer.Draw(this.scene);
 		return true;
     }
+
+	protected StartMouseEvent() {
+		this.datahandlervisibility = this.view.dataHandler.visibility.visible;
+	}
+
+	protected EndMouseEvent() {
+		if (this.datahandlervisibility) {
+			this.view.dataHandler.Show();
+		}
+	}
 }
