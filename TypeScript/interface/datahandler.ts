@@ -179,7 +179,7 @@
 		{
 			let currentProperties = this.currentItem.GetProperties();
 			let self = this;
-			currentProperties.onChange = this.NotifyChange;
+			currentProperties.onChange = () => self.NotifyChange();
 			let table = currentProperties.GetElement();
 			this.propertiesArea.appendChild(table);
 		}
