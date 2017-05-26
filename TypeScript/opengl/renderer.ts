@@ -1,16 +1,24 @@
-﻿class Renderer {
+﻿class Renderer implements Control {
+	sceneRenderingArea: HTMLCanvasElement;
 	drawingcontext: DrawingContext;
 	camera: Camera;
 	light: Sphere;
 
-    constructor(public renderingArea: HTMLCanvasElement) {
-        this.drawingcontext = new DrawingContext(renderingArea);
+    constructor() {
+        //Create a canvas to display the scene
+        this.sceneRenderingArea = document.createElement('canvas');
+        this.sceneRenderingArea.className = 'SceneRendering';
+
+        this.drawingcontext = new DrawingContext(this.sceneRenderingArea);
         this.camera = new Camera(this.drawingcontext);
 
 		this.light = new Sphere(new Vector([10.0, 10.0, 10.0]), 0.1);
 		this.light.material = new Material([1.0, 1.0, 1.0], 0.0, 3.0, 0.0, 1.0);
     }
-    
+
+	GetElement(): HTMLElement {
+		return this.sceneRenderingArea;
+	}
 
     Draw(scene : Scene) : void {
         var gl = this.drawingcontext.gl;

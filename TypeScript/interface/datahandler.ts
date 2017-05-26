@@ -1,4 +1,5 @@
-﻿class DataHandler {
+﻿class DataHandler implements Control {
+	container: HTMLDivElement;
     dataToolbar: Toolbar;
     dataArea: HTMLDivElement;
     propertiesArea: HTMLDivElement;
@@ -6,7 +7,10 @@
     handle: HTMLDivElement;
     currentItem: CADNode;
 
-    constructor(public container: HTMLDivElement, public updateCallback: Function, scene: Scene, private view : Interface) {
+    constructor(public scene: Scene, private ownerView: Interface) {
+		this.container = document.createElement('div');
+        this.container.className = 'DataWindow';
+
 		let dataHandler = this;
 		//Data toolbar
         this.dataToolbar = new Toolbar([
@@ -17,14 +21,11 @@
 					scene.root.Add(createdObject);
 					scene.Select(createdObject);
 					dataHandler.currentItem = createdObject;
-					if(dataHandler.updateCallback != null)
-					{
-						dataHandler.updateCallback();
-					}
+					dataHandler.NotifyChange();
 				}
 			}, 'Load data from a file'),
 			new ComboBox('[Icon:video-camera] View',
-				[new CenterCameraAction(scene, view)],
+				[new CenterCameraAction(scene, ownerView)],
 				'Handle the camera position'
 			),
 			//Help
@@ -50,11 +51,15 @@
 		this.handle = document.createElement('div');
 		this.handle.className = 'DataWindowHandle';
 		this.container.appendChild(this.handle);
+        this.handle.onclick = (event) => { dataHandler.SwitchVisibility(); }
 
 		this.visibility = new DataHandlerVisibility(true, this.container.style.width);
-		
 		this.RefreshContent(scene);
     }
+
+	GetElement(): HTMLElement {
+		return this.container;
+	}
 
 	Resize(width : number, height : number) : void {
         //this.window.style.height = height-2*this.window.offsetTop);
@@ -135,15 +140,16 @@
 			//Select the new item, and make it the current active object
 			scene.Select(createdObject);
 			this.currentItem = createdObject;
-			if(this.updateCallback != null)
-			{
-				this.updateCallback();
-			}
+			this.NotifyChange();
 		}
 	}
 
+	NotifyChange() {
+		this.ownerView.Refresh(this.scene);
+	}
+
 	GetSceneRenderer(): Renderer{
-		return this.view.sceneRenderer;
+		return this.ownerView.sceneRenderer;
 	}
 
     //Refresh content of data and properties views
@@ -153,7 +159,7 @@
 		this.RefreshProperties();
 	}
 
-    RefreshData(scene: Scene) : void
+    protected RefreshData(scene: Scene) : void
 	{
 		//Clear dataArea content
 		while(this.dataArea.firstChild)
@@ -165,14 +171,15 @@
 		this.dataArea.appendChild(item.GetContainerElement());
 	}
 	
-	RefreshProperties() : void
+	protected RefreshProperties() : void
 	{
 		this.HandlePropertiesWindowVisibility();
 		this.propertiesArea.innerHTML = '';
 		if(this.currentItem != null)
 		{
 			let currentProperties = this.currentItem.GetProperties();
-			currentProperties.onChange = this.updateCallback;
+			let self = this;
+			currentProperties.onChange = this.NotifyChange;
 			let table = currentProperties.GetElement();
 			this.propertiesArea.appendChild(table);
 		}

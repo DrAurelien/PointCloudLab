@@ -57,23 +57,14 @@
 			this.container.appendChild(son.GetContainerElement());
 		}
 	}
-
-	Refresh() {
-		if (this.dataHandler.updateCallback != null) {
-			this.dataHandler.updateCallback();
-		}
-		else {
-			this.dataHandler.RefreshContent(this.scene);
-		}
-	}
-
+	
 	//CAD Group folding management - When clickin a group icon
 	ItemFolded(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
 			let group = <CADGroup>self.item;
 			group.folded = !group.folded;
-			self.Refresh();
+			self.dataHandler.NotifyChange();
 			self.CancelBubbling(event);
 		}
 	}
@@ -84,7 +75,7 @@
 		return function (event: MouseEvent) {
 			self.dataHandler.currentItem = self.item;
 			self.scene.Select(self.item);
-			self.Refresh();
+			self.dataHandler.NotifyChange();
 			self.CancelBubbling(event);
 		}
 	}
@@ -100,7 +91,7 @@
 						self.dataHandler.AddCreatedObject(self.scene, createdObject);
 					}
 					else {
-						self.Refresh();
+						self.dataHandler.NotifyChange();
 					}
 					return true;
 				}
@@ -108,7 +99,7 @@
 			Popup.CreatePopup(self, actions);
 			self.dataHandler.currentItem = self.item;
 			self.scene.Select(self.item);
-			self.Refresh();
+			self.dataHandler.NotifyChange();
 			self.CancelBubbling(event);
 			return false;
 		}
@@ -119,7 +110,7 @@
 		let self = this;
 		return function (event: MouseEvent) {
 			self.item.visible = !self.item.visible;
-			self.Refresh();
+			self.dataHandler.NotifyChange();
 		}
 	}
 
@@ -132,7 +123,7 @@
 			if (confirm('Are you sure you want to delete "' + self.item.name + '" ?')) {
 				self.item.owner.Remove(self.item);
 				self.dataHandler.currentItem = null;
-				self.Refresh();
+				self.dataHandler.NotifyChange();
 				self.CancelBubbling(event);
 			}
 		}

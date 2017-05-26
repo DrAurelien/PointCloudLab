@@ -90,6 +90,7 @@
     <TypeScriptCompile Include="opengl\picking.ts" />
     <TypeScriptCompile Include="opengl\renderer.ts" />
     <TypeScriptCompile Include="opengl\renderingtype.ts" />
+    <Content Include="help.html" />
     <Content Include="index.html" />
     <Content Include="style.css" />
     <Content Include="web.config" />

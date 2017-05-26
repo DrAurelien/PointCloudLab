@@ -1,8 +1,11 @@
-﻿class CameraControler extends MouseControler {
+﻿/**
+ * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
+ */
+class CameraControler extends MouseControler {
 	private datahandlervisibility: boolean;
 
-	constructor(private view: Interface, private scene: Scene, targetElement: HTMLElement) {
-		super(targetElement);
+	constructor(private view: Interface, private scene: Scene) {
+		super(view.sceneRenderer.GetElement());
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
