@@ -17,6 +17,8 @@
     specular: WebGLUniformLocation;
     glossy: WebGLUniformLocation;
     rendering: RenderingType;
+	//Extensions
+	useuint: boolean;
 
     constructor(public renderingArea: HTMLCanvasElement) {
         this.rendering = new RenderingType();
@@ -27,6 +29,10 @@
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
         this.gl.depthFunc(this.gl.LEQUAL);
+
+		this.useuint = this.gl.getExtension('OES_element_index_uint') ||
+			this.gl.getExtension('MOZ_OES_element_index_uint') ||
+			this.gl.getExtension('WEBKIT_OES_element_index_uint');
 
         console.log('Inititalizing gl sharders');
         var fragmentShader = this.GetShader("FragmentShader");
@@ -62,7 +68,7 @@
         this.usenormals = this.gl.getUniformLocation(this.shaders, "UseNormals");
     }
 
-    EnableNormals(b) : void {
+    EnableNormals(b): void {
         if (b) {
             this.gl.uniform1i(this.usenormals, 1);
             this.gl.enableVertexAttribArray(this.normals);
@@ -72,6 +78,20 @@
             this.gl.disableVertexAttribArray(this.normals);
         }
     }
+
+	GetIntType(): number {
+		if (this.useuint) {
+			return this.gl.UNSIGNED_INT;
+		}
+		return this.gl.UNSIGNED_SHORT;
+	}
+
+	GetIntArray(content: number[]): ArrayBuffer {
+		if (this.useuint) {
+			return new Uint32Array(content);
+		}
+		return new Uint16Array(content);
+	}
 
     GetShader(identifier): WebGLShader {
         let shaderScript: HTMLScriptElement;

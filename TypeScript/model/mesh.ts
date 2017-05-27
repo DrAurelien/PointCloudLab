@@ -32,7 +32,7 @@
 		this.faces = faces;
 	}
 
-	GetFace(i: number) : Face {
+	GetFace(i: number): Face {
 		let index = 3 * i;
 		let indices = [
 			this.faces[index++],
@@ -40,10 +40,10 @@
 			this.faces[index++]
 		];
 		return new Face(indices, [
-				this.pointcloud.GetPoint(indices[0]),
-				this.pointcloud.GetPoint(indices[1]),
-				this.pointcloud.GetPoint(indices[2])
-			]
+			this.pointcloud.GetPoint(indices[0]),
+			this.pointcloud.GetPoint(indices[1]),
+			this.pointcloud.GetPoint(indices[2])
+		]
 		);
 	}
 
@@ -126,7 +126,7 @@
 		if (!this.glIndexBuffer) {
 			this.glIndexBuffer = drawingContext.gl.createBuffer();
 			drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, this.glIndexBuffer);
-			drawingContext.gl.bufferData(drawingContext.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.faces), drawingContext.gl.STATIC_DRAW);
+			drawingContext.gl.bufferData(drawingContext.gl.ELEMENT_ARRAY_BUFFER, drawingContext.GetIntArray(this.faces), drawingContext.gl.STATIC_DRAW);
 		}
 		drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, this.glIndexBuffer);
 	}
@@ -143,12 +143,12 @@
 
 		//Surface rendering
 		if (drawingContext.rendering.Surface()) {
-			drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.gl.UNSIGNED_SHORT, 0);
+			drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.GetIntType(), 0);
 		}
 
 		//Wire rendering
 		if (drawingContext.rendering.Wire()) {
-			drawingContext.gl.drawElements(drawingContext.gl.LINES, this.size, drawingContext.gl.UNSIGNED_SHORT, 0);
+			drawingContext.gl.drawElements(drawingContext.gl.LINES, this.size, drawingContext.GetIntType(), 0);
 		}
 
 		if (this.selected) {
@@ -183,10 +183,10 @@
 }
 
 class Face {
-	constructor(public indices : number[], public points : Vector[]) {
+	constructor(public indices: number[], public points: Vector[]) {
     }
 
-    LineFaceIntersection(line: Ray) : number {
+    LineFaceIntersection(line: Ray): number {
         //Compute line / face intersection
         //solve line.from + t * line.dir
         let normal = this.points[1].Minus(this.points[0]).Cross(this.points[2].Minus(this.points[0]));

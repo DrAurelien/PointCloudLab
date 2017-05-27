@@ -253,6 +253,7 @@ class PlyLoader {
 					catch (exception) { Error(exception); }
 					break;
 				case 'comment':
+				case 'obj_info':
 					//ignore
 					break;
 				case 'end_header':

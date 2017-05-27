@@ -29,7 +29,7 @@
 				'Handle the camera position'
 			),
 			//Help
-			new Button('?', function () {
+			new Button('[Icon:question-circle] Help', function () {
 				window.open('help.html', '_blank');
 			})
         ]);
