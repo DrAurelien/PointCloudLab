@@ -124,7 +124,8 @@
 	private GetShapeCreator(creator: ShapeCreator, dataHandler: DataHandler, onDone: CADNodeHandler): Function {
 		return function () {
 			let shape = creator();
-			shape.PrepareForDrawing(dataHandler.GetSceneRenderer().drawingcontext, onDone);
+			shape.PrepareForDrawing(dataHandler.GetSceneRenderer().drawingcontext);
+			onDone(shape);
 		}
 	}
 

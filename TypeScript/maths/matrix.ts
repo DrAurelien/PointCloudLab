@@ -56,6 +56,23 @@
         return result;
     }
 
+	static FromVector(v: Vector): Matrix {
+		return new Matrix(1, v.Dimension()+1, v.Flatten().concat(0));
+	}
+
+	static FromPoint(p: Vector): Matrix {
+		return new Matrix(1, p.Dimension() + 1, p.Flatten().concat(1));
+	}
+
+	static ToVector(m: Matrix): Vector {
+		let s = m.height - 1;
+		let c = new Array(s);
+		for (let index = 0; index < s; index++) {
+			c[index] = m.GetValue(index, 0);
+		}
+		return new Vector(c);
+	}
+
     private FlatIndex(row: number, col: number): number {
         //Column-Major flat storage
         return row + col * this.width;
@@ -97,7 +114,7 @@
         }
         return result;
     }
-
+	
     Transposed(): Matrix {
         var transposed = Matrix.Null(this.height, this.width);
         for (var ii = 0; ii < this.height; ii++) {
@@ -116,7 +133,7 @@
         return new Vector(values);
     }
 
-    GetRowVector = function (row: number): Vector {
+    GetRowVector(row: number): Vector {
         var values = new Array(this.width);
         for (var index = 0; index < this.width; index++) {
             values[index] = this.GetValue(row, index);

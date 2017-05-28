@@ -87,40 +87,52 @@ class Camera {
         return projection;
     }
 
-    Pan (dx : number, dy : number) {
-        var f = Math.tan(this.fov / 2.0);
-        var innerBase = this.GetInnerBase();
-        var objectSpaceHeight = f * innerBase.distance;
-        var objectSpaceWidth = objectSpaceHeight * this.screen.width / this.screen.height;
+	GetTranslationVector(dx: number, dy: number) : Vector {
+        let f = Math.tan(this.fov / 2.0);
+        let innerBase = this.GetInnerBase();
+        let objectSpaceHeight = f * innerBase.distance;
+        let objectSpaceWidth = objectSpaceHeight * this.screen.width / this.screen.height;
 
-        var deltax = innerBase.right.Times(objectSpaceWidth * -dx / this.screen.width);
-        var deltay = innerBase.up.Times(objectSpaceHeight * -dy / this.screen.height);
-        var delta = deltax.Plus(deltay);
+        let deltax = innerBase.right.Times(objectSpaceWidth * -dx / this.screen.width);
+        let deltay = innerBase.up.Times(-(objectSpaceHeight * -dy / this.screen.height));
+        return deltax.Plus(deltay);
+	}
 
+    Pan(dx: number, dy: number) {
+		let delta = this.GetTranslationVector(dx, dy);
         this.at = this.at.Plus(delta);
         this.to = this.to.Plus(delta);
     }
 
-    Rotate(dx: number, dy: number) {
-        //DX rotation (around Y axis)
-        var angle = 2 * Math.PI * -dx / this.screen.width;
-        var innerBase = this.GetInnerBase();
-        var rotation = Matrix.Rotation(innerBase.up, angle);
-        var point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
-        point = rotation.Multiply(point);
-        for (var index = 0; index < 3; index++) {
-            this.at.Set(index, point.values[index]);
-        }
-        this.at = this.to.Plus(this.at);
-        this.up = innerBase.up;
+	protected TrackBallProjection(x: number, y: number): Vector {
+		//Transform creen coordinates to inner trackball coordinates
+		let point = new Vector([(x / this.screen.width) - 0.5, -((y / this.screen.height) - 0.5), 0]);
+		let sqrnorm = point.SqrNorm();
+		point.Set(2, (sqrnorm < 0.5) ? (1.0 - sqrnorm) : (0.5 / Math.sqrt(sqrnorm)));
 
-			
-        //DY rotation (around X axis)
-        angle = Math.PI * dy / this.screen.height;
-        innerBase = this.GetInnerBase();
-        rotation = Matrix.Rotation(innerBase.right, angle);
-        point = new Matrix(1, 4, this.at.Minus(this.to).Flatten().concat([1]));
-        var updir = new Matrix(1, 4, innerBase.up.Flatten().concat([0]));
+		//compute scene coordinates instead of inner coordinates
+		let innerBase = this.GetInnerBase();
+		let result = innerBase.right.Times(point.Get(0));
+		result = result.Plus(innerBase.up.Times(point.Get(1)));
+		result = result.Plus(innerBase.lookAt.Times(-point.Get(2)));
+		return result;
+	}
+
+	GetRotationMatrix(fromx: number, fromy: number, tox: number, toy: number) {
+		let from = this.TrackBallProjection(fromx, fromy).Normalized();
+		let to = this.TrackBallProjection(tox, toy).Normalized();
+
+		let angle = Math.acos(from.Dot(to));
+		let axis = to.Cross(from).Normalized();
+
+		return Matrix.Rotation(axis, angle);
+	}
+
+    Rotate(fromx: number, fromy: number, tox: number, toy: number) {
+		let rotation = this.GetRotationMatrix(fromx, fromy, tox, toy);
+
+		let point = Matrix.FromPoint(this.at.Minus(this.to));
+        var updir = Matrix.FromVector(this.up);
         point = rotation.Multiply(point);
         updir = rotation.Multiply(updir);
         for (var index = 0; index < 3; index++) {

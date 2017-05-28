@@ -24,6 +24,23 @@
 		return bb;
 	}
 
+	Rotate(rotation: Matrix) {
+		let a = rotation.Multiply(Matrix.FromVector(this.axis));
+		this.axis = Matrix.ToVector(a);
+		this.Invalidate();
+	}
+
+	Translate(translation: Vector) {
+		this.center = this.center.Plus(translation);
+		this.Invalidate();
+	}
+
+	Scale(scale: number) {
+		this.radius *= scale;
+		this.height *= scale;
+		this.Invalidate();
+	}
+
 	GetWorldToInnerBaseMatrix(): Matrix {
 		let translation = Matrix.Identity(4);
 		let basechange = Matrix.Identity(4);
@@ -38,7 +55,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number, onDone: CADNodeHandler) : Mesh {
+	ComputeMesh(sampling: number) : Mesh {
 		let points = new PointCloud();
 		points.Reserve(4 * sampling + 2);
 
@@ -100,7 +117,7 @@
 		}
 
 		let self = this;
-		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+		mesh.ComputeNormals();
 
 		return mesh;
 	}

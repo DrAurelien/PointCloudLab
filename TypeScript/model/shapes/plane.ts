@@ -13,7 +13,7 @@
 		return geometry;
 	}
 
-	ComputeMesh(sampling: number, onDone: CADNodeHandler): Mesh {
+	ComputeMesh(sampling: number): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling + 1);
 
@@ -35,13 +35,29 @@
 		}
 
 		let self = this;
-		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+		mesh.ComputeNormals();
 
 		return mesh;
 	}
 
 	Distance(point: Vector): number {
 		return Math.abs(point.Minus(this.center).Dot(this.normal));
+	}
+
+	Rotate(rotation: Matrix) {
+		let a = rotation.Multiply(Matrix.FromVector(this.normal));
+		this.normal = Matrix.ToVector(a);
+		this.Invalidate();
+	}
+
+	Translate(translation: Vector) {
+		this.center = this.center.Plus(translation);
+		this.Invalidate();
+	}
+
+	Scale(scale: number) {
+		this.patchRadius *= scale;
+		this.Invalidate();
 	}
 
 	ComputeBoundingBox(): BoundingBox {
