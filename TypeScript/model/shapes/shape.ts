@@ -9,7 +9,7 @@
 
     abstract GetGeometry(): Properties;
 
-    abstract ComputeMesh(sampling: number, onDone: CADNodeHandler): Mesh;
+    abstract ComputeMesh(sampling: number): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
 
 	abstract Distance(point: Vector): number;
@@ -28,9 +28,9 @@
 	ComputeBounds(points: number[], cloud: PointCloud): void {
 	}
 
-	PrepareForDrawing(drawingContext: DrawingContext, onDone: CADNodeHandler = null) {
+	PrepareForDrawing(drawingContext: DrawingContext) {
 		if (!this.mesh) {
-			this.mesh = this.ComputeMesh(drawingContext.sampling, onDone);
+			this.mesh = this.ComputeMesh(drawingContext.sampling);
 		}
 	}
 
@@ -92,12 +92,10 @@ class CreateShapeMeshAction extends Action {
 				//Ok has been clicked
 				(properties) => {
 					let sampling = parseInt(properties.GetValue('Sampling'));
-					let mesh = shape.ComputeMesh(sampling, (shape) => {
-						if (onDone) {
-							return onDone(mesh);
-						}
-						return true;
-					});
+					let mesh = shape.ComputeMesh(sampling);
+					if (onDone) {
+						onDone(mesh);
+					}
 					return true;
 				},
 				//Cancel has been clicked

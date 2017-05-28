@@ -55,7 +55,7 @@
 		this.pointcloud.ClearNormals();
 	}
 
-	ComputeNormals(onDone: CADNodeHandler): void {
+	ComputeNormals(onDone: CADNodeHandler=null): void {
 		let nbFaces = this.Size();
 		let nbPoints = this.pointcloud.Size();
 		let normals = new Array(nbPoints);
@@ -63,7 +63,7 @@
 
 		function Initialize() {
 			let index = 0;
-			LongProcess.Run('Initializing normals (step 1 / 3)',
+			LongProcess.Run(onDone ? 'Initializing normals (step 1 / 3)' : null,
 				function () {
 					if (index >= nbPoints) {
 						return null;
@@ -77,7 +77,7 @@
 
 		function Compute() {
 			let index = 0;
-			LongProcess.Run('Computing normals (step 2 / 3)',
+			LongProcess.Run(onDone ? 'Computing normals (step 2 / 3)' : null,
 				function () {
 					if (index >= nbFaces) {
 						return null;
@@ -96,7 +96,7 @@
 		function FillPointCloud() {
 			let index = 0;
 			self.pointcloud.ClearNormals();
-			LongProcess.Run('Assigning normals (step 3 / 3)',
+			LongProcess.Run(onDone ? 'Assigning normals (step 3 / 3)' : null,
 				function () {
 					if (index >= nbPoints) {
 						return null;

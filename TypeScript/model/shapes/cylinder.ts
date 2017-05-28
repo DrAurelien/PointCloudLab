@@ -55,7 +55,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number, onDone: CADNodeHandler) : Mesh {
+	ComputeMesh(sampling: number) : Mesh {
 		let points = new PointCloud();
 		points.Reserve(4 * sampling + 2);
 
@@ -117,7 +117,7 @@
 		}
 
 		let self = this;
-		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+		mesh.ComputeNormals();
 
 		return mesh;
 	}

@@ -87,16 +87,19 @@ class Camera {
         return projection;
     }
 
-    Pan (dx : number, dy : number) {
-        var f = Math.tan(this.fov / 2.0);
-        var innerBase = this.GetInnerBase();
-        var objectSpaceHeight = f * innerBase.distance;
-        var objectSpaceWidth = objectSpaceHeight * this.screen.width / this.screen.height;
+	GetTranslationVector(dx: number, dy: number) : Vector {
+        let f = Math.tan(this.fov / 2.0);
+        let innerBase = this.GetInnerBase();
+        let objectSpaceHeight = f * innerBase.distance;
+        let objectSpaceWidth = objectSpaceHeight * this.screen.width / this.screen.height;
 
-        var deltax = innerBase.right.Times(objectSpaceWidth * -dx / this.screen.width);
-        var deltay = innerBase.up.Times(objectSpaceHeight * -dy / this.screen.height);
-        var delta = deltax.Plus(deltay);
+        let deltax = innerBase.right.Times(objectSpaceWidth * -dx / this.screen.width);
+        let deltay = innerBase.up.Times(-(objectSpaceHeight * -dy / this.screen.height));
+        return deltax.Plus(deltay);
+	}
 
+    Pan(dx: number, dy: number) {
+		let delta = this.GetTranslationVector(dx, dy);
         this.at = this.at.Plus(delta);
         this.to = this.to.Plus(delta);
     }

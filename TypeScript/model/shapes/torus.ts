@@ -13,7 +13,7 @@
 		return geometry;
 	}
 
-	ComputeMesh(sampling: number, onDone: CADNodeHandler): Mesh {
+	ComputeMesh(sampling: number): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling * sampling);
 
@@ -55,7 +55,7 @@
 		}
 
 		let self = this;
-		mesh.ComputeNormals(mesh => { if (onDone) { onDone(self); } return true; });
+		mesh.ComputeNormals();
 
 		return mesh;
 	}

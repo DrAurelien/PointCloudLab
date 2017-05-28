@@ -1,25 +1,41 @@
 ﻿class LongProcess{
 	static Run(message: string, iteration: Function, ondone?: Function) {
-		var progress = new ProgressBar();
-		progress.SetMessage(message);
-		progress.Show();
+		let progress = null;
+		if (message) {
+			progress = new ProgressBar();
+			progress.SetMessage(message);
+			progress.Show();
+		}
 
-		function RunInternal() {
+		function RunInternal() : boolean {
 			var state;
 			while ((state = iteration()) != null) {
-				if (progress.Update(state.current, state.total)) {
+				if (progress && progress.Update(state.current, state.total)) {
 					setTimeout(RunInternal, progress.refreshtime);
 					return false;
 				}
 			}
 
 			if (ondone) {
-				setTimeout(ondone, progress.refreshtime);
+				if (progress) {
+					setTimeout(ondone, progress.refreshtime);
+				}
+				else {
+					ondone();
+				}
 			}
-			progress.Delete();
+
+			if (progress) {
+				progress.Delete();
+			}
 			return true;
 		}
 
-		setTimeout(RunInternal, progress.refreshtime);
+		if (progress) {
+			setTimeout(RunInternal, progress.refreshtime);
+		}
+		else {
+			RunInternal();
+		}
 	}
 }
