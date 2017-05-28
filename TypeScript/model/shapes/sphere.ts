@@ -127,4 +127,17 @@
 	Distance(point: Vector): number {
 		return Math.abs(point.Minus(this.center).Norm() - this.radius);
 	}
+
+	Rotate(rotation: Matrix) {
+	}
+
+	Translate(translation: Vector) {
+		this.center = this.center.Plus(translation);
+		this.Invalidate();
+	}
+
+	Scale(scale: number) {
+		this.radius *= scale;
+		this.Invalidate();
+	}
 }

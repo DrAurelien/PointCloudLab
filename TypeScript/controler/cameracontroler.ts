@@ -14,7 +14,9 @@ class CameraControler extends MouseControler {
 
 		switch (displacement.button) {
 			case 1: //Left mouse
-				renderer.camera.Rotate(displacement.dx, -displacement.dy);
+				let fromx = this.mousetracker.x - displacement.dx;
+				let fromy = this.mousetracker.y - displacement.dy;
+				renderer.camera.Rotate(fromx, fromy, this.mousetracker.x, this.mousetracker.y);
 				break;
 			case 2: //Middle mouse
 				renderer.camera.Zoom(-displacement.dy / 10);

@@ -14,6 +14,10 @@
 
 	abstract Distance(point: Vector): number;
 
+	abstract Rotate(rotation: Matrix);
+	abstract Translate(translation: Vector);
+	abstract Scale(scale: number);
+
 	GetBoundingBox(): BoundingBox{
 		if (!this.boundingbox) {
 			this.boundingbox = this.ComputeBoundingBox();

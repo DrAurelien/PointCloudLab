@@ -129,4 +129,21 @@
 		//TODO
 		return 0;
 	}
+
+	Rotate(rotation: Matrix) {
+		let a = rotation.Multiply(Matrix.FromVector(this.axis));
+		this.axis = Matrix.ToVector(a);
+		this.Invalidate();
+	}
+
+	Translate(translation: Vector) {
+		this.center = this.center.Plus(translation);
+		this.Invalidate();
+	}
+
+	Scale(scale: number) {
+		this.greatRadius *= scale;
+		this.smallRadius *= scale;
+		this.Invalidate();
+	}
 }

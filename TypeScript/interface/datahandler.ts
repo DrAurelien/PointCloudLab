@@ -24,8 +24,12 @@
 					dataHandler.NotifyChange();
 				}
 			}, 'Load data from a file'),
-			new ComboBox('[Icon:video-camera] View',
-				[new CenterCameraAction(scene, ownerView)],
+			new ComboBox('[Icon:video-camera] View', [
+					new CenterCameraAction(scene, ownerView),
+					null,
+					new CameraModeAction(ownerView),
+					new TransformModeAction(ownerView)
+				],
 				'Handle the camera position'
 			),
 			//Help

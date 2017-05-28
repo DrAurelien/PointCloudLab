@@ -43,4 +43,12 @@
         this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
         this.sceneRenderer.Draw(scene);
     }
+
+	UseCameraControler() {
+		this.currentControler = new CameraControler(this, this.dataHandler.scene);
+	}
+
+	UseTransformationControler() {
+		this.currentControler = new TransformControler(this, this.dataHandler.scene);
+	}
 }

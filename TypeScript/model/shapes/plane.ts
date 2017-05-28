@@ -44,6 +44,22 @@
 		return Math.abs(point.Minus(this.center).Dot(this.normal));
 	}
 
+	Rotate(rotation: Matrix) {
+		let a = rotation.Multiply(Matrix.FromVector(this.normal));
+		this.normal = Matrix.ToVector(a);
+		this.Invalidate();
+	}
+
+	Translate(translation: Vector) {
+		this.center = this.center.Plus(translation);
+		this.Invalidate();
+	}
+
+	Scale(scale: number) {
+		this.patchRadius *= scale;
+		this.Invalidate();
+	}
+
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([
 			2 * Math.abs(this.patchRadius * Math.sin(Math.acos(this.normal.Get(0)))),

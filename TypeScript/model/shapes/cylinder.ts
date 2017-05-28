@@ -24,6 +24,23 @@
 		return bb;
 	}
 
+	Rotate(rotation: Matrix) {
+		let a = rotation.Multiply(Matrix.FromVector(this.axis));
+		this.axis = Matrix.ToVector(a);
+		this.Invalidate();
+	}
+
+	Translate(translation: Vector) {
+		this.center = this.center.Plus(translation);
+		this.Invalidate();
+	}
+
+	Scale(scale: number) {
+		this.radius *= scale;
+		this.height *= scale;
+		this.Invalidate();
+	}
+
 	GetWorldToInnerBaseMatrix(): Matrix {
 		let translation = Matrix.Identity(4);
 		let basechange = Matrix.Identity(4);
