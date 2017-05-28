@@ -15,9 +15,9 @@
 
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([
-			2 * Math.abs(0.5 * this.height * this.axis.Get(0) + this.radius * Math.sin(Math.acos(this.axis.Get(0)))),
-			2 * Math.abs(0.5 * this.height * this.axis.Get(1) + this.radius * Math.sin(Math.acos(this.axis.Get(1)))),
-			2 * Math.abs(0.5 * this.height * this.axis.Get(2) + this.radius * Math.sin(Math.acos(this.axis.Get(2))))
+			2 * (Math.abs(0.5 * this.height * this.axis.Get(0)) + Math.abs(this.radius * Math.sin(Math.acos(this.axis.Get(0))))),
+			2 * (Math.abs(0.5 * this.height * this.axis.Get(1)) + Math.abs(this.radius * Math.sin(Math.acos(this.axis.Get(1))))),
+			2 * (Math.abs(0.5 * this.height * this.axis.Get(2)) + Math.abs(this.radius * Math.sin(Math.acos(this.axis.Get(2)))))
 		]);
 		let bb = new BoundingBox();
 		bb.Set(this.center, size);
