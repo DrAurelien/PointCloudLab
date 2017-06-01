@@ -1,9 +1,26 @@
-﻿class Scene {
-    root: CADGroup;
+﻿class Scene extends CADNode {
+    root: CADPrimitivesContainer;
+	lights: LightsContainer;
 
     constructor() {
-        this.root = new CADGroup("Scene");
+		super("Scene");
+		this.deletable = false;
+
+        this.root = new CADPrimitivesContainer("Objects");
+		this.root.deletable = false;
+
+		this.lights = new LightsContainer("Lights");
+		this.lights.deletable = false;
+		this.lights.visible = false;
+		this.lights.folded = true;
+
+		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]), this.lights);
+		defaultLight.deletable = false;
     }
+
+	GetChildren(): CADNode[] {
+		return [this.lights, this.root];
+	}
 
     Select(item: CADNode): void {
 		this.root.Apply(p => {
@@ -37,4 +54,9 @@
     Draw(drawingContext: DrawingContext): void {
 		this.root.Draw(drawingContext);
     }
+
+    RayIntersection(ray: Ray): Picking {
+		return this.root.RayIntersection(ray);
+	}
+
 }

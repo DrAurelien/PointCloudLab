@@ -69,6 +69,9 @@
     <TypeScriptCompile Include="maths\rootsfinding.ts" />
     <TypeScriptCompile Include="maths\vector.ts" />
     <TypeScriptCompile Include="model\boundingbox.ts" />
+    <TypeScriptCompile Include="model\cadprimitivescontainer.ts" />
+    <TypeScriptCompile Include="model\light.ts" />
+    <TypeScriptCompile Include="model\lightscontainer.ts" />
     <TypeScriptCompile Include="model\cadgroup.ts" />
     <TypeScriptCompile Include="model\cadnode.ts" />
     <TypeScriptCompile Include="model\cadprimitive.ts" />

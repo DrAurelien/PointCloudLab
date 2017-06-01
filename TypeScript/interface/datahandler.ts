@@ -135,7 +135,7 @@
         {
 			//If the object does not have an owner, affect one
 			if (!createdObject.owner) {
-				let owner: CADGroup = scene.root;
+				let owner: CADGroup = (createdObject instanceof Light) ? scene.lights : scene.root;
 				if (this.currentItem && this.currentItem instanceof CADGroup) {
 					owner = (<CADGroup>this.currentItem);
 				}
@@ -171,7 +171,7 @@
 			this.dataArea.removeChild(this.dataArea.firstChild);
 		}
 
-		let item = new DataItem(this.scene.root, this, this.scene);
+		let item = new DataItem(this.scene, this, this.scene);
 		this.dataArea.appendChild(item.GetContainerElement());
 	}
 	

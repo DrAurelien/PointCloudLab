@@ -2,11 +2,13 @@
 	owner: CADGroup;
 	visible: boolean;
     selected: boolean;
+	deletable: boolean;
     protected boundingbox: BoundingBox;
 
     constructor(public name: string, owner: CADGroup = null) {
 		this.visible = true;
 		this.selected = false;
+		this.deletable = true;
 		this.boundingbox = null;
 		this.owner = null;
 		if (owner) {

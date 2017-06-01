@@ -1,5 +1,5 @@
 ﻿class Plane extends Shape {
-    constructor(public center: Vector, public normal: Vector, public patchRadius: number, owner: CADGroup = null) {
+    constructor(public center: Vector, public normal: Vector, public patchRadius: number, owner: CADPrimitivesContainer = null) {
         super(NameProvider.GetName('Plane'), owner);
     }
 

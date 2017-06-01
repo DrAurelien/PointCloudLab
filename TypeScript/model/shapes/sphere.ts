@@ -1,5 +1,5 @@
 ﻿class Sphere extends Shape {
-    constructor(public center: Vector, public radius: number, owner: CADGroup = null) {
+    constructor(public center: Vector, public radius: number, owner: CADPrimitivesContainer = null) {
         super(NameProvider.GetName('Sphere'), owner);
     }
 

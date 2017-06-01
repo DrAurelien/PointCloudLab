@@ -2,7 +2,7 @@
     visible: boolean;
 	mesh: Mesh;
 
-	constructor(name: string, owner: CADGroup) {
+	constructor(name: string, owner: CADPrimitivesContainer) {
 		super(name, owner);
 		this.mesh = null;
 	}

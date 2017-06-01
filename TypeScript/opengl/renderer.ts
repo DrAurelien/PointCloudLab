@@ -2,7 +2,6 @@
 	sceneRenderingArea: HTMLCanvasElement;
 	drawingcontext: DrawingContext;
 	camera: Camera;
-	light: Sphere;
 
     constructor() {
         //Create a canvas to display the scene
@@ -11,9 +10,6 @@
 
         this.drawingcontext = new DrawingContext(this.sceneRenderingArea);
         this.camera = new Camera(this.drawingcontext);
-
-		this.light = new Sphere(new Vector([10.0, 10.0, 10.0]), 0.1);
-		this.light.material = new Material([1.0, 1.0, 1.0], 0.0, 3.0, 0.0, 1.0);
     }
 
 	GetElement(): HTMLElement {
@@ -25,8 +21,9 @@
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		//Set the light position
-        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightposition, new Float32Array(this.light.center.coordinates));
-        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolor, new Float32Array(this.light.material.baseColor));
+		let light = <Light>scene.lights.children[0];
+        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightposition, new Float32Array(light.Position.coordinates));
+        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolor, new Float32Array(light.Color));
 
 		//Set the camera position
 		this.camera.InititalizeDrawingContext(this.drawingcontext);
@@ -35,7 +32,6 @@
         if (scene) {
             scene.Draw(this.drawingcontext);
         }
-		this.light.Draw(this.drawingcontext);
     }
     
     Resize(width : number, height : number) : void {
@@ -48,7 +44,7 @@
         return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
     }
 
-    ResolveRayIntersection(ray: Ray, root: CADGroup): Picking {
+    ResolveRayIntersection(ray: Ray, root: CADNode): Picking {
 		return root.RayIntersection(ray);
     }
 
@@ -62,7 +58,7 @@
         return null;
     }
 
-    ScanFromCurrentViewPoint(group: CADGroup, hsampling:number, vsampling:number, resultHandler: Function) {
+    ScanFromCurrentViewPoint(group: CADNode, hsampling: number, vsampling: number, resultHandler: Function) {
         var self = this;
         var resolution =
             {

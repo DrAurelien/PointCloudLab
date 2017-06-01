@@ -1,7 +1,7 @@
 ﻿abstract class CADPrimitive extends CADNode {
 	material: Material;
 
-    constructor(public name: string, owner: CADGroup = null) {
+    constructor(public name: string, owner: CADPrimitivesContainer = null) {
 		super(name, owner);
 		this.material = new Material([0.0, 1.0, 0.0]);
 

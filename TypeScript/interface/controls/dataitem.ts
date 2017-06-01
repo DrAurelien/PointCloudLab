@@ -30,7 +30,7 @@
 		this.itemContentContainer.appendChild(menuIcon);
 
 		let deletionIcon = null;
-		if (this.item.owner) {
+		if (this.item.deletable) {
 			deletionIcon = document.createElement('i');
 			deletionIcon.className = 'ItemAction fa fa-close';
 			this.itemContentContainer.appendChild(deletionIcon);
