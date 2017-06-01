@@ -1,5 +1,5 @@
 ﻿class Material {
-	constructor(public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.2, public specular: number = 0.4, public glossy: number = 10.0) {
+	constructor(public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.05, public specular: number = 0.4, public glossy: number = 10.0) {
 	}
 
 	InitializeLightingModel(drawingContext: DrawingContext): void {
