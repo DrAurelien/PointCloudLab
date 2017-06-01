@@ -10,6 +10,7 @@
     usenormals: WebGLUniformLocation;
     eyeposition: WebGLUniformLocation;
     lightposition: WebGLUniformLocation;
+    lightcolor: WebGLUniformLocation;
     //Lighting
     color: WebGLUniformLocation;
     diffuse: WebGLUniformLocation;
@@ -61,6 +62,7 @@
         this.color = this.gl.getUniformLocation(this.shaders, "Color");
         this.eyeposition = this.gl.getUniformLocation(this.shaders, "EyePosition");
         this.lightposition = this.gl.getUniformLocation(this.shaders, "LightPosition");
+        this.lightcolor = this.gl.getUniformLocation(this.shaders, "LightColor");
         this.diffuse = this.gl.getUniformLocation(this.shaders, "DiffuseCoef");
         this.ambiant = this.gl.getUniformLocation(this.shaders, "AmbiantCoef");
         this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");

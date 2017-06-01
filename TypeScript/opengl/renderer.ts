@@ -26,6 +26,7 @@
 
 		//Set the light position
         this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightposition, new Float32Array(this.light.center.coordinates));
+        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolor, new Float32Array(this.light.material.baseColor));
 
 		//Set the camera position
 		this.camera.InititalizeDrawingContext(this.drawingcontext);

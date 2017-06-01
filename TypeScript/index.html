@@ -26,7 +26,8 @@
         <script id="FragmentShader" type="x-shader/x-fragment">
             //Lighting model
             uniform  highp vec3 EyePosition;
-            uniform  highp vec3 LightPosition;
+			uniform  highp vec3 LightPosition;
+            uniform  highp vec3 LightColor;
             uniform  highp vec3 Color;
             uniform highp float DiffuseCoef;
             uniform  highp float AmbiantCoef;
@@ -38,12 +39,13 @@
             varying highp vec3 Normal;
 
             void main(void) {
-
-				highp float lightingCoef;
+				highp float ambiant;
+				highp float diffuse;
+				highp float specular;
 
 				if(UseNormals == 0)
-				{
-					lightingCoef = 1.0;
+				{		
+					gl_FragColor = vec4(Color, 1);
 				}
 				else
 				{
@@ -55,11 +57,12 @@
 					highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
 					reflVec /= length(reflVec);
 
-					lightingCoef = AmbiantCoef;
-					lightingCoef += max(DiffuseCoef * dot(Normal, lightVect), 0.0);
-					lightingCoef += SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
+					ambiant = AmbiantCoef;
+					diffuse += max(DiffuseCoef * dot(Normal, lightVect), 0.0);
+					specular += SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
+					
+					gl_FragColor = vec4((Color * ambiant) + (Color * diffuse) + (LightColor * specular), 1);
 				}
-				gl_FragColor = vec4(Color * lightingCoef, 1);
             }
         </script>
         <!--TOOLS-->
@@ -103,7 +106,9 @@
         <!-- MODEL -->
 		<script type="text/javascript" src="model/cadnode.js"></script>
 		<script type="text/javascript" src="model/cadprimitive.js"></script>
-        <script type="text/javascript" src="model/cadgroup.js"></script>
+		<script type="text/javascript" src="model/cadgroup.js"></script>
+		<script type="text/javascript" src="model/cadprimitivescontainer.js"></script>
+        <script type="text/javascript" src="model/lightscontainer.js"></script>
 		<script type="text/javascript" src="model/boundingbox.js"></script>
 		<script type="text/javascript" src="model/kdtree.js"></script>
 		<script type="text/javascript" src="model/neighbourhood.js"></script>
