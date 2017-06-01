@@ -16,6 +16,12 @@
 			itemIcon.onclick = this.ItemFolded();
 			this.itemContentContainer.ondblclick = this.ItemFolded();
 		}
+		else if (this.item instanceof Scene) {
+			itemIcon.className = 'ItemIcon fa fa-desktop';
+		}
+		else if (this.item instanceof Light) {
+			itemIcon.className = 'ItemIcon fa fa-lightbulb-o';
+		}
 		else {
 			itemIcon.className = 'ItemIcon fa fa-cube';
 		}

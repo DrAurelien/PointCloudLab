@@ -34,7 +34,7 @@
 	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
 		let self = this;
 		let result: Action[] = [];
-		if (this.owner) {
+		if (this.deletable) {
 			result.push(new Action('Remove', () => { self.owner.Remove(self); return onDone(null); }));
 		}
 		if (this.visible) {

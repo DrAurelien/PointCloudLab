@@ -61,7 +61,7 @@
 					diffuse += max(DiffuseCoef * dot(Normal, lightVect), 0.0);
 					specular += SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
 					
-					gl_FragColor = vec4((Color * ambiant) + (Color * diffuse) + (LightColor * specular), 1);
+					gl_FragColor = vec4((LightColor * ambiant) + (Color * diffuse) + (LightColor * specular), 1);
 				}
             }
         </script>

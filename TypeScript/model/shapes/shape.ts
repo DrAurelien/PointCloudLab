@@ -62,7 +62,7 @@
 		return result;
 	}
 
-	protected Invalidate()
+	Invalidate()
 	{
 		this.mesh = null;
 		this.boundingbox = null;
