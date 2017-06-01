@@ -58,7 +58,7 @@
         this.handle.onclick = (event) => { dataHandler.SwitchVisibility(); }
 
 		this.visibility = new DataHandlerVisibility(true, this.container.style.width);
-		this.RefreshContent(scene);
+		this.RefreshContent();
     }
 
 	GetElement(): HTMLElement {
@@ -149,7 +149,7 @@
 	}
 
 	NotifyChange() {
-		this.ownerView.Refresh(this.scene);
+		this.ownerView.Refresh();
 	}
 
 	GetSceneRenderer(): Renderer{
@@ -157,13 +157,13 @@
 	}
 
     //Refresh content of data and properties views
-    RefreshContent(scene: Scene): void
+    RefreshContent(): void
 	{
-		this.RefreshData(scene);
+		this.RefreshData();
 		this.RefreshProperties();
 	}
 
-    protected RefreshData(scene: Scene) : void
+    protected RefreshData() : void
 	{
 		//Clear dataArea content
 		while(this.dataArea.firstChild)
@@ -171,7 +171,7 @@
 			this.dataArea.removeChild(this.dataArea.firstChild);
 		}
 
-		let item = new DataItem(scene.root, this, scene);
+		let item = new DataItem(this.scene.root, this, this.scene);
 		this.dataArea.appendChild(item.GetContainerElement());
 	}
 	

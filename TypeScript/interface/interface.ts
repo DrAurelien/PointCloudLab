@@ -10,9 +10,9 @@
         this.InitializeRenderer(scene);
 
         window.onresize = function () {
-            appInterface.Refresh(scene);
+            appInterface.Refresh();
         }
-        this.Refresh(scene);
+        this.Refresh();
     }
 
     private InitializeDataHandler(scene) {
@@ -31,17 +31,17 @@
 		this.currentControler = new CameraControler(this, scene);
     }
 
-	UpdateSelectedElement(selectedItem: CADNode, scene: Scene) {
+	UpdateSelectedElement(selectedItem: CADNode) {
 		this.dataHandler.currentItem = selectedItem;
-		this.Refresh(scene);
+		this.Refresh();
 	}
 
-    Refresh(scene: Scene): void {
+    Refresh(): void {
         this.dataHandler.Resize(window.innerWidth, window.innerHeight);
-        this.dataHandler.RefreshContent(scene);
+        this.dataHandler.RefreshContent();
 
         this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
-        this.sceneRenderer.Draw(scene);
+        this.sceneRenderer.Draw(this.dataHandler.scene);
     }
 
 	UseCameraControler() {

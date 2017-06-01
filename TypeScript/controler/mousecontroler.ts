@@ -1,7 +1,9 @@
 ﻿abstract class MouseControler {
 	mousetracker: MouseTracker;
+	private datahandlervisibility: boolean;
 
-	constructor(targetElement: HTMLElement) {
+	constructor(protected view: Interface) {
+		let targetElement: HTMLElement = view.sceneRenderer.GetElement();
 		let self = this;
 
         targetElement.oncontextmenu = function (event: Event) {
@@ -13,6 +15,8 @@
 		targetElement.onmousedown = function (event: MouseEvent) {
 			event = <MouseEvent>(event || window.event);
 			self.mousetracker = new MouseTracker(event);
+
+			self.datahandlervisibility = self.view.dataHandler.visibility.visible;
 			self.StartMouseEvent();
 		};
 
@@ -22,6 +26,10 @@
 				self.HandleClick(self.mousetracker);
 			}
 			self.mousetracker = null;
+
+			if (self.datahandlervisibility) {
+				self.view.dataHandler.Show();
+			}
 			self.EndMouseEvent();
 		};
 
@@ -31,6 +39,8 @@
 			if (self.mousetracker) {
 				let delta = self.mousetracker.UpdatePosition(event);
 				self.HandleMouseMove(delta);
+
+				self.view.dataHandler.Hide();
 			}
 			return true;
 		};
@@ -52,6 +62,7 @@
 	protected abstract HandleWheel(delta: number): boolean;
 	protected abstract HandleKey(key: number): boolean;
 
-	protected StartMouseEvent() { }
-	protected EndMouseEvent() { }
+	protected StartMouseEvent() {}
+
+	protected EndMouseEvent() {}
 }

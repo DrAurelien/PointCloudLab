@@ -2,10 +2,8 @@
  * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
  */
 class CameraControler extends MouseControler {
-	private datahandlervisibility: boolean;
-
-	constructor(private view: Interface, private scene: Scene) {
-		super(view.sceneRenderer.GetElement());
+	constructor(view: Interface, private scene: Scene) {
+		super(view);
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
@@ -27,8 +25,6 @@ class CameraControler extends MouseControler {
 			default:
 				return true;
 		}
-		
-		datahandler.Hide();
 		renderer.Draw(this.scene);
 
 		return true;
@@ -41,7 +37,7 @@ class CameraControler extends MouseControler {
 			case 1: //Left mouse
 				let selected = renderer.PickObject(tracker.x, tracker.y, this.scene);
 				this.scene.Select(selected);
-				this.view.UpdateSelectedElement(selected, this.scene);
+				this.view.UpdateSelectedElement(selected);
 				break;
 			case 2: //Middle mouse
 				let center = new CenterCameraAction(this.scene, this.view);
@@ -80,14 +76,4 @@ class CameraControler extends MouseControler {
 		renderer.Draw(this.scene);
 		return true;
     }
-
-	protected StartMouseEvent() {
-		this.datahandlervisibility = this.view.dataHandler.visibility.visible;
-	}
-
-	protected EndMouseEvent() {
-		if (this.datahandlervisibility) {
-			this.view.dataHandler.Show();
-		}
-	}
 }
