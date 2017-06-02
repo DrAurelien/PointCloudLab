@@ -25,7 +25,7 @@ class Camera {
     screen: ScreenDimensions;
 
     constructor(context: DrawingContext) {
-        this.at = new Vector([.0, .0, -10.0]);
+        this.at = new Vector([10.0, 10.0, 10.0]);
         this.to = new Vector([.0, .0, .0]);
         this.up = new Vector([.0, 1.0, .0]);
         this.near = 0.001;

@@ -20,10 +20,17 @@
         var gl = this.drawingcontext.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		//Set the light position
-		let light = <Light>scene.lights.children[0];
-        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightposition, new Float32Array(light.Position.coordinates));
-        this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolor, new Float32Array(light.Color));
+		//Set the lights positions and colors
+		let nbLights = 0;
+		for (var index = 0; index < scene.Lights.children.length; index++) {
+			let light = <Light>scene.Lights.children[index];
+			if (light.visible) {
+				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.Position.coordinates));
+				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolors[nbLights], new Float32Array(light.Color));
+				nbLights++;
+			}
+		}
+		this.drawingcontext.gl.uniform1i(this.drawingcontext.nblights, nbLights);
 
 		//Set the camera position
 		this.camera.InititalizeDrawingContext(this.drawingcontext);
@@ -50,7 +57,7 @@
 
     PickObject(x: number, y: number, scene: Scene): CADNode {
         let ray : Ray = this.GetRay(x, y);
-        let picked = this.ResolveRayIntersection(ray, scene.root);
+        let picked = this.ResolveRayIntersection(ray, scene.Contents);
 
         if (picked != null && picked.HasIntersection()) {
             return picked.object;

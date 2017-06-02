@@ -11,13 +11,13 @@
 		this.container.appendChild(this.itemContentContainer);
 
 		let itemIcon = document.createElement('i');
-		if (this.item instanceof CADGroup) {
+		if (this.item instanceof Scene) {
+			itemIcon.className = 'ItemIcon fa fa-desktop';
+		}
+		else if (this.item instanceof CADGroup) {
 			itemIcon.className = 'ItemIcon fa fa-folder' + ((<CADGroup>this.item).folded ? '' : '-open');
 			itemIcon.onclick = this.ItemFolded();
 			this.itemContentContainer.ondblclick = this.ItemFolded();
-		}
-		else if (this.item instanceof Scene) {
-			itemIcon.className = 'ItemIcon fa fa-desktop';
 		}
 		else if (this.item instanceof Light) {
 			itemIcon.className = 'ItemIcon fa fa-lightbulb-o';

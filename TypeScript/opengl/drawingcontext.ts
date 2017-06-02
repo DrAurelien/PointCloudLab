@@ -1,4 +1,5 @@
 ﻿class DrawingContext {
+	static NbMaxLights = 8;
     sampling: number = 30;
     gl: WebGLRenderingContext;
     shaders: WebGLShader;
@@ -9,8 +10,9 @@
     normals: number;
     usenormals: WebGLUniformLocation;
     eyeposition: WebGLUniformLocation;
-    lightposition: WebGLUniformLocation;
-    lightcolor: WebGLUniformLocation;
+    lightpositions: WebGLUniformLocation[];
+    lightcolors: WebGLUniformLocation[];
+	nblights: WebGLUniformLocation;
     //Lighting
     color: WebGLUniformLocation;
     diffuse: WebGLUniformLocation;
@@ -61,8 +63,14 @@
 
         this.color = this.gl.getUniformLocation(this.shaders, "Color");
         this.eyeposition = this.gl.getUniformLocation(this.shaders, "EyePosition");
-        this.lightposition = this.gl.getUniformLocation(this.shaders, "LightPosition");
-        this.lightcolor = this.gl.getUniformLocation(this.shaders, "LightColor");
+
+		this.lightpositions = [];
+		this.lightcolors = [];
+        this.nblights = this.gl.getUniformLocation(this.shaders, "NbLights");
+		for (var index = 0; index < DrawingContext.NbMaxLights; index++) {
+			this.lightpositions.push(this.gl.getUniformLocation(this.shaders, "LightPositions["+index+"]"));
+			this.lightcolors.push(this.gl.getUniformLocation(this.shaders, "LightColors["+index+"]"));
+		}
         this.diffuse = this.gl.getUniformLocation(this.shaders, "DiffuseCoef");
         this.ambiant = this.gl.getUniformLocation(this.shaders, "AmbiantCoef");
         this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");

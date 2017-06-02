@@ -1,29 +1,38 @@
-﻿class Scene extends CADNode {
-    root: CADPrimitivesContainer;
-	lights: LightsContainer;
-
+﻿class Scene extends CADGroup {
     constructor() {
 		super("Scene");
 		this.deletable = false;
 
-        this.root = new CADPrimitivesContainer("Objects");
-		this.root.deletable = false;
+		this.children = [null, null];
 
-		this.lights = new LightsContainer("Lights");
-		this.lights.deletable = false;
-		this.lights.visible = false;
-		this.lights.folded = true;
+        this.Contents = new CADPrimitivesContainer("Objects");
+		this.Contents.deletable = false;
 
-		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]), this.lights);
+		this.Lights = new LightsContainer("Lights");
+		this.Lights.deletable = false;
+		this.Lights.visible = false;
+		this.Lights.folded = true;
+
+		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]), this.Lights);
 		defaultLight.deletable = false;
     }
 
-	GetChildren(): CADNode[] {
-		return [this.lights, this.root];
+    get Contents(): CADPrimitivesContainer {
+		return <CADPrimitivesContainer>this.children[1];
+	}
+	set Contents(c: CADPrimitivesContainer) {
+		this.children[1] = c;
+	}
+
+    get Lights(): LightsContainer {
+		return <LightsContainer>this.children[0];
+	}
+	set Lights(l: LightsContainer) {
+		this.children[0] = l;
 	}
 
     Select(item: CADNode): void {
-		this.root.Apply(p => {
+		this.Contents.Apply(p => {
 			p.selected = (p === item);
 			return true;
 		} );
@@ -31,7 +40,7 @@
 
 	GetSelected(): CADNode[] {
 		let selected: CADNode[] = [];
-		this.root.Apply(p => {
+		this.Contents.Apply(p => {
 			if (p.selected) {
 				selected.push(p);
 			}
@@ -42,7 +51,7 @@
 
 	GetSelectionBoundingBox(): BoundingBox {
 		let result = new BoundingBox();
-		this.root.Apply(p => {
+		this.Contents.Apply(p => {
 			if (p.selected) {
 				result.AddBoundingBox(p.GetBoundingBox());
 			}
@@ -50,13 +59,4 @@
 		});
 		return result;
 	}
-
-    Draw(drawingContext: DrawingContext): void {
-		this.root.Draw(drawingContext);
-    }
-
-    RayIntersection(ray: Ray): Picking {
-		return this.root.RayIntersection(ray);
-	}
-
 }

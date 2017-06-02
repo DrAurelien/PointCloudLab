@@ -18,7 +18,7 @@
 			new FileOpener('[Icon:file-o] Open', function(createdObject) {
 				if(createdObject != null)
 				{
-					scene.root.Add(createdObject);
+					scene.Contents.Add(createdObject);
 					scene.Select(createdObject);
 					dataHandler.currentItem = createdObject;
 					dataHandler.NotifyChange();
@@ -135,7 +135,7 @@
         {
 			//If the object does not have an owner, affect one
 			if (!createdObject.owner) {
-				let owner: CADGroup = (createdObject instanceof Light) ? scene.lights : scene.root;
+				let owner: CADGroup = (createdObject instanceof Light) ? scene.Lights : scene.Contents;
 				if (this.currentItem && this.currentItem instanceof CADGroup) {
 					owner = (<CADGroup>this.currentItem);
 				}

@@ -4,12 +4,21 @@
     }
 
 	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
-		let self = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
-		//result.push(null);
-		//result.push(new Action('New light', () => { let light = new Light(new Vector([100.0, 100.0, 100.0]), self); onDone(null); }));
+		result.push(null);
+		result.push(new NewLightAction(this, onDone));
 		
 		return result;
     }
+}
+
+class NewLightAction extends Action {
+	constructor(private container: LightsContainer, onDone: CADNodeHandler) {
+		super('New light', () => { onDone(new Light(new Vector([100.0, 100.0, 100.0]), container)); }, 'Add up to ' + DrawingContext.NbMaxLights + ' light sources');
+	}
+
+	HasAction(): boolean {
+		return this.container.children.length < DrawingContext.NbMaxLights;
+	}
 }
