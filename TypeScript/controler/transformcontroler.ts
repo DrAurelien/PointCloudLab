@@ -4,6 +4,10 @@
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
+		if (displacement.IsNull()) {
+			return true;
+		}
+
 		let datahandler = this.view.dataHandler;
 		let renderer = this.view.sceneRenderer;
 

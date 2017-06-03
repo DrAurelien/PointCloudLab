@@ -131,22 +131,12 @@ class Camera {
     Rotate(fromx: number, fromy: number, tox: number, toy: number) {
 		let rotation = this.GetRotationMatrix(fromx, fromy, tox, toy);
 
-		let point = Matrix.FromPoint(this.at.Minus(this.to));
-        var updir = Matrix.FromVector(this.up);
-        point = rotation.Multiply(point);
-        updir = rotation.Multiply(updir);
-        for (var index = 0; index < 3; index++) {
-            this.at.Set(index, point.values[index]);
-            this.up.Set(index, updir.values[index]);
-        }
-        this.at = this.to.Plus(this.at);
+		this.Direction = Matrix.ToVector(rotation.Multiply(Matrix.FromVector(this.Direction)));
+		this.up = Matrix.ToVector(rotation.Multiply(Matrix.FromVector(this.up)));
     }
 
     Zoom(d: number): void {
-        var innerBase = this.GetInnerBase();
-        innerBase.distance *= Math.pow(0.9, d);
-
-        this.at = this.to.Minus(innerBase.lookAt.Times(innerBase.distance));
+		this.Distance = Math.pow(0.9, this.Distance);
     }
 
     ComputeProjection(v: Vector): Vector {
@@ -192,12 +182,26 @@ class Camera {
 			let radius = box.GetSize().Norm() / 2.0;
 			this.to = box.GetCenter();
 			if (radius) {
-				let direction = this.to.Minus(this.at).Normalized();
-				let dist = radius / Math.tan(this.fov / 2.);
-				this.at = this.to.Minus(direction.Times(dist));
+				this.Distance = radius / Math.tan(this.fov / 2.);
 			}
 			return true;
 		}
 		return false;
+	}
+
+	get Direction(): Vector {
+		return this.to.Minus(this.at).Normalized();
+	}
+	set Direction(direction: Vector) {
+		if (!direction.isNaN()) {
+			this.at = this.to.Minus(direction.Times(this.Distance));
+		}
+	}
+
+	get Distance(): number {
+		return this.to.Minus(this.at).Norm();
+	}
+	set Distance(d: number) {
+		this.at = this.to.Minus(this.Direction.Times(d));
 	}
 }

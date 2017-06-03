@@ -28,4 +28,8 @@
 class MouseDisplacement {
 	constructor(public dx: number, public dy: number, public button: number) {
 	}
+
+	IsNull(): boolean {
+		return (this.dx != 0 && this.dy != 0);
+	}
 }

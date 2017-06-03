@@ -7,14 +7,21 @@ class CameraControler extends MouseControler {
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
+		if (displacement.IsNull()) {
+			return true;
+		}
+
 		let renderer = this.view.sceneRenderer;
-		let datahandler = this.view.dataHandler;
 
 		switch (displacement.button) {
 			case 1: //Left mouse
 				let x = this.mousetracker.x - displacement.dx;
 				let y  = this.mousetracker.y - displacement.dy;
 				renderer.camera.Rotate(x, y, this.mousetracker.x, this.mousetracker.y);
+
+				let coordsRenderer = this.view.coordinatesRenderer;
+				coordsRenderer.camera.Direction = renderer.camera.Direction;
+				coordsRenderer.Draw(this.view.coordinatesSystem);
 				break;
 			case 2: //Middle mouse
 				renderer.camera.Zoom(-displacement.dy / 10);

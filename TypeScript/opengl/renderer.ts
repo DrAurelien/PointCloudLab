@@ -3,10 +3,10 @@
 	drawingcontext: DrawingContext;
 	camera: Camera;
 
-    constructor() {
+    constructor(className : string) {
         //Create a canvas to display the scene
         this.sceneRenderingArea = document.createElement('canvas');
-        this.sceneRenderingArea.className = 'SceneRendering';
+        this.sceneRenderingArea.className = className;
 
         this.drawingcontext = new DrawingContext(this.sceneRenderingArea);
         this.camera = new Camera(this.drawingcontext);

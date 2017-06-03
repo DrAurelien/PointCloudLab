@@ -7,12 +7,24 @@
 	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 }
 
-canvas
+canvas.SceneRendering
 {
 	position : fixed;
 	top : 0px;
 	left : 0px;
 	margin : 0px;
+}
+
+canvas.CoordsRendering
+{
+	position : fixed;
+	margin : 0px;
+	bottom : 5px;
+	right : 5px;
+	width : 120px;
+	height : 120px;
+	z-index : 1;
+	border : 2px solid white;
 }
 
 div.DataWindow

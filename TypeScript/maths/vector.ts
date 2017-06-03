@@ -16,11 +16,20 @@
         return this.coordinates.length;
     }
 
-    Get = function (index : number) : number {
+    Get(index : number) : number {
         return this.coordinates[index];
     }
 
-    Set = function (index : number, value : number) : void {
+	isNaN(): boolean {
+		for (var index = 0; index < this.coordinates.length; index++) {
+			if (isNaN(this.coordinates[index])) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+    Set(index : number, value : number) : void {
         this.coordinates[index] = value;
     }
 
