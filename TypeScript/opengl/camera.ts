@@ -136,7 +136,7 @@ class Camera {
     }
 
     Zoom(d: number): void {
-		this.Distance = Math.pow(0.9, this.Distance);
+		this.Distance *= Math.pow(0.9, d);
     }
 
     ComputeProjection(v: Vector): Vector {

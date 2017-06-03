@@ -30,6 +30,6 @@ class MouseDisplacement {
 	}
 
 	IsNull(): boolean {
-		return (this.dx != 0 && this.dy != 0);
+		return (this.dx == 0 && this.dy == 0);
 	}
 }
