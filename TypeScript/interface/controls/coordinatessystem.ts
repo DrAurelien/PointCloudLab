@@ -1,7 +1,7 @@
 ﻿class CoordinatesSystem implements Control {
 	renderer: Renderer;
 	showAxesLabels: boolean;
-	private system: Scene;
+	private coordssystem: Scene;
 	private axesLabels: AxisLabel[];
 
 	constructor(private mainRenderer: Renderer) {
@@ -11,11 +11,15 @@
 			new Cylinder(new Vector([.0, .5, .0]), new Vector([.0, 1.0, .0]), .1, 1.0),
 			new Cylinder(new Vector([.0, .0, .5]), new Vector([.0, .0, 1.0]), .1, 1.0)
 		];
-		this.system = new Scene();
+		this.coordssystem = new Scene();
 		for (let index = 0; index < axes.length; index++) {
 			axes[index].material.baseColor = axes[index].axis.Flatten();
-			this.system.Contents.Add(axes[index]);
+			this.coordssystem.Contents.Add(axes[index]);
 		}
+
+		//Refine lighting
+		let light = <Light>this.coordssystem.Lights.children[0];
+		this.coordssystem.Lights.Add(new Light(light.Position.Times(-1.0)));
 
 		//Create labels
 		this.axesLabels = [
@@ -29,7 +33,7 @@
 
 		//Create the coordinates rendering component
 		this.renderer = new Renderer('CoordsRendering');
-		this.renderer.camera.CenterOnBox(this.system.Contents.GetBoundingBox());
+		this.renderer.camera.CenterOnBox(this.coordssystem.Contents.GetBoundingBox());
 		this.renderer.camera.to = new Vector([.0, .0, .0]);
 
 		this.showAxesLabels = true;
@@ -38,7 +42,7 @@
 	Refresh() {
 		this.renderer.camera.Direction = this.mainRenderer.camera.Direction;
 		this.renderer.RefreshSize();
-		this.renderer.Draw(this.system);
+		this.renderer.Draw(this.coordssystem);
 		for (var index = 0; index < this.axesLabels.length; index++) {
 			this.axesLabels[index].Refresh(this);
 		}

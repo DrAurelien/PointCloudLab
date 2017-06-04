@@ -1,7 +1,7 @@
 ﻿class Light extends CADNode {
 	sphere: Sphere;
 
-	constructor(center: Vector, owner: LightsContainer) {
+	constructor(center: Vector, owner: LightsContainer=null) {
 		super(NameProvider.GetName("Light"), owner);
 		this.sphere = new Sphere(center, 0.01);
 		this.sphere.material.baseColor = [1.0, 1.0, 1.0];

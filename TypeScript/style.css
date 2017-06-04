@@ -310,7 +310,7 @@ div.AxisLabel
 	stroke : white;
 	font-weight : bold;
 	background-color : darkgray;
-	border : 1px solid lightgray;
+	border : 1px solid black;
 	background-color : lightgray;
 	text-align : center;
 	vertical-align : middle;
