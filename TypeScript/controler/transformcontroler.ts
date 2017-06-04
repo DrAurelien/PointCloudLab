@@ -21,14 +21,17 @@
 				let y = this.mousetracker.y - displacement.dy;
 				let rotation = renderer.camera.GetRotationMatrix(this.mousetracker.x, this.mousetracker.y, x, y);
 				item.Rotate(rotation);
+				this.Cursor = Cursor.Combine([Cursor.Edit, Cursor.Rotate]);
 				break;
 			case 2: //Middle mouse
 				let scale = 1.0 - (displacement.dy / renderer.camera.screen.height);
 				item.Scale(scale);
+				this.Cursor = Cursor.Combine([Cursor.Edit, Cursor.Scale]);
 				break;
 			case 3: //Right mouse
 				let translation = renderer.camera.GetTranslationVector(-displacement.dx, -displacement.dy);
 				item.Translate(translation);
+				this.Cursor = Cursor.Combine([Cursor.Edit, Cursor.Translate]);
 				break;
 			default:
 				return true;

@@ -40,10 +40,16 @@
             scene.Draw(this.drawingcontext);
         }
     }
-    
-    Resize(width : number, height : number) : void {
+
+	RefreshSize() {
+		this.Resize(this.sceneRenderingArea.scrollWidth, this.sceneRenderingArea.scrollHeight);
+	}
+
+    Resize(width: number, height: number): void {
         this.drawingcontext.renderingArea.width = width;
         this.drawingcontext.renderingArea.height = height;
+		this.camera.screen.width = width;
+		this.camera.screen.height = height;
     }
 
     GetRay(x: number, y: number) : Ray {

@@ -1,39 +1,35 @@
 ﻿abstract class MouseControler {
 	mousetracker: MouseTracker;
 	private datahandlervisibility: boolean;
+	private targetElement: HTMLElement;
+	private cursor: Cursor;
 
 	constructor(protected view: Interface) {
-		let targetElement: HTMLElement = view.sceneRenderer.GetElement();
+		this.targetElement = view.sceneRenderer.GetElement();
+		this.cursor = new Cursor();
+
 		let self = this;
 
-        targetElement.oncontextmenu = function (event: Event) {
+        this.targetElement.oncontextmenu = function (event: Event) {
 			event = event || window.event;
 			event.preventDefault();
 			return false;
 		};
 
-		targetElement.onmousedown = function (event: MouseEvent) {
+		this.targetElement.onmousedown = function (event: MouseEvent) {
 			event = <MouseEvent>(event || window.event);
-			self.mousetracker = new MouseTracker(event);
-
-			self.datahandlervisibility = self.view.dataHandler.visibility.visible;
-			self.StartMouseEvent();
+			self.Start(event);
 		};
 
-		targetElement.onmouseup = function (event: MouseEvent) {
-			event = <MouseEvent>(event || window.event);
-			if (self.mousetracker != null && self.mousetracker.IsQuickEvent()) {
-				self.HandleClick(self.mousetracker);
-			}
-			self.mousetracker = null;
-
-			if (self.datahandlervisibility) {
-				self.view.dataHandler.Show();
-			}
-			self.EndMouseEvent();
+		this.targetElement.onmouseup = function (event: MouseEvent) {
+			self.End();
 		};
 
-		targetElement.onmousemove = function (event: MouseEvent) {
+		this.targetElement.onmouseout = function (event: MouseEvent) {
+			self.End();
+		};
+
+		this.targetElement.onmousemove = function (event: MouseEvent) {
 			event = <MouseEvent>(event || window.event);
 			
 			if (self.mousetracker) {
@@ -45,16 +41,36 @@
 			return true;
 		};
 
-		targetElement.onmousewheel = function (event: MouseWheelEvent) {
+		this.targetElement.onmousewheel = function (event: MouseWheelEvent) {
 			event = <MouseWheelEvent>(event || window.event);
 			self.HandleWheel(event.wheelDelta);
 		};
 
-		targetElement.onkeypress = function (event: KeyboardEvent) {
+		document.onkeypress = function (event: KeyboardEvent) {
 			event = <KeyboardEvent>(event || window.event);
 			let key :number = event.key ? event.key.charCodeAt(0) : event.keyCode;
 			self.HandleKey(key);
 		};
+	}
+
+	private Start(event: MouseEvent) {
+		this.mousetracker = new MouseTracker(event);
+
+		this.datahandlervisibility = this.view.dataHandler.visibility.visible;
+		this.StartMouseEvent();
+	}
+
+	private End() {
+		if (this.mousetracker != null && this.mousetracker.IsQuickEvent()) {
+			this.HandleClick(this.mousetracker);
+		}
+		this.mousetracker = null;
+
+		if (this.datahandlervisibility) {
+			this.view.dataHandler.Show();
+		}
+		this.cursor.Restore(this.targetElement);
+		this.EndMouseEvent();
 	}
 
 	protected abstract HandleMouseMove(displacement: MouseDisplacement): boolean;
@@ -62,7 +78,14 @@
 	protected abstract HandleWheel(delta: number): boolean;
 	protected abstract HandleKey(key: number): boolean;
 
-	protected StartMouseEvent() {}
+	protected StartMouseEvent() {
+	}
 
-	protected EndMouseEvent() {}
+	protected EndMouseEvent() {
+	}
+	
+	protected set Cursor(iconCode: string) {
+		this.cursor.Icon = iconCode;
+		this.cursor.Apply(this.targetElement);
+	}
 }

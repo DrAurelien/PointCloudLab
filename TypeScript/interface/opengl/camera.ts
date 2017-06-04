@@ -139,21 +139,22 @@ class Camera {
 		this.Distance *= Math.pow(0.9, d);
     }
 
-    ComputeProjection(v: Vector): Vector {
+    ComputeProjection(v: Vector, applyViewPort: boolean): Vector {
         let u: Matrix;
         if (v.Dimension() == 3)
             u = new Matrix(1, 4, v.Flatten().concat([1.0]));
         else
             u = new Matrix(1, 4, v.Flatten());
-        var projection = this.GetProjectionMatrix();
-        var modelview = this.GetModelViewMatrix();
-        var render = projection.Multiply(modelview);
-        var w = new Vector(render.Multiply(u).values);
-        return w.Times(1. / w.Get(3));
-        //Viewport
-       // w.Set(0, (w.Get(0) + 1.0) * this.screen.width / 2.0);
-        //w.Set(1, (w.Get(1) + 1.0) * this.screen.height / 2.0);
-        //return w
+        let projection = this.GetProjectionMatrix();
+        let modelview = this.GetModelViewMatrix();
+        let render = projection.Multiply(modelview);
+        let w = new Vector(render.Multiply(u).values);
+        w = w.Times(1. / w.Get(3));
+		if (applyViewPort) {
+			w.Set(0, (w.Get(0) + 1.0) * this.screen.width / 2.0);
+			w.Set(1, (w.Get(1) + 1.0) * this.screen.height / 2.0);
+		}
+        return w
     }
 
     ComputeInvertedProjection(p: Vector): Vector {
