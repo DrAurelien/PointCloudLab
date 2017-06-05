@@ -28,7 +28,7 @@
         document.body.appendChild(this.sceneRenderer.GetElement());
 
 		//Create the coordinates axes to be rendered
-		this.coordinatesSystem = new CoordinatesSystem(this.sceneRenderer);
+		this.coordinatesSystem = new CoordinatesSystem(this);
 		document.body.appendChild(this.coordinatesSystem.GetElement());
 
 		//Create the default controler (camera controler)
@@ -43,14 +43,18 @@
 		this.Refresh();
 	}
 
-    Refresh(): void {
+    Refresh() {
         this.dataHandler.Resize(window.innerWidth, window.innerHeight);
         this.dataHandler.RefreshContent();
 
+		this.RefreshRendering();
+    }
+
+	RefreshRendering() {
         this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
         this.sceneRenderer.Draw(this.dataHandler.scene);
 		this.coordinatesSystem.Refresh();
-    }
+	}
 
 	UseCameraControler() {
 		this.currentControler = new CameraControler(this, this.dataHandler.scene);

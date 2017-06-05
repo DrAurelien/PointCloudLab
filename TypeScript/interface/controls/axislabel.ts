@@ -2,22 +2,26 @@
 	container: HTMLDivElement;
 	depth: number;
 
-	constructor(public label: string, public axis: Vector) {
+	constructor(public label: string, public axis: Vector, private system: CoordinatesSystem) {
 		let color = axis.Normalized().Times(160).Flatten();
 		this.container = document.createElement('div');
 		this.container.className = 'AxisLabel';
 		this.container.style.color = 'rgb(' + color.join(',') + ')';
 		this.container.appendChild(document.createTextNode(label));
+		
+		this.container.onclick = (event: MouseEvent) => {
+			system.ChangeViewAxis(axis);
+		}
 	}
 
 	GetElement(): HTMLElement {
 		return this.container;
 	}
 
-	Refresh(system: CoordinatesSystem) {
-		let camera = system.renderer.camera;
+	Refresh() {
+		let camera = this.system.renderer.camera;
 		let projection = camera.ComputeProjection(this.axis, true);
-		let ownerRect = system.GetElement().getBoundingClientRect();
+		let ownerRect = this.system.GetElement().getBoundingClientRect();
 		this.container.style.left = (ownerRect.left + projection.Get(0)) + 'px';
 		this.container.style.top = (ownerRect.bottom - projection.Get(1)) + 'px';
 		this.depth = projection.Get(2);

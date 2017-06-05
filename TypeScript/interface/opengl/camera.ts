@@ -131,7 +131,9 @@ class Camera {
     Rotate(fromx: number, fromy: number, tox: number, toy: number) {
 		let rotation = this.GetRotationMatrix(fromx, fromy, tox, toy);
 
-		this.Direction = Matrix.ToVector(rotation.Multiply(Matrix.FromVector(this.Direction)));
+		let p = this.at.Minus(this.to);
+		p = Matrix.ToVector(rotation.Multiply(Matrix.FromPoint(p)));
+		this.at = this.to.Plus(p);
 		this.up = Matrix.ToVector(rotation.Multiply(Matrix.FromVector(this.up)));
     }
 
@@ -190,19 +192,18 @@ class Camera {
 		return false;
 	}
 
-	get Direction(): Vector {
+	GetDirection(): Vector {
 		return this.to.Minus(this.at).Normalized();
 	}
-	set Direction(direction: Vector) {
-		if (!direction.isNaN()) {
-			this.at = this.to.Minus(direction.Times(this.Distance));
-		}
+	SetDirection(dir: Vector, upv: Vector) {
+		this.at = this.to.Minus(dir.Normalized().Times(this.Distance));
+		this.up = upv;
 	}
 
 	get Distance(): number {
 		return this.to.Minus(this.at).Norm();
 	}
 	set Distance(d: number) {
-		this.at = this.to.Minus(this.Direction.Times(d));
+		this.at = this.to.Minus(this.GetDirection().Times(d));
 	}
 }
