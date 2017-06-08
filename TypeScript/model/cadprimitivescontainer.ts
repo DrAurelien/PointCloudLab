@@ -13,6 +13,7 @@
 		result.push(new Action('New plane', this.GetShapeCreator(() => new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self), dataHandler, onDone)));
 		result.push(new Action('New sphere', this.GetShapeCreator(() => new Sphere(new Vector([0, 0, 0]), 1, self), dataHandler, onDone)));
 		result.push(new Action('New cylinder', this.GetShapeCreator(() => new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self), dataHandler, onDone)));
+		result.push(new Action('New cone', this.GetShapeCreator(() => new Cone(new Vector([0, 0, 0]), new Vector([0, 0, 1]), Math.PI/6.0, 1, self), dataHandler, onDone)));
 		result.push(new Action('New torus', this.GetShapeCreator(() => new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self), dataHandler, onDone)));
 		result.push(new ScanFromCurrentViewPointAction(this, dataHandler, onDone));
 		

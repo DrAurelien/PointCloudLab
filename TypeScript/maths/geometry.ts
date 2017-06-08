@@ -19,4 +19,11 @@
 
 		return r1.Plus(r2).Times(0.5);
 	}
+
+	static DegreeToRadian(a: number): number {
+		return Math.PI * a / 180.0;
+	}
+	static RadianToDegree(a: number): number {
+		return a / Math.PI * 180;
+	}
 }

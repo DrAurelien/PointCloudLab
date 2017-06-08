@@ -84,6 +84,7 @@
     <TypeScriptCompile Include="model\pointcloud.ts" />
     <TypeScriptCompile Include="model\ransac.ts" />
     <TypeScriptCompile Include="model\scene.ts" />
+    <TypeScriptCompile Include="model\shapes\cone.ts" />
     <TypeScriptCompile Include="model\shapes\cylinder.ts" />
     <TypeScriptCompile Include="model\shapes\plane.ts" />
     <TypeScriptCompile Include="model\shapes\shape.ts" />
