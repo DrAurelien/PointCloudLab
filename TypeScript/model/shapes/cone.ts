@@ -95,16 +95,8 @@
 		//Strips
 		shift += sampling;
 		for (let ii = 0; ii < sampling; ii++) {
-			let ia = ii;
-			let ib = (ii + 1) % sampling;
-			let ja = 0;
-			let jb = sampling;
-			let aa = ia + ja + shift;
-			let ab = ia + jb + shift;
-			let bb = ib + jb + shift;
-			let ba = ib + ja + shift;
-			mesh.PushFace([aa, ab, ba]);
-			mesh.PushFace([ba, ab, bb]);
+			mesh.PushFace([ii + shift + sampling, ii + shift, ((ii + 1) % sampling) + shift + sampling]);
+			mesh.PushFace([ii + shift + sampling, ((ii + 1) % sampling) + shift, ((ii + 1) % sampling) + shift + sampling]);
 		}
 
 		let self = this;
