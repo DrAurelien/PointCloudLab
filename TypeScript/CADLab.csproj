@@ -28,6 +28,7 @@
     <TypeScriptCompile Include="controler\actions\pointcloudexport.ts" />
     <TypeScriptCompile Include="controler\actions\pointcloudnormals.ts" />
     <TypeScriptCompile Include="controler\actions\scanfromcurrentviewpoint.ts" />
+    <TypeScriptCompile Include="controler\lightcontroler.ts" />
     <TypeScriptCompile Include="controler\transformcontroler.ts" />
     <TypeScriptCompile Include="files\binaryreader.ts" />
     <TypeScriptCompile Include="files\csvloader.ts" />

@@ -61,4 +61,5 @@
 	static Translate = '\uf047'; //fa-arrows
 	static Scale = '\uf002'; //fa-search
 	static Edit = '\uf040'; //fa-pencil
+	static Light = '\uf0eb'; //fa-lightbulb-o
 }

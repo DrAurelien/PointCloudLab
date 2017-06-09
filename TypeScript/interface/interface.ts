@@ -63,4 +63,8 @@
 	UseTransformationControler() {
 		this.currentControler = new TransformControler(this, this.dataHandler.scene);
 	}
+
+	UseLightControler() {
+		this.currentControler = new LightControler(this);
+	}
 }

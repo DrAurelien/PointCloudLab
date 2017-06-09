@@ -28,7 +28,8 @@
 					new CenterCameraAction(scene, ownerView),
 					null,
 					new CameraModeAction(ownerView),
-					new TransformModeAction(ownerView)
+					new TransformModeAction(ownerView),
+					new LightModeAction(ownerView)
 				],
 				'Handle the camera position'
 			),
