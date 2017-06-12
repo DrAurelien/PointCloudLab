@@ -1,5 +1,5 @@
 ﻿class KDTree {
-	root: CellData;
+	root: KDTreeCell;
 	indices: number[];
 
 	constructor(public cloud: PointCloud) {
@@ -35,7 +35,7 @@
 		}
 	}
 
-	private Split(fromIndex: number, toIndex: number, direction: number): CellData {
+	private Split(fromIndex: number, toIndex: number, direction: number): KDTreeCell {
 		var pointCloud = this.cloud;
 		function compare(a, b) {
 			return (a.coord < b.coord) ? -1 : ((a.coord > b.coord) ? 1 : 0);
@@ -49,7 +49,7 @@
 			subIndices = subIndices.sort(compare);
 			this.SetIndices(fromIndex, subIndices);
 
-			var cellData = new CellData(fromIndex, toIndex, direction);
+			var cellData = new KDTreeCell(fromIndex, toIndex, direction);
 
 			if (nbItems >= 30) {
 				var cutIndex = Math.ceil(nbItems / 2);
@@ -70,7 +70,7 @@
 		return null;
 	}
 
-	FindNearestNeighbours(queryPoint: Vector, nbh: Neighbourhood, cell: CellData) {
+	FindNearestNeighbours(queryPoint: Vector, nbh: Neighbourhood, cell: KDTreeCell) {
 		if (!cell) {
 			cell = this.root;
 			nbh.Initialize(this.cloud, queryPoint);
@@ -130,10 +130,10 @@
 	}
 }
 
-class CellData{
+class KDTreeCell{
 	cutValue: number;
-	right: CellData;
-	left: CellData;
+	right: KDTreeCell;
+	left: KDTreeCell;
 
 	constructor(public fromIndex: number, public toIndex: number, public direction: number) {
 		this.right = null;

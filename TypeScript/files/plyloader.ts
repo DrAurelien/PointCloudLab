@@ -285,7 +285,10 @@ class PlyLoader {
 
 		function ComputeNormals() {
 			self.result.ComputeNormals();
-			if (onloaded) {
+			if (self.result instanceof Mesh) {
+				(<Mesh>self.result).ComputeOctree(onloaded);
+			}
+			else if (onloaded) {
 				onloaded();
 			}
 		}

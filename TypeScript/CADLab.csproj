@@ -74,6 +74,8 @@
     <TypeScriptCompile Include="maths\vector.ts" />
     <TypeScriptCompile Include="model\boundingbox.ts" />
     <TypeScriptCompile Include="model\cadprimitivescontainer.ts" />
+    <TypeScriptCompile Include="model\meshface.ts" />
+    <TypeScriptCompile Include="model\octree.ts" />
     <TypeScriptCompile Include="model\light.ts" />
     <TypeScriptCompile Include="model\lightscontainer.ts" />
     <TypeScriptCompile Include="model\cadgroup.ts" />
