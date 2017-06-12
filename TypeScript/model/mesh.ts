@@ -54,9 +54,10 @@ class Mesh extends CADPrimitive {
 		return this.size / 3;
 	}
 
-	ComputeOctree() {
+	ComputeOctree(onDone: Function) {
 		if (!this.octree) {
-			this.octree = new Octree(this);
+			let self = this;
+			LongProcess.Run('Computing space partitionning of the mesh', () => {self.octree = new Octree(this);}, onDone);
 		}
 	}
 
