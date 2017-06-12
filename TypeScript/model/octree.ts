@@ -60,7 +60,7 @@ class OctreeCell{
 				nbfaces++;
 			}
 		}
-		this.faces = this.faces.splice(nbfaces);
+		this.faces.splice(nbfaces);
 
 		this.sons = [];
 	}

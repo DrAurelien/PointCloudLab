@@ -52,6 +52,6 @@
 
 		//Todo : Normal cross edges ?
 
-		return box.TestAxisSeparation(this.points[0], this.Normal);
+		return !box.TestAxisSeparation(this.points[0], this.Normal);
 	}
 }

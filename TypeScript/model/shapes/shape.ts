@@ -93,6 +93,7 @@ class CreateShapeMeshAction extends Action {
 				(properties) => {
 					let sampling = parseInt(properties.GetValue('Sampling'));
 					let mesh = shape.ComputeMesh(sampling);
+					mesh.ComputeOctree();
 					if (onDone) {
 						onDone(mesh);
 					}
