@@ -1,6 +1,9 @@
-﻿class Mesh extends CADPrimitive {
+﻿//import './meshface.ts';
+
+class Mesh extends CADPrimitive {
     faces: number[];
     size: number;
+	octree: Octree;
     glIndexBuffer: WebGLBuffer;
 
     constructor(public pointcloud: PointCloud) {
@@ -32,14 +35,14 @@
 		this.faces = faces;
 	}
 
-	GetFace(i: number): Face {
+	GetFace(i: number): MeshFace {
 		let index = 3 * i;
 		let indices = [
 			this.faces[index++],
 			this.faces[index++],
 			this.faces[index++]
 		];
-		return new Face(indices, [
+		return new MeshFace(indices, [
 			this.pointcloud.GetPoint(indices[0]),
 			this.pointcloud.GetPoint(indices[1]),
 			this.pointcloud.GetPoint(indices[2])
@@ -49,6 +52,12 @@
 
 	Size(): number {
 		return this.size / 3;
+	}
+
+	ComputeOctree() {
+		if (!this.octree) {
+			this.octree = new Octree(this);
+		}
 	}
 
 	ClearNormals() {
@@ -83,9 +92,8 @@
 						return null;
 					}
 					let face = self.GetFace(index++);
-					let normal = face.points[1].Minus(face.points[0]).Cross(face.points[2].Minus(face.points[0])).Normalized();
 					for (let pointindex = 0; pointindex < face.indices.length; pointindex++) {
-						normals[face.indices[pointindex]] = normals[face.indices[pointindex]].Plus(normal);
+						normals[face.indices[pointindex]] = normals[face.indices[pointindex]].Plus(face.Normal);
 					}
 					return { current: index, total: nbFaces };
 				},
@@ -157,6 +165,10 @@
 	}
 
     RayIntersection(ray: Ray): Picking {
+		if (this.octree) {
+			return this.octree.RayIntersection(ray);
+		}
+
         let result = new Picking(this);
 		for (let ii = 0; ii < this.Size(); ii++) {
             let tt = this.GetFace(ii).LineFaceIntersection(ray);
@@ -180,32 +192,4 @@
 
 		return properties;
 	}
-}
-
-class Face {
-	constructor(public indices: number[], public points: Vector[]) {
-    }
-
-    LineFaceIntersection(line: Ray): number {
-        //Compute line / face intersection
-        //solve line.from + t * line.dir
-        let normal = this.points[1].Minus(this.points[0]).Cross(this.points[2].Minus(this.points[0]));
-        let dd = normal.Dot(this.points[0]);
-        let nn = line.dir.Dot(normal);
-        if (Math.abs(nn) < 1e-6) {
-            return null;
-        }
-        let tt = (dd - line.from.Dot(normal)) / nn;
-
-        let point = line.from.Plus(line.dir.Times(tt));
-
-        //Check the point is inside the triangle
-        for (let ii = 0; ii < 3; ii++) {
-            let test = point.Minus(this.points[ii]).Cross(this.points[(ii + 1) % 3].Minus(this.points[ii]));
-            if (test.Dot(normal) > 0) {
-                return null;
-            }
-        }
-        return tt;
-    }
 }
