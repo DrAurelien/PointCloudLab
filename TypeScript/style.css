@@ -44,15 +44,14 @@ div.DataWindow
 	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;
 }
 
-div.DataWindowHandle
+div.HideablePannelHandle
 {
 	position : absolute;
-	right : 0px;
-	top : 0px;
-	width : 7px;
 	background-color : gray;
 	opacity : 0.8;
 	z-index: 2;
+	width : 7px;
+	height : 7px;
 }
 
 div.DataWindowHandle:hover

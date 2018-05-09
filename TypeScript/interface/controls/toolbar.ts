@@ -1,7 +1,7 @@
 ﻿class Toolbar implements Control {
     private toolbar: HTMLElement;
 
-    constructor(controls : Control[]) {
+    constructor(controls : Control[], classname : string="") {
         var container = document.createElement('table');
         container.width = '100%';
         var containerRow = document.createElement('tr');
@@ -15,6 +15,7 @@
 
         this.toolbar = document.createElement('div');
         this.toolbar.appendChild(container);
+		this.toolbar.className = classname;
     }
 
     GetElement(): HTMLElement {

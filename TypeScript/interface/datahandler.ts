@@ -1,15 +1,11 @@
-﻿class DataHandler implements Control {
-	container: HTMLDivElement;
+﻿class DataHandler extends HideablePannel {
     dataToolbar: Toolbar;
-    dataArea: HTMLDivElement;
-    propertiesArea: HTMLDivElement;
-    visibility: DataHandlerVisibility;
-    handle: HTMLDivElement;
+    dataArea: Pannel;
+    propertiesArea: Pannel;
     currentItem: CADNode;
 
     constructor(public scene: Scene, private ownerView: Interface) {
-		this.container = document.createElement('div');
-        this.container.className = 'DataWindow';
+		super('DataWindow', HandlePosition.Right);
 
 		let dataHandler = this;
 		//Data toolbar
@@ -37,96 +33,55 @@
 			new Button('[Icon:question-circle] Help', function () {
 				window.open('help.html', '_blank');
 			})
-        ]);
-        let dataToolbarElement = this.dataToolbar.GetElement();
-        dataToolbarElement.className = 'DataToolbar';
-        this.container.appendChild(dataToolbarElement);
+			],
+			'DataToolbar');
+		this.AddControl(this.dataToolbar);
 		
 		//Data visualization
-		this.dataArea = document.createElement('div');
-		this.dataArea.className = 'DataArea';
-		this.container.appendChild(this.dataArea);
+		this.dataArea = new Pannel('DataArea');
+		this.AddControl(this.dataArea);
 		
 		//Properties visualization
-		this.propertiesArea = document.createElement('div');
-		this.propertiesArea.className = 'PropertiesArea';
-		this.container.appendChild(this.propertiesArea);
-		
-		//Window handle
-		this.handle = document.createElement('div');
-		this.handle.className = 'DataWindowHandle';
-		this.container.appendChild(this.handle);
-        this.handle.onclick = (event) => { dataHandler.SwitchVisibility(); }
+		this.propertiesArea = new Pannel('PropertiesArea');
+		this.AddControl(this.propertiesArea);
 
-		this.visibility = new DataHandlerVisibility(true, this.container.style.width);
 		this.RefreshContent();
     }
-
-	GetElement(): HTMLElement {
-		return this.container;
-	}
-
-	Resize(width : number, height : number) : void {
-        //this.window.style.height = height-2*this.window.offsetTop);
-        this.container.style.height = (height - 2 * this.container.offsetTop)+'px';
-		this.handle.style.height = this.container.style.height;
+	
+	Resize(width: number, height: number): void {
+		let pannel = this.GetElement();
+        pannel.style.height = (height - 2 * pannel.offsetTop) + 'px';
+		this.RefreshSize();
 		
 		this.HandlePropertiesWindowVisibility();
 	}
 	
 	HandlePropertiesWindowVisibility() : void
 	{
+		let pannel = this.GetElement();
+		let dataArea = this.dataArea.GetElement();
+		let propertiesArea = this.propertiesArea.GetElement();
 		if(this.currentItem != null)
         {
-            let height: number = (this.container.clientHeight - this.dataToolbar.GetElement().getBoundingClientRect().height) / 2;
-			this.dataArea.style.height = height+'px';
-			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
+            let height: number = (pannel.clientHeight - this.dataToolbar.GetElement().getBoundingClientRect().height) / 2;
+			dataArea.style.height = height+'px';
+			var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
-			this.dataArea.style.height = height + 'px';
-			this.propertiesArea.style.height = this.dataArea.style.height;
-			this.dataArea.style.borderBottom = '1px solid lightGray';
-			this.propertiesArea.style.borderTop = '1px solid darkGray';
+			dataArea.style.height = height + 'px';
+			propertiesArea.style.height = dataArea.style.height;
+			dataArea.style.borderBottom = '1px solid lightGray';
+			propertiesArea.style.borderTop = '1px solid darkGray';
 		}
 		else
         {
-            let height: number = this.container.clientHeight;
-			this.dataArea.style.height = height + 'px';
-			var delta = this.dataArea.getBoundingClientRect().height - height; //because of margins and padding
+            let height: number = pannel.clientHeight;
+			dataArea.style.height = height + 'px';
+			var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
-			this.dataArea.style.height = height + 'px';
-			this.propertiesArea.style.height = "0px";
-			this.dataArea.style.borderBottom = '';
-			this.propertiesArea.style.borderTop = '';
-		}
-	}
-
-	Hide() {
-		this.container.style.width = this.handle.scrollWidth + 'px';
-		this.container.style.paddingRight = '0px';
-		this.visibility.visible = false;
-		this.handle.style.cursor = 'e-resize';
-		this.dataArea.style.display = 'none';
-		this.propertiesArea.style.display = 'none';
-	}
-
-	Show() {
-		this.container.style.width = this.visibility.widthToRestore;
-		this.container.style.paddingRight = this.handle.scrollWidth + 'px';
-		this.visibility.visible = true;
-		this.handle.style.cursor = 'w-resize';
-		this.dataArea.style.display = 'block';
-		this.propertiesArea.style.display = 'block';
-	}
-
-	SwitchVisibility()
-	{
-		if(this.visibility.visible)
-		{
-			this.Hide();
-		}
-		else
-		{
-			this.Show();
+			dataArea.style.height = height + 'px';
+			propertiesArea.style.height = "0px";
+			dataArea.style.borderBottom = '';
+			propertiesArea.style.borderTop = '';
 		}
 	}
 
@@ -166,31 +121,21 @@
 
     protected RefreshData() : void
 	{
-		//Clear dataArea content
-		while(this.dataArea.firstChild)
-		{
-			this.dataArea.removeChild(this.dataArea.firstChild);
-		}
-
+		this.dataArea.Clear();
 		let item = new DataItem(this.scene, this, this.scene);
-		this.dataArea.appendChild(item.GetContainerElement());
+		this.dataArea.GetElement().appendChild(item.GetContainerElement());
 	}
 	
 	protected RefreshProperties() : void
 	{
 		this.HandlePropertiesWindowVisibility();
-		this.propertiesArea.innerHTML = '';
+		this.propertiesArea.Clear();
 		if(this.currentItem != null)
 		{
 			let currentProperties = this.currentItem.GetProperties();
 			let self = this;
 			currentProperties.onChange = () => self.NotifyChange();
-			let table = currentProperties.GetElement();
-			this.propertiesArea.appendChild(table);
+			this.propertiesArea.AddControl(currentProperties);
 		}
 	}
-}
-
-class DataHandlerVisibility {
-	constructor(public visible: boolean, public widthToRestore: string) { }
 }

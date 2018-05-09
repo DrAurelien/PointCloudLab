@@ -56,7 +56,7 @@
 	private Start(event: MouseEvent) {
 		this.mousetracker = new MouseTracker(event);
 
-		this.datahandlervisibility = this.view.dataHandler.visibility.visible;
+		this.datahandlervisibility = this.view.dataHandler.visible;
 		this.StartMouseEvent();
 	}
 
