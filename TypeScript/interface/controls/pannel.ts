@@ -19,8 +19,8 @@
 	}
 
 	Clear() {
-		while (this.pannel.firstChild) {
-			this.pannel.removeChild(this.pannel.firstChild);
+		while (this.pannel.lastChild) {
+			this.pannel.removeChild(this.pannel.lastChild);
 		}
 	}
 }

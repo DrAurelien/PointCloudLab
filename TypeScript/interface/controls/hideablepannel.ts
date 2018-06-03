@@ -84,6 +84,7 @@ class Handle implements Control {
 class HideablePannel extends Pannel {
 	protected handle: Handle;
 	protected container: Pannel;
+	originalvisibility: boolean;
 	visible: boolean;
 	pinned: boolean;
 	private originalWidth: string;
@@ -119,6 +120,7 @@ class HideablePannel extends Pannel {
 			container.style.width = this.originalHeight;
 		}
 		this.visible = true;
+		this.originalvisibility = true;
 		if (this.handle) {
 			this.handle.UpdateCursor();
 		}
@@ -141,8 +143,24 @@ class HideablePannel extends Pannel {
 			default: break;
 		}
 		this.visible = false;
+		this.originalvisibility = false;
 		if (this.handle) {
 			this.handle.UpdateCursor();
+		}
+	}
+
+	TemporaryHide() {
+		let visbilityToRestore = this.visible;
+		this.Hide();
+		this.originalvisibility = visbilityToRestore;
+	}
+
+	RestoreVisibility() {
+		if (this.originalvisibility) {
+			this.Show();
+		}
+		else {
+			this.Hide();
 		}
 	}
 

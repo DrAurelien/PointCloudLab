@@ -1,5 +1,4 @@
 ﻿class DataHandler extends HideablePannel {
-    dataToolbar: Toolbar;
     dataArea: Pannel;
     propertiesArea: Pannel;
     currentItem: CADNode;
@@ -7,36 +6,6 @@
     constructor(public scene: Scene, private ownerView: Interface) {
 		super('DataWindow', HandlePosition.Right);
 
-		let dataHandler = this;
-		//Data toolbar
-        this.dataToolbar = new Toolbar([
-			//File import button
-			new FileOpener('[Icon:file-o] Open', function(createdObject) {
-				if(createdObject != null)
-				{
-					scene.Contents.Add(createdObject);
-					scene.Select(createdObject);
-					dataHandler.currentItem = createdObject;
-					dataHandler.NotifyChange();
-				}
-			}, 'Load data from a file'),
-			new ComboBox('[Icon:video-camera] View', [
-					new CenterCameraAction(scene, ownerView),
-					null,
-					new CameraModeAction(ownerView),
-					new TransformModeAction(ownerView),
-					new LightModeAction(ownerView)
-				],
-				'Handle the camera position'
-			),
-			//Help
-			new Button('[Icon:question-circle] Help', function () {
-				window.open('help.html', '_blank');
-			})
-			],
-			'DataToolbar');
-		this.AddControl(this.dataToolbar);
-		
 		//Data visualization
 		this.dataArea = new Pannel('DataArea');
 		this.AddControl(this.dataArea);
@@ -63,7 +32,7 @@
 		let propertiesArea = this.propertiesArea.GetElement();
 		if(this.currentItem != null)
         {
-            let height: number = (pannel.clientHeight - this.dataToolbar.GetElement().getBoundingClientRect().height) / 2;
+            let height: number = pannel.clientHeight / 2;
 			dataArea.style.height = height+'px';
 			var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;

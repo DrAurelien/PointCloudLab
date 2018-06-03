@@ -1,22 +1,36 @@
-﻿class Toolbar implements Control {
-    private toolbar: HTMLElement;
+﻿class Toolbar implements Container {
+    private toolbar: HTMLDivElement;
 
-    constructor(controls : Control[], classname : string="") {
-        var container = document.createElement('table');
-        container.width = '100%';
-        var containerRow = document.createElement('tr');
-        container.appendChild(containerRow);
-
-        for (var index = 0; index < controls.length; index++) {
-            var containerCell = document.createElement('td');
-            containerRow.appendChild(containerCell);
-            containerCell.appendChild(controls[index].GetElement());
-        }
-
+    constructor(classname : string="") {
         this.toolbar = document.createElement('div');
-        this.toolbar.appendChild(container);
 		this.toolbar.className = classname;
     }
+
+	AddControl(control: Control) {
+		let container = document.createElement('span');
+		container.appendChild(control.GetElement());
+		this.toolbar.appendChild(container);
+	}
+
+	RemoveControl(control: Control) {
+		let element = control.GetElement();
+
+		for (var index = 0; index < this.toolbar.children.length; index++) {
+			let container = this.toolbar.children[index];
+			let current = container.firstChild;
+
+			if (current === element) {
+				this.toolbar.removeChild(container);
+				return;
+			}
+		}
+	}
+
+	Clear() {
+		while (this.toolbar.lastChild) {
+			this.toolbar.removeChild(this.toolbar.lastChild);
+		}
+	}
 
     GetElement(): HTMLElement {
         return this.toolbar;

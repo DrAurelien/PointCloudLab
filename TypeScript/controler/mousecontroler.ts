@@ -1,6 +1,5 @@
 ﻿abstract class MouseControler {
 	mousetracker: MouseTracker;
-	private datahandlervisibility: boolean;
 	private targetElement: HTMLElement;
 	private cursor: Cursor;
 
@@ -56,7 +55,7 @@
 	private Start(event: MouseEvent) {
 		this.mousetracker = new MouseTracker(event);
 
-		this.datahandlervisibility = this.view.dataHandler.visible;
+		this.view.dataHandler.TemporaryHide();
 		this.StartMouseEvent();
 	}
 
@@ -66,9 +65,7 @@
 		}
 		this.mousetracker = null;
 
-		if (this.datahandlervisibility) {
-			this.view.dataHandler.Show();
-		}
+		this.view.dataHandler.RestoreVisibility();
 		this.cursor.Restore(this.targetElement);
 		this.EndMouseEvent();
 	}

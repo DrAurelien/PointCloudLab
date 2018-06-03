@@ -26,10 +26,9 @@
 			};
 		}
 
-		let toolbar = new Toolbar([
-			new Button('Ok', ApplyAndClose(onAccept)),
-			new Button('Cancel', ApplyAndClose(onCancel))
-		]);
+		let toolbar = new Toolbar();
+		toolbar.AddControl(new Button('Ok', ApplyAndClose(onAccept)));
+		toolbar.AddControl(new Button('Cancel', ApplyAndClose(onCancel)));
 		cell.appendChild(toolbar.GetElement());
 
 		document.body.appendChild(this.container);

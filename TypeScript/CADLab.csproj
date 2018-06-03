@@ -64,6 +64,7 @@
     <TypeScriptCompile Include="interface\cursor.ts" />
     <TypeScriptCompile Include="interface\datahandler.ts" />
     <TypeScriptCompile Include="interface\interface.ts" />
+    <TypeScriptCompile Include="interface\menu.ts" />
     <TypeScriptCompile Include="interface\nameprovider.ts" />
     <TypeScriptCompile Include="interface\controls\properties\properties.ts" />
     <TypeScriptCompile Include="maths\eigendecomposition.ts" />
