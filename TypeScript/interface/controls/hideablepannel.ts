@@ -84,7 +84,7 @@ class Handle implements Control {
 class HideablePannel extends Pannel {
 	protected handle: Handle;
 	protected container: Pannel;
-	originalvisibility: boolean;
+	protected originalvisibility: boolean;
 	visible: boolean;
 	pinned: boolean;
 	private originalWidth: string;
@@ -104,6 +104,7 @@ class HideablePannel extends Pannel {
 		this.originalHeight = null;
 
 		this.visible = true;
+		this.originalvisibility = true;
 		this.pinned = false;
 	}
 
@@ -112,40 +113,45 @@ class HideablePannel extends Pannel {
 	}
 
 	Show() {
-		let container = this.GetElement();
-		if (this.originalWidth !== null) {
-			container.style.width = this.originalWidth;
-		}
-		if (this.originalHeight !== null) {
-			container.style.width = this.originalHeight;
-		}
-		this.visible = true;
-		this.originalvisibility = true;
-		if (this.handle) {
-			this.handle.UpdateCursor();
+		if (!this.visible) {
+			let pannel = this.GetElement();
+			if (this.originalWidth !== null) {
+				pannel.style.width = this.originalWidth;
+			}
+			if (this.originalHeight !== null) {
+				pannel.style.width = this.originalHeight;
+			}
+			this.visible = true;
+			this.originalvisibility = true;
+			this.RefreshSize();
+			if (this.handle) {
+				this.handle.UpdateCursor();
+			}
 		}
 	}
 
 	Hide() {
-		let container = this.GetElement();
-		let handle = this.handle.GetElement();
-		switch (this.handle.position) {
-			case HandlePosition.Left:
-			case HandlePosition.Right:
-				this.originalWidth = container.clientWidth + 'px';
-				container.style.width = handle.clientWidth + 'px';
-				break;
-			case HandlePosition.Top:
-			case HandlePosition.Bottom:
-				this.originalHeight = container.clientHeight + 'px';
-				container.style.height = handle.clientHeight + 'px';
-				break;
-			default: break;
-		}
-		this.visible = false;
-		this.originalvisibility = false;
-		if (this.handle) {
-			this.handle.UpdateCursor();
+		if (this.visible) {
+			let pannel = this.GetElement();
+			let handle = this.handle.GetElement();
+			switch (this.handle.position) {
+				case HandlePosition.Left:
+				case HandlePosition.Right:
+					this.originalWidth = pannel.clientWidth + 'px';
+					pannel.style.width = handle.clientWidth + 'px';
+					break;
+				case HandlePosition.Top:
+				case HandlePosition.Bottom:
+					this.originalHeight = pannel.clientHeight + 'px';
+					pannel.style.height = handle.clientHeight + 'px';
+					break;
+				default: break;
+			}
+			this.visible = false;
+			this.originalvisibility = false;
+			if (this.handle) {
+				this.handle.UpdateCursor();
+			}
 		}
 	}
 
