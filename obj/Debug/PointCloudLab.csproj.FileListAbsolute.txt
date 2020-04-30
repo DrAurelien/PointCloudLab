@@ -1,0 +1,6 @@
+C:\Users\Aurélien\Source\Repos\PointCloudLab\bin\PointCloudLab.dll.config
+C:\Users\Aurélien\Source\Repos\PointCloudLab\bin\PointCloudLab.dll
+C:\Users\Aurélien\Source\Repos\PointCloudLab\bin\PointCloudLab.pdb
+C:\Users\Aurélien\Source\Repos\PointCloudLab\obj\Debug\PointCloudLab.csprojResolveAssemblyReference.cache
+C:\Users\Aurélien\Source\Repos\PointCloudLab\obj\Debug\PointCloudLab.dll
+C:\Users\Aurélien\Source\Repos\PointCloudLab\obj\Debug\PointCloudLab.pdb

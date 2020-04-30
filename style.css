@@ -1,4 +1,4 @@
-body
+﻿body
 {
 	overflow : hidden;
 	padding : 0px;
@@ -7,12 +7,25 @@ body
 	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 }
 
-canvas
+canvas.SceneRendering
 {
 	position : fixed;
 	top : 0px;
 	left : 0px;
 	margin : 0px;
+}
+
+canvas.CoordsRendering
+{
+	position : fixed;
+	margin : 0px;
+	bottom : 10px;
+	right : 10px;
+	width : 120px;
+	height : 120px;
+	z-index : 1;
+	border : 1px solid white;
+	border-radius : 7px;
 }
 
 div.DataWindow
@@ -28,17 +41,17 @@ div.DataWindow
 	opacity : 0.8;
 	z-index : 1;
 	border-radius: 7px;
+	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;
 }
 
-div.DataWindowHandle
+div.HideablePannelHandle
 {
 	position : absolute;
-	right : 0px;
-	top : 0px;
-	width : 7px;
 	background-color : gray;
 	opacity : 0.8;
 	z-index: 2;
+	width : 7px;
+	height : 7px;
 }
 
 div.DataWindowHandle:hover
@@ -53,9 +66,13 @@ div.DataToolbar, div.DataArea, div.PropertiesArea
 	overflow : auto;
 }
 
-div.SceneItem, div.SelectedSceneItem
+div.TreeItemContainer
 {
 	padding-left : 10px;
+}
+
+div.SceneItem, div.SelectedSceneItem
+{
 	cursor : pointer;
 }
 
@@ -107,9 +124,40 @@ div.PopupOption
 	cursor : pointer;
 }
 
+div.PopupOptionInactive
+{
+	color : darkgray;
+}
+
+div.PopupSeparator
+{
+	height : 0px;
+	width : 100%;
+	padding : 0px;
+	margin : 0px;
+	margin-top : 0.2em;
+	margin-bottom : 0.2em;
+	border-bottom : 1px solid darkgray;
+}
+
 div.PopupOption:hover
 {
 	background-color : darkgray;
+}
+
+div.Hint
+{
+	position : fixed;
+	right : 10px;
+	top : 10px;
+	width : 500px;
+	overflow : hidden;
+	margin : 0px;
+	padding : 1em;
+	background-color : white;
+	opacity : 0.8;
+	z-index : 1;
+	border-radius: 7px;
 }
 
 div.Dialog
@@ -141,7 +189,7 @@ input.FileOpener
 table.Properties
 {
 	padding : 0px;
-    border-spacing : 5px;
+    border-spacing : 0px;
 }
 
 td
@@ -154,10 +202,11 @@ td
 	margin : 0px;
 }
 
-td.PropertyComplexValue
+td.PropertyCompound
 {
-	border : 1px solid lightgray;
-	border-right : 0px;
+	margin : 0px;
+	padding : 0px;
+	padding-left : 2em;
 }
 
 td.PropertyName
@@ -165,7 +214,7 @@ td.PropertyName
 	font-weight : bold;
 }
 
-input.PropertyValue
+input.PropertyValue, input.PropertyValueReadonly
 {
 	font-size : 11px;
 	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
@@ -227,13 +276,44 @@ div.ProgressBar
 	border-radius: 5px;
 }
 
+.ButtonIcon
+{
+	margin-right : 1em;
+}
+
+.ItemIcon
+{
+	margin-right : 1em;
+	font-size : 120%;
+	float: left;
+}
 .ItemAction
 {
 	margin-right : 5px;
 	font-size : 120%;
+	float: right;
 }
 
 .ItemAction:hover
 {
 	color: red;
+}
+
+div.AxisLabel
+{
+	position : fixed;
+	width : 12px;
+	height : 12px;
+	z-index : 2;
+	font-size : 10px;
+	stroke : white;
+	font-weight : bold;
+	background-color : darkgray;
+	border : 1px solid black;
+	background-color : lightgray;
+	text-align : center;
+	vertical-align : middle;
+	border-radius: 3px;
+	cursor : pointer;
+	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;
 }

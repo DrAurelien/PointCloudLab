@@ -1,81 +1,40 @@
-function Popup(owner, options)
-{
-	function GetPopup(owner)
-	{
-		var popup = document.getElementById('Popup');
-		if(popup)
-		{
-			if(popup.owner === owner)
-			{
-				popup.parentNode.removeChild(popup);
-				return null;
-			}
-			while(popup.firstChild)
-			{
-				popup.removeChild(popup.firstChild);
-			}
-		}
-		else
-		{
-			var popup = document.createElement('div');
-			popup.className = 'Popup';
-			popup.id = 'Popup';
-			document.body.appendChild(popup);
-		}
-		
-		var rect = owner.getBoundingClientRect();
-		popup.style.top = rect.bottom;
-		popup.style.left = rect.left;
-		popup.owner = owner;
-		popup.onmouseleave = function()
-		{
-			popup.parentNode.removeChild(popup);
-		}
-		return popup;
-	}
-	
-	function FillPopupList(popup)
-	{
-		var popupContent = ((typeof options == 'function') ? options() : options);
-		for(var index=0; index<popupContent.length; index++)
-		{
-			var item = document.createElement('div');
-			item.className = 'PopupOption';
-			var itemLabel = document.createTextNode(popupContent[index].label);
-			item.appendChild(itemLabel);
-			
-			//Javascript closure : create an object to avoid closure issues
-			function ItemClicked(popup, callback)
-			{
-				this.popup = popup;
-				this.callbackFunction = callback;
-				this.Callback = function()
-				{
-					var self = this;
-					return function()
-					{
-						//Call the functino
-						self.callbackFunction();
-						//Close the popup
-						if(self.popup.parentNode)
-						{
-							self.popup.parentNode.removeChild(self.popup);
-						}
-					}
-				}
-			}
-			
-			item.onclick = new ItemClicked(popup, popupContent[index].callback).Callback();
-			popup.appendChild(item);
-		}
-		
-		return popup;
-	}
-	
-	
-	var popup = GetPopup(owner);
-	if(popup)
-	{
-		FillPopupList(popup);
-	};
-}
+var Popup = (function () {
+    function Popup(owner, actions) {
+        this.owner = owner;
+        this.actions = actions;
+        this.popupContainer = document.createElement('div');
+        this.popupContainer.className = 'Popup';
+        this.popupContainer.id = 'Popup';
+        var rect = owner.GetElement().getBoundingClientRect();
+        this.popupContainer.style.top = rect.bottom + 'px';
+        this.popupContainer.style.left = rect.left + 'px';
+        this.popupContainer.onmouseleave = function () {
+            Popup.DestroyCurrent();
+        };
+        document.body.appendChild(this.popupContainer);
+        this.items = [];
+        var popupContent = ((typeof actions == 'function') ? actions() : actions);
+        for (var index = 0; index < popupContent.length; index++) {
+            var popupItem = new PopupItem(popupContent[index]);
+            this.items.push(PopupItem);
+            this.popupContainer.appendChild(popupItem.GetElement());
+        }
+    }
+    Popup.DestroyCurrent = function () {
+        if (this.current) {
+            var popupElement = this.current.GetElement();
+            popupElement.parentNode.removeChild(popupElement);
+        }
+        this.current = null;
+    };
+    Popup.CreatePopup = function (owner, actions) {
+        Popup.DestroyCurrent();
+        this.current = new Popup(owner, actions);
+        return this.current;
+    };
+    Popup.prototype.GetElement = function () {
+        return this.popupContainer;
+    };
+    return Popup;
+}());
+//# sourceMappingURL=popup.js.map

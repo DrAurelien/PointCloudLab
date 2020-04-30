@@ -1,62 +1,53 @@
-var Interface = 
-{
-	sceneRenderer : null,
-	dataHandler : null,
-	clickSelection : null,
-	
-	Initialize : function(scene)
-	{
-		this.InitializeDataHandler(scene);
-		this.InitializeRenderer(scene);
-		
-		window.onresize = function()
-		{
-			Interface.Refresh();
-		}
-		this.Refresh();
-	},
-	
-	InitializeDataHandler : function(scene)
-	{
-		//Create a div to display the scene
-		var dataVewing = document.createElement('div');
-		dataVewing.className = 'DataWindow';
-		document.body.appendChild(dataVewing);
-		
-		var self = this;
-		this.dataHandler = new DataHandler(dataVewing, function() {self.Refresh();});
-		this.dataHandler.Initialize(scene);
-		
-		this.dataHandler.handle.onclick = function(event)
-		{
-			Interface.dataHandler.SwitchVisibility();
-		}
-	},
-	
-	InitializeRenderer : function(scene)
-	{
-		//Create a canvas to display the scene
-		var sceneRenderingArea = document.createElement('canvas');
-		sceneRenderingArea.className = 'SceneRendering';
-		document.body.appendChild(sceneRenderingArea);
-		
-		//Create the scene handler
-		self = this;
-		function Refresh(selectedItems)
-		{
-			self.dataHandler.currentItem = selectedItems;
-			self.Refresh();
-		}
-		this.sceneRenderer = new Renderer(sceneRenderingArea, Refresh);
-		this.sceneRenderer.Initialize(scene);
-	},
-	
-	Refresh : function()
-	{
-		this.dataHandler.Resize(window.innerWidth, window.innerHeight);
-		this.dataHandler.RefreshContent(Scene);
-		
-		this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
-		this.sceneRenderer.Draw(Scene);
-	}
-}
+var Interface = (function () {
+    function Interface(scene) {
+        var appInterface = this;
+        this.InitializeDataHandler(scene);
+        this.InitializeRenderers(scene);
+        window.onresize = function () {
+            appInterface.Refresh();
+        };
+        this.Refresh();
+    }
+    Interface.prototype.InitializeDataHandler = function (scene) {
+        var self = this;
+        this.dataHandler = new DataHandler(scene, this);
+        document.body.appendChild(this.dataHandler.GetElement());
+    };
+    Interface.prototype.InitializeRenderers = function (scene) {
+        //Create the scene rendering component
+        this.sceneRenderer = new Renderer('SceneRendering');
+        document.body.appendChild(this.sceneRenderer.GetElement());
+        //Create the coordinates axes to be rendered
+        this.coordinatesSystem = new CoordinatesSystem(this);
+        document.body.appendChild(this.coordinatesSystem.GetElement());
+        //Create the default controler (camera controler)
+        this.currentControler = new CameraControler(this, scene);
+        this.sceneRenderer.Draw(scene);
+        this.coordinatesSystem.Refresh();
+    };
+    Interface.prototype.UpdateSelectedElement = function (selectedItem) {
+        this.dataHandler.currentItem = selectedItem;
+        this.Refresh();
+    };
+    Interface.prototype.Refresh = function () {
+        this.dataHandler.Resize(window.innerWidth, window.innerHeight);
+        this.dataHandler.RefreshContent();
+        this.RefreshRendering();
+    };
+    Interface.prototype.RefreshRendering = function () {
+        this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
+        this.sceneRenderer.Draw(this.dataHandler.scene);
+        this.coordinatesSystem.Refresh();
+    };
+    Interface.prototype.UseCameraControler = function () {
+        this.currentControler = new CameraControler(this, this.dataHandler.scene);
+    };
+    Interface.prototype.UseTransformationControler = function () {
+        this.currentControler = new TransformControler(this, this.dataHandler.scene);
+    };
+    Interface.prototype.UseLightControler = function () {
+        this.currentControler = new LightControler(this);
+    };
+    return Interface;
+}());
+//# sourceMappingURL=interface.js.map

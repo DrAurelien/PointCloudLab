@@ -1,19 +1,33 @@
-function Toolbar(controls)
-{
-	var container = document.createElement('table');
-	container.width = '100%';
-	var containerRow = document.createElement('tr');
-	container.appendChild(containerRow);
-	
-	for(var index=0; index<controls.length; index++)
-	{
-		var containerCell = document.createElement('td');
-		containerRow.appendChild(containerCell);
-		containerCell.appendChild(controls[index]);
-	}
-	
-	var toolbar = document.createElement('div');
-	toolbar.appendChild(container);
-	
-	return toolbar;
-}
+var Toolbar = (function () {
+    function Toolbar(classname) {
+        if (classname === void 0) { classname = ""; }
+        this.toolbar = document.createElement('div');
+        this.toolbar.className = classname;
+    }
+    Toolbar.prototype.AddControl = function (control) {
+        var container = document.createElement('span');
+        container.appendChild(control.GetElement());
+        this.toolbar.appendChild(container);
+    };
+    Toolbar.prototype.RemoveControl = function (control) {
+        var element = control.GetElement();
+        for (var index = 0; index < this.toolbar.children.length; index++) {
+            var container = this.toolbar.children[index];
+            var current = container.firstChild;
+            if (current === element) {
+                this.toolbar.removeChild(container);
+                return;
+            }
+        }
+    };
+    Toolbar.prototype.Clear = function () {
+        while (this.toolbar.lastChild) {
+            this.toolbar.removeChild(this.toolbar.lastChild);
+        }
+    };
+    Toolbar.prototype.GetElement = function () {
+        return this.toolbar;
+    };
+    return Toolbar;
+}());
+//# sourceMappingURL=toolbar.js.map
