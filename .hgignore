@@ -1,0 +1,6 @@
+TypeScript/.*\.js
+TypeScript/.*\.js\.map
+.*\.dll
+.*\.pdb
+.*\.dll\.config
+.*/obj/.*

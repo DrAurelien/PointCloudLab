@@ -1,0 +1,69 @@
+--------------------------
+- Backlog
+--------------------------
+- Versionner les code [DONE]
+- Minification du code
+- Gestion des lumières
+	- Multiples lumières
+	- Localisation de chaque lumière
+	- Paramètres d'éclairage (puissance spéculaire, coefficients diffus et spéculaire)
+	- Couleurs de chaque lumière
+- Sauvegarde des positions de caméras
+	- Calcul d'un chemin de caméra et animation correspondante
+- Historique des modifications
+	- Possibilité d'annuler une modification
+- Interface
+	- Affichage des menus : fenetres flottantes ? ancrables ?
+	- Contrôles personnalisés ("jolies" slidebar par exemple)
+	- Présentation de la scene
+		- Arborescence des groupes et objets
+		- Possibilité de glisser / déposer un objet d'un groupe vers un autre
+	- Menu de gestion des lumières
+	- Menu de gestion de la caméra
+		- Mode de projection (perpective ? ortho ? ...)
+		- Facteur de zoom
+		- Sauvegarder / Restaurer des positions
+	- Menu individuel pour chaque object de la scène
+		- Paramètres géométriques
+		- Paramètres colorimètriques (couleurs + matériau)
+	- Gestion des paramètres communs : si chaque jeu de paramètre est un objet JSON, on peu construire le jeu de paramètre commun à tous les objets, le présneter, et répercuter les modifications sur tous les objets concernés.
+	- Selecteur de mode d'interraction :
+		- Navigation dans l'espace
+		- Edition d'objets
+		- Selection d'objets
+		- Points picking
+- Controles
+	- Edition d"objets
+		- Manipulation dans l'espace :
+			- Rotation
+			- Translation
+			- Mise à l'echelle
+			- Déformation
+	- Selection d'objets
+		- Depuis l'espace de visualisation de la scène
+		- Depuis la vue des données
+		- Multi selection
+		- Polygone de selection
+	- Points picking : défintion de points à la surface d'objets, paramétrés dans l'espace de ces objets
+- Wireframe rendering
+- Objets
+	- Implémenter les objets
+		- Sphere [DONE]
+		- Cylindre [DONE]
+		- Cone
+		- Tore
+		- Ellipsoide
+		- Surface d'extrusion
+		- Surface de révolution
+		- Carreau de NURBS
+		- Nuage de points
+		- Maillage
+	- Définition d'un objet relativement à un autre (notion de "contrainte")
+		- Implentation de la notion de propriété (class propetiété, classe héritantes valeur, vecteur -tableau de valeurs- ou reference)
+		- Autocompletion lors de la modification des properiétés d'un objet
+	- Possibilité de "détacher un objet" : Les objets qui sont définis (par défaut ?) relativement à d'autres objets doivent pouvoir être détachés de cet objet (ils en deviennent indépendant)
+- Chargement de nuages de points à partir de fichiers locaux
+- Algorithmes avancés
+	- Calcul de nomales
+	- Fitting de formes
+	- ETC

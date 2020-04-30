@@ -1,0 +1,113 @@
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script id="VertexShader" type="x-shader/x-vertex">
+		attribute vec3 VertexPosition;
+		attribute vec3 NormalVector;
+		uniform mat4 ModelView;
+		uniform mat4 Projection;
+		uniform mat4 ShapeTransform;
+		
+		varying highp vec3 Position;
+		varying highp vec3 Normal;
+
+		void main(void) {
+			gl_PointSize = 5.0;
+			gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
+			
+			Position = VertexPosition;
+			Normal = NormalVector;
+		}
+	</script>
+	<script id="FragmentShader" type="x-shader/x-fragment">
+		//Lighting model
+		uniform  highp vec3 EyePosition;
+		uniform  highp vec3 LightPosition;
+		uniform  highp vec3 Color;
+		uniform highp float DiffuseCoef;
+		uniform  highp float AmbiantCoef;
+		uniform  highp float SpecularCoef;
+		uniform  highp float GlossyPow;
+		uniform lowp int UseNormals;
+		
+		varying highp vec3 Position;
+		varying highp vec3 Normal;
+		
+		void main(void) {
+			
+			highp float lightingCoef;
+			
+			if(UseNormals == 0)
+			{
+				lightingCoef = 1.0;
+			}
+			else
+			{
+				//Phong lighting
+				highp vec3 eyeVect = EyePosition - Position;
+				eyeVect /= length(eyeVect);
+				highp vec3 lightVect = LightPosition - Position;
+				lightVect /= length(lightVect);
+				highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
+				reflVec /= length(reflVec);
+				
+				 lightingCoef = ( AmbiantCoef +
+					max(DiffuseCoef * dot(Normal, lightVect), 0.0) +
+					SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow)
+					//) / (AmbiantCoef+DiffuseCoef+SpecularCoef);
+					) / 3.0;
+			}
+			gl_FragColor = vec4(Color * lightingCoef, 1);
+		}
+	</script>
+	<!--MATHS-->
+	<script type="text/javascript" src="maths/vector.js"></script>
+	<script type="text/javascript" src="maths/matrix.js"></script>
+	<script type="text/javascript" src="maths/geometry.js"></script>
+	<script type="text/javascript" src="maths/rootsFinding.js"></script>
+	<script type="text/javascript" src="maths/polynomials.js"></script>
+	<!-- RENDERING-->
+	<script type="text/javascript" src="opengl/materials.js"></script>
+	<script type="text/javascript" src="opengl/renderer.js"></script>
+	<!-- MODEL -->
+	<script type="text/javascript" src="model/cadprimitive.js"></script>
+	<script type="text/javascript" src="model/boundingbox.js"></script>
+	<script type="text/javascript" src="model/neighborhood.js"></script>
+	<script type="text/javascript" src="model/kdtree.js"></script>
+	<script type="text/javascript" src="model/pointcloud.js"></script>
+	<script type="text/javascript" src="model/mesh.js"></script>
+	<script type="text/javascript" src="model/shapes/shapes.js"></script>
+	<script type="text/javascript" src="model/shapes/plane.js"></script>
+	<script type="text/javascript" src="model/shapes/sphere.js"></script>
+	<script type="text/javascript" src="model/shapes/cylinder.js"></script>
+	<script type="text/javascript" src="model/shapes/torus.js"></script>
+	<script type="text/javascript" src="model/scene.js"></script>
+	<script type="text/javascript" src="model/ransac.js"></script>
+	<!--FILES-->
+	<script type="text/javascript" src="files/binaryreader.js"></script>
+	<script type="text/javascript" src="files/plyloader.js"></script>
+	<script type="text/javascript" src="files/csvloader.js"></script>
+	<script type="text/javascript" src="files/fileloader.js"></script>
+	<script type="text/javascript" src="files/fileexporter.js"></script>
+	<!--INTERFACE-->
+	<script type="text/javascript" src="interface/controls/dialog.js"></script>
+	<script type="text/javascript" src="interface/controls/popup.js"></script>
+	<script type="text/javascript" src="interface/controls/button.js"></script>
+	<script type="text/javascript" src="interface/controls/combobox.js"></script>
+	<script type="text/javascript" src="interface/controls/progressbar.js"></script>
+	<script type="text/javascript" src="interface/controls/fileopener.js"></script>
+	<script type="text/javascript" src="interface/controls/toolbar.js"></script>
+	<script type="text/javascript" src="interface/datahandler.js"></script>
+	<script type="text/javascript" src="interface/interface.js"></script>
+	<!--COMMON-->
+	<script type="text/javascript" src="longprocess.js"></script>
+	</script>
+</head>
+
+<body onload="Interface.Initialize(Scene);">
+</body>
+
+</html>
