@@ -39,6 +39,7 @@
     <TypeScriptCompile Include="controler\actions.ts" />
     <TypeScriptCompile Include="interface\controls\axislabel.ts" />
     <TypeScriptCompile Include="interface\controls\button.ts" />
+    <TypeScriptCompile Include="interface\controls\selectdrop.ts" />
     <TypeScriptCompile Include="interface\controls\combobox.ts" />
     <TypeScriptCompile Include="interface\controls\container.ts" />
     <TypeScriptCompile Include="interface\controls\control.ts" />

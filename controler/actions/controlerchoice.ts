@@ -1,6 +1,6 @@
 ﻿﻿class CameraModeAction extends Action {
 	constructor(private view: Interface) {
-		super('Switch to camera mode', function (onDone) {
+		super('Camera mode', function (onDone) {
 			view.UseCameraControler();
 		}, 'The mouse can be used to control the position of the camera');
 	}
@@ -12,7 +12,7 @@
 
 class TransformModeAction extends Action {
 	constructor(private view: Interface) {
-		super('Switch to transformation mode', function (onDone) {
+		super('Transformation mode', function (onDone) {
 			view.UseTransformationControler();
 		}, 'The mouse can be used to control the geometry of the selected item');
 	}
@@ -24,7 +24,7 @@ class TransformModeAction extends Action {
 
 class LightModeAction extends Action {
 	constructor(private view: Interface) {
-		super('Switch to light mode', function (onDone) {
+		super('Light mode', function (onDone) {
 			view.UseLightControler();
 		}, 'The mouse can be used to control the position of the selected light');
 	}

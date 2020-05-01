@@ -1,22 +1,23 @@
 ﻿class Button implements Control {
     button: HTMLDivElement;
 	hint: Hint;
+	buttonLabel: Text;
 
     constructor(label: string, callback: Function, hintMessage? : string) {
         this.button = document.createElement('div');
         this.button.className = 'Button';
 		let namePattern = /(?:\[Icon\:(.*)\]\s*)?(.*)/i;
 		let name = namePattern.exec(label);
-		let buttonLabel : any = document.createTextNode(name[2]);
+		this.buttonLabel = document.createTextNode(name[name.length - 1]);
+		let nameContainer: any = this.buttonLabel;
 		if (name[1]) {
 			let icon = document.createElement('i');
 			icon.className = 'ButtonIcon fa fa-' + name[1];
-			let nameContainer = document.createElement('span');
+			nameContainer = document.createElement('span');
 			nameContainer.appendChild(icon);
-			nameContainer.appendChild(buttonLabel);
-			buttonLabel = nameContainer;
+			nameContainer.appendChild(this.buttonLabel);
 		}
-        this.button.appendChild(buttonLabel);
+		this.button.appendChild(nameContainer);
 
 		if (hintMessage) {
 			this.hint = new Hint(this, hintMessage);
@@ -29,5 +30,13 @@
 
     GetElement(): HTMLElement {
         return this.button;
-    }
+	}
+
+	SetLabel(value: string) {
+		this.buttonLabel.data = value;
+	}
+
+	GetLabel() : string {
+		return this.buttonLabel.data;
+	}
 }

@@ -1,7 +1,7 @@
 ﻿class ComboBox implements Control {
     private button: Button;
 
-    constructor(label: string, options: any, hintMessage? : string) {
+    constructor(label: string, options: Action[], hintMessage? : string) {
         var self = this;
         this.button = new Button(label, function () {
             Popup.CreatePopup(self.button, options);

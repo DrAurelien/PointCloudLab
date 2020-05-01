@@ -20,14 +20,19 @@
 			}
 		}, 'Load data from a file'));
 
-		this.toolbar.AddControl(new ComboBox('[Icon:video-camera] View', [
-			new CenterCameraAction(scene, ownerView),
-			null,
-			new CameraModeAction(ownerView),
-			new TransformModeAction(ownerView),
-			new LightModeAction(ownerView)
+		let center = new CenterCameraAction(scene, ownerView);
+		this.toolbar.AddControl(new Button('[Icon:video-camera] Center', () => {
+			center.Run();
+		},
+		center.hintMessage));
+
+		this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
+				new CameraModeAction(ownerView),
+				new TransformModeAction(ownerView),
+				new LightModeAction(ownerView)
 			],
-			'Handle the camera position'
+			0,
+			'Change the current working mode'
 		));
 
 		this.toolbar.AddControl(new Button('[Icon:question-circle] Help', function () {
