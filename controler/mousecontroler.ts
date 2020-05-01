@@ -9,7 +9,7 @@
 
 		let self = this;
 
-        this.targetElement.oncontextmenu = function (event: Event) {
+		this.targetElement.oncontextmenu = function (event: Event) {
 			event = event || window.event;
 			event.preventDefault();
 			return false;
@@ -30,7 +30,7 @@
 
 		this.targetElement.onmousemove = function (event: MouseEvent) {
 			event = <MouseEvent>(event || window.event);
-			
+
 			if (self.mousetracker) {
 				let delta = self.mousetracker.UpdatePosition(event);
 				self.HandleMouseMove(delta);
@@ -40,14 +40,14 @@
 			return true;
 		};
 
-		this.targetElement.onmousewheel = function (event: MouseWheelEvent) {
-			event = <MouseWheelEvent>(event || window.event);
-			self.HandleWheel(event.wheelDelta);
+		this.targetElement.onwheel = function (event: WheelEvent) {
+			event = <WheelEvent>(event || window.event);
+			self.HandleWheel(event.deltaY);
 		};
 
 		document.onkeypress = function (event: KeyboardEvent) {
 			event = <KeyboardEvent>(event || window.event);
-			let key :number = event.key ? event.key.charCodeAt(0) : event.keyCode;
+			let key: number = event.key ? event.key.charCodeAt(0) : event.keyCode;
 			self.HandleKey(key);
 		};
 	}
@@ -80,7 +80,7 @@
 
 	protected EndMouseEvent() {
 	}
-	
+
 	protected set Cursor(iconCode: string) {
 		this.cursor.Icon = iconCode;
 		this.cursor.Apply(this.targetElement);

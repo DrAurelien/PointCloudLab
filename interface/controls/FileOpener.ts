@@ -12,7 +12,7 @@
 			reader.onloadend = function () {
 				progress.Delete();
 
-				let fileContent = this.result;
+				let fileContent = <ArrayBuffer>this.result
 				let loader: FileLoader = null;
 				switch (extension) {
 					case 'ply':
@@ -55,7 +55,7 @@
 		input.className = 'FileOpener';
 		input.multiple = false;
 		input.onchange = function () {
-			self.LoadFile(this.files[0]);
+			self.LoadFile(input.files[0]);
 		}
 
 		let combo = new ComboBox(this.label, [

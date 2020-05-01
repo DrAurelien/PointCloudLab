@@ -60,7 +60,7 @@
 	InsertValue(title: string, defaultValue: any) {
 		let valueControl: HTMLInputElement = document.createElement('input');
 		valueControl.type = 'text';
-		valueControl.width = '20';
+		valueControl.width = 20;
 		valueControl.value = defaultValue;
 		return this.InsertItem(title, valueControl);
 	}

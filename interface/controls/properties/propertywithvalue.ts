@@ -10,7 +10,7 @@
 		this.container = document.createElement('div');
 		this.input = document.createElement('input');
 		this.input.type = inputType;
-		this.input.width = '20';
+		this.input.width = 20;
 		this.input.className = 'PropertyValue';
 		this.input.value = value;
 		this.input.onchange = (ev) => self.NotifyChange();
