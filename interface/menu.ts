@@ -32,7 +32,7 @@
 				new LightModeAction(ownerView)
 			],
 			0,
-			'Change the current working mode'
+			'Change the current working mode (changes the mouse input '
 		));
 
 		this.toolbar.AddControl(new Button('[Icon:question-circle] Help', function () {

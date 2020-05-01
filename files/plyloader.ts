@@ -274,7 +274,8 @@ class PlyLoader {
 		loader
 			.SetNext(new CloudBuilder(this.elements))
 			.SetNext(new MeshBuilder(this.elements))
-			.SetNext(new Finalizer(this));
+			.SetNext(new Finalizer(this))
+			.SetNext((f: Finalizer) => onloaded(f.result));
 		loader.Start();
 	}
 }

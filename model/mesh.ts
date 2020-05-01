@@ -59,6 +59,8 @@ class Mesh extends CADPrimitive {
 			let self = this;
 			self.octree = new Octree(this);
 		}
+		if (onDone)
+			onDone(this);
 	}
 
 	ClearNormals() {
