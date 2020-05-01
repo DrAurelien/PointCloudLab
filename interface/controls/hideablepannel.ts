@@ -13,27 +13,12 @@ class Handle implements Control {
 		let self = this;
 
 		this.handle = document.createElement('div');
-		this.handle.className = 'HideablePannelHandle ' + position;
+		this.handle.className = 'HideablePannelHandle';
+		this.handle.setAttribute("Position", HandlePosition[position]);
 		this.handle.onclick = (event) => {
 			if (!self.owner.pinned)
 				self.owner.SwitchVisibility();
 		};
-
-		switch (position) {
-			case HandlePosition.Left:
-				this.handle.style.left = this.handle.style.top = '0';
-				break;
-			case HandlePosition.Right:
-				this.handle.style.right = this.handle.style.top = '0';
-				break;
-			case HandlePosition.Top:
-				this.handle.style.left = this.handle.style.top = '0';
-				break;
-			case HandlePosition.Bottom:
-				this.handle.style.left = this.handle.style.bottom = '0';
-				break;
-			default: break;
-		}
 
 		this.UpdateCursor();
 	}
@@ -42,17 +27,15 @@ class Handle implements Control {
 		return this.handle;
 	}
 
-	RefreshSize(neighbour: HTMLElement, width : number, height : number) {
+	RefreshSize() {
 		switch (this.position) {
 			case HandlePosition.Left:
 			case HandlePosition.Right:
-				this.handle.style.height = this.owner.GetElement().style.height;
-				neighbour.style.width = (width - this.handle.clientWidth) + 'px';
+				this.handle.style.height = this.owner.GetElement().clientHeight + 'px';
 				break;
 			case HandlePosition.Top:
 			case HandlePosition.Bottom:
-				this.handle.style.width = this.owner.GetElement().style.width;
-				neighbour.style.height = (height - this.handle.clientHeight) + 'px';
+				this.handle.style.width = this.owner.GetElement().clientWidth + 'px';
 			default:
 				break;
 		}
@@ -87,8 +70,8 @@ class HideablePannel extends Pannel {
 	protected originalvisibility: boolean;
 	visible: boolean;
 	pinned: boolean;
-	private originalWidth: string;
-	private originalHeight: string;
+	private originalWidth: number;
+	private originalHeight: number;
 
 	constructor(classname: string = "", handlePosition: HandlePosition = HandlePosition.None) {
 		super(classname);
@@ -116,10 +99,10 @@ class HideablePannel extends Pannel {
 		if (!this.visible) {
 			let pannel = this.GetElement();
 			if (this.originalWidth !== null) {
-				pannel.style.width = this.originalWidth;
+				pannel.style.width = this.originalWidth + 'px';
 			}
 			if (this.originalHeight !== null) {
-				pannel.style.width = this.originalHeight;
+				pannel.style.height = this.originalHeight + 'px';
 			}
 			this.visible = true;
 			this.originalvisibility = true;
@@ -137,12 +120,12 @@ class HideablePannel extends Pannel {
 			switch (this.handle.position) {
 				case HandlePosition.Left:
 				case HandlePosition.Right:
-					this.originalWidth = pannel.clientWidth + 'px';
+					this.originalWidth = pannel.clientWidth;
 					pannel.style.width = handle.clientWidth + 'px';
 					break;
 				case HandlePosition.Top:
 				case HandlePosition.Bottom:
-					this.originalHeight = pannel.clientHeight + 'px';
+					this.originalHeight = pannel.clientHeight;
 					pannel.style.height = handle.clientHeight + 'px';
 					break;
 				default: break;
@@ -180,8 +163,21 @@ class HideablePannel extends Pannel {
 	}
 
 	RefreshSize() {
+		switch (this.handle.position) {
+			case HandlePosition.Left:
+			case HandlePosition.Right:
+				this.GetElement().style.width = this.container.GetElement().clientWidth +
+					this.handle.GetElement().clientWidth + 'px';
+				break;
+			case HandlePosition.Top:
+			case HandlePosition.Bottom:
+				this.GetElement().style.height = this.container.GetElement().clientHeight +
+					this.handle.GetElement().clientHeight + 'px';
+				break;
+			default: break;
+		}
 		if (this.handle) {
-			this.handle.RefreshSize(this.container.GetElement(), this.pannel.clientWidth, this.pannel.clientHeight);
+			this.handle.RefreshSize();
 		}
 	}
 }

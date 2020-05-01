@@ -55,7 +55,7 @@
 	private Start(event: MouseEvent) {
 		this.mousetracker = new MouseTracker(event);
 
-		this.view.dataHandler.TemporaryHide();
+		this.view.TemporaryHideHideables();
 		this.StartMouseEvent();
 	}
 
@@ -65,7 +65,7 @@
 		}
 		this.mousetracker = null;
 
-		this.view.dataHandler.RestoreVisibility();
+		this.view.RestoreHideables();
 		this.cursor.Restore(this.targetElement);
 		this.EndMouseEvent();
 	}

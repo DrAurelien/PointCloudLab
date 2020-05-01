@@ -1,7 +1,7 @@
 ﻿class Toolbar implements Container {
     private toolbar: HTMLDivElement;
 
-    constructor(classname : string="") {
+    constructor(classname : string="Toolbar") {
         this.toolbar = document.createElement('div');
 		this.toolbar.className = classname;
     }

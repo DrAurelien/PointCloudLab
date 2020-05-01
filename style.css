@@ -28,42 +28,76 @@ canvas.CoordsRendering
 	border-radius : 7px;
 }
 
-div.DataWindow
-{
-	position : fixed;
-	left : 10px;
-	top : 10px;
-	width : 300px;
-	overflow : hidden;
-	margin : 0px;
-	padding : 0px;
-	background-color : white;
-	opacity : 0.8;
-	z-index : 1;
+div.DataWindow, div.MenuToolbar {
+	position: fixed;
+	margin: 0px;
+	padding: 0px;
+	background-color: white;
+	opacity: 0.8;
+	z-index: 1;
 	border-radius: 7px;
-	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
-div.HideablePannelHandle
-{
-	position : absolute;
-	background-color : gray;
-	opacity : 0.8;
+div.DataWindow {
+	left: 10px;
+	top: 10px;
+	overflow: hidden;
+}
+
+div.DataWindow div.HideablePannelContainer {
+	width: 300px;
+}
+
+div.MenuToolbar {
+	left: 320px;
+	right: 10px;
+	top: 10px;
+	overflow: hidden;
+}
+
+div.HideablePannelHandle {
+	position: absolute;
+	background-color: gray;
+	opacity: 0.8;
 	z-index: 2;
-	width : 7px;
-	height : 7px;
+	width: 7px;
+	height: 7px;
 }
 
-div.DataWindowHandle:hover
-{
-	background-color : lightgray;
+div.HideablePannelHandle:hover {
+	background-color: lightgray;
 }
 
-div.DataToolbar, div.DataArea, div.PropertiesArea
-{
-	margin : 0px;
-	padding : 10px;
-	overflow : auto;
+div.HideablePannelHandle[Position=Right] {
+	right: 0px;
+	top:0px;
+	bottom: 0px;
+}
+div.HideablePannelHandle[Position=Left] {
+	left: 0px;
+	top: 0px;
+	bottom: 0px;
+}
+div.HideablePannelHandle[Position=Top] {
+	right: 0px;
+	top: 0px;
+	left: 0px;
+}
+
+div.HideablePannelHandle[Position=Bottom] {
+	right: 0px;
+	left: 0px;
+	bottom: 0px;
+}
+
+div.DataToolbar, div.DataArea, div.PropertiesArea {
+	margin: 0px;
+	padding: 10px;
+	overflow: auto;
 }
 
 div.TreeItemContainer
@@ -90,14 +124,10 @@ div.SceneItem:hover
 
 div.Button, div.ComboButton, div.FileOpener
 {
-	width : 70px;
-	height : 17px;
-	text-align : center;
 	vertical-align : middle;
-	background-color : darkgray;
 	border : 1px solid lightgray;
-	background-color : lightgray;
 	border-radius: 3px;
+	padding : 10px;
 	margin : auto;
 	cursor : pointer;
 }
@@ -106,6 +136,16 @@ div.Button:hover, div.ComboButton:hover, div.FileOpener:hover
 {
 	background-color : lightgray;
 	border : 1px solid darkgray;
+}
+
+div.Toolbar {
+	display: flex;
+}
+
+div.Toolbar *.ButtonIcon {
+	font-size: x-large;
+	margin : 0px;
+	margin-right : 5px;
 }
 
 div.Popup
@@ -148,8 +188,8 @@ div.PopupOption:hover
 div.Hint
 {
 	position : fixed;
-	right : 10px;
-	top : 10px;
+	left : 320px;
+	bottom : 10px;
 	width : 500px;
 	overflow : hidden;
 	margin : 0px;

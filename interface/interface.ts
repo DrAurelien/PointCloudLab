@@ -1,13 +1,15 @@
 ﻿class Interface {
     sceneRenderer: Renderer;
-    dataHandler: DataHandler;
+	dataHandler: DataHandler;
+	menu: Menu;
 	currentControler: MouseControler;
 	coordinatesSystem: CoordinatesSystem;
 
     constructor(scene: Scene) {
         let appInterface: Interface = this;
 
-        this.InitializeDataHandler(scene);
+		this.InitializeDataHandler(scene);
+		this.InitializeMenu();
         this.InitializeRenderers(scene);
 
         window.onresize = function () {
@@ -16,11 +18,17 @@
         this.Refresh();
     }
 
-    private InitializeDataHandler(scene) {
-        var self = this;
-        this.dataHandler = new DataHandler(scene, this);
-		document.body.appendChild(this.dataHandler.GetElement());
-    }
+	private InitializeDataHandler(scene: Scene) {
+		let self = this;
+		this.dataHandler = new DataHandler(scene, this);
+		document.body.appendChild(self.dataHandler.GetElement());
+	}
+
+	private InitializeMenu() {
+		let self = this;
+		this.menu = new Menu(this);
+		document.body.appendChild(self.menu.GetElement());
+	}
 
     InitializeRenderers(scene: Scene) {
         //Create the scene rendering component
@@ -45,10 +53,22 @@
 
     Refresh() {
         this.dataHandler.Resize(window.innerWidth, window.innerHeight);
-        this.dataHandler.RefreshContent();
+		this.dataHandler.RefreshContent();
+
+		this.menu.RefreshSize();
 
 		this.RefreshRendering();
-    }
+	}
+
+	TemporaryHideHideables() {
+		this.dataHandler.TemporaryHide();
+		this.menu.TemporaryHide();
+	}
+
+	RestoreHideables() {
+		this.dataHandler.RestoreVisibility();
+		this.menu.RestoreVisibility();
+	}
 
 	RefreshRendering() {
         this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);

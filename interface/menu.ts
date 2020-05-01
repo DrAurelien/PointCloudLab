@@ -6,6 +6,7 @@
 		super('MenuToolbar', HandlePosition.Bottom);
 
 		this.toolbar = new Toolbar();
+		this.container.AddControl(this.toolbar);
 
 		let dataHandler = ownerView.dataHandler;
 		let scene = dataHandler.scene;
