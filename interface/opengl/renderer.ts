@@ -72,54 +72,47 @@
     }
 
     ScanFromCurrentViewPoint(group: CADNode, hsampling: number, vsampling: number, resultHandler: Function) {
-        var self = this;
-        var resolution =
-            {
-                width: hsampling,
-                height: vsampling,
-                currenti: 0,
-                currentj: 0,
-                next: function () {
-                    this.currentj++;
-                    if (this.currentj >= this.height) {
-                        this.currentj = 0;
-                        this.currenti++;
-                    }
-                    if (this.currenti < this.width) {
-                        return {
-                            current: this.currenti * this.width + this.currentj,
-                            total: this.width * this.height
-                        };
-                    }
-                    return null;
-                },
-                log: function () {
-                    return '' + this.width + 'x' + this.height;
-                }
-            };
-
-        var cloud = new PointCloud();
-        cloud.Reserve(resolution.width * resolution.height);
-
-        function GenerateScanRay() {
-            var ray = self.GetRay(
-                self.camera.screen.width * (resolution.currenti / resolution.width),
-                self.camera.screen.height * (resolution.currentj / resolution.height)
-                );
-            var intersection = self.ResolveRayIntersection(ray, group);
-            if (intersection && intersection.HasIntersection()) {
-                var point = ray.from.Plus(ray.dir.Times(intersection.distance));
-                cloud.PushPoint(point);
-            }
-            return resolution.next();
-        }
-
-        function HandleResult() {
-            if (resultHandler) {
-                resultHandler(cloud);
-            }
-        }
-
-        LongProcess.Run('Scanning the scene (' + resolution.log() + ')', GenerateScanRay, HandleResult);
+        let scanner = new SceneScanner(this, group, hsampling, vsampling);
+        scanner.SetNext((s: SceneScanner) => resultHandler(s.cloud));
+        scanner.Start();
     }
 }
+
+class SceneScanner extends LongProcess {
+    currenti: number;
+    currentj: number;
+    public cloud: PointCloud;
+
+    constructor(private renderer: Renderer, private group: CADNode, private width: number, private height: number) {
+        super('Scanning the scene (' + width + 'x' + height + ')');
+        this.currenti = 0;
+        this.currentj = 0;
+    }
+
+    Initialize() {
+        this.cloud = new PointCloud();
+        this.cloud.Reserve(this.width * this.height);
+	}
+
+    Step() {
+        let screen = this.renderer.camera.screen;
+        let x = screen.width * (this.currenti / this.width);
+        let y = screen.height * (this.currentj / this.height);
+        let ray = this.renderer.GetRay(x, y);
+
+        let intersection = this.renderer.ResolveRayIntersection(ray, this.group);
+        if (intersection && intersection.HasIntersection()) {
+            let point = ray.from.Plus(ray.dir.Times(intersection.distance));
+            this.cloud.PushPoint(point);
+        }
+
+        this.currentj++;
+        if (this.currentj >= this.height) {
+            this.currentj = 0;
+            this.currenti++;
+        }
+    }
+
+    get Current(): number { return this.currenti * this.width + this.currentj; }
+    get Target(): number { return this.width * this.height }
+};

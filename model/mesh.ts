@@ -57,7 +57,7 @@ class Mesh extends CADPrimitive {
 	ComputeOctree(onDone: Function) {
 		if (!this.octree) {
 			let self = this;
-			LongProcess.Run('Computing space partitionning of the mesh', () => {self.octree = new Octree(this);}, onDone);
+			self.octree = new Octree(this);
 		}
 	}
 
@@ -65,64 +65,11 @@ class Mesh extends CADPrimitive {
 		this.pointcloud.ClearNormals();
 	}
 
-	ComputeNormals(onDone: CADNodeHandler=null): void {
-		let nbFaces = this.Size();
-		let nbPoints = this.pointcloud.Size();
-		let normals = new Array(nbPoints);
-		let self = this;
-
-		function Initialize() {
-			let index = 0;
-			LongProcess.Run(onDone ? 'Initializing normals (step 1 / 3)' : null,
-				function () {
-					if (index >= nbPoints) {
-						return null;
-					}
-					normals[index++] = new Vector([0, 0, 0]);
-					return { current: index, total: nbPoints };
-				},
-				Compute
-			);
-		}
-
-		function Compute() {
-			let index = 0;
-			LongProcess.Run(onDone ? 'Computing normals (step 2 / 3)' : null,
-				function () {
-					if (index >= nbFaces) {
-						return null;
-					}
-					let face = self.GetFace(index++);
-					for (let pointindex = 0; pointindex < face.indices.length; pointindex++) {
-						normals[face.indices[pointindex]] = normals[face.indices[pointindex]].Plus(face.Normal);
-					}
-					return { current: index, total: nbFaces };
-				},
-				FillPointCloud
-			);
-		}
-
-		function FillPointCloud() {
-			let index = 0;
-			self.pointcloud.ClearNormals();
-			LongProcess.Run(onDone ? 'Assigning normals (step 3 / 3)' : null,
-				function () {
-					if (index >= nbPoints) {
-						return null;
-					}
-					self.pointcloud.PushNormal(normals[index++].Normalized());
-					return { current: index, total: nbPoints };
-				},
-				function () {
-					if (onDone) {
-						onDone(self);
-					}
-				}
-			);
-		}
-
+	ComputeNormals(onDone: CADNodeHandler = null): void {
 		if (!this.pointcloud.HasNormals()) {
-			Initialize();
+			let ncomputer = new MeshProcessing.NormalsComputer(this);
+			ncomputer.SetNext(() => onDone(this));
+			ncomputer.Start();
 		}
 	}
 
@@ -193,4 +140,38 @@ class Mesh extends CADPrimitive {
 
 		return properties;
 	}
+}
+
+
+namespace MeshProcessing {
+	export class NormalsComputer extends IterativeLongProcess {
+		normals: Array<Vector>;
+		constructor(private mesh: Mesh) {
+			super(mesh.Size(), 'Computing normals');
+		}
+
+		Initialize() {
+			this.normals = new Array<Vector>(this.mesh.pointcloud.Size());
+			for (let index = 0; index < this.normals.length; index++) {
+				this.normals[index] = new Vector([0, 0, 0]);
+			}
+		}
+
+		Iterate(step: number) {
+			let face = this.mesh.GetFace(step);
+			for (let index = 0; index < face.indices.length; index++) {
+				let nindex = face.indices[index];
+				this.normals[nindex] = this.normals[nindex].Plus(face.Normal);
+			}
+		}
+
+		Finalize() {
+			let cloud = this.mesh.pointcloud;
+			cloud.ClearNormals();
+			let nbPoints = cloud.Size();
+			for (let index = 0; index < nbPoints; index++) {
+				cloud.PushNormal(this.normals[index].Normalized());
+			}
+		}
+	};
 }

@@ -162,16 +162,19 @@
 		}
 
 		if (nbResults < 2 && Math.abs(innerDir.GetValue(2, 0)) > 0.000001) {
-			function acceptDiskValue(value) {
+			//test bounding disks
+			//solve [t] : p[t].z = halfHeight
+			let values = [
+				(halfHeight - innerFrom.GetValue(2, 0)) / innerDir.GetValue(2, 0),
+				(-halfHeight - innerFrom.GetValue(2, 0)) / innerDir.GetValue(2, 0)
+			];
+			for (let ii = 0; ii < 2; ii++) {
+				let value = values[ii];
 				let point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));
 				if (point.Get(0) * point.Get(0) + point.Get(1) * point.Get(1) <= sqrRadius) {
 					result.Add(value);
 				}
 			}
-			//test bounding disks
-			//solve [t] : p[t].z = halfHeight
-			acceptDiskValue((halfHeight - innerFrom.GetValue(2, 0)) / innerDir.GetValue(2, 0));
-			acceptDiskValue((-halfHeight - innerFrom.GetValue(2, 0)) / innerDir.GetValue(2, 0));
 		}
 		return result;
 	}

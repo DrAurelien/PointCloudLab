@@ -5,37 +5,12 @@
 	LoadFile(file: File) {
 		if (file) {
 			let self = this;
-			let extension = file.name.split('.').pop();
 			let progress = new ProgressBar();
 			let reader = new FileReader();
 
 			reader.onloadend = function () {
 				progress.Delete();
-
-				let fileContent = <ArrayBuffer>this.result
-				let loader: FileLoader = null;
-				switch (extension) {
-					case 'ply':
-						if (fileContent) {
-							loader = new PlyLoader(fileContent);
-						}
-						break;
-					case 'csv':
-						if (fileContent) {
-							loader = new CsvLoader(fileContent);
-						}
-						break;
-					default:
-						alert('The file extension \"' + extension + '\" is not handled.');
-						break;
-				}
-
-				if (loader) {
-					function ResultCallback() {
-						self.filehandler(loader.result);
-					}
-					loader.Load(ResultCallback);
-				}
+				self.LoadFromContent(file.name, <ArrayBuffer>this.result);
 			}
 
 			reader.onprogress = function (event) {
@@ -45,6 +20,31 @@
 			progress.Show();
 			progress.SetMessage('Loading file : ' + file.name);
 			reader.readAsArrayBuffer(file);
+		}
+	}
+
+	LoadFromContent(fileName: string, fileContent: ArrayBuffer) {
+		let extension = fileName.split('.').pop();
+		let loader: FileLoader = null;
+		switch (extension) {
+			case 'ply':
+				if (fileContent) {
+					loader = new PlyLoader(fileContent);
+				}
+				break;
+			case 'csv':
+				if (fileContent) {
+					loader = new CsvLoader(fileContent);
+				}
+				break;
+			default:
+				alert('The file extension \"' + extension + '\" is not handled.');
+				break;
+		}
+
+		if (loader) {
+			let self = this;
+			loader.Load(() => self.filehandler(loader.result));
 		}
 	}
 

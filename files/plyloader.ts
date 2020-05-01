@@ -5,7 +5,7 @@
 
 class PlyElement {
 	private definition: PlyDefinition[];
-	private items: Object[];
+	private items: any[];
 
 	constructor(public name: string, public count: number) {
 		this.definition = [];
@@ -62,7 +62,7 @@ class PlyElement {
 		return null;
 	}
 
-	ParseItem(reader: BinaryReader, format: string): Object {
+	ParseItem(reader: BinaryReader, format: string): any {
 		var storedItem = {};
 		for (var index = 0; index < this.definition.length; index++) {
 			if (this.definition[index].type == 'list') {
@@ -101,11 +101,11 @@ class PlyElement {
 		return (this.count == this.items.length);
 	}
 
-	GetItem(index: number): Object {
+	GetItem(index: number): any {
 		return this.items[index];
 	}
 
-	NbItems(itemsindex: number): number {
+	NbItems(): number {
 		return this.items.length;
 	}
 }
@@ -269,83 +269,115 @@ class PlyLoader {
 		}
 
 		//Read PLY body content
-		var self = this;
-		function LoadItems() {
-			if (self.reader.Eof()) {
-				return null;
-			}
-
-			try {
-				self.elements.PushItem(self.reader, format);
-			}
-			catch (exception) { Error(exception); }
-
-			return { current: self.reader.cursor, total: self.reader.stream.length };
-		}
-
-		function ComputeNormals() {
-			self.result.ComputeNormals();
-			if (self.result instanceof Mesh) {
-				(<Mesh>self.result).ComputeOctree(onloaded);
-			}
-			else if (onloaded) {
-				onloaded();
-			}
-		}
-
-		function BuildMesh() {
-			var faces = self.elements.GetElement('face');
-			if (faces) {
-				if (!self.result) {
-					Error("faces defined without vertices");
-				}
-				self.result = new Mesh(self.result);
-				self.result.Reserve(faces.NbItems());
-				var index = 0;
-
-				//Load mesh faces from faces list
-				function PushFace() {
-					if (index >= faces.NbItems()) {
-						return null;
-					}
-					var face = faces.GetItem(index++);
-					self.result.PushFace(face.vertex_indices);
-
-					return { current: index, total: faces.NbItems() };
-				}
-
-				LongProcess.Run('Loading PLY mesh (step 3/3)', PushFace, ComputeNormals);
-			}
-		}
-
-		function BuildCloud() {
-			var vertices = self.elements.GetElement('vertex');
-			if (vertices) {
-				self.result = new PointCloud();
-				self.result.Reserve(vertices.NbItems());
-				var index = 0;
-
-				//Load point cloud from vertices list
-				function PushVertex() {
-					if (index >= vertices.NbItems()) {
-						return null;
-					}
-
-					var vertex = vertices.GetItem(index++);
-					self.result.PushPoint(new Vector([
-						vertex.x,
-						vertex.y,
-						vertex.z
-					]));
-
-					return { current: index, total: vertices.NbItems() };
-				}
-
-				LongProcess.Run('Loading PLY vertices (step 2 / 3)', PushVertex, BuildMesh);
-			}
-		}
-
 		this.elements.ResetCurrent();
-		LongProcess.Run('Parsing PLY content (step 1 / 3)', LoadItems, BuildCloud);
+		let loader = new ItemsLoader(this.reader, this.elements, format);
+		loader
+			.SetNext(new CloudBuilder(this.elements))
+			.SetNext(new MeshBuilder(this.elements))
+			.SetNext(new Finalizer(this));
+		loader.Start();
+	}
+}
+
+
+//////////////////////////////////////////
+// PLY elements loading process
+//////////////////////////////////////////
+class ItemsLoader extends LongProcess {
+	constructor(private reader: BinaryReader, private elements: PlyElements, private format: string) {
+		super('Parsing PLY content');
+	}
+
+	Step() {
+		try {
+			this.elements.PushItem(this.reader, this.format);
+		}
+		catch (exception) { Error(exception); }
+	}
+	get Done(): boolean { return this.reader.Eof(); }
+	get Current() { return this.reader.stream.byteOffset; }
+	get Target() { return this.reader.stream.byteLength; }
+}
+
+
+//////////////////////////////////////////
+// Build point cloud from loaded ply vertices
+//////////////////////////////////////////
+class CloudBuilder extends IterativeLongProcess {
+	private vertices: PlyElement;
+	public cloud: PointCloud;
+
+	constructor(private elements: PlyElements) {
+		super(0, 'Loading PLY vertices');
+	}
+
+	Initialize(caller: ItemsLoader) {
+		this.vertices = this.elements.GetElement('vertex');
+		if (this.vertices) {
+			this.nbsteps = this.vertices.NbItems();
+			this.cloud = new PointCloud();
+			this.cloud.Reserve(this.nbsteps);
+		}
+	}
+
+	Iterate(step: number) {
+		let vertex = this.vertices.GetItem(step);
+		this.cloud.PushPoint(new Vector([vertex.x, vertex.y, vertex.z]));
+	}
+}
+
+//////////////////////////////////////////
+// Build mesh from loaded ply faces, if any
+//////////////////////////////////////////
+class MeshBuilder extends IterativeLongProcess {
+	private faces: PlyElement;
+	public result: Mesh | PointCloud;
+
+	constructor(private elements: PlyElements) {
+		super(0, 'Loading PLY mesh');
+	}
+
+	Initialize(caller: CloudBuilder) {
+		this.faces = this.elements.GetElement('face');
+		if (this.faces) {
+			if (!caller.cloud)
+				throw "faces defined without vertices";
+			this.nbsteps = this.faces.NbItems();
+			this.result = new Mesh(caller.cloud);
+			this.result.Reserve(this.nbsteps);
+		}
+	}
+
+	Iterate(step: number) {
+		var face = this.faces.GetItem(step);
+		(<Mesh>this.result).PushFace(face.vertex_indices);
+	}
+}
+
+//////////////////////////////////////////
+//  Finalize the result
+//////////////////////////////////////////
+class Finalizer extends Process {
+	public result: Mesh | PointCloud;
+
+	constructor(private loader: PlyLoader) {
+		super();
+	}
+
+	Initialize(caller: MeshBuilder) {
+		this.result = caller.result;
+	}
+
+	Run(ondone: Function) {
+		this.loader.result = this.result;
+		if (this.result instanceof Mesh) {
+			(<Mesh>this.result).ComputeNormals((m: Mesh) => {
+				m.ComputeOctree(ondone);
+				return true;
+			});
+		}
+		else {
+			ondone();
+		}
 	}
 }

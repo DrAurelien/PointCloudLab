@@ -146,15 +146,13 @@
 
 		if (nbResults < 2 && Math.abs(innerDir.Get(2)) > 0.000001) {
 			let radius = tana * height;
-			function acceptDiskValue(value) {
-				let point = innerFrom.Plus(innerDir.Times(value));
-				if (point.Get(0) * point.Get(0) + point.Get(1) * point.Get(1) <= (radius * radius)) {
-					result.Add(value);
-				}
-			}
 			//test bounding disks
 			//solve [t] : p[t].z = this.height
-			acceptDiskValue((this.height - innerFrom.Get(2)) / innerDir.Get(2));
+			let value = (this.height - innerFrom.Get(2)) / innerDir.Get(2);
+			let point = innerFrom.Plus(innerDir.Times(value));
+			if (point.Get(0) * point.Get(0) + point.Get(1) * point.Get(1) <= (radius * radius)) {
+				result.Add(value);
+			}
 		}
 		return result;
 	}

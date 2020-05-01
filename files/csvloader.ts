@@ -1,56 +1,72 @@
 ﻿class CsvLoader extends FileLoader {
-	cursor: number;
-	reader: BinaryReader;
-	header: Object;
-	headermapping: Object;
-	public separator: string;
-	public lineseparator: string;
-
+	parser: CSVParser;
 
 	constructor(content: ArrayBuffer) {
 		super();
-		this.cursor = 0;
-		this.reader = new BinaryReader(content);
-		this.header = null;
-		this.separator = ';';
-		this.lineseparator = '\n';
-		this.headermapping = null;
+		this.parser = new CSVParser(content);
 		this.result = null;
 	}
 
 	Load(ondone: Function) {
-		this.result = new PointCloud();
 		let self = this;
-		let index = 0;
-		let total = this.reader.CountAsciiOccurences(this.lineseparator);
+		this.result = new PointCloud();
+		this.parser.SetNext((p: CSVParser) => {
+			self.result = p.cloud;
+			ondone();
+		});
+		this.parser.Start();
+	}
+}
 
+class CSVParser extends IterativeLongProcess {
+	reader: BinaryReader;
+	header: Object;
+	headermapping: Object;
+	done: boolean;
+	public separator: string;
+	public lineseparator: string;
+	public cloud: PointCloud;
+
+	constructor(content: ArrayBuffer) {
+		super(0, 'Parsing CSV file content');
+		this.separator = ';';
+		this.lineseparator = '\n';
+		this.reader = new BinaryReader(content);
+	}
+
+	Initialize(caller: Process) {
+		this.header = null;
+		this.headermapping = null;
+		this.done = false;
+
+		this.cloud = new PointCloud();
+		this.nbsteps = this.reader.CountAsciiOccurences(this.lineseparator);
 		this.reader.Reset();
-		LongProcess.Run('Parsing CSV file content', function () {
-				var line = self.ParseCurrentLine();
-				if (!line) {
-					return null;
-				}
+	}
 
-				if (!self.header) {
-					self.SetHeader(line);
-				}
-				else {
-					var point = self.GetVector(line, ['x', 'y', 'z']);
-					if (point) {
-						(<PointCloud>self.result).PushPoint(point);
-						var normal = self.GetVector(line, ['nx', 'ny', 'nz']);
-						if (normal) {
-							(<PointCloud>self.result).PushNormal(normal);
-						}
+	Iterate(step: number) {
+		var line = this.ParseCurrentLine();
+		if (line) {
+			if (!this.header) {
+				this.SetHeader(line);
+			}
+			else {
+				var point = this.GetVector(line, ['x', 'y', 'z']);
+				if (point) {
+					this.cloud.PushPoint(point);
+					var normal = this.GetVector(line, ['nx', 'ny', 'nz']);
+					if (normal) {
+						this.cloud.PushNormal(normal);
 					}
 				}
-				index++;
-
-				return { current: index, total: total };
-			},
-			ondone
-		);
+			}
+		}
+		else {
+			this.done = true;
+		}
 	}
+
+	get Done() { return this.done; }
 
 	SetHeader(line: string[]) {
 		this.header = {};
@@ -69,6 +85,17 @@
 				this.header[key] = index;
 			}
 		}
+	}
+
+	ParseCurrentLine(): string[] {
+		if (this.reader.Eof()) {
+			return null;
+		}
+		var line = this.reader.GetAsciiUntil([this.lineseparator]);
+		if (line) {
+			return line.split(this.separator);
+		}
+		return null;
 	}
 
 	GetVector(line: string[], data: string[]): Vector {
@@ -94,16 +121,5 @@
 			}
 		}
 		return new Vector(result);
-	}
-
-	ParseCurrentLine(): string[] {
-		if (this.reader.Eof()) {
-			return null;
-		}
-		var line = this.reader.GetAsciiUntil([this.lineseparator]);
-		if (line) {
-			return line.split(this.separator);
-		}
-		return null;
 	}
 }

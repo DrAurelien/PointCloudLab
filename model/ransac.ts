@@ -2,9 +2,9 @@
 	nbPoints: number;
 	nbFailure: number;
 	noise: number;
-	private ignore: boolean[];
+	ignore: boolean[];
 
-	constructor(private cloud : PointCloud, private generators: ShapeGenerator[] = null) {
+	constructor(public cloud : PointCloud, private generators: ShapeGenerator[] = null) {
 		this.nbPoints = 3;
 		this.nbFailure = 100;
 		this.noise = 0.1;
@@ -28,45 +28,9 @@
 	}
 
 	FindBestFittingShape(onDone: Function): void {
-		let progress = 0;
-		let nbTrials = 0;
-		let best = null;
-		let ransac = this;
-
-		function RansacStep() {
-			if (nbTrials >= ransac.nbFailure) {
-				return null;
-			}
-
-			var points = ransac.PickPoints();
-			var candidate = ransac.GenerateCandidate(points);
-
-			nbTrials++;
-			if (nbTrials > progress) {
-				progress = nbTrials;
-			}
-
-			if (candidate != null) {
-				if (best == null || best.score > candidate.score) {
-					best = candidate;
-					nbTrials = 0;
-				}
-			}
-
-			return { current: progress, total: ransac.nbFailure };
-		}
-
-		function FinalizeResult() {
-			best.shape.ComputeBounds(best.points, ransac.cloud);
-
-			for (var ii = 0; ii < best.points.length; ii++) {
-				ransac.ignore[best.points[ii]] = true;
-			}
-
-			onDone(best.shape);
-		}
-
-		LongProcess.Run('Searching for a shape', RansacStep, FinalizeResult);
+		let step = new RansacStepProcessor(this);
+		step.SetNext((s: RansacStepProcessor) => onDone(s.best.shape));
+		step.Start();
 	}
 
 	PickPoints(): PickedPoints[] {
@@ -173,6 +137,53 @@ class PickedPoints {
 }
 
 class Candidate {
-	constructor(public score: number, public points: Vector[], public shape: Shape) {
+	constructor(public score: number, public points: number[], public shape: Shape) {
+	}
+}
+
+class RansacStepProcessor extends LongProcess{
+	nbTrials: number;
+	progress: number;
+	best: Candidate;
+
+	constructor(private ransac: Ransac) {
+		super('Searching for a shape');
+	}
+
+	get Done() {
+		return this.nbTrials >= this.ransac.nbFailure;
+	}
+
+	get Current() {
+		return this.progress;
+	}
+
+	get Target() {
+		return this.ransac.nbFailure;
+	}
+
+	Step() {
+		let points = this.ransac.PickPoints();
+		let candidate = this.ransac.GenerateCandidate(points);
+
+		this.nbTrials++;
+		if (this.nbTrials > this.progress) {
+			this.progress = this.nbTrials;
+		}
+
+		if (candidate != null) {
+			if (this.best == null || this.best.score > candidate.score) {
+				this.best = candidate;
+				this.nbTrials = 0;
+			}
+		}
+	}
+
+	Finalize() {
+		this.best.shape.ComputeBounds(this.best.points, this.ransac.cloud);
+
+		for (let index = 0; index < this.best.points.length; index++) {
+			this.ransac.ignore[this.best.points[index]] = true;
+		}
 	}
 }

@@ -224,53 +224,12 @@
 		}
 	}
 
-	ComputeNormals = function (k, onDone) {
-		if (!k) {
-			k = 30;
-		}
-
-		var cloud = this;
-
-		function Harmonize() {
-			var index = 0;
-			var done = new Array(cloud.Size());
-			for (var ii = 0; ii < cloud.Size(); ii++) {
-				done[ii] = false;
-			}
-
-			LongProcess.Run('Harmonizing normals (' + cloud.Size() + ' data points)', function () {
-				if (index >= cloud.Size()) {
-					return null;
-				}
-				cloud.HarmonizeNormal(index, k, done);
-				index++;
-				return { current: index, total: cloud.Size() };
-			},
-				onDone
-			);
-		}
-
-		function Compute() {
-			var index = 0;
-			if (cloud.normals.length != cloud.points.length) {
-				cloud.normals = new Array(cloud.points.length);
-			}
-			cloud.ClearNormals();
-
-			LongProcess.Run('Computing normals (' + cloud.Size() + ' data points)', function () {
-				if (index >= cloud.Size()) {
-					return null;
-				}
-				var normal = cloud.ComputeNormal(index, k);
-				cloud.PushNormal(normal);
-				index++;
-				return { current: index, total: cloud.Size() };
-			},
-				Harmonize
-			);
-		}
-
-		Compute();
+	ComputeNormals = function (k, ondone) {
+		k = k || 30;
+		let ncomputer = new PCDProcessing.NormalsComputer(this, k);
+		let nharmonizer = new PCDProcessing.NormalsHarmonizer(this, k);
+		ncomputer.SetNext(nharmonizer).SetNext(ondone);
+		ncomputer.Start();
 	}
 
 	GaussianSphere(): PointCloud {
@@ -281,7 +240,6 @@
 		}
 		return gsphere;
 	}
-
 
 	GetCSVData(): string {
 		var result = 'x;y;z';
@@ -342,4 +300,42 @@
 
 		return properties;
 	}
+}
+
+namespace PCDProcessing {
+	export class NormalsComputer extends IterativeLongProcess {
+		constructor(private cloud: PointCloud, private k: number) {
+			super(cloud.Size(), 'Computing normals (' + cloud.Size() + ' data points)');
+		}
+
+		Initialize() {
+			if (this.cloud.normals.length != this.cloud.points.length) {
+				this.cloud.normals = new Array(this.cloud.points.length);
+			}
+			this.cloud.ClearNormals();
+		}
+
+		Iterate(step: number) {
+			var normal = this.cloud.ComputeNormal(step, this.k);
+			this.cloud.PushNormal(normal);
+		}
+	};
+
+	export class NormalsHarmonizer extends IterativeLongProcess {
+		done: Array<boolean>;
+		constructor(private cloud: PointCloud, private k: number) {
+			super(cloud.Size(), 'Harmonizing normals (' + cloud.Size() + ' data points)');
+		}
+
+		Initialize() {
+			var done = new Array<boolean>(this.cloud.Size());
+			for (var ii = 0; ii < this.cloud.Size(); ii++) {
+				done[ii] = false;
+			}
+		}
+
+		Iterate(step: number) {
+			this.cloud.HarmonizeNormal(step, this.k, this.done);
+		}
+	};
 }
