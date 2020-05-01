@@ -328,9 +328,9 @@ namespace PCDProcessing {
 		}
 
 		Initialize() {
-			var done = new Array<boolean>(this.cloud.Size());
+			this.done = new Array<boolean>(this.cloud.Size());
 			for (var ii = 0; ii < this.cloud.Size(); ii++) {
-				done[ii] = false;
+				this.done[ii] = false;
 			}
 		}
 

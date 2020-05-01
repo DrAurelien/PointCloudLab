@@ -68,7 +68,7 @@ class Mesh extends CADPrimitive {
 	ComputeNormals(onDone: CADNodeHandler = null): void {
 		if (!this.pointcloud.HasNormals()) {
 			let ncomputer = new MeshProcessing.NormalsComputer(this);
-			ncomputer.SetNext(() => onDone(this));
+			ncomputer.SetNext(() => { if (onDone) onDone(this) });
 			ncomputer.Start();
 		}
 	}
