@@ -94,13 +94,13 @@
 		result.push(null);
 
 		if (this.folded) {
-			result.push(new Action('Unfold', () => {
+			result.push(new SimpleAction('Unfold', () => {
 				self.folded = false;
 				return onDone(null);
 			}));
 		}
 		else {
-			result.push(new Action('Fold', () => {
+			result.push(new SimpleAction('Fold', () => {
 				self.folded = true;
 				return onDone(null);
 			}));

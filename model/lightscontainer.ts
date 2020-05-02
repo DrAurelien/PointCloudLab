@@ -14,11 +14,15 @@
 }
 
 class NewLightAction extends Action {
-	constructor(private container: LightsContainer, onDone: CADNodeHandler) {
-		super('New light', () => { onDone(new Light(new Vector([100.0, 100.0, 100.0]), container)); }, 'Add up to ' + DrawingContext.NbMaxLights + ' light sources');
+	constructor(private container: LightsContainer, private onDone: CADNodeHandler) {
+		super('New light', 'Add up to ' + DrawingContext.NbMaxLights + ' light sources');
 	}
 
-	HasAction(): boolean {
+	Run() {
+		this.onDone(new Light(new Vector([100.0, 100.0, 100.0]), this.container));
+	}
+
+	Enabled(): boolean {
 		return this.container.children.length < DrawingContext.NbMaxLights;
 	}
 }

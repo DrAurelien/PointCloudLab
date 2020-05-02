@@ -59,11 +59,11 @@
 		}
 
 		let combo = new ComboBox(this.label, [
-			new Action('PLY Mesh', function () {
+			new SimpleAction('PLY Mesh', function () {
 				input.accept = '.ply';
 				input.click();
 			}, 'Load a mesh object from a PLY file. Find more about the ply file format on http://paulbourke.net/dataformats/ply/'),
-			new Action('CSV Point cloud', function () {
+			new SimpleAction('CSV Point cloud', function () {
 				input.accept = '.csv';
 				input.click();
 			}, 'Load a point cloud from a CSV file (a semi-colon-separated line for each point). The CSV header is mandatory : "x", "y" and "z" specify the points coordinates, while "nx", "ny" and "nz" specify the normals coordinates.')

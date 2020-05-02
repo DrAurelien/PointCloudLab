@@ -1,9 +1,13 @@
 ﻿class ExportPointCloudFileAction extends Action {
-	constructor(cloud: PointCloud, onDone: Function) {
+	constructor(private cloud: PointCloud, private onDone: Function) {
 		super('Export file');
+	}
 
-		this.callback = function () {
-			FileExporter.ExportFile(cloud.name + '.csv', cloud.GetCSVData(), 'text/csv');
-		}
+	Enabled(): boolean {
+		return true;
+	}
+
+	Run() {
+		FileExporter.ExportFile(this.cloud.name + '.csv', this.cloud.GetCSVData(), 'text/csv');
 	}
 }

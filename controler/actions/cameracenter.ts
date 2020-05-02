@@ -1,14 +1,16 @@
 ﻿class CenterCameraAction extends Action {
-	constructor(private scene: Scene, view: Interface) {
-		super('Center camera on selection', function (onDone) {
-			let selectionbb = scene.GetSelectionBoundingBox();
-			if (selectionbb && view.sceneRenderer.camera.CenterOnBox(selectionbb)) {
-				view.sceneRenderer.Draw(scene);
-			}
-		}, 'Change the camera viewing direction so that it points to the selected object(s)');
+	constructor(private scene: Scene, private view: Interface) {
+		super('Center camera on selection', 'Change the camera viewing direction so that it points to the selected object(s)');
+	}
+	
+	Run() {
+		let selectionbb = this.scene.GetSelectionBoundingBox();
+		if (selectionbb && this.view.sceneRenderer.camera.CenterOnBox(selectionbb)) {
+			this.view.sceneRenderer.Draw(this.scene);
+		}
 	}
 
-	HasAction(): boolean {
+	Enabled(): boolean {
 		let selectionbb = this.scene.GetSelectionBoundingBox();
 		return (selectionbb && selectionbb.IsValid());
 	}

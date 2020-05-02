@@ -35,13 +35,13 @@
 		let self = this;
 		let result: Action[] = [];
 		if (this.deletable) {
-			result.push(new Action('Remove', () => { self.owner.Remove(self); return onDone(null); }));
+			result.push(new SimpleAction('Remove', () => { self.owner.Remove(self); return onDone(null); }));
 		}
 		if (this.visible) {
-			result.push(new Action('Hide', () => { self.visible = false; return onDone(null); }));
+			result.push(new SimpleAction('Hide', () => { self.visible = false; return onDone(null); }));
 		}
 		else {
-			result.push(new Action('Show', () => { self.visible = true; return onDone(null); }));
+			result.push(new SimpleAction('Show', () => { self.visible = true; return onDone(null); }));
 		}
 		return result;
     }

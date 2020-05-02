@@ -84,23 +84,33 @@ interface ShapeCreator {
 }
 
 class CreateShapeMeshAction extends Action {
-	constructor(shape : Shape, dataHandler : DataHandler, onDone : CADNodeHandler) {
-		super('Create shape mesh');
+	constructor(private shape: Shape, private dataHandler: DataHandler, private onDone: CADNodeHandler) {
+		super('Create shape mesh', 'Builds the mesh sampling this shape');
+	}
 
-		this.callback = function () {
+	Enabled(): boolean {
+		return true;
+	}
+
+	Run() {
+		let self = this;
 			let dialog = new Dialog(
 				//Ok has been clicked
 				(properties) => {
-					let sampling = parseInt(properties.GetValue('Sampling'));
-					let mesh = shape.ComputeMesh(sampling);
-					mesh.ComputeOctree(() => { if (onDone) { onDone(mesh); } });
-					return true;
+					return self.CreateMesh(properties);
 				},
 				//Cancel has been clicked
 				() => true
 			);
 
-			dialog.InsertValue('Sampling', dataHandler.GetSceneRenderer().drawingcontext.sampling);
-		}
+			dialog.InsertValue('Sampling', this.dataHandler.GetSceneRenderer().drawingcontext.sampling);
+	}
+
+	CreateMesh(properties: Dialog): boolean {
+		let sampling = parseInt(properties.GetValue('Sampling'));
+		let mesh = this.shape.ComputeMesh(sampling);
+		let self = this;
+		mesh.ComputeOctree(() => { if (self.onDone) { self.onDone(mesh); } });
+		return true;
 	}
 }

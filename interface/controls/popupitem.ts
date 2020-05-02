@@ -6,7 +6,7 @@
 		this.item = document.createElement('div');
 		if (action) {
 			this.item.className = 'PopupOption';
-			if (action.HasAction()) {
+			if (action.Enabled()) {
 				this.item.onclick = this.ItemClicked(action);
 			}
 			else {

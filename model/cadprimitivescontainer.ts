@@ -9,12 +9,12 @@
 
 		result.push(null);
 
-		result.push(new Action('New group', () => onDone(new CADPrimitivesContainer(NameProvider.GetName('Group'), self)), 'A group is a hiearchical item that can be used to organize objects.'));
-		result.push(new Action('New plane', this.GetShapeCreator(() => new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self), dataHandler, onDone)));
-		result.push(new Action('New sphere', this.GetShapeCreator(() => new Sphere(new Vector([0, 0, 0]), 1, self), dataHandler, onDone)));
-		result.push(new Action('New cylinder', this.GetShapeCreator(() => new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self), dataHandler, onDone)));
-		result.push(new Action('New cone', this.GetShapeCreator(() => new Cone(new Vector([0, 0, 0]), new Vector([0, 0, 1]), Math.PI/6.0, 1, self), dataHandler, onDone)));
-		result.push(new Action('New torus', this.GetShapeCreator(() => new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self), dataHandler, onDone)));
+		result.push(new SimpleAction('New group', () => onDone(new CADPrimitivesContainer(NameProvider.GetName('Group'), self)), 'A group is a hiearchical item that can be used to organize objects.'));
+		result.push(new SimpleAction('New plane', this.GetShapeCreator(() => new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, self), dataHandler, onDone)));
+		result.push(new SimpleAction('New sphere', this.GetShapeCreator(() => new Sphere(new Vector([0, 0, 0]), 1, self), dataHandler, onDone)));
+		result.push(new SimpleAction('New cylinder', this.GetShapeCreator(() => new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1, self), dataHandler, onDone)));
+		result.push(new SimpleAction('New cone', this.GetShapeCreator(() => new Cone(new Vector([0, 0, 0]), new Vector([0, 0, 1]), Math.PI/6.0, 1, self), dataHandler, onDone)));
+		result.push(new SimpleAction('New torus', this.GetShapeCreator(() => new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1, self), dataHandler, onDone)));
 		result.push(new ScanFromCurrentViewPointAction(this, dataHandler, onDone));
 		
 		return result;
@@ -29,6 +29,6 @@
 	}
 
 	IsScannable(): boolean {
-		return !this.Apply(p => !(p instanceof Shape || p instanceof Mesh));
+		return !this.Apply((p: CADNode) => !(p instanceof Shape || p instanceof Mesh));
 	}
 }

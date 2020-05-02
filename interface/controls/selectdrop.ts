@@ -28,15 +28,15 @@
 
 class SelectOption extends Action {
     constructor(private select: SelectDrop, private innerAction: Action) {
-        super(innerAction.label, () => this.Select(), innerAction.hintMessage);
+        super(innerAction.label, innerAction.hintMessage);
     }
 
-    Select() {
+    Run() {
         this.select.SetCurrent(this.label);
         this.innerAction.Run();
     }
 
-    HasAction(): boolean {
-        return this.innerAction.HasAction();
+    Enabled(): boolean {
+        return this.innerAction.Enabled();
     }
 }
