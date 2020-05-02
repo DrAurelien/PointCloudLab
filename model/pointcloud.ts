@@ -193,34 +193,35 @@
 		return null;
 	}
 
-	HarmonizeNormal(index: number, k: number, done: boolean[]) {
-		if (!done[index]) {
+	HarmonizeNormal(queue: number[], k: number, status: number[]) {
+		let index = queue.pop();
+		//Status :
+		// 0 : not handled
+		// 1 : enqueued
+		// -1 : normal has been oriented
+		if (status[index] >= 0) {
 			var point = this.GetPoint(index);
 			var normal = this.GetNormal(index);
 			var knn = this.KNearestNeighbours(point, k + 1);
 
-			var votes =
-				{
-					pros: 0,
-					cons: 0
-				};
-
-			for (var ii = 0; ii < knn.length; ii++) {
-				if (done[knn[ii].index]) {
-					var nnormal = this.GetNormal(knn[ii].index);
-					var s = nnormal.Dot(normal);
-					if (s < 0) {
-						votes.cons++;
-					}
-					else {
-						votes.pros++;
-					}
+			//Search for the neighbor whose normal orientation has been decided, and whose normal is the most aligned with he current one
+			let ss = 0;
+			for (var ii = 0; ii < knn.length && status[index] >= 0; ii++) {
+				let nnindex = knn[ii].index;
+				if (status[nnindex] < 0) {
+					let nnormal = this.GetNormal(nnindex);
+					let s = nnormal.Dot(normal);
+					if (Math.abs(s) > Math.abs(ss))
+						ss = s;
+				}
+				if (status[nnindex] == 0) {
+					queue.push(nnindex);
+					status[nnindex] = 1;
 				}
 			}
-			if (votes.pros < votes.cons) {
+			if(ss < 0)
 				this.InvertNormal(index);
-			}
-			done[index] = true;
+			status[index] = -1;
 		}
 	}
 
@@ -228,7 +229,7 @@
 		k = k || 30;
 		let ncomputer = new PCDProcessing.NormalsComputer(this, k);
 		let nharmonizer = new PCDProcessing.NormalsHarmonizer(this, k);
-		ncomputer.SetNext(nharmonizer).SetNext(ondone);
+		ncomputer.SetNext(nharmonizer).SetNext(() => ondone());
 		ncomputer.Start();
 	}
 
@@ -322,20 +323,39 @@ namespace PCDProcessing {
 	};
 
 	export class NormalsHarmonizer extends IterativeLongProcess {
-		done: Array<boolean>;
+		status: Array<number>;
+		queue: number[];
+		last: number;
+
 		constructor(private cloud: PointCloud, private k: number) {
 			super(cloud.Size(), 'Harmonizing normals (' + cloud.Size() + ' data points)');
 		}
 
 		Initialize() {
-			this.done = new Array<boolean>(this.cloud.Size());
+			this.queue = [0];
+			this.last = 0;
+			this.status = new Array<number>(this.cloud.Size());
 			for (var ii = 0; ii < this.cloud.Size(); ii++) {
-				this.done[ii] = false;
+				this.status[ii] = 0;
 			}
 		}
 
+		get Done(): boolean {
+			return this.last >= this.Target;
+		}
+
 		Iterate(step: number) {
-			this.cloud.HarmonizeNormal(step, this.k, this.done);
+			this.cloud.HarmonizeNormal(this.queue, this.k, this.status);
+
+			//If the queue is empty, enqueue the next point that has not been processed yet
+			if (this.queue.length == 0) {
+				while (!this.Done && this.status[this.last] !== 0)
+					this.last++;
+				if (!this.Done) {
+					this.queue.push(this.last);
+					this.status[this.last] = 1;
+				}
+			}
 		}
 	};
 }
