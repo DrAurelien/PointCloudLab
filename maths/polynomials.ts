@@ -42,8 +42,8 @@
 		return new Polynomial(coef);
 	}
 
-	FindRealRoots(initialGuess: number) : number[] {
-		let result : number[] = [];
+	FindRealRoots(initialGuess: number): number[] {
+		let result: number[] = [];
 		let degree = this.Degree();
 		let root = initialGuess;
 		let polynomial: Polynomial = this;
