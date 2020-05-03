@@ -1,0 +1,1 @@
+{"version":3,"file":"stringproperty.js","sourceRoot":"","sources":["stringproperty.ts"],"names":[],"mappings":";;;;;;;;;;;;;AAAA;IAA6B,kCAAiB;IAE7C,wBAAY,IAAY,EAAE,KAAa,EAAE,OAA+B;eAEvE,kBAAM,IAAI,EAAE,MAAM,EAAE,KAAK,EAAE,OAAO,CAAC;IACpC,CAAC;IAED,iCAAQ,GAAR;QACC,OAAO,IAAI,CAAC,KAAK,CAAC,KAAK,CAAC;IACzB,CAAC;IACF,qBAAC;AAAD,CAAC,AAVD,CAA6B,iBAAiB,GAU7C"}
