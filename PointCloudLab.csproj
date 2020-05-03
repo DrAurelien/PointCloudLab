@@ -92,6 +92,7 @@
     <TypeScriptCompile Include="model\neighbourhood.ts" />
     <TypeScriptCompile Include="model\pointcloud.ts" />
     <TypeScriptCompile Include="model\ransac.ts" />
+    <TypeScriptCompile Include="model\regiongrowth.ts" />
     <TypeScriptCompile Include="model\scene.ts" />
     <TypeScriptCompile Include="model\shapes\cone.ts" />
     <TypeScriptCompile Include="model\shapes\cylinder.ts" />
@@ -113,6 +114,7 @@
     <Content Include="style.css" />
     <Content Include="web.config" />
     <TypeScriptCompile Include="tools\longprocess.ts" />
+    <TypeScriptCompile Include="tools\queue.ts" />
     <TypeScriptCompile Include="tools\stringutils.ts" />
   </ItemGroup>
   <ItemGroup>

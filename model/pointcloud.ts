@@ -134,7 +134,7 @@
 		}
 	}
 
-	KNearestNeighbours = function (queryPoint, k) {
+	KNearestNeighbours = function (queryPoint: Vector, k: number) {
 		if (!this.tree) {
 			console.log('Computing KD-Tree for point cloud "' + this.name + '"');
 			this.tree = new KDTree(this);
@@ -193,39 +193,14 @@
 		return null;
 	}
 
-	HarmonizeNormal(queue: number[], k: number, status: number[]) {
-		let index = queue.pop();
-		//Status :
-		// 0 : not handled
-		// 1 : enqueued
-		// -1 : normal has been oriented
-		if (status[index] >= 0) {
-			var point = this.GetPoint(index);
-			var normal = this.GetNormal(index);
-			var knn = this.KNearestNeighbours(point, k + 1);
-
-			//Search for the neighbor whose normal orientation has been decided, and whose normal is the most aligned with he current one
-			let ss = 0;
-			for (var ii = 0; ii < knn.length && status[index] >= 0; ii++) {
-				let nnindex = knn[ii].index;
-				if (status[nnindex] < 0) {
-					let nnormal = this.GetNormal(nnindex);
-					let s = nnormal.Dot(normal);
-					if (Math.abs(s) > Math.abs(ss))
-						ss = s;
-				}
-				if (status[nnindex] == 0) {
-					queue.push(nnindex);
-					status[nnindex] = 1;
-				}
-			}
-			if(ss < 0)
-				this.InvertNormal(index);
-			status[index] = -1;
-		}
+	ComputeConnectedComponents(k: number, onDone: CADNodeHandler) {
+		k = k || 30;
+		let builder = new PCDProcessing.ConnecterComponentsBuilder(this, k);
+		builder.SetNext((b: PCDProcessing.ConnecterComponentsBuilder) => onDone(b.result));
+		builder.Start();
 	}
 
-	ComputeNormals = function (k, ondone) {
+	ComputeNormals(k: number, ondone: Function) {
 		k = k || 30;
 		let ncomputer = new PCDProcessing.NormalsComputer(this, k);
 		let nharmonizer = new PCDProcessing.NormalsHarmonizer(this, k);
@@ -286,6 +261,7 @@
 		if (!(cloud.ransac && cloud.ransac.IsDone())) {
 			result.push(new RansacDetectionAction(cloud, onDone));
 		}
+		result.push(new ConnectedComponentsAction(cloud, onDone));
 
 		result.push(new ExportPointCloudFileAction(cloud, onDone));
 
@@ -322,40 +298,46 @@ namespace PCDProcessing {
 		}
 	};
 
-	export class NormalsHarmonizer extends IterativeLongProcess {
-		status: Array<number>;
-		queue: number[];
-		last: number;
-
-		constructor(private cloud: PointCloud, private k: number) {
-			super(cloud.Size(), 'Harmonizing normals (' + cloud.Size() + ' data points)');
+	export class NormalsHarmonizer extends RegionGrowthProcess {
+		constructor(cloud: PointCloud, k: number) {
+			super(cloud, k, 'Harmonizing normals (' + cloud.Size() + ' data points)');
 		}
 
-		Initialize() {
-			this.queue = [0];
-			this.last = 0;
-			this.status = new Array<number>(this.cloud.Size());
-			for (var ii = 0; ii < this.cloud.Size(); ii++) {
-				this.status[ii] = 0;
-			}
-		}
-
-		get Done(): boolean {
-			return this.last >= this.Target;
-		}
-
-		Iterate(step: number) {
-			this.cloud.HarmonizeNormal(this.queue, this.k, this.status);
-
-			//If the queue is empty, enqueue the next point that has not been processed yet
-			if (this.queue.length == 0) {
-				while (!this.Done && this.status[this.last] !== 0)
-					this.last++;
-				if (!this.Done) {
-					this.queue.push(this.last);
-					this.status[this.last] = 1;
+		ProcessPoint(cloud: PointCloud, index: number, knn: Neighbour[], region: number) {
+			//Search for the neighbor whose normal orientation has been decided,
+			//and whose normal is the most aligned with the current one
+			let ss = 0;
+			let normal = cloud.GetNormal(index);
+			for (var ii = 0; ii < knn.length; ii++) {
+				let nnindex = knn[ii].index;
+				if (this.Status(nnindex) === RegionGrowthStatus.processed) {
+					let nnormal = cloud.GetNormal(nnindex);
+					let s = nnormal.Dot(normal);
+					if (Math.abs(s) > Math.abs(ss))
+						ss = s;
 				}
 			}
+			if (ss < 0)
+				cloud.InvertNormal(index);
 		}
 	};
+
+	export class ConnecterComponentsBuilder extends RegionGrowthProcess {
+		result: CADGroup;
+
+		constructor(cloud: PointCloud, k: number) {
+			super(cloud, k, 'Computing connected components');
+
+			this.result = new CADGroup(cloud.name + ' - ' + k + '-connected components');
+		}
+
+		ProcessPoint(cloud: PointCloud, index: number, knn: Neighbour[], region: number) {
+			if (region >= this.result.children.length)
+				this.result.Add(new PointCloud());
+			let component = <PointCloud>this.result.children[region];
+			component.PushPoint(cloud.GetPoint(index));
+			if (cloud.HasNormals())
+				component.PushNormal(cloud.GetNormal(index));
+		}
+	}
 }
