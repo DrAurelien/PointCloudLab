@@ -1,18 +1,18 @@
 ﻿//import './meshface.ts';
 
 class Mesh extends CADPrimitive {
-    faces: number[];
-    size: number;
+	faces: number[];
+	size: number;
 	octree: Octree;
-    glIndexBuffer: WebGLBuffer;
+	glIndexBuffer: WebGLBuffer;
 
-    constructor(public pointcloud: PointCloud) {
-        super(NameProvider.GetName('Mesh'));
+	constructor(public pointcloud: PointCloud) {
+		super(NameProvider.GetName('Mesh'));
 		this.faces = [];
 		this.size = 0;
-    }
+	}
 
-    PushFace(f: number[]): void {
+	PushFace(f: number[]): void {
 		if (f.length != 3) {
 			throw 'Non triangular faces are not (yet) supported in meshes';
 		}
@@ -90,38 +90,40 @@ class Mesh extends CADPrimitive {
 	}
 
 	Draw(drawingContext: DrawingContext): void {
-		this.material.InitializeLightingModel(drawingContext);
+		if (this.visible) {
+			this.material.InitializeLightingModel(drawingContext);
 
-		this.PrepareRendering(drawingContext);
+			this.PrepareRendering(drawingContext);
 
-		//Points-based rendering
-		if (drawingContext.rendering.Point()) {
-			this.pointcloud.Draw(drawingContext);
-		}
+			//Points-based rendering
+			if (drawingContext.rendering.Point()) {
+				this.pointcloud.Draw(drawingContext);
+			}
 
-		//Surface rendering
-		if (drawingContext.rendering.Surface()) {
-			drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.GetIntType(), 0);
-		}
+			//Surface rendering
+			if (drawingContext.rendering.Surface()) {
+				drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.GetIntType(), 0);
+			}
 
-		//Wire rendering
-		if (drawingContext.rendering.Wire()) {
-			drawingContext.gl.drawElements(drawingContext.gl.LINES, this.size, drawingContext.GetIntType(), 0);
-		}
+			//Wire rendering
+			if (drawingContext.rendering.Wire()) {
+				drawingContext.gl.drawElements(drawingContext.gl.LINES, this.size, drawingContext.GetIntType(), 0);
+			}
 
-		if (this.selected) {
-			this.GetBoundingBox().Draw(drawingContext);
+			if (this.selected) {
+				this.GetBoundingBox().Draw(drawingContext);
+			}
 		}
 	}
 
-    RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray): Picking {
 		if (this.octree) {
 			return this.octree.RayIntersection(ray);
 		}
 
-        let result = new Picking(this);
+		let result = new Picking(this);
 		for (let ii = 0; ii < this.Size(); ii++) {
-            let tt = this.GetFace(ii).LineFaceIntersection(ray);
+			let tt = this.GetFace(ii).LineFaceIntersection(ray);
 			if (tt !== null) {
 				result.Add(tt);
 			}

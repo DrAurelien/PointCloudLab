@@ -123,14 +123,16 @@
 	}
 
 	Draw(drawingContext: DrawingContext) {
-		this.material.InitializeLightingModel(drawingContext);
+		if (this.visible) {
+			this.material.InitializeLightingModel(drawingContext);
 
-		this.PrepareRendering(drawingContext);
+			this.PrepareRendering(drawingContext);
 
-		drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.Size());
+			drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.Size());
 
-		if (this.selected && this.pointssize > 0) {
-			this.boundingbox.Draw(drawingContext);
+			if (this.selected && this.pointssize > 0) {
+				this.boundingbox.Draw(drawingContext);
+			}
 		}
 	}
 
@@ -145,8 +147,8 @@
 		return knn.Neighbours();
 	}
 
-    RayIntersection(ray: Ray): Picking {
-        return new Picking(this);
+	RayIntersection(ray: Ray): Picking {
+		return new Picking(this);
 	}
 
 	ComputeNormal(index: number, k: number): Vector {
