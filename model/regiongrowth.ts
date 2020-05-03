@@ -7,8 +7,9 @@
 class RegionGrowthIterator {
 	private queue: Queue<number>;
 	private lastUnprocessed: number;
+	private regionIndex: number;
 	public status: RegionGrowthStatus[];
-	public regionIndex: number;
+	public currentRegion: number;
 	public currentIndex: number;
 	public currentNeighborhood: Neighbour[];
 
@@ -24,6 +25,8 @@ class RegionGrowthIterator {
 		}
 		this.lastUnprocessed = 0;
 		this.currentIndex = null;
+		this.currentRegion = null;
+		this.currentNeighborhood = null;
 		this.regionIndex = 0;
 		this.Enqueue(this.lastUnprocessed);
 	}
@@ -37,6 +40,7 @@ class RegionGrowthIterator {
 	}
 
 	LoadAndSpread() {
+		this.currentRegion = this.regionIndex;
 		this.currentIndex = this.queue.Dequeue();
 		this.status[this.currentIndex] = RegionGrowthStatus.processed;
 
@@ -83,7 +87,7 @@ abstract class RegionGrowthProcess extends IterativeLongProcess {
 
 	Iterate() {
 		this.iterator.LoadAndSpread();
-		this.ProcessPoint(this.cloud, this.iterator.currentIndex, this.iterator.currentNeighborhood, this.iterator.regionIndex);
+		this.ProcessPoint(this.cloud, this.iterator.currentIndex, this.iterator.currentNeighborhood, this.iterator.currentRegion);
 	}
 
 	Status(index: number): RegionGrowthStatus {
