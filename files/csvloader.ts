@@ -29,7 +29,6 @@ class CSVParser extends IterativeLongProcess {
 	headermapping: Object;
 	done: boolean;
 	public separator: string;
-	public lineseparator: string;
 	public cloud: PointCloud;
 	private fields: ScalarField[];
 
@@ -39,7 +38,6 @@ class CSVParser extends IterativeLongProcess {
 	constructor(content: ArrayBuffer) {
 		super(0, 'Parsing CSV file content');
 		this.separator = ';';
-		this.lineseparator = '\n';
 		this.reader = new BinaryReader(content);
 	}
 
@@ -50,7 +48,8 @@ class CSVParser extends IterativeLongProcess {
 		this.done = false;
 
 		this.cloud = new PointCloud();
-		this.nbsteps = this.reader.CountAsciiOccurences(this.lineseparator);
+		this.nbsteps = this.reader.CountAsciiOccurences('\n');
+		this.cloud.Reserve(this.nbsteps);
 		this.reader.Reset();
 	}
 
@@ -120,7 +119,7 @@ class CSVParser extends IterativeLongProcess {
 		if (this.reader.Eof()) {
 			return null;
 		}
-		var line = this.reader.GetAsciiUntil([this.lineseparator]);
+		var line = this.reader.GetAsciiLine();
 		if (line) {
 			return line.split(this.separator);
 		}
@@ -144,7 +143,7 @@ class CSVParser extends IterativeLongProcess {
 		let result = [];
 		for (let index = 0; index < data.length; index++) {
 			let value = this.GetValue(line, data[index]);
-			if (value) {
+			if (value !== null) {
 				result.push(value);
 			}
 			else {
