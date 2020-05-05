@@ -90,6 +90,7 @@
     <TypeScriptCompile Include="model\kdtree.ts" />
     <TypeScriptCompile Include="model\mesh.ts" />
     <TypeScriptCompile Include="model\neighbourhood.ts" />
+    <TypeScriptCompile Include="model\scalarfield.ts" />
     <TypeScriptCompile Include="model\pointcloud.ts" />
     <TypeScriptCompile Include="model\ransac.ts" />
     <TypeScriptCompile Include="model\regiongrowth.ts" />

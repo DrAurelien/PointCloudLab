@@ -1,14 +1,16 @@
-﻿class CADGroup extends CADNode {
-    children: CADNode[];
-    folded: boolean;
+﻿/// <reference path="cadnode.ts" />
 
-    constructor(name: string, owner: CADGroup = null) {
-        super(name, owner);
+class CADGroup extends CADNode {
+	children: CADNode[];
+	folded: boolean;
+
+	constructor(name: string, owner: CADGroup = null) {
+		super(name, owner);
 		this.children = [];
 		this.folded = false;
-    }
+	}
 
-    Draw(drawingContext: DrawingContext): void {
+	Draw(drawingContext: DrawingContext): void {
 		if (this.visible) {
 			for (var index = 0; index < this.children.length; index++) {
 				this.children[index].Draw(drawingContext);
@@ -19,66 +21,66 @@
 				box.Draw(drawingContext);
 			}
 		}
-    }
+	}
 
-    RayIntersection(ray: Ray): Picking {
-        let picked: Picking = null;
-        for (var index = 0; index < this.children.length; index++) {
-            if (this.children[index].visible) {
-                let intersection = this.children[index].RayIntersection(ray);
-                if (picked == null || (intersection && intersection.Compare(picked) < 0)) {
-                    picked = intersection;
-                }
-            }
-        }
-        return picked;
-    }
+	RayIntersection(ray: Ray): Picking {
+		let picked: Picking = null;
+		for (var index = 0; index < this.children.length; index++) {
+			if (this.children[index].visible) {
+				let intersection = this.children[index].RayIntersection(ray);
+				if (picked == null || (intersection && intersection.Compare(picked) < 0)) {
+					picked = intersection;
+				}
+			}
+		}
+		return picked;
+	}
 
-    Add(son: CADNode): void {
-        if (son.owner) {
-            son.owner.Remove(son);
-        }
-        son.owner = this;
-        this.children.push(son);
-    }
+	Add(son: CADNode): void {
+		if (son.owner) {
+			son.owner.Remove(son);
+		}
+		son.owner = this;
+		this.children.push(son);
+	}
 
-    Remove(son: CADNode): void {
-        let position = -1;
-        for (var index = 0; position < 0 && index < this.children.length; index++) {
-            if (this.children[index] === son) {
-                position = index;
-            }
-        }
+	Remove(son: CADNode): void {
+		let position = -1;
+		for (var index = 0; position < 0 && index < this.children.length; index++) {
+			if (this.children[index] === son) {
+				position = index;
+			}
+		}
 
-        if (position >= 0) {
-            son.owner = null;
+		if (position >= 0) {
+			son.owner = null;
 			this.children.splice(position, 1);
-        }
-    }
+		}
+	}
 
-    GetBoundingBox(): BoundingBox {
-        this.boundingbox = new BoundingBox();
-        for (var index = 0; index < this.children.length; index++) {
+	GetBoundingBox(): BoundingBox {
+		this.boundingbox = new BoundingBox();
+		for (var index = 0; index < this.children.length; index++) {
 			let bb = this.children[index].GetBoundingBox();
 			if (bb.IsValid()) {
 				this.boundingbox.Add(bb.min);
 				this.boundingbox.Add(bb.max);
 			}
-        }
-        return this.boundingbox;
-    }
+		}
+		return this.boundingbox;
+	}
 
-    Apply(proc: CADNodeHandler): boolean {
-        if (!super.Apply(proc)) {
+	Apply(proc: CADNodeHandler): boolean {
+		if (!super.Apply(proc)) {
 			return false;
 		}
-        for (var index = 0; index < this.children.length; index++) {
-            if (this.children[index].Apply(proc) === false) {
+		for (var index = 0; index < this.children.length; index++) {
+			if (this.children[index].Apply(proc) === false) {
 				return false;
 			}
-        }
+		}
 		return true;
-    }
+	}
 
 	GetChildren(): CADNode[] {
 		if (!this.folded) {
@@ -107,7 +109,7 @@
 		}
 
 		return result;
-    }
+	}
 
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
