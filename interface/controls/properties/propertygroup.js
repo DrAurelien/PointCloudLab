@@ -38,3 +38,4 @@ var PropertyGroup = /** @class */ (function (_super) {
     };
     return PropertyGroup;
 }(Property));
+//# sourceMappingURL=propertygroup.js.map

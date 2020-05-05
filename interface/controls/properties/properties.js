@@ -69,3 +69,4 @@ var Properties = /** @class */ (function () {
     };
     return Properties;
 }());
+//# sourceMappingURL=properties.js.map

@@ -39,3 +39,4 @@ var ColorProperty = /** @class */ (function (_super) {
     };
     return ColorProperty;
 }(PropertyWithValue));
+//# sourceMappingURL=colorproperty.js.map

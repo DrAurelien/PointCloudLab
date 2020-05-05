@@ -36,3 +36,4 @@ var IterativeRootFinder = /** @class */ (function () {
     };
     return IterativeRootFinder;
 }());
+//# sourceMappingURL=rootsfinding.js.map

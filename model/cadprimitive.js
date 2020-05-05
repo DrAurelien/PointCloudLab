@@ -27,3 +27,4 @@ var CADPrimitive = /** @class */ (function (_super) {
     };
     return CADPrimitive;
 }(CADNode));
+//# sourceMappingURL=cadprimitive.js.map

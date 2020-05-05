@@ -20,3 +20,4 @@ var Pannel = /** @class */ (function () {
     };
     return Pannel;
 }());
+//# sourceMappingURL=pannel.js.map

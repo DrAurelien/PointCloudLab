@@ -176,3 +176,4 @@ var HideablePannel = /** @class */ (function (_super) {
     };
     return HideablePannel;
 }(Pannel));
+//# sourceMappingURL=hideablepannel.js.map

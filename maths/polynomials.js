@@ -61,3 +61,4 @@ var Polynomial = /** @class */ (function () {
     };
     return Polynomial;
 }());
+//# sourceMappingURL=polynomials.js.map

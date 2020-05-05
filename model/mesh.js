@@ -170,3 +170,4 @@ var MeshProcessing;
     MeshProcessing.NormalsComputer = NormalsComputer;
     ;
 })(MeshProcessing || (MeshProcessing = {}));
+//# sourceMappingURL=mesh.js.map

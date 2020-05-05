@@ -47,3 +47,4 @@ var Menu = /** @class */ (function (_super) {
     };
     return Menu;
 }(HideablePannel));
+//# sourceMappingURL=menu.js.map

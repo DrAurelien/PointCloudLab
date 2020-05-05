@@ -3,3 +3,4 @@ var FileLoader = /** @class */ (function () {
     }
     return FileLoader;
 }());
+//# sourceMappingURL=fileloader.js.map

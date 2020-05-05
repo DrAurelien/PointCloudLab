@@ -40,3 +40,4 @@ var VectorProperty = /** @class */ (function (_super) {
     };
     return VectorProperty;
 }(PropertyGroup));
+//# sourceMappingURL=vectorproperty.js.map

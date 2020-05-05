@@ -96,3 +96,4 @@ var ConnectedComponentsAction = /** @class */ (function (_super) {
     };
     return ConnectedComponentsAction;
 }(Action));
+//# sourceMappingURL=pointclouddetection.js.map

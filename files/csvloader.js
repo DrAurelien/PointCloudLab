@@ -1,3 +1,5 @@
+/// <reference path="fileloader.ts" />
+/// <reference path="../tools/longprocess.ts" />
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -35,16 +37,17 @@ var CSVParser = /** @class */ (function (_super) {
     function CSVParser(content) {
         var _this = _super.call(this, 0, 'Parsing CSV file content') || this;
         _this.separator = ';';
-        _this.lineseparator = '\n';
         _this.reader = new BinaryReader(content);
         return _this;
     }
     CSVParser.prototype.Initialize = function (caller) {
         this.header = null;
+        this.rawheader = null;
         this.headermapping = null;
         this.done = false;
         this.cloud = new PointCloud();
-        this.nbsteps = this.reader.CountAsciiOccurences(this.lineseparator);
+        this.nbsteps = this.reader.CountAsciiOccurences('\n');
+        this.cloud.Reserve(this.nbsteps);
         this.reader.Reset();
     };
     CSVParser.prototype.Iterate = function (step) {
@@ -54,12 +57,16 @@ var CSVParser = /** @class */ (function (_super) {
                 this.SetHeader(line);
             }
             else {
-                var point = this.GetVector(line, ['x', 'y', 'z']);
+                var point = this.GetVector(line, CSVParser.PointCoordinates);
                 if (point) {
                     this.cloud.PushPoint(point);
-                    var normal = this.GetVector(line, ['nx', 'ny', 'nz']);
+                    var normal = this.GetVector(line, CSVParser.NormalCoordinates);
                     if (normal) {
                         this.cloud.PushNormal(normal);
+                    }
+                    for (var index = 0; index < this.cloud.fields.length; index++) {
+                        var field = this.cloud.fields[index];
+                        field.PushValue(this.GetValue(line, field.name));
                     }
                 }
             }
@@ -75,6 +82,7 @@ var CSVParser = /** @class */ (function (_super) {
     });
     CSVParser.prototype.SetHeader = function (line) {
         this.header = {};
+        this.rawheader = line;
         for (var index = 0; index < line.length; index++) {
             var key = line[index];
             if (this.headermapping) {
@@ -87,42 +95,60 @@ var CSVParser = /** @class */ (function (_super) {
                 }
             }
             if (key) {
-                this.header[key] = index;
+                var ciKey = key.toLocaleLowerCase();
+                this.header[ciKey] = index;
+                if (!this.IsCoordinate(ciKey)) {
+                    this.cloud.AddScalarField(key).Reserve(this.nbsteps);
+                }
             }
         }
+    };
+    CSVParser.prototype.IsCoordinate = function (key) {
+        var coords = CSVParser.PointCoordinates.concat(CSVParser.NormalCoordinates);
+        for (var index = 0; index < coords.length; index++) {
+            if (key == coords[index]) {
+                return true;
+            }
+        }
+        return false;
     };
     CSVParser.prototype.ParseCurrentLine = function () {
         if (this.reader.Eof()) {
             return null;
         }
-        var line = this.reader.GetAsciiUntil([this.lineseparator]);
+        var line = this.reader.GetAsciiLine();
         if (line) {
             return line.split(this.separator);
+        }
+        return null;
+    };
+    CSVParser.prototype.GetValue = function (line, key) {
+        var ciKey = key.toLocaleLowerCase();
+        if (ciKey in this.header) {
+            var index = this.header[ciKey];
+            try {
+                return parseFloat(line[index]);
+            }
+            catch (e) {
+            }
         }
         return null;
     };
     CSVParser.prototype.GetVector = function (line, data) {
         var result = [];
         for (var index = 0; index < data.length; index++) {
-            var key = data[index];
-            if (key in this.header) {
-                key = this.header[key];
-                try {
-                    var value = parseFloat(line[key]);
-                    result.push(value);
-                }
-                catch (e) {
-                    result = null;
-                }
+            var value = this.GetValue(line, data[index]);
+            if (value !== null) {
+                result.push(value);
             }
             else {
-                result = null;
-            }
-            if (!result) {
                 return null;
             }
         }
         return new Vector(result);
     };
+    CSVParser.PointCoordinates = ['x', 'y', 'z'];
+    CSVParser.NormalCoordinates = ['nx', 'ny', 'nz'];
     return CSVParser;
 }(IterativeLongProcess));
+//# sourceMappingURL=csvloader.js.map

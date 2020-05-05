@@ -12,3 +12,4 @@ var NameProvider = /** @class */ (function () {
     NameProvider.indices = {};
     return NameProvider;
 }());
+//# sourceMappingURL=nameprovider.js.map

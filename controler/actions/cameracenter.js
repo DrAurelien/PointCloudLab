@@ -31,3 +31,4 @@ var CenterCameraAction = /** @class */ (function (_super) {
     };
     return CenterCameraAction;
 }(Action));
+//# sourceMappingURL=cameracenter.js.map

@@ -65,3 +65,4 @@ var Interface = /** @class */ (function () {
     };
     return Interface;
 }());
+//# sourceMappingURL=interface.js.map

@@ -54,3 +54,4 @@ var ScanFromCurrentViewPointAction = /** @class */ (function (_super) {
     ScanFromCurrentViewPointAction.vSamplingTitle = 'Vertical Sampling';
     return ScanFromCurrentViewPointAction;
 }(Action));
+//# sourceMappingURL=scanfromcurrentviewpoint.js.map

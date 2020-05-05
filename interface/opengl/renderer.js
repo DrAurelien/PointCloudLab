@@ -119,3 +119,4 @@ var SceneScanner = /** @class */ (function (_super) {
     return SceneScanner;
 }(LongProcess));
 ;
+//# sourceMappingURL=renderer.js.map

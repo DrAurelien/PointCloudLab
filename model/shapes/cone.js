@@ -177,3 +177,4 @@ var Cone = /** @class */ (function (_super) {
     };
     return Cone;
 }(Shape));
+//# sourceMappingURL=cone.js.map

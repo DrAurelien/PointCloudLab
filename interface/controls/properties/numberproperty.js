@@ -26,3 +26,4 @@ var NumberProperty = /** @class */ (function (_super) {
     };
     return NumberProperty;
 }(PropertyWithValue));
+//# sourceMappingURL=numberproperty.js.map

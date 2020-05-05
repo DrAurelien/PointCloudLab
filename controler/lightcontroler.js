@@ -65,3 +65,4 @@ var LightControler = /** @class */ (function (_super) {
     };
     return LightControler;
 }(MouseControler));
+//# sourceMappingURL=lightcontroler.js.map

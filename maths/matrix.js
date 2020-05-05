@@ -178,3 +178,4 @@ var Matrix = /** @class */ (function () {
     };
     return Matrix;
 }());
+//# sourceMappingURL=matrix.js.map

@@ -84,3 +84,4 @@ var KNearestNeighbours = /** @class */ (function (_super) {
     };
     return KNearestNeighbours;
 }(Neighbourhood));
+//# sourceMappingURL=neighbourhood.js.map

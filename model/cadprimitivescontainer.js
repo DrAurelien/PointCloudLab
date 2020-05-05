@@ -42,3 +42,4 @@ var CADPrimitivesContainer = /** @class */ (function (_super) {
     };
     return CADPrimitivesContainer;
 }(CADGroup));
+//# sourceMappingURL=cadprimitivescontainer.js.map

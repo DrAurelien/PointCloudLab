@@ -120,3 +120,4 @@ var Plane = /** @class */ (function (_super) {
     };
     return Plane;
 }(Shape));
+//# sourceMappingURL=plane.js.map

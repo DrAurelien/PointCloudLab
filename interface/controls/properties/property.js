@@ -16,3 +16,4 @@ var Property = /** @class */ (function () {
     };
     return Property;
 }());
+//# sourceMappingURL=property.js.map

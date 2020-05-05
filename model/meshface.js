@@ -55,3 +55,4 @@ var MeshFace = /** @class */ (function () {
     };
     return MeshFace;
 }());
+//# sourceMappingURL=meshface.js.map

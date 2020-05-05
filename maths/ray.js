@@ -8,3 +8,4 @@ var Ray = /** @class */ (function () {
     };
     return Ray;
 }());
+//# sourceMappingURL=ray.js.map

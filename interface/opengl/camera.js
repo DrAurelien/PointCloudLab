@@ -179,3 +179,4 @@ var Camera = /** @class */ (function () {
     });
     return Camera;
 }());
+//# sourceMappingURL=camera.js.map

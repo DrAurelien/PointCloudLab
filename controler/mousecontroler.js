@@ -66,3 +66,4 @@ var MouseControler = /** @class */ (function () {
     });
     return MouseControler;
 }());
+//# sourceMappingURL=mousecontroler.js.map

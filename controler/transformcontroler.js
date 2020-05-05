@@ -87,3 +87,4 @@ var TransformControler = /** @class */ (function (_super) {
     };
     return TransformControler;
 }(MouseControler));
+//# sourceMappingURL=transformcontroler.js.map

@@ -69,3 +69,4 @@ var FileOpener = /** @class */ (function () {
     };
     return FileOpener;
 }());
+//# sourceMappingURL=fileopener.js.map

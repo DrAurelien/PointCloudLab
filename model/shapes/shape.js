@@ -102,3 +102,4 @@ var CreateShapeMeshAction = /** @class */ (function (_super) {
     };
     return CreateShapeMeshAction;
 }(Action));
+//# sourceMappingURL=shape.js.map

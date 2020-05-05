@@ -41,3 +41,4 @@ var ProgressBar = /** @class */ (function () {
     };
     return ProgressBar;
 }());
+//# sourceMappingURL=progressbar.js.map

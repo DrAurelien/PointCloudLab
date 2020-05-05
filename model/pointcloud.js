@@ -29,9 +29,11 @@ var PointCloud = /** @class */ (function (_super) {
         _this.pointssize = 0;
         _this.normals = [];
         _this.normalssize = 0;
+        _this.fields = [];
         _this.boundingbox = new BoundingBox();
         _this.glPointsBuffer = null;
         _this.glNormalsBuffer = null;
+        _this.currentfield = null;
         return _this;
     }
     PointCloud.prototype.PushPoint = function (p) {
@@ -56,6 +58,11 @@ var PointCloud = /** @class */ (function (_super) {
             normals[index] = this.normals[index];
         }
         this.normals = normals;
+    };
+    PointCloud.prototype.AddScalarField = function (name) {
+        var field = new ScalarField(name);
+        this.fields.push(field);
+        return field;
     };
     PointCloud.prototype.GetPoint = function (i) {
         var index = 3 * i;
@@ -200,6 +207,9 @@ var PointCloud = /** @class */ (function (_super) {
         if (this.HasNormals()) {
             result += ';nx;ny;nz';
         }
+        for (var field = 0; field < this.fields.length; field++) {
+            result += ';' + this.fields[field].name.replace(';', '_');
+        }
         result += '\n';
         for (var index = 0; index < this.Size(); index++) {
             var point = this.GetPoint(index);
@@ -211,6 +221,9 @@ var PointCloud = /** @class */ (function (_super) {
                 result += ';' + normal.Get(0) + ';' +
                     normal.Get(1) + ';' +
                     normal.Get(2);
+            }
+            for (var field = 0; field < this.fields.length; field++) {
+                result += ';' + this.fields[field].GetValue(index);
             }
             result += '\n';
         }
@@ -243,7 +256,20 @@ var PointCloud = /** @class */ (function (_super) {
         var points = new NumberProperty('Points', this.Size(), null);
         points.SetReadonly();
         properties.Push(points);
+        if (this.fields.length) {
+            var fields = new PropertyGroup('Scalar fields');
+            for (var index = 0; index < this.fields.length; index++) {
+                fields.Add(this.GetScalarFieldProperty(index));
+            }
+            properties.Push(fields);
+        }
         return properties;
+    };
+    PointCloud.prototype.GetScalarFieldProperty = function (index) {
+        var self = this;
+        return new BooleanProperty(this.fields[index].name, index === this.currentfield, function (value) {
+            self.currentfield = value ? index : null;
+        });
     };
     return PointCloud;
 }(CADPrimitive));
@@ -316,3 +342,4 @@ var PCDProcessing;
     }(RegionGrowthProcess));
     PCDProcessing.ConnecterComponentsBuilder = ConnecterComponentsBuilder;
 })(PCDProcessing || (PCDProcessing = {}));
+//# sourceMappingURL=pointcloud.js.map

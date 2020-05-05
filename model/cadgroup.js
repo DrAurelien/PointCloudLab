@@ -1,3 +1,4 @@
+/// <reference path="cadnode.ts" />
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -117,3 +118,4 @@ var CADGroup = /** @class */ (function (_super) {
     };
     return CADGroup;
 }(CADNode));
+//# sourceMappingURL=cadgroup.js.map

@@ -63,3 +63,4 @@ var GaussianSphereAction = /** @class */ (function (_super) {
     };
     return GaussianSphereAction;
 }(Action));
+//# sourceMappingURL=pointcloudnormals.js.map

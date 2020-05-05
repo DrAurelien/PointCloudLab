@@ -34,3 +34,4 @@ var AxisLabel = /** @class */ (function () {
     };
     return AxisLabel;
 }());
+//# sourceMappingURL=axislabel.js.map

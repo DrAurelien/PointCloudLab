@@ -1,4 +1,3 @@
-/// <reference path="binaryreader.ts" />
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -99,9 +98,7 @@ var PlyElement = /** @class */ (function () {
         }
         this.items.push(this.ParseItem(reader, format));
         if (format == 'ascii') {
-            while (!reader.Eof() && reader.GetCurrentAsciiChar() == '\n') {
-                reader.GetNextAsciiChar();
-            }
+            reader.GetAsciiLine();
         }
     };
     PlyElement.prototype.IsFilled = function () {
@@ -379,3 +376,4 @@ var Finalizer = /** @class */ (function (_super) {
     };
     return Finalizer;
 }(Process));
+//# sourceMappingURL=plyloader.js.map

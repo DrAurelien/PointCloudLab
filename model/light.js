@@ -56,3 +56,4 @@ var Light = /** @class */ (function (_super) {
     };
     return Light;
 }(CADNode));
+//# sourceMappingURL=light.js.map

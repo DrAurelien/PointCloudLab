@@ -41,3 +41,4 @@ var NewLightAction = /** @class */ (function (_super) {
     };
     return NewLightAction;
 }(Action));
+//# sourceMappingURL=lightscontainer.js.map

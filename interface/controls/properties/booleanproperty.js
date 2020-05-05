@@ -23,3 +23,4 @@ var BooleanProperty = /** @class */ (function (_super) {
     };
     return BooleanProperty;
 }(PropertyWithValue));
+//# sourceMappingURL=booleanproperty.js.map

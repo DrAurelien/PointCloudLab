@@ -25,3 +25,4 @@ var Geometry = /** @class */ (function () {
     };
     return Geometry;
 }());
+//# sourceMappingURL=geometry.js.map

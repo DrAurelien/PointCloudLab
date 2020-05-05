@@ -21,3 +21,4 @@ var StringProperty = /** @class */ (function (_super) {
     };
     return StringProperty;
 }(PropertyWithValue));
+//# sourceMappingURL=stringproperty.js.map

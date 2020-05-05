@@ -55,3 +55,4 @@ var Cursor = /** @class */ (function () {
     Cursor.Light = '\uf0eb'; //fa-lightbulb-o
     return Cursor;
 }());
+//# sourceMappingURL=cursor.js.map

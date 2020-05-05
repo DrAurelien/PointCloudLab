@@ -60,3 +60,4 @@ var LightModeAction = /** @class */ (function (_super) {
     };
     return LightModeAction;
 }(Action));
+//# sourceMappingURL=controlerchoice.js.map

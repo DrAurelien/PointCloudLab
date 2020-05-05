@@ -91,3 +91,4 @@ var CameraControler = /** @class */ (function (_super) {
     };
     return CameraControler;
 }(MouseControler));
+//# sourceMappingURL=cameracontroler.js.map

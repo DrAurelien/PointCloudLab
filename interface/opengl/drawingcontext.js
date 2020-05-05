@@ -98,3 +98,4 @@ var DrawingContext = /** @class */ (function () {
     DrawingContext.NbMaxLights = 8;
     return DrawingContext;
 }());
+//# sourceMappingURL=drawingcontext.js.map
