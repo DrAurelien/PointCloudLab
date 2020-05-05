@@ -7,6 +7,8 @@
 	glNormalsBuffer: WebGLBuffer;
 	tree: KDTree = null;
 	ransac: Ransac;
+	fields: ScalarField[];
+	currentfield: number;
 
 	constructor() {
 		super(NameProvider.GetName('PointCloud'));
@@ -14,9 +16,11 @@
 		this.pointssize = 0;
 		this.normals = [];
 		this.normalssize = 0;
+		this.fields = [];
 		this.boundingbox = new BoundingBox();
 		this.glPointsBuffer = null;
 		this.glNormalsBuffer = null;
+		this.currentfield = null;
 	}
 
 	PushPoint(p: Vector): void {
@@ -45,6 +49,13 @@
 		}
 		this.normals = normals;
 	}
+
+	AddScalarField(name: string) {
+		let field = new ScalarField(name);
+		this.fields.push(field);
+		return field;
+	}
+
 
 	GetPoint(i: number): Vector {
 		var index = 3 * i;
@@ -224,19 +235,26 @@
 		if (this.HasNormals()) {
 			result += ';nx;ny;nz';
 		}
+		for (let field = 0; field < this.fields.length; field++) {
+			result += ';' + this.fields[field].name.replace(';', '_');
+		}
 		result += '\n';
 
-		for (var index = 0; index < this.Size(); index++) {
-			var point = this.GetPoint(index);
+		for (let index = 0; index < this.Size(); index++) {
+			let point = this.GetPoint(index);
 			result += point.Get(0) + ';' +
 				point.Get(1) + ';' +
 				point.Get(2);
 
 			if (this.HasNormals()) {
-				var normal = this.GetNormal(index);
+				let normal = this.GetNormal(index);
 				result += ';' + normal.Get(0) + ';' +
 					normal.Get(1) + ';' +
 					normal.Get(2);
+			}
+
+			for (let field = 0; field < this.fields.length; field++) {
+				result += ';' + this.fields[field].GetValue(index);
 			}
 			result += '\n';
 		}
@@ -277,7 +295,22 @@
 		points.SetReadonly();
 		properties.Push(points);
 
+		if (this.fields.length) {
+			let fields = new PropertyGroup('Scalar fields');
+			for (let index = 0; index < this.fields.length; index++) {
+				fields.Add(this.GetScalarFieldProperty(index));
+			}
+			properties.Push(fields);
+		}
+
 		return properties;
+	}
+
+	private GetScalarFieldProperty(index: number) {
+		let self = this;
+		return new BooleanProperty(this.fields[index].name, index === this.currentfield, (value: boolean) => {
+			self.currentfield = value ? index : null;
+		});
 	}
 }
 

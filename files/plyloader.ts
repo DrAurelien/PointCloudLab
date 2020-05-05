@@ -91,9 +91,7 @@ class PlyElement {
 
 		this.items.push(this.ParseItem(reader, format));
 		if (format == 'ascii') {
-			while (!reader.Eof() && reader.GetCurrentAsciiChar() == '\n') {
-				reader.GetNextAsciiChar();
-			}
+			reader.GetAsciiLine();
 		}
 	}
 

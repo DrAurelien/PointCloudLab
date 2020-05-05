@@ -1,11 +1,11 @@
 ﻿abstract class CADNode {
 	owner: CADGroup;
 	visible: boolean;
-    selected: boolean;
+	selected: boolean;
 	deletable: boolean;
-    protected boundingbox: BoundingBox;
+	protected boundingbox: BoundingBox;
 
-    constructor(public name: string, owner: CADGroup = null) {
+	constructor(public name: string, owner: CADGroup = null) {
 		this.visible = true;
 		this.selected = false;
 		this.deletable = true;
@@ -14,10 +14,10 @@
 		if (owner) {
 			owner.Add(this);
 		}
-    }
+	}
 
-    abstract Draw(drawingContext: DrawingContext): void;
-    abstract RayIntersection(ray: Ray): Picking;
+	abstract Draw(drawingContext: DrawingContext): void;
+	abstract RayIntersection(ray: Ray): Picking;
 
 	GetBoundingBox(): BoundingBox {
 		return this.boundingbox;
@@ -44,17 +44,17 @@
 			result.push(new SimpleAction('Show', () => { self.visible = true; return onDone(null); }));
 		}
 		return result;
-    }
+	}
 
 	GetChildren(): CADNode[] {
 		return [];
 	}
 
-    Apply(proc: CADNodeHandler): boolean {
-        return proc(this);
-    }
+	Apply(proc: CADNodeHandler): boolean {
+		return proc(this);
+	}
 }
 
 interface CADNodeHandler {
-    (primitive: CADNode): boolean;
+	(primitive: CADNode): boolean;
 }
