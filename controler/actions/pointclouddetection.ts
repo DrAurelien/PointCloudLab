@@ -68,18 +68,3 @@ class RansacDetectionAction extends Action {
 		return true;
 	}
 }
-
-
-class ConnectedComponentsAction extends Action {
-	constructor(private cloud: PointCloud, private onDone: CADNodeHandler) {
-		super('Compute connected components', 'Split the point cloud into connected subsets');
-	}
-
-	Enabled(): boolean {
-		return true;
-	}
-
-	Run() {
-		this.cloud.ComputeConnectedComponents(30, this.onDone);
-	}
-}

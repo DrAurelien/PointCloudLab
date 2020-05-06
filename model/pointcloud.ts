@@ -10,6 +10,8 @@
 	fields: ScalarField[];
 	currentfield: number;
 
+	static DensityFieldName = 'Density';
+
 	constructor() {
 		super(NameProvider.GetName('PointCloud'));
 		this.points = [];
@@ -56,6 +58,25 @@
 		return field;
 	}
 
+	GetScalarField(name: string): ScalarField {
+		for (let index = 0; index < this.fields.length; index++) {
+			if (this.fields[index].name === name) {
+				return this.fields[index];
+			}
+		}
+		return null;
+	}
+
+	SetCurrentField(name: string): boolean {
+		for (let index = 0; index < this.fields.length; index++) {
+			if (this.fields[index].name === name) {
+				this.currentfield = index;
+				return true;
+			}
+		}
+		this.currentfield = null;
+		return false;
+	}
 
 	GetPoint(i: number): Vector {
 		var index = 3 * i;
@@ -222,6 +243,14 @@
 		builder.Start();
 	}
 
+	ComputeDensity(k: number, onDone: Function) {
+		k = k || 30;
+		let density = new PCDProcessing.DensityComputer(this, k);
+		density.SetNext(() => onDone());
+		density.Start();
+
+	}
+
 	ComputeNormals(k: number, ondone: Function) {
 		k = k || 30;
 		let ncomputer = new PCDProcessing.NormalsComputer(this, k);
@@ -284,14 +313,23 @@
 		result.push(new GaussianSphereAction(cloud, onDone));
 
 		result.push(null);
+
+		result.push(new ConnectedComponentsAction(cloud, onDone));
+		result.push(new ComputeDensityAction(cloud, onDone));
+
+		result.push(null);
+		let ransac = false;
 		if (cloud.ransac) {
 			result.push(new ResetDetectionAction(cloud, onDone));
+			ransac = true;
 		}
 		if (!(cloud.ransac && cloud.ransac.IsDone())) {
 			result.push(new RansacDetectionAction(cloud, onDone));
+			ransac = true;
 		}
-		result.push(new ConnectedComponentsAction(cloud, onDone));
 
+		if (ransac)
+			result.push(null);
 		result.push(new ExportPointCloudFileAction(cloud, onDone));
 
 		return result;
@@ -383,6 +421,28 @@ namespace PCDProcessing {
 			component.PushPoint(cloud.GetPoint(index));
 			if (cloud.HasNormals())
 				component.PushNormal(cloud.GetNormal(index));
+		}
+	}
+
+	export class DensityComputer extends IterativeLongProcess {
+		scalarfield: ScalarField;
+
+		constructor(private cloud: PointCloud, private k: number) {
+			super(cloud.Size(), 'Computing points density');
+		}
+
+		Initialize() {
+			this.scalarfield = this.cloud.AddScalarField(PointCloud.DensityFieldName);
+		}
+
+		Finalize() {
+			this.cloud.SetCurrentField(PointCloud.DensityFieldName);
+		}
+
+		Iterate(step: number) {
+			let nbh = this.cloud.KNearestNeighbours(this.cloud.GetPoint(step), this.k + 1);
+			let ballSqrRadius = nbh.pop().distance;
+			this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
 		}
 	}
 }
