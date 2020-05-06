@@ -34,6 +34,7 @@ var PointCloud = /** @class */ (function (_super) {
         _this.glPointsBuffer = null;
         _this.glNormalsBuffer = null;
         _this.currentfield = null;
+        _this.shownormals = true;
         return _this;
     }
     PointCloud.prototype.PushPoint = function (p) {
@@ -63,6 +64,24 @@ var PointCloud = /** @class */ (function (_super) {
         var field = new ScalarField(name);
         this.fields.push(field);
         return field;
+    };
+    PointCloud.prototype.GetScalarField = function (name) {
+        for (var index = 0; index < this.fields.length; index++) {
+            if (this.fields[index].name === name) {
+                return this.fields[index];
+            }
+        }
+        return null;
+    };
+    PointCloud.prototype.SetCurrentField = function (name) {
+        for (var index = 0; index < this.fields.length; index++) {
+            if (this.fields[index].name === name) {
+                this.currentfield = index;
+                return true;
+            }
+        }
+        this.currentfield = null;
+        return false;
     };
     PointCloud.prototype.GetPoint = function (i) {
         var index = 3 * i;
@@ -116,7 +135,7 @@ var PointCloud = /** @class */ (function (_super) {
         }
         drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, this.glPointsBuffer);
         drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
-        if (this.HasNormals()) {
+        if (this.HasNormals() && this.shownormals) {
             drawingContext.EnableNormals(true);
             if (!this.glNormalsBuffer) {
                 this.glNormalsBuffer = drawingContext.gl.createBuffer();
@@ -129,12 +148,19 @@ var PointCloud = /** @class */ (function (_super) {
         else {
             drawingContext.EnableNormals(false);
         }
+        if (this.currentfield !== null) {
+            this.fields[this.currentfield].PrepareRendering(drawingContext);
+        }
+        else {
+            ScalarField.ClearRendering(drawingContext);
+        }
     };
     PointCloud.prototype.Draw = function (drawingContext) {
         if (this.visible) {
             this.material.InitializeLightingModel(drawingContext);
             this.PrepareRendering(drawingContext);
             drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.Size());
+            ScalarField.ClearRendering(drawingContext);
             if (this.selected && this.pointssize > 0) {
                 this.boundingbox.Draw(drawingContext);
             }
@@ -186,6 +212,12 @@ var PointCloud = /** @class */ (function (_super) {
         var builder = new PCDProcessing.ConnecterComponentsBuilder(this, k);
         builder.SetNext(function (b) { return onDone(b.result); });
         builder.Start();
+    };
+    PointCloud.prototype.ComputeDensity = function (k, onDone) {
+        k = k || 30;
+        var density = new PCDProcessing.DensityComputer(this, k);
+        density.SetNext(function () { return onDone(); });
+        density.Start();
     };
     PointCloud.prototype.ComputeNormals = function (k, ondone) {
         k = k || 30;
@@ -241,18 +273,28 @@ var PointCloud = /** @class */ (function (_super) {
         }
         result.push(new GaussianSphereAction(cloud, onDone));
         result.push(null);
+        result.push(new ConnectedComponentsAction(cloud, onDone));
+        result.push(new ComputeDensityAction(cloud, onDone));
+        result.push(null);
+        var ransac = false;
         if (cloud.ransac) {
             result.push(new ResetDetectionAction(cloud, onDone));
+            ransac = true;
         }
         if (!(cloud.ransac && cloud.ransac.IsDone())) {
             result.push(new RansacDetectionAction(cloud, onDone));
+            ransac = true;
         }
-        result.push(new ConnectedComponentsAction(cloud, onDone));
+        if (ransac)
+            result.push(null);
         result.push(new ExportPointCloudFileAction(cloud, onDone));
         return result;
     };
     PointCloud.prototype.GetProperties = function () {
         var properties = _super.prototype.GetProperties.call(this);
+        var self = this;
+        var normals = new BooleanProperty('Lighting', this.shownormals, function (b) { self.shownormals = b; });
+        properties.Push(normals);
         var points = new NumberProperty('Points', this.Size(), null);
         points.SetReadonly();
         properties.Push(points);
@@ -269,8 +311,10 @@ var PointCloud = /** @class */ (function (_super) {
         var self = this;
         return new BooleanProperty(this.fields[index].name, index === this.currentfield, function (value) {
             self.currentfield = value ? index : null;
+            ScalarField.InvalidateBufferedField();
         });
     };
+    PointCloud.DensityFieldName = 'Density';
     return PointCloud;
 }(CADPrimitive));
 var PCDProcessing;
@@ -341,5 +385,27 @@ var PCDProcessing;
         return ConnecterComponentsBuilder;
     }(RegionGrowthProcess));
     PCDProcessing.ConnecterComponentsBuilder = ConnecterComponentsBuilder;
+    var DensityComputer = /** @class */ (function (_super) {
+        __extends(DensityComputer, _super);
+        function DensityComputer(cloud, k) {
+            var _this = _super.call(this, cloud.Size(), 'Computing points density') || this;
+            _this.cloud = cloud;
+            _this.k = k;
+            return _this;
+        }
+        DensityComputer.prototype.Initialize = function () {
+            this.scalarfield = this.cloud.AddScalarField(PointCloud.DensityFieldName);
+        };
+        DensityComputer.prototype.Finalize = function () {
+            this.cloud.SetCurrentField(PointCloud.DensityFieldName);
+        };
+        DensityComputer.prototype.Iterate = function (step) {
+            var nbh = this.cloud.KNearestNeighbours(this.cloud.GetPoint(step), this.k + 1);
+            var ballSqrRadius = nbh.pop().distance;
+            this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
+        };
+        return DensityComputer;
+    }(IterativeLongProcess));
+    PCDProcessing.DensityComputer = DensityComputer;
 })(PCDProcessing || (PCDProcessing = {}));
 //# sourceMappingURL=pointcloud.js.map

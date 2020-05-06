@@ -80,20 +80,4 @@ var RansacDetectionAction = /** @class */ (function (_super) {
     };
     return RansacDetectionAction;
 }(Action));
-var ConnectedComponentsAction = /** @class */ (function (_super) {
-    __extends(ConnectedComponentsAction, _super);
-    function ConnectedComponentsAction(cloud, onDone) {
-        var _this = _super.call(this, 'Compute connected components', 'Split the point cloud into connected subsets') || this;
-        _this.cloud = cloud;
-        _this.onDone = onDone;
-        return _this;
-    }
-    ConnectedComponentsAction.prototype.Enabled = function () {
-        return true;
-    };
-    ConnectedComponentsAction.prototype.Run = function () {
-        this.cloud.ComputeConnectedComponents(30, this.onDone);
-    };
-    return ConnectedComponentsAction;
-}(Action));
 //# sourceMappingURL=pointclouddetection.js.map
