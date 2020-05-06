@@ -1,183 +1,195 @@
 ﻿<!DOCTYPE html>
 
 <html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
-        <link rel="stylesheet" type="text/css" href="style.css">
-        <script id="VertexShader" type="x-shader/x-vertex">
-            attribute vec3 VertexPosition;
-            attribute vec3 NormalVector;
-            uniform mat4 ModelView;
-            uniform mat4 Projection;
-            uniform mat4 ShapeTransform;
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script id="VertexShader" type="x-shader/x-vertex">
+		attribute vec3 VertexPosition;
+		attribute vec3 NormalVector;
+		attribute float ScalarValue;
+		uniform mat4 ModelView;
+		uniform mat4 Projection;
+		uniform mat4 ShapeTransform;
 
-            varying highp vec3 Position;
-            varying highp vec3 Normal;
+		varying highp vec3 Position;
+		varying highp vec3 Normal;
+		varying highp float Scalar;
 
-            void main(void) {
-				gl_PointSize = 5.0;
-				gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
+		void main(void) {
+		gl_PointSize = 5.0;
+		gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
 
-				Position = VertexPosition;
-				Normal = NormalVector;
-            }
-        </script>
-        <script id="FragmentShader" type="x-shader/x-fragment">//Lighting model
-            uniform  highp vec3 EyePosition;
-			uniform  highp vec3 LightPositions[8];
-            uniform  highp vec3 LightColors[8];
-			uniform lowp int NbLights;
-            uniform  highp vec3 Color;
-            uniform highp float DiffuseCoef;
-            uniform  highp float AmbiantCoef;
-            uniform  highp float SpecularCoef;
-            uniform  highp float GlossyPow;
-            uniform lowp int UseNormals;
+		Position = VertexPosition;
+		Normal = NormalVector;
+		Scalar = ScalarValue;
+		}
+	</script>
+	<script id="FragmentShader" type="x-shader/x-fragment">
+		//Lighting model
+		uniform  highp vec3 EyePosition;
+		uniform  highp vec3 LightPositions[8];
+		uniform  highp vec3 LightColors[8];
+		uniform lowp int NbLights;
+		uniform  highp vec3 Color;
+		uniform highp float DiffuseCoef;
+		uniform  highp float AmbiantCoef;
+		uniform  highp float SpecularCoef;
+		uniform  highp float GlossyPow;
+		uniform lowp int UseNormals;
+		uniform lowp int UseScalars;
+		uniform highp float MinScalarValue;
+		uniform highp float MaxScalarValue;
 
-            varying highp vec3 Position;
-            varying highp vec3 Normal;
-			
-			//LightPositions = vec3[8]( vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0) );
-			//LightColors = vec3[8]( vec3(1.0), vec3(1.0), vec3(1.0), vec3(1.0), vec3(1.0), vec3(1.0), vec3(1.0), vec3(1.0) );
+		varying highp vec3 Position;
+		varying highp vec3 Normal;
+		varying highp float Scalar;
 
-            void main(void) {
-				highp float ambiant;
-				highp float diffuse;
-				highp float specular;
+		void main(void) {
+		highp float ambiant;
+		highp float diffuse;
+		highp float specular;
+		highp vec3 color = Color;
 
-				if(UseNormals == 0)
-				{		
-					gl_FragColor = vec4(Color, 1);
-				}
-				else
-				{
-					//Phong lighting
-					highp vec3 result = vec3(0.0);
-					for(int index = 0; index <= 8; index++)
-					{
-						if(index < NbLights)
-						{
-							highp vec3 LightPosition = LightPositions[index];
-							highp vec3 LightColor = LightColors[index];
+		if(UseScalars == 1 && MinScalarValue < MaxScalarValue) {
+		highp float value = (Scalar - MinScalarValue) / (MaxScalarValue-MinScalarValue);
+		color = vec3(value, 0.0, 1.0 - value);
+		}
 
-							highp vec3 eyeVect = EyePosition - Position;
-							eyeVect /= length(eyeVect);
-							highp vec3 lightVect = LightPosition - Position;
-							lightVect /= length(lightVect);
-							highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
-							reflVec /= length(reflVec);
+		if(UseNormals == 0)
+		{
+		gl_FragColor = vec4(color, 1);
+		}
+		else
+		{
+		//Phong lighting
+		highp vec3 result = vec3(0.0);
+		for(int index = 0; index <= 8; index++)
+		{
+		if(index < NbLights)
+		{
+		highp vec3 LightPosition = LightPositions[index];
+		highp vec3 LightColor = LightColors[index];
 
-							ambiant = AmbiantCoef;
-							diffuse = max(DiffuseCoef * dot(Normal, lightVect), 0.0);
-							specular = SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
+		highp vec3 eyeVect = EyePosition - Position;
+		eyeVect /= length(eyeVect);
+		highp vec3 lightVect = LightPosition - Position;
+		lightVect /= length(lightVect);
+		highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
+		reflVec /= length(reflVec);
 
-							result += (LightColor * ambiant) + (Color * diffuse) + (LightColor * specular);
-						}
-					}
+		ambiant = AmbiantCoef;
+		diffuse = max(DiffuseCoef * dot(Normal, lightVect), 0.0);
+		specular = SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
 
-					gl_FragColor = vec4(result, 1);
-				}
-            }
-        </script>
-        <!--TOOLS-->
-		<script type="text/javascript" src="tools/longprocess.js"></script>
-		<script type="text/javascript" src="tools/stringutils.js"></script>
-		<script type="text/javascript" src="tools/queue.js"></script>
-        <!--MATHS-->
-		<script type="text/javascript" src="maths/vector.js"></script>
-		<script type="text/javascript" src="maths/matrix.js"></script>
-		<script type="text/javascript" src="maths/ludecomposition.js"></script>
-		<script type="text/javascript" src="maths/qrdecomposition.js"></script>
-		<script type="text/javascript" src="maths/eigendecomposition.js"></script>
-		<script type="text/javascript" src="maths/polynomials.js"></script>
-		<script type="text/javascript" src="maths/rootsfinding.js"></script>
-		<script type="text/javascript" src="maths/geometry.js"></script>
-		<script type="text/javascript" src="maths/ray.js"></script>
-		<!-- FILES -->
-		<script type="text/javascript" src="files/fileloader.js"></script>
-		<script type="text/javascript" src="files/binaryreader.js"></script>
-		<script type="text/javascript" src="files/csvloader.js"></script>
-		<script type="text/javascript" src="files/plyloader.js"></script>
-		<script type="text/javascript" src="files/fileexporter.js"></script>
-        <!-- RENDERING-->
-		<script type="text/javascript" src="interface/opengl/materials.js"></script>
-        <script type="text/javascript" src="interface/opengl/drawingcontext.js"></script>
-        <script type="text/javascript" src="interface/opengl/renderer.js"></script>
-        <script type="text/javascript" src="interface/opengl/camera.js"></script>
-        <script type="text/javascript" src="interface/opengl/renderingtype.js"></script>
-        <script type="text/javascript" src="interface/opengl/picking.js"></script>
-		<!--CONTROLER-->
-		<script type="text/javascript" src="controler/mousetracker.js"></script>
-		<script type="text/javascript" src="controler/mousecontroler.js"></script>
-		<script type="text/javascript" src="controler/cameracontroler.js"></script>
-		<script type="text/javascript" src="controler/lightcontroler.js"></script>
-		<script type="text/javascript" src="controler/transformcontroler.js"></script>
-		<script type="text/javascript" src="controler/actions.js"></script>
-		<script type="text/javascript" src="controler/actions/cameracenter.js"></script>
-		<script type="text/javascript" src="controler/actions/controlerchoice.js"></script>
-		<script type="text/javascript" src="controler/actions/scanfromcurrentviewpoint.js"></script>
-		<script type="text/javascript" src="controler/actions/pointcloudnormals.js"></script>
-		<script type="text/javascript" src="controler/actions/pointcloudexport.js"></script>
-		<script type="text/javascript" src="controler/actions/pointclouddetection.js"></script>
-        <!-- MODEL -->
-		<script type="text/javascript" src="model/cadnode.js"></script>
-		<script type="text/javascript" src="model/cadprimitive.js"></script>
-		<script type="text/javascript" src="model/cadgroup.js"></script>
-		<script type="text/javascript" src="model/cadprimitivescontainer.js"></script>
-		<script type="text/javascript" src="model/lightscontainer.js"></script>
-		<script type="text/javascript" src="model/boundingbox.js"></script>
-		<script type="text/javascript" src="model/octree.js"></script>
-		<script type="text/javascript" src="model/kdtree.js"></script>
-		<script type="text/javascript" src="model/regiongrowth.js"></script>
-		<script type="text/javascript" src="model/neighbourhood.js"></script>
-		<script type="text/javascript" src="model/ransac.js"></script>
-		<script type="text/javascript" src="model/scalarfield.js"></script>
-		<script type="text/javascript" src="model/pointcloud.js"></script>
-		<script type="text/javascript" src="model/meshface.js"></script>
-        <script type="text/javascript" src="model/mesh.js"></script>
-        <script type="text/javascript" src="model/shapes/shape.js"></script>
-        <script type="text/javascript" src="model/shapes/plane.js"></script>
-        <script type="text/javascript" src="model/shapes/sphere.js"></script>
-		<script type="text/javascript" src="model/shapes/cylinder.js"></script>
-        <script type="text/javascript" src="model/shapes/cone.js"></script>
-        <script type="text/javascript" src="model/shapes/torus.js"></script>
-		<script type="text/javascript" src="model/light.js"></script>
-        <script type="text/javascript" src="model/scene.js"></script>
-        <!--INTERFACE-->
-		<script type="text/javascript" src="interface/controls/control.js"></script>
-		<script type="text/javascript" src="interface/controls/container.js"></script>
-		<script type="text/javascript" src="interface/controls/pannel.js"></script>
-		<script type="text/javascript" src="interface/controls/hideablepannel.js"></script>
-        <script type="text/javascript" src="interface/controls/hint.js"></script>
-		<script type="text/javascript" src="interface/controls/dataitem.js"></script>
-        <script type="text/javascript" src="interface/controls/button.js"></script>
-        <script type="text/javascript" src="interface/controls/combobox.js"></script>
-        <script type="text/javascript" src="interface/controls/selectdrop.js"></script>
-		<script type="text/javascript" src="interface/controls/toolbar.js"></script>
-		<script type="text/javascript" src="interface/controls/progressbar.js"></script>
-		<script type="text/javascript" src="interface/controls/popupitem.js"></script>
-        <script type="text/javascript" src="interface/controls/popup.js"></script>
-		<script type="text/javascript" src="interface/controls/dialog.js"></script>
-		<script type="text/javascript" src="interface/controls/fileopener.js"></script>
-		<script type="text/javascript" src="interface/controls/coordinatessystem.js"></script>
-		<script type="text/javascript" src="interface/controls/axislabel.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/properties.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/property.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/propertywithvalue.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/booleanproperty.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/stringproperty.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/numberproperty.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/numberinrangeproperty.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/propertygroup.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/vectorproperty.js"></script>
-		<script type="text/javascript" src="interface/controls/properties/colorproperty.js"></script>
-		<script type="text/javascript" src="interface/cursor.js"></script>
-		<script type="text/javascript" src="interface/menu.js"></script>
-		<script type="text/javascript" src="interface/nameprovider.js"></script>
-		<script type="text/javascript" src="interface/datahandler.js"></script>
-        <script type="text/javascript" src="interface/interface.js"></script>
-    </head>
-    <body onload="let appInterface = new Interface(new Scene());">
-    </body>
+		result += (LightColor * ambiant) + (color * diffuse) + (LightColor * specular);
+		}
+		}
+
+		gl_FragColor = vec4(result, 1);
+		}
+		}
+	</script>
+	<!--TOOLS-->
+	<script type="text/javascript" src="tools/longprocess.js"></script>
+	<script type="text/javascript" src="tools/stringutils.js"></script>
+	<script type="text/javascript" src="tools/queue.js"></script>
+	<!--MATHS-->
+	<script type="text/javascript" src="maths/vector.js"></script>
+	<script type="text/javascript" src="maths/matrix.js"></script>
+	<script type="text/javascript" src="maths/ludecomposition.js"></script>
+	<script type="text/javascript" src="maths/qrdecomposition.js"></script>
+	<script type="text/javascript" src="maths/eigendecomposition.js"></script>
+	<script type="text/javascript" src="maths/polynomials.js"></script>
+	<script type="text/javascript" src="maths/rootsfinding.js"></script>
+	<script type="text/javascript" src="maths/geometry.js"></script>
+	<script type="text/javascript" src="maths/ray.js"></script>
+	<!-- FILES -->
+	<script type="text/javascript" src="files/fileloader.js"></script>
+	<script type="text/javascript" src="files/binaryreader.js"></script>
+	<script type="text/javascript" src="files/csvloader.js"></script>
+	<script type="text/javascript" src="files/plyloader.js"></script>
+	<script type="text/javascript" src="files/fileexporter.js"></script>
+	<!-- RENDERING-->
+	<script type="text/javascript" src="interface/opengl/materials.js"></script>
+	<script type="text/javascript" src="interface/opengl/drawingcontext.js"></script>
+	<script type="text/javascript" src="interface/opengl/renderer.js"></script>
+	<script type="text/javascript" src="interface/opengl/camera.js"></script>
+	<script type="text/javascript" src="interface/opengl/renderingtype.js"></script>
+	<script type="text/javascript" src="interface/opengl/picking.js"></script>
+	<!--CONTROLER-->
+	<script type="text/javascript" src="controler/mousetracker.js"></script>
+	<script type="text/javascript" src="controler/mousecontroler.js"></script>
+	<script type="text/javascript" src="controler/cameracontroler.js"></script>
+	<script type="text/javascript" src="controler/lightcontroler.js"></script>
+	<script type="text/javascript" src="controler/transformcontroler.js"></script>
+	<script type="text/javascript" src="controler/actions.js"></script>
+	<script type="text/javascript" src="controler/actions/cameracenter.js"></script>
+	<script type="text/javascript" src="controler/actions/controlerchoice.js"></script>
+	<script type="text/javascript" src="controler/actions/scanfromcurrentviewpoint.js"></script>
+	<script type="text/javascript" src="controler/actions/pointcloudnormals.js"></script>
+	<script type="text/javascript" src="controler/actions/pointcloudexport.js"></script>
+	<script type="text/javascript" src="controler/actions/pointclouddetection.js"></script>
+	<script type="text/javascript" src="controler/actions/pointcloudmisc.js"></script>
+	<!-- MODEL -->
+	<script type="text/javascript" src="model/cadnode.js"></script>
+	<script type="text/javascript" src="model/cadprimitive.js"></script>
+	<script type="text/javascript" src="model/cadgroup.js"></script>
+	<script type="text/javascript" src="model/cadprimitivescontainer.js"></script>
+	<script type="text/javascript" src="model/lightscontainer.js"></script>
+	<script type="text/javascript" src="model/boundingbox.js"></script>
+	<script type="text/javascript" src="model/octree.js"></script>
+	<script type="text/javascript" src="model/kdtree.js"></script>
+	<script type="text/javascript" src="model/regiongrowth.js"></script>
+	<script type="text/javascript" src="model/neighbourhood.js"></script>
+	<script type="text/javascript" src="model/ransac.js"></script>
+	<script type="text/javascript" src="model/scalarfield.js"></script>
+	<script type="text/javascript" src="model/pointcloud.js"></script>
+	<script type="text/javascript" src="model/meshface.js"></script>
+	<script type="text/javascript" src="model/mesh.js"></script>
+	<script type="text/javascript" src="model/shapes/shape.js"></script>
+	<script type="text/javascript" src="model/shapes/plane.js"></script>
+	<script type="text/javascript" src="model/shapes/sphere.js"></script>
+	<script type="text/javascript" src="model/shapes/cylinder.js"></script>
+	<script type="text/javascript" src="model/shapes/cone.js"></script>
+	<script type="text/javascript" src="model/shapes/torus.js"></script>
+	<script type="text/javascript" src="model/light.js"></script>
+	<script type="text/javascript" src="model/scene.js"></script>
+	<!--INTERFACE-->
+	<script type="text/javascript" src="interface/controls/control.js"></script>
+	<script type="text/javascript" src="interface/controls/container.js"></script>
+	<script type="text/javascript" src="interface/controls/pannel.js"></script>
+	<script type="text/javascript" src="interface/controls/hideablepannel.js"></script>
+	<script type="text/javascript" src="interface/controls/hint.js"></script>
+	<script type="text/javascript" src="interface/controls/dataitem.js"></script>
+	<script type="text/javascript" src="interface/controls/button.js"></script>
+	<script type="text/javascript" src="interface/controls/combobox.js"></script>
+	<script type="text/javascript" src="interface/controls/selectdrop.js"></script>
+	<script type="text/javascript" src="interface/controls/toolbar.js"></script>
+	<script type="text/javascript" src="interface/controls/progressbar.js"></script>
+	<script type="text/javascript" src="interface/controls/popupitem.js"></script>
+	<script type="text/javascript" src="interface/controls/popup.js"></script>
+	<script type="text/javascript" src="interface/controls/dialog.js"></script>
+	<script type="text/javascript" src="interface/controls/fileopener.js"></script>
+	<script type="text/javascript" src="interface/controls/coordinatessystem.js"></script>
+	<script type="text/javascript" src="interface/controls/axislabel.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/properties.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/property.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/propertywithvalue.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/booleanproperty.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/stringproperty.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/numberproperty.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/numberinrangeproperty.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/propertygroup.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/vectorproperty.js"></script>
+	<script type="text/javascript" src="interface/controls/properties/colorproperty.js"></script>
+	<script type="text/javascript" src="interface/cursor.js"></script>
+	<script type="text/javascript" src="interface/menu.js"></script>
+	<script type="text/javascript" src="interface/nameprovider.js"></script>
+	<script type="text/javascript" src="interface/datahandler.js"></script>
+	<script type="text/javascript" src="interface/interface.js"></script>
+</head>
+<body onload="let appInterface = new Interface(new Scene());">
+</body>
 </html>

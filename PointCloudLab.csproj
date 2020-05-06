@@ -25,6 +25,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="controler\actions\cameracenter.ts" />
     <TypeScriptCompile Include="controler\actions\controlerchoice.ts" />
+    <TypeScriptCompile Include="controler\actions\pointcloudmisc.ts" />
     <TypeScriptCompile Include="controler\actions\pointclouddetection.ts" />
     <TypeScriptCompile Include="controler\actions\pointcloudexport.ts" />
     <TypeScriptCompile Include="controler\actions\pointcloudnormals.ts" />
@@ -117,7 +118,6 @@
     <TypeScriptCompile Include="tools\queue.ts" />
     <TypeScriptCompile Include="tools\stringutils.ts" />
   </ItemGroup>
-  <ItemGroup />
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
   </PropertyGroup>
