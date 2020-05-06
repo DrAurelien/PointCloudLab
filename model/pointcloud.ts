@@ -9,6 +9,7 @@
 	ransac: Ransac;
 	fields: ScalarField[];
 	currentfield: number;
+	shownormals: boolean;
 
 	static DensityFieldName = 'Density';
 
@@ -23,6 +24,7 @@
 		this.glPointsBuffer = null;
 		this.glNormalsBuffer = null;
 		this.currentfield = null;
+		this.shownormals = true;
 	}
 
 	PushPoint(p: Vector): void {
@@ -139,7 +141,7 @@
 		drawingContext.gl.bindBuffer(drawingContext.gl.ARRAY_BUFFER, this.glPointsBuffer);
 		drawingContext.gl.vertexAttribPointer(drawingContext.vertices, 3, drawingContext.gl.FLOAT, false, 0, 0);
 
-		if (this.HasNormals()) {
+		if (this.HasNormals() && this.shownormals) {
 			drawingContext.EnableNormals(true);
 			if (!this.glNormalsBuffer) {
 				this.glNormalsBuffer = drawingContext.gl.createBuffer();
@@ -337,6 +339,10 @@
 
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
+
+		let self = this;
+		let normals = new BooleanProperty('Lighting', this.shownormals, (b: boolean) => { self.shownormals = b });
+		properties.Push(normals);
 
 		let points = new NumberProperty('Points', this.Size(), null);
 		points.SetReadonly();
