@@ -131,6 +131,13 @@
 		else {
 			drawingContext.EnableNormals(false);
 		}
+
+		if (this.currentfield !== null) {
+			this.fields[this.currentfield].PrepareRendering(drawingContext);
+		}
+		else {
+			ScalarField.ClearRendering(drawingContext);
+		}
 	}
 
 	Draw(drawingContext: DrawingContext) {
@@ -140,6 +147,8 @@
 			this.PrepareRendering(drawingContext);
 
 			drawingContext.gl.drawArrays(drawingContext.gl.POINTS, 0, this.Size());
+
+			ScalarField.ClearRendering(drawingContext);
 
 			if (this.selected && this.pointssize > 0) {
 				this.boundingbox.Draw(drawingContext);
@@ -306,10 +315,11 @@
 		return properties;
 	}
 
-	private GetScalarFieldProperty(index: number) {
+	private GetScalarFieldProperty(index: number): Property {
 		let self = this;
 		return new BooleanProperty(this.fields[index].name, index === this.currentfield, (value: boolean) => {
 			self.currentfield = value ? index : null;
+			ScalarField.InvalidateBufferedField();
 		});
 	}
 }

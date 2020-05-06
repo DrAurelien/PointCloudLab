@@ -117,7 +117,6 @@
     <TypeScriptCompile Include="tools\queue.ts" />
     <TypeScriptCompile Include="tools\stringutils.ts" />
   </ItemGroup>
-  <ItemGroup />
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
   </PropertyGroup>

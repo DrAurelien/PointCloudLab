@@ -20,6 +20,11 @@
     specular: WebGLUniformLocation;
     glossy: WebGLUniformLocation;
     rendering: RenderingType;
+    //Scalar fields
+    scalarvalue: number;
+    usescalars: WebGLUniformLocation;
+    minscalarvalue: WebGLUniformLocation;
+    maxscalarvalue: WebGLUniformLocation;
 	//Extensions
 	useuint: boolean;
 
@@ -55,6 +60,11 @@
         console.log('   Inititalizing normals attribute');
         this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
         this.EnableNormals(true);
+        console.log('   Inititalizing scalar value attribute');
+        this.scalarvalue = this.gl.getAttribLocation(this.shaders, "ScalarValue");
+        this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
+        this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
+        this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
 
         console.log('   Inititalizing matrices');
         this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
