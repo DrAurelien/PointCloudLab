@@ -1,156 +1,117 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.Default.props" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.Default.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <ProjectGuid>{E6C5B822-BD6C-4537-896B-DEFCE4334217}</ProjectGuid>
-    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
-    <OutputType>Library</OutputType>
-    <OutputPath>bin</OutputPath>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <DebugType>full</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-    <TypeScriptToolsVersion>3.8</TypeScriptToolsVersion>
-    <UseIISExpress>true</UseIISExpress>
-    <IISExpressSSLPort />
-    <IISExpressAnonymousAuthentication />
-    <IISExpressWindowsAuthentication />
-    <IISExpressUseClassicPipelineMode />
-    <UseGlobalApplicationHostFile />
-    <Use64BitIISExpress />
-  </PropertyGroup>
   <ItemGroup>
-    <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
-  </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="controler\actions\cameracenter.ts" />
-    <TypeScriptCompile Include="controler\actions\controlerchoice.ts" />
-    <TypeScriptCompile Include="controler\actions\pointcloudmisc.ts" />
-    <TypeScriptCompile Include="controler\actions\pointclouddetection.ts" />
-    <TypeScriptCompile Include="controler\actions\pointcloudexport.ts" />
-    <TypeScriptCompile Include="controler\actions\pointcloudnormals.ts" />
-    <TypeScriptCompile Include="controler\actions\scanfromcurrentviewpoint.ts" />
-    <TypeScriptCompile Include="controler\lightcontroler.ts" />
-    <TypeScriptCompile Include="controler\transformcontroler.ts" />
-    <TypeScriptCompile Include="files\binaryreader.ts" />
-    <TypeScriptCompile Include="files\csvloader.ts" />
-    <TypeScriptCompile Include="files\fileexporter.ts" />
-    <TypeScriptCompile Include="files\fileloader.ts" />
-    <TypeScriptCompile Include="files\plyloader.ts" />
-    <TypeScriptCompile Include="controler\actions.ts" />
-    <TypeScriptCompile Include="interface\controls\axislabel.ts" />
-    <TypeScriptCompile Include="interface\controls\button.ts" />
-    <TypeScriptCompile Include="interface\controls\selectdrop.ts" />
-    <TypeScriptCompile Include="interface\controls\combobox.ts" />
-    <TypeScriptCompile Include="interface\controls\container.ts" />
-    <TypeScriptCompile Include="interface\controls\control.ts" />
-    <TypeScriptCompile Include="interface\controls\dataitem.ts" />
-    <TypeScriptCompile Include="interface\controls\dialog.ts" />
-    <TypeScriptCompile Include="interface\controls\fileopener.ts" />
-    <TypeScriptCompile Include="interface\controls\hideablepannel.ts" />
-    <TypeScriptCompile Include="interface\controls\hint.ts" />
-    <TypeScriptCompile Include="interface\controls\pannel.ts" />
-    <TypeScriptCompile Include="interface\controls\popupitem.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\colorproperty.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\numberinrangeproperty.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\numberproperty.ts" />
-    <TypeScriptCompile Include="interface\controls\popup.ts" />
-    <TypeScriptCompile Include="interface\controls\progressbar.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\property.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\booleanproperty.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\propertygroup.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\propertywithvalue.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\vectorproperty.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\stringproperty.ts" />
-    <TypeScriptCompile Include="interface\controls\toolbar.ts" />
-    <TypeScriptCompile Include="interface\controls\coordinatessystem.ts" />
-    <TypeScriptCompile Include="interface\cursor.ts" />
-    <TypeScriptCompile Include="interface\datahandler.ts" />
-    <TypeScriptCompile Include="interface\interface.ts" />
-    <TypeScriptCompile Include="interface\menu.ts" />
-    <TypeScriptCompile Include="interface\nameprovider.ts" />
-    <TypeScriptCompile Include="interface\controls\properties\properties.ts" />
-    <TypeScriptCompile Include="maths\eigendecomposition.ts" />
-    <TypeScriptCompile Include="maths\geometry.ts" />
-    <TypeScriptCompile Include="maths\ludecomposition.ts" />
-    <TypeScriptCompile Include="maths\matrix.ts" />
-    <TypeScriptCompile Include="maths\polynomials.ts" />
-    <TypeScriptCompile Include="maths\qrdecomposition.ts" />
-    <TypeScriptCompile Include="maths\ray.ts" />
-    <TypeScriptCompile Include="maths\rootsfinding.ts" />
-    <TypeScriptCompile Include="maths\vector.ts" />
-    <TypeScriptCompile Include="model\boundingbox.ts" />
-    <TypeScriptCompile Include="model\cadprimitivescontainer.ts" />
-    <TypeScriptCompile Include="model\meshface.ts" />
-    <TypeScriptCompile Include="model\octree.ts" />
-    <TypeScriptCompile Include="model\light.ts" />
-    <TypeScriptCompile Include="model\lightscontainer.ts" />
-    <TypeScriptCompile Include="model\cadgroup.ts" />
-    <TypeScriptCompile Include="model\cadnode.ts" />
-    <TypeScriptCompile Include="model\cadprimitive.ts" />
-    <TypeScriptCompile Include="model\kdtree.ts" />
-    <TypeScriptCompile Include="model\mesh.ts" />
-    <TypeScriptCompile Include="model\neighbourhood.ts" />
-    <TypeScriptCompile Include="model\scalarfield.ts" />
-    <TypeScriptCompile Include="model\pointcloud.ts" />
-    <TypeScriptCompile Include="model\ransac.ts" />
-    <TypeScriptCompile Include="model\regiongrowth.ts" />
-    <TypeScriptCompile Include="model\scene.ts" />
-    <TypeScriptCompile Include="model\shapes\cone.ts" />
-    <TypeScriptCompile Include="model\shapes\cylinder.ts" />
-    <TypeScriptCompile Include="model\shapes\plane.ts" />
-    <TypeScriptCompile Include="model\shapes\shape.ts" />
-    <TypeScriptCompile Include="model\shapes\sphere.ts" />
-    <TypeScriptCompile Include="model\shapes\torus.ts" />
-    <TypeScriptCompile Include="interface\opengl\camera.ts" />
-    <TypeScriptCompile Include="controler\cameracontroler.ts" />
-    <TypeScriptCompile Include="controler\mousecontroler.ts" />
-    <TypeScriptCompile Include="interface\opengl\drawingcontext.ts" />
-    <TypeScriptCompile Include="interface\opengl\materials.ts" />
-    <TypeScriptCompile Include="controler\mousetracker.ts" />
-    <TypeScriptCompile Include="interface\opengl\picking.ts" />
-    <TypeScriptCompile Include="interface\opengl\renderer.ts" />
-    <TypeScriptCompile Include="interface\opengl\renderingtype.ts" />
+    <Content Include="controler\actions\cameracenter.ts" />
+    <Content Include="controler\actions\controlerchoice.ts" />
+    <Content Include="controler\actions\pointcloudmisc.ts" />
+    <Content Include="controler\actions\pointclouddetection.ts" />
+    <Content Include="controler\actions\pointcloudexport.ts" />
+    <Content Include="controler\actions\pointcloudnormals.ts" />
+    <Content Include="controler\actions\scanfromcurrentviewpoint.ts" />
+    <Content Include="controler\lightcontroler.ts" />
+    <Content Include="controler\transformcontroler.ts" />
+    <Content Include="files\binaryreader.ts" />
+    <Content Include="files\csvloader.ts" />
+    <Content Include="files\fileexporter.ts" />
+    <Content Include="files\fileloader.ts" />
+    <Content Include="files\plyloader.ts" />
+    <Content Include="controler\actions.ts" />
+    <Content Include="interface\controls\axislabel.ts" />
+    <Content Include="interface\controls\button.ts" />
+    <Content Include="interface\controls\selectdrop.ts" />
+    <Content Include="interface\controls\combobox.ts" />
+    <Content Include="interface\controls\container.ts" />
+    <Content Include="interface\controls\control.ts" />
+    <Content Include="interface\controls\dataitem.ts" />
+    <Content Include="interface\controls\dialog.ts" />
+    <Content Include="interface\controls\fileopener.ts" />
+    <Content Include="interface\controls\hideablepannel.ts" />
+    <Content Include="interface\controls\hint.ts" />
+    <Content Include="interface\controls\pannel.ts" />
+    <Content Include="interface\controls\popupitem.ts" />
+    <Content Include="interface\controls\properties\colorproperty.ts" />
+    <Content Include="interface\controls\properties\numberinrangeproperty.ts" />
+    <Content Include="interface\controls\properties\numberproperty.ts" />
+    <Content Include="interface\controls\popup.ts" />
+    <Content Include="interface\controls\progressbar.ts" />
+    <Content Include="interface\controls\properties\property.ts" />
+    <Content Include="interface\controls\properties\booleanproperty.ts" />
+    <Content Include="interface\controls\properties\propertygroup.ts" />
+    <Content Include="interface\controls\properties\propertywithvalue.ts" />
+    <Content Include="interface\controls\properties\vectorproperty.ts" />
+    <Content Include="interface\controls\properties\stringproperty.ts" />
+    <Content Include="interface\controls\toolbar.ts" />
+    <Content Include="interface\controls\coordinatessystem.ts" />
+    <Content Include="interface\cursor.ts" />
+    <Content Include="interface\datahandler.ts" />
+    <Content Include="interface\interface.ts" />
+    <Content Include="interface\menu.ts" />
+    <Content Include="interface\nameprovider.ts" />
+    <Content Include="interface\controls\properties\properties.ts" />
+    <Content Include="maths\eigendecomposition.ts" />
+    <Content Include="maths\geometry.ts" />
+    <Content Include="maths\ludecomposition.ts" />
+    <Content Include="maths\matrix.ts" />
+    <Content Include="maths\polynomials.ts" />
+    <Content Include="maths\qrdecomposition.ts" />
+    <Content Include="maths\ray.ts" />
+    <Content Include="maths\rootsfinding.ts" />
+    <Content Include="maths\vector.ts" />
+    <Content Include="model\boundingbox.ts" />
+    <Content Include="model\cadprimitivescontainer.ts" />
+    <Content Include="model\meshface.ts" />
+    <Content Include="model\octree.ts" />
+    <Content Include="model\light.ts" />
+    <Content Include="model\lightscontainer.ts" />
+    <Content Include="model\cadgroup.ts" />
+    <Content Include="model\cadnode.ts" />
+    <Content Include="model\cadprimitive.ts" />
+    <Content Include="model\kdtree.ts" />
+    <Content Include="model\mesh.ts" />
+    <Content Include="model\neighbourhood.ts" />
+    <Content Include="model\scalarfield.ts" />
+    <Content Include="model\pointcloud.ts" />
+    <Content Include="model\ransac.ts" />
+    <Content Include="model\regiongrowth.ts" />
+    <Content Include="model\scene.ts" />
+    <Content Include="model\shapes\cone.ts" />
+    <Content Include="model\shapes\cylinder.ts" />
+    <Content Include="model\shapes\plane.ts" />
+    <Content Include="model\shapes\shape.ts" />
+    <Content Include="model\shapes\sphere.ts" />
+    <Content Include="model\shapes\torus.ts" />
+    <Content Include="interface\opengl\camera.ts" />
+    <Content Include="controler\cameracontroler.ts" />
+    <Content Include="controler\mousecontroler.ts" />
+    <Content Include="interface\opengl\drawingcontext.ts" />
+    <Content Include="interface\opengl\materials.ts" />
+    <Content Include="controler\mousetracker.ts" />
+    <Content Include="interface\opengl\picking.ts" />
+    <Content Include="interface\opengl\renderer.ts" />
+    <Content Include="interface\opengl\renderingtype.ts" />
     <Content Include="help.html" />
     <Content Include="index.html" />
+    <Content Include="tsconfig.json" />
     <Content Include="style.css" />
-    <TypeScriptCompile Include="tools\longprocess.ts" />
-    <TypeScriptCompile Include="tools\queue.ts" />
-    <TypeScriptCompile Include="tools\stringutils.ts" />
+    <Content Include="tools\longprocess.ts" />
+    <Content Include="tools\queue.ts" />
+    <Content Include="tools\stringutils.ts" />
   </ItemGroup>
-  <PropertyGroup>
-    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RootNamespace>CADLab</RootNamespace>
-  </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\WebApplications\Microsoft.WebApplication.targets" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\WebApplications\Microsoft.WebApplication.targets')" />
-  <ProjectExtensions>
-    <VisualStudio>
-      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
-        <WebProjectProperties>
-          <UseIIS>False</UseIIS>
-          <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>50046</DevelopmentServerPort>
-          <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:50046/</IISUrl>
-          <NTLMAuthentication>False</NTLMAuthentication>
-          <UseCustomServer>False</UseCustomServer>
-          <CustomServerUrl>
-          </CustomServerUrl>
-          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
-        </WebProjectProperties>
-      </FlavorProperties>
-    </VisualStudio>
-  </ProjectExtensions>
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
-    <TypeScriptSourceMap>true</TypeScriptSourceMap>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <TypeScriptRemoveComments>true</TypeScriptRemoveComments>
-    <TypeScriptSourceMap>false</TypeScriptSourceMap>
-  </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets')" />
+  <ItemGroup>
+    <TypeScriptCompile Include="interfaces.ts" />
+  </ItemGroup>
+  <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
+    <Exec Command="index.html" />
+  </Target>
+  <Target Name="Build">
+    <Exec Command="tsc" />
+  </Target>
+  <Target Name="Clean">
+    <ItemGroup>
+        <JsFiles Include="**\*js"/>
+        <MapFiles Include="**\*js"/>
+    </ItemGroup>   
+    <Delete Files="@(JsFiles)" />   
+    <Delete Files="@(MapFiles)" />   
+  </Target>
 </Project>
