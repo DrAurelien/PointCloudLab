@@ -6,10 +6,7 @@
   <ItemGroup>
     <Content Include="controler\actions\cameracenter.ts" />
     <Content Include="controler\actions\controlerchoice.ts" />
-    <Content Include="controler\actions\pointcloudmisc.ts" />
-    <Content Include="controler\actions\pointclouddetection.ts" />
-    <Content Include="controler\actions\pointcloudexport.ts" />
-    <Content Include="controler\actions\pointcloudnormals.ts" />
+    <Content Include="controler\actions\pointcloudactions.ts" />
     <Content Include="controler\actions\scanfromcurrentviewpoint.ts" />
     <Content Include="controler\lightcontroler.ts" />
     <Content Include="controler\transformcontroler.ts" />
@@ -60,14 +57,13 @@
     <Content Include="maths\rootsfinding.ts" />
     <Content Include="maths\vector.ts" />
     <Content Include="model\boundingbox.ts" />
-    <Content Include="model\cadprimitivescontainer.ts" />
     <Content Include="model\meshface.ts" />
     <Content Include="model\octree.ts" />
-    <Content Include="model\light.ts" />
-    <Content Include="model\lightscontainer.ts" />
-    <Content Include="model\cadgroup.ts" />
-    <Content Include="model\cadnode.ts" />
-    <Content Include="model\cadprimitive.ts" />
+    <Content Include="gui\objects\light.ts" />
+    <Content Include="gui\objects\lightscontainer.ts" />
+    <Content Include="gui\objects\pclgroup.ts" />
+    <Content Include="gui\objects\pclnode.ts" />
+    <Content Include="gui\objects\pclprimitive.ts" />
     <Content Include="model\kdtree.ts" />
     <Content Include="model\mesh.ts" />
     <Content Include="model\neighbourhood.ts" />
@@ -98,6 +94,36 @@
     <Content Include="tools\longprocess.ts" />
     <Content Include="tools\queue.ts" />
     <Content Include="tools\stringutils.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclpointcloud.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclmesh.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclshape.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\opengl\buffer.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="controler\actions\shapeactions.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclcylinder.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclplane.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclcone.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclsphere.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pcltorus.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />

@@ -1,16 +1,6 @@
 ﻿class Plane extends Shape {
-    constructor(public center: Vector, public normal: Vector, public patchRadius: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Plane'), owner);
-    }
-
-	private Updaye
-	GetGeometry(): Properties {
-		let self = this
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, self.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Normal', this.normal, true, self.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Patch Radius', this.patchRadius, self.GeometryChangeHandler((value) => self.patchRadius = value)));
-		return geometry;
+	constructor(public center: Vector, public normal: Vector, public patchRadius: number) {
+		super();
 	}
 
 	ComputeMesh(sampling: number): Mesh {
@@ -47,17 +37,14 @@
 	Rotate(rotation: Matrix) {
 		let a = rotation.Multiply(Matrix.FromVector(this.normal));
 		this.normal = Matrix.ToVector(a);
-		this.Invalidate();
 	}
 
 	Translate(translation: Vector) {
 		this.center = this.center.Plus(translation);
-		this.Invalidate();
 	}
 
 	Scale(scale: number) {
 		this.patchRadius *= scale;
-		this.Invalidate();
 	}
 
 	ComputeBoundingBox(): BoundingBox {

@@ -1,7 +1,7 @@
 ﻿class DataHandler extends HideablePannel {
     dataArea: Pannel;
     propertiesArea: Pannel;
-    currentItem: CADNode;
+    currentItem: PCLNode;
 
     constructor(public scene: Scene, private ownerView: PCLApp) {
 		super('DataWindow', HandlePosition.Right);
@@ -54,15 +54,15 @@
 		}
 	}
 
-    AddCreatedObject(scene: Scene, createdObject: CADNode)
+    AddCreatedObject(scene: Scene, createdObject: PCLNode)
 	{
 		if(createdObject)
         {
 			//If the object does not have an owner, affect one
 			if (!createdObject.owner) {
-				let owner: CADGroup = (createdObject instanceof Light) ? scene.Lights : scene.Contents;
-				if (this.currentItem && this.currentItem instanceof CADGroup) {
-					owner = (<CADGroup>this.currentItem);
+				let owner: PCLGroup = (createdObject instanceof Light) ? scene.Lights : scene.Contents;
+				if (this.currentItem && this.currentItem instanceof PCLGroup) {
+					owner = (<PCLGroup>this.currentItem);
 				}
 				owner.Add(createdObject);
 			}

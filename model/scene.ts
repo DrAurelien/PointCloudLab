@@ -1,14 +1,14 @@
 ﻿/// <reference path="../tools/picking.ts" />
 
 
-class Scene extends CADGroup {
+class Scene extends PCLGroup {
 	constructor() {
 		super("Scene");
 		this.deletable = false;
 
 		this.children = [null, null];
 
-		this.Contents = new CADPrimitivesContainer("Objects");
+		this.Contents = new PCLGroup("Objects");
 		this.Contents.deletable = false;
 
 		this.Lights = new LightsContainer("Lights");
@@ -20,10 +20,10 @@ class Scene extends CADGroup {
 		defaultLight.deletable = false;
 	}
 
-	get Contents(): CADPrimitivesContainer {
-		return <CADPrimitivesContainer>this.children[1];
+	get Contents(): PCLGroup {
+		return <PCLGroup>this.children[1];
 	}
-	set Contents(c: CADPrimitivesContainer) {
+	set Contents(c: PCLGroup) {
 		this.children[1] = c;
 	}
 
@@ -41,8 +41,8 @@ class Scene extends CADGroup {
 		});
 	}
 
-	GetSelected(): CADNode[] {
-		let selected: CADNode[] = [];
+	GetSelected(): PCLNode[] {
+		let selected: PCLNode[] = [];
 		this.Contents.Apply(p => {
 			if (p.selected) {
 				selected.push(p);

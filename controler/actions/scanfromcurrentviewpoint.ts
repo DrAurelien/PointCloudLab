@@ -2,7 +2,7 @@
 	static hSamplingTitle = 'Horizontal Sampling';
 	static vSamplingTitle = 'Vertical Sampling';
 
-	constructor(private group: CADPrimitivesContainer, private dataHandler: DataHandler, private onDone: CADNodeHandler) {
+	constructor(private group: PCLGroup, private dataHandler: DataHandler, private onDone: CADNodeHandler) {
 		super('Scan from current viewpoint', 'Create an new point cloud by simulating a LIDAR scanning of the group contents, from the current view point');
 	}
 

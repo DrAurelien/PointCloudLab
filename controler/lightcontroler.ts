@@ -11,7 +11,7 @@ class LightControler extends MouseControler {
 		if (item && item instanceof Light) {
 			this.light = <Light>item;
 
-			this.view.sceneRenderer.camera.at = this.light.Position;
+			this.view.sceneRenderer.camera.at = this.light.center;
 			this.view.RefreshRendering();
 		}
 	}
@@ -38,7 +38,7 @@ class LightControler extends MouseControler {
 			default:
 				return true;
 		}
-		this.light.Position = renderer.camera.at;
+		this.light.center = renderer.camera.at;
 		this.Cursor = Cursor.Light;
 		this.view.RefreshRendering();
 

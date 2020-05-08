@@ -1,5 +1,5 @@
-﻿class LightsContainer extends CADGroup {
-    constructor(name?: string, owner: CADGroup = null) {
+﻿class LightsContainer extends PCLGroup {
+    constructor(name?: string, owner: PCLGroup = null) {
         super(name || NameProvider.GetName('Lights'), owner);
     }
 

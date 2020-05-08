@@ -1,30 +1,44 @@
-﻿/// <reference path="../tools/picking.ts" />
+﻿/// <reference path="../../tools/picking.ts" />
+/// <reference path="../../model/boundingbox.ts" />
 
 
-abstract class CADNode implements Pickable {
-	owner: CADGroup;
+interface PCLContainer {
+	Add(PCLNode);
+	Remove(PCLNode);
+}
+
+abstract class PCLNode implements Pickable {
+	owner: PCLContainer;
 	visible: boolean;
 	selected: boolean;
 	deletable: boolean;
-	protected boundingbox: BoundingBox;
 
-	constructor(public name: string, owner: CADGroup = null) {
+	constructor(public name: string, owner: PCLContainer = null) {
 		this.visible = true;
 		this.selected = false;
 		this.deletable = true;
-		this.boundingbox = null;
 		this.owner = null;
 		if (owner) {
 			owner.Add(this);
 		}
 	}
 
-	abstract Draw(drawingContext: DrawingContext): void;
-	abstract RayIntersection(ray: Ray): Picking;
+	Draw(drawingContext: DrawingContext): void {
+		if (this.visible) {
+			this.DrawNode(drawingContext);
 
-	GetBoundingBox(): BoundingBox {
-		return this.boundingbox;
+			if (this.selected) {
+				let boundingbox = this.GetBoundingBox();
+				if (boundingbox && boundingbox.IsValid()) {
+					this.GetBoundingBox().Draw(drawingContext);
+				}
+			}
+		}
 	}
+
+	abstract DrawNode(drawingContext: DrawingContext): void;
+	abstract RayIntersection(ray: Ray): Picking;
+	abstract GetBoundingBox(): BoundingBox;
 
 	GetProperties(): Properties {
 		let self = this;
@@ -49,7 +63,7 @@ abstract class CADNode implements Pickable {
 		return result;
 	}
 
-	GetChildren(): CADNode[] {
+	GetChildren(): PCLNode[] {
 		return [];
 	}
 
@@ -59,5 +73,5 @@ abstract class CADNode implements Pickable {
 }
 
 interface CADNodeHandler {
-	(primitive: CADNode): boolean;
+	(primitive: PCLNode): boolean;
 }

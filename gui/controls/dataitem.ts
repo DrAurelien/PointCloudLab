@@ -2,7 +2,7 @@
 	container: HTMLDivElement;
 	itemContentContainer: HTMLDivElement;
 
-	constructor(public item: CADNode, private dataHandler: DataHandler, private scene: Scene) {
+	constructor(public item: PCLNode, private dataHandler: DataHandler, private scene: Scene) {
 		this.container = <HTMLDivElement>document.createElement('div');
 		this.container.className = 'TreeItemContainer';
 
@@ -14,8 +14,8 @@
 		if (this.item instanceof Scene) {
 			itemIcon.className = 'ItemIcon fa fa-desktop';
 		}
-		else if (this.item instanceof CADGroup) {
-			itemIcon.className = 'ItemIcon fa fa-folder' + ((<CADGroup>this.item).folded ? '' : '-open');
+		else if (this.item instanceof PCLGroup) {
+			itemIcon.className = 'ItemIcon fa fa-folder' + ((<PCLGroup>this.item).folded ? '' : '-open');
 			itemIcon.onclick = this.ItemFolded();
 			this.itemContentContainer.ondblclick = this.ItemFolded();
 		}
@@ -68,7 +68,7 @@
 	ItemFolded(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
-			let group = <CADGroup>self.item;
+			let group = <PCLGroup>self.item;
 			group.folded = !group.folded;
 			self.dataHandler.NotifyChange();
 			self.CancelBubbling(event);

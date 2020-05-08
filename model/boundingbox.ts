@@ -1,12 +1,16 @@
-﻿class BoundingBox {
+﻿/// <reference path="../maths/vector.ts" />
+/// <reference path="../tools/picking.ts" />
+
+
+class BoundingBox {
 	static pointsBuffer: WebGLBuffer = null;
 	static indexBuffer: WebGLBuffer = null;
 	static drawnElements: GLBufferElement[];
 
-    constructor(public min: Vector = null, public max: Vector = null) {
-    }
+	constructor(public min: Vector = null, public max: Vector = null) {
+	}
 
-	private static InititalizeGL(glContext: WebGLRenderingContext) :void {
+	private static InititalizeGL(glContext: WebGLRenderingContext): void {
 		if (this.pointsBuffer === null) {
 			let points = [
 				-0.5, -0.5, -0.5,
@@ -48,16 +52,16 @@
 		}
 	}
 
-    Set(center: Vector, size: Vector) {
-        let halfSize = size.Times(0.5);
-        this.min = center.Minus(halfSize);
-        this.max = center.Plus(halfSize);
-    }
+	Set(center: Vector, size: Vector) {
+		let halfSize = size.Times(0.5);
+		this.min = center.Minus(halfSize);
+		this.max = center.Plus(halfSize);
+	}
 
 
-    GetCenter(): Vector {
-        return this.min.Plus(this.max).Times(0.5);
-    }
+	GetCenter(): Vector {
+		return this.min.Plus(this.max).Times(0.5);
+	}
 
 	GetSize(): Vector {
 		return this.max.Minus(this.min);
@@ -109,7 +113,7 @@
 		return (minproj * maxproj) > 0;
 	}
 
-    RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray): Picking {
 		let result = new Picking(null);
 		let dim = this.min.Dimension();
 		let self = this;

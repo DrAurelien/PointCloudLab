@@ -4,22 +4,22 @@
 	private coordssystem: Scene;
 	private axesLabels: AxisLabel[];
 
-	constructor(private view : PCLApp) {
+	constructor(private view: PCLApp) {
 		//Create the coordinates axes to be rendered
-		let axes: Cylinder[] = [
-			new Cylinder(new Vector([.5, .0, .0]), new Vector([1.0, .0, .0]), .1, 1.0),
-			new Cylinder(new Vector([.0, .5, .0]), new Vector([.0, 1.0, .0]), .1, 1.0),
-			new Cylinder(new Vector([.0, .0, .5]), new Vector([.0, .0, 1.0]), .1, 1.0)
+		let axes: PCLCylinder[] = [
+			new PCLCylinder(new Cylinder(new Vector([.5, .0, .0]), new Vector([1.0, .0, .0]), .1, 1.0)),
+			new PCLCylinder(new Cylinder(new Vector([.0, .5, .0]), new Vector([.0, 1.0, .0]), .1, 1.0)),
+			new PCLCylinder(new Cylinder(new Vector([.0, .0, .5]), new Vector([.0, .0, 1.0]), .1, 1.0))
 		];
 		this.coordssystem = new Scene();
 		for (let index = 0; index < axes.length; index++) {
-			axes[index].material.baseColor = axes[index].axis.Flatten();
+			axes[index].SetBaseColor(axes[index].cylinder.axis.Flatten());
 			this.coordssystem.Contents.Add(axes[index]);
 		}
 
 		//Refine lighting
 		let light = <Light>this.coordssystem.Lights.children[0];
-		this.coordssystem.Lights.Add(new Light(light.Position.Times(-1.0)));
+		this.coordssystem.Lights.Add(new Light(light.center.Times(-1.0)));
 
 		//Create labels
 		this.axesLabels = [

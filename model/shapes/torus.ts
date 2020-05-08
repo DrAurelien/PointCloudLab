@@ -1,16 +1,6 @@
 ﻿class Torus extends Shape {
-    constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number, owner: CADPrimitivesContainer=null) {
-        super(NameProvider.GetName('Torus'), owner);
-    }
-
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, this.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Axis', this.axis, true, this.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Great Radius', this.greatRadius, this.GeometryChangeHandler((value) => self.greatRadius=value )));
-		geometry.Push(new NumberProperty('Small Radius', this.smallRadius, this.GeometryChangeHandler((value) => self.smallRadius=value)));
-		return geometry;
+	constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number) {
+		super();
 	}
 
 	ComputeMesh(sampling: number): Mesh {
@@ -133,17 +123,14 @@
 	Rotate(rotation: Matrix) {
 		let a = rotation.Multiply(Matrix.FromVector(this.axis));
 		this.axis = Matrix.ToVector(a);
-		this.Invalidate();
 	}
 
 	Translate(translation: Vector) {
 		this.center = this.center.Plus(translation);
-		this.Invalidate();
 	}
 
 	Scale(scale: number) {
 		this.greatRadius *= scale;
 		this.smallRadius *= scale;
-		this.Invalidate();
 	}
 }

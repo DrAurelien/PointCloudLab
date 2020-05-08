@@ -1,13 +1,15 @@
-﻿//import './meshface.ts';
+﻿/// <reference path="octree.ts" />
+/// <reference path="pointcloud.ts" />
+/// <reference path="meshface.ts" />
+/// <reference path="boundingbox.ts" />
 
-class Mesh extends CADPrimitive {
+
+class Mesh {
 	faces: number[];
 	size: number;
 	octree: Octree;
-	glIndexBuffer: WebGLBuffer;
 
 	constructor(public pointcloud: PointCloud) {
-		super(NameProvider.GetName('Mesh'));
 		this.faces = [];
 		this.size = 0;
 	}
@@ -67,61 +69,24 @@ class Mesh extends CADPrimitive {
 		this.pointcloud.ClearNormals();
 	}
 
-	ComputeNormals(onDone: CADNodeHandler = null): void {
+	ComputeNormals(onDone: Function = null): void {
 		if (!this.pointcloud.HasNormals()) {
-			let ncomputer = new MeshProcessing.NormalsComputer(this);
+			let ncomputer = new MeshNormalsComputer(this);
 			ncomputer.SetNext(() => { if (onDone) onDone(this) });
 			ncomputer.Start();
 		}
 	}
 
 	GetBoundingBox(): BoundingBox {
-		return this.pointcloud.GetBoundingBox();
+		return this.pointcloud.boundingbox;
 	}
 
-	PrepareRendering(drawingContext: DrawingContext): void {
-		this.pointcloud.PrepareRendering(drawingContext);
-		if (!this.glIndexBuffer) {
-			this.glIndexBuffer = drawingContext.gl.createBuffer();
-			drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, this.glIndexBuffer);
-			drawingContext.gl.bufferData(drawingContext.gl.ELEMENT_ARRAY_BUFFER, drawingContext.GetIntArray(this.faces), drawingContext.gl.STATIC_DRAW);
-		}
-		drawingContext.gl.bindBuffer(drawingContext.gl.ELEMENT_ARRAY_BUFFER, this.glIndexBuffer);
-	}
-
-	Draw(drawingContext: DrawingContext): void {
-		if (this.visible) {
-			this.material.InitializeLightingModel(drawingContext);
-
-			this.PrepareRendering(drawingContext);
-
-			//Points-based rendering
-			if (drawingContext.rendering.Point()) {
-				this.pointcloud.Draw(drawingContext);
-			}
-
-			//Surface rendering
-			if (drawingContext.rendering.Surface()) {
-				drawingContext.gl.drawElements(drawingContext.gl.TRIANGLES, this.size, drawingContext.GetIntType(), 0);
-			}
-
-			//Wire rendering
-			if (drawingContext.rendering.Wire()) {
-				drawingContext.gl.drawElements(drawingContext.gl.LINES, this.size, drawingContext.GetIntType(), 0);
-			}
-
-			if (this.selected) {
-				this.GetBoundingBox().Draw(drawingContext);
-			}
-		}
-	}
-
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, meshWrapper: Pickable): Picking {
 		if (this.octree) {
 			return this.octree.RayIntersection(ray);
 		}
 
-		let result = new Picking(this);
+		let result = new Picking(meshWrapper);
 		for (let ii = 0; ii < this.Size(); ii++) {
 			let tt = this.GetFace(ii).LineFaceIntersection(ray);
 			if (tt !== null) {
@@ -130,52 +95,35 @@ class Mesh extends CADPrimitive {
 		}
 		return result;
 	}
-
-	GetProperties(): Properties {
-		let properties = super.GetProperties();
-
-		let points = new NumberProperty('Points', this.pointcloud.Size(), null);
-		points.SetReadonly();
-		let faces = new NumberProperty('Faces', this.Size(), null);
-		faces.SetReadonly();
-
-		properties.Push(points);
-		properties.Push(faces);
-
-		return properties;
-	}
 }
 
+class MeshNormalsComputer extends IterativeLongProcess {
+	normals: Array<Vector>;
+	constructor(private mesh: Mesh) {
+		super(mesh.Size(), 'Computing normals');
+	}
 
-namespace MeshProcessing {
-	export class NormalsComputer extends IterativeLongProcess {
-		normals: Array<Vector>;
-		constructor(private mesh: Mesh) {
-			super(mesh.Size(), 'Computing normals');
+	Initialize() {
+		this.normals = new Array<Vector>(this.mesh.pointcloud.Size());
+		for (let index = 0; index < this.normals.length; index++) {
+			this.normals[index] = new Vector([0, 0, 0]);
 		}
+	}
 
-		Initialize() {
-			this.normals = new Array<Vector>(this.mesh.pointcloud.Size());
-			for (let index = 0; index < this.normals.length; index++) {
-				this.normals[index] = new Vector([0, 0, 0]);
-			}
+	Iterate(step: number) {
+		let face = this.mesh.GetFace(step);
+		for (let index = 0; index < face.indices.length; index++) {
+			let nindex = face.indices[index];
+			this.normals[nindex] = this.normals[nindex].Plus(face.Normal);
 		}
+	}
 
-		Iterate(step: number) {
-			let face = this.mesh.GetFace(step);
-			for (let index = 0; index < face.indices.length; index++) {
-				let nindex = face.indices[index];
-				this.normals[nindex] = this.normals[nindex].Plus(face.Normal);
-			}
+	Finalize() {
+		let cloud = this.mesh.pointcloud;
+		cloud.ClearNormals();
+		let nbPoints = cloud.Size();
+		for (let index = 0; index < nbPoints; index++) {
+			cloud.PushNormal(this.normals[index].Normalized());
 		}
-
-		Finalize() {
-			let cloud = this.mesh.pointcloud;
-			cloud.ClearNormals();
-			let nbPoints = cloud.Size();
-			for (let index = 0; index < nbPoints; index++) {
-				cloud.PushNormal(this.normals[index].Normalized());
-			}
-		}
-	};
+	}
 }

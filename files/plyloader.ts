@@ -1,4 +1,10 @@
-﻿class PlyDefinition {
+﻿/// <reference path="../model/pointcloud.ts" />
+/// <reference path="../model/mesh.ts" />
+/// <reference path="../gui/objects/pclpointcloud.ts" />
+/// <reference path="../gui/objects/pclmesh.ts" />
+
+
+class PlyDefinition {
 	constructor(public name: string, public type: string, public params: any) {
 	}
 }
@@ -167,7 +173,7 @@ class PlyElements {
 class PlyLoader {
 	private reader: BinaryReader;
 	private elements: PlyElements;
-	public result: CADNode;
+	public result: PCLNode;
 
 	constructor(content: ArrayBuffer) {
 		this.reader = new BinaryReader(content);
@@ -330,7 +336,7 @@ class CloudBuilder extends IterativeLongProcess {
 //////////////////////////////////////////
 class MeshBuilder extends IterativeLongProcess {
 	private faces: PlyElement;
-	public result: Mesh | PointCloud;
+	public result: Mesh | PCLPointCloud;
 
 	constructor(private elements: PlyElements) {
 		super(0, 'Loading PLY mesh');
@@ -345,11 +351,15 @@ class MeshBuilder extends IterativeLongProcess {
 			this.result = new Mesh(caller.cloud);
 			this.result.Reserve(this.nbsteps);
 		}
+		else {
+			this.result = new PCLPointCloud(caller.cloud);
+		}
 	}
 
 	Iterate(step: number) {
 		var face = this.faces.GetItem(step);
-		(<Mesh>this.result).PushFace(face.vertex_indices);
+		let mesh = this.result as Mesh;
+		mesh.PushFace(face.vertex_indices);
 	}
 }
 
@@ -357,20 +367,26 @@ class MeshBuilder extends IterativeLongProcess {
 //  Finalize the result
 //////////////////////////////////////////
 class Finalizer extends Process {
-	public result: Mesh | PointCloud;
+	public result: PCLMesh | PCLPointCloud;
 
 	constructor(private loader: PlyLoader) {
 		super();
 	}
 
 	Initialize(caller: MeshBuilder) {
-		this.result = caller.result;
+		if (caller.result instanceof Mesh) {
+			this.result = new PCLMesh(caller.result as Mesh);
+		}
+		else {
+			this.result = caller.result as PCLPointCloud;
+		}
 	}
 
 	Run(ondone: Function) {
 		this.loader.result = this.result;
-		if (this.result instanceof Mesh) {
-			(<Mesh>this.result).ComputeNormals((m: Mesh) => {
+		if (this.result instanceof PCLMesh) {
+			let mesh = (this.result as PCLMesh).mesh;
+			mesh.ComputeNormals((m: Mesh) => {
 				m.ComputeOctree(ondone);
 				return true;
 			});

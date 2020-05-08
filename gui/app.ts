@@ -68,7 +68,7 @@ class PCLApp {
 	}
 
 	UpdateSelectedElement(selectedItem: Pickable) {
-		this.dataHandler.currentItem = selectedItem as CADNode;
+		this.dataHandler.currentItem = selectedItem as PCLNode;
 		this.Refresh();
 	}
 

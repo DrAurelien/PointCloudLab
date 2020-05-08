@@ -24,9 +24,9 @@
 		let nbLights = 0;
 		for (var index = 0; index < scene.Lights.children.length; index++) {
 			let light = <Light>scene.Lights.children[index];
-			if (light.visible) {
-				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.Position.coordinates));
-				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolors[nbLights], new Float32Array(light.Color));
+            if (light.visible) {
+                this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.center.Flatten()));
+				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolors[nbLights], new Float32Array(light.color));
 				nbLights++;
 			}
 		}
@@ -57,7 +57,7 @@
         return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
     }
 
-    ResolveRayIntersection(ray: Ray, root: CADNode): Picking {
+    ResolveRayIntersection(ray: Ray, root: PCLNode): Picking {
 		return root.RayIntersection(ray);
     }
 
@@ -71,7 +71,7 @@
         return null;
     }
 
-    ScanFromCurrentViewPoint(group: CADNode, hsampling: number, vsampling: number, resultHandler: Function) {
+    ScanFromCurrentViewPoint(group: PCLNode, hsampling: number, vsampling: number, resultHandler: Function) {
         let scanner = new SceneScanner(this, group, hsampling, vsampling);
         scanner.SetNext((s: SceneScanner) => resultHandler(s.cloud));
         scanner.Start();
@@ -83,7 +83,7 @@ class SceneScanner extends LongProcess {
     currentj: number;
     public cloud: PointCloud;
 
-    constructor(private renderer: Renderer, private group: CADNode, private width: number, private height: number) {
+    constructor(private renderer: Renderer, private group: PCLNode, private width: number, private height: number) {
         super('Scanning the scene (' + width + 'x' + height + ')');
         this.currenti = 0;
         this.currentj = 0;

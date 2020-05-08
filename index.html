@@ -95,6 +95,7 @@
 	<script type="text/javascript" src="tools/longprocess.js"></script>
 	<script type="text/javascript" src="tools/stringutils.js"></script>
 	<script type="text/javascript" src="tools/queue.js"></script>
+	<script type="text/javascript" src="tools/picking.js"></script>
 	<!--MATHS-->
 	<script type="text/javascript" src="maths/vector.js"></script>
 	<script type="text/javascript" src="maths/matrix.js"></script>
@@ -104,7 +105,6 @@
 	<script type="text/javascript" src="maths/polynomials.js"></script>
 	<script type="text/javascript" src="maths/rootsfinding.js"></script>
 	<script type="text/javascript" src="maths/geometry.js"></script>
-	<script type="text/javascript" src="maths/ray.js"></script>
 	<!-- FILES -->
 	<script type="text/javascript" src="files/fileloader.js"></script>
 	<script type="text/javascript" src="files/binaryreader.js"></script>
@@ -113,11 +113,11 @@
 	<script type="text/javascript" src="files/fileexporter.js"></script>
 	<!-- RENDERING-->
 	<script type="text/javascript" src="gui/opengl/materials.js"></script>
+	<script type="text/javascript" src="gui/opengl/buffer.js"></script>
 	<script type="text/javascript" src="gui/opengl/drawingcontext.js"></script>
 	<script type="text/javascript" src="gui/opengl/renderer.js"></script>
 	<script type="text/javascript" src="gui/opengl/camera.js"></script>
 	<script type="text/javascript" src="gui/opengl/renderingtype.js"></script>
-	<script type="text/javascript" src="gui/opengl/picking.js"></script>
 	<!--CONTROLER-->
 	<script type="text/javascript" src="controler/mousetracker.js"></script>
 	<script type="text/javascript" src="controler/mousecontroler.js"></script>
@@ -128,20 +128,13 @@
 	<script type="text/javascript" src="controler/actions/cameracenter.js"></script>
 	<script type="text/javascript" src="controler/actions/controlerchoice.js"></script>
 	<script type="text/javascript" src="controler/actions/scanfromcurrentviewpoint.js"></script>
-	<script type="text/javascript" src="controler/actions/pointcloudnormals.js"></script>
-	<script type="text/javascript" src="controler/actions/pointcloudexport.js"></script>
-	<script type="text/javascript" src="controler/actions/pointclouddetection.js"></script>
-	<script type="text/javascript" src="controler/actions/pointcloudmisc.js"></script>
+	<script type="text/javascript" src="model/regiongrowth.js"></script>
+	<script type="text/javascript" src="controler/actions/pointcloudactions.js"></script>
+	<script type="text/javascript" src="controler/actions/shapeactions.js"></script>
 	<!-- MODEL -->
-	<script type="text/javascript" src="model/cadnode.js"></script>
-	<script type="text/javascript" src="model/cadprimitive.js"></script>
-	<script type="text/javascript" src="model/cadgroup.js"></script>
-	<script type="text/javascript" src="model/cadprimitivescontainer.js"></script>
-	<script type="text/javascript" src="model/lightscontainer.js"></script>
 	<script type="text/javascript" src="model/boundingbox.js"></script>
 	<script type="text/javascript" src="model/octree.js"></script>
 	<script type="text/javascript" src="model/kdtree.js"></script>
-	<script type="text/javascript" src="model/regiongrowth.js"></script>
 	<script type="text/javascript" src="model/neighbourhood.js"></script>
 	<script type="text/javascript" src="model/ransac.js"></script>
 	<script type="text/javascript" src="model/scalarfield.js"></script>
@@ -154,9 +147,21 @@
 	<script type="text/javascript" src="model/shapes/cylinder.js"></script>
 	<script type="text/javascript" src="model/shapes/cone.js"></script>
 	<script type="text/javascript" src="model/shapes/torus.js"></script>
-	<script type="text/javascript" src="model/light.js"></script>
-	<script type="text/javascript" src="model/scene.js"></script>
 	<!--INTERFACE-->
+	<script type="text/javascript" src="gui/objects/pclnode.js"></script>
+	<script type="text/javascript" src="gui/objects/pclgroup.js"></script>
+	<script type="text/javascript" src="model/scene.js"></script>
+	<script type="text/javascript" src="gui/objects/pclprimitive.js"></script>
+	<script type="text/javascript" src="gui/objects/pclshape.js"></script>
+	<script type="text/javascript" src="gui/objects/pcltorus.js"></script>
+	<script type="text/javascript" src="gui/objects/pclsphere.js"></script>
+	<script type="text/javascript" src="gui/objects/pclpointcloud.js"></script>
+	<script type="text/javascript" src="gui/objects/pclplane.js"></script>
+	<script type="text/javascript" src="gui/objects/pclmesh.js"></script>
+	<script type="text/javascript" src="gui/objects/pclcylinder.js"></script>
+	<script type="text/javascript" src="gui/objects/pclcone.js"></script>
+	<script type="text/javascript" src="gui/objects/lightscontainer.js"></script>
+	<script type="text/javascript" src="gui/objects/light.js"></script>
 	<script type="text/javascript" src="gui/controls/control.js"></script>
 	<script type="text/javascript" src="gui/controls/container.js"></script>
 	<script type="text/javascript" src="gui/controls/pannel.js"></script>

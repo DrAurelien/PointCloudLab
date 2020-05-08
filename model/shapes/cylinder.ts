@@ -1,17 +1,8 @@
 ﻿class Cylinder extends Shape {
-    constructor(public center: Vector, public axis: Vector, public radius: number, public height: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Cylinder'), owner);
-    }
-
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, self.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Axis', this.axis, true, self.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Radius', this.radius, self.GeometryChangeHandler((value) => this.radius = value)));
-		geometry.Push(new NumberProperty('Height', this.height, self.GeometryChangeHandler((value) => this.height = value)));
-		return geometry;
+	constructor(public center: Vector, public axis: Vector, public radius: number, public height: number) {
+		super();
 	}
+
 
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([
@@ -27,18 +18,15 @@
 	Rotate(rotation: Matrix) {
 		let a = rotation.Multiply(Matrix.FromVector(this.axis));
 		this.axis = Matrix.ToVector(a);
-		this.Invalidate();
 	}
 
 	Translate(translation: Vector) {
 		this.center = this.center.Plus(translation);
-		this.Invalidate();
 	}
 
 	Scale(scale: number) {
 		this.radius *= scale;
 		this.height *= scale;
-		this.Invalidate();
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
@@ -55,7 +43,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number) : Mesh {
+	ComputeMesh(sampling: number): Mesh {
 		let points = new PointCloud();
 		points.Reserve(4 * sampling + 2);
 
@@ -122,7 +110,7 @@
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray) : Picking {
+	RayIntersection(ray: Ray): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
 		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
 		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
@@ -188,7 +176,7 @@
 		return Math.abs(op - this.radius);
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud) : void {
+	ComputeBounds(points: number[], cloud: PointCloud): void {
 		let min = 0;
 		let max = 0;
 		for (let ii = 0; ii < points.length; ii++) {

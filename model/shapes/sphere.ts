@@ -1,16 +1,8 @@
 ﻿class Sphere extends Shape {
-    constructor(public center: Vector, public radius: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Sphere'), owner);
-    }
+	constructor(public center: Vector, public radius: number) {
+		super();
+	}
 
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, this.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Radius', this.radius, this.GeometryChangeHandler((value) => self.radius = value)));
-		return geometry;
-	};
-	
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([1, 1, 1]).Times(2 * this.radius);
 		let bb = new BoundingBox();
@@ -34,7 +26,7 @@
 		return matrix;
 	}
 
-	ComputeMesh(sampling: number) : Mesh {
+	ComputeMesh(sampling: number): Mesh {
 		let halfSampling = Math.ceil(sampling / 2);
 		let points = new PointCloud();
 		points.Reserve(sampling * halfSampling + 2);
@@ -133,11 +125,9 @@
 
 	Translate(translation: Vector) {
 		this.center = this.center.Plus(translation);
-		this.Invalidate();
 	}
 
 	Scale(scale: number) {
 		this.radius *= scale;
-		this.Invalidate();
 	}
 }
