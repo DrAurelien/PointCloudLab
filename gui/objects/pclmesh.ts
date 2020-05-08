@@ -1,7 +1,11 @@
 ﻿/// <reference path="../../model/mesh.ts" />
 /// <reference path="../../model/boundingbox.ts" />
+/// <reference path="pclprimitive.ts" />
+/// <reference path="../nameprovider.ts" />
 /// <reference path="../opengl/materials.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/numberproperty.ts" />
 
 
 //=================================================
@@ -67,13 +71,13 @@ class MeshDrawing {
 
 	Draw(mesh: Mesh, ctx: DrawingContext) {
 		if (ctx.rendering.Point()) {
-			ctx.gl.drawElements(ctx.gl.POINTS, mesh.Size(), ctx.GetIntType(), 0);
+			ctx.gl.drawElements(ctx.gl.POINTS, mesh.size, ctx.GetIntType(), 0);
 		}
 		if (ctx.rendering.Surface()) {
-			ctx.gl.drawElements(ctx.gl.TRIANGLES, mesh.Size(), ctx.GetIntType(), 0);
+			ctx.gl.drawElements(ctx.gl.TRIANGLES, mesh.size, ctx.GetIntType(), 0);
 		}
 		if (ctx.rendering.Wire()) {
-			ctx.gl.drawElements(ctx.gl.LINES, mesh.Size(), ctx.GetIntType(), 0);
+			ctx.gl.drawElements(ctx.gl.LINES, mesh.size, ctx.GetIntType(), 0);
 		}
 	}
 }

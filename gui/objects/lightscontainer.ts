@@ -1,4 +1,9 @@
-﻿class LightsContainer extends PCLGroup {
+﻿/// <reference path="pclgroup.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="../datahandler.ts" />
+
+
+class LightsContainer extends PCLGroup {
     constructor(name?: string, owner: PCLGroup = null) {
         super(name || NameProvider.GetName('Lights'), owner);
     }

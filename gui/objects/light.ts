@@ -1,4 +1,8 @@
-﻿class Light extends PCLNode {
+﻿/// <reference path="pclnode.ts" />
+/// <reference path="lightscontainer.ts" />
+
+
+class Light extends PCLNode {
 	color: number[];
 	glPointsBuffer: WebGLBuffer;
 

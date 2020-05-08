@@ -86,7 +86,7 @@
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
 		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
 		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
@@ -104,7 +104,7 @@
 		//Solve [t] : aa.t^2 + bb.t + cc = radius
 		cc -= this.radius * this.radius;
 		let dd = bb * bb - 4.0 * aa * cc;
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		if (Math.abs(dd) < 0.0000001) {
 			result.Add(-bb / 2.0 * aa);
 		}

@@ -110,7 +110,7 @@
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
 		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
 		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
@@ -131,7 +131,7 @@
 		let sqrRadius = this.radius * this.radius;
 		cc -= sqrRadius;
 		let dd = bb * bb - 4.0 * aa * cc;
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		let nbResults = 0;
 		function acceptValue(value) {
 			let point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));

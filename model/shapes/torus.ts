@@ -76,7 +76,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
 		let innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
 		let innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
@@ -108,7 +108,7 @@
 		]);
 
 		let roots = quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		for (let index = 0; index < roots.length; index++) {
 			result.Add(roots[index]);
 		}
