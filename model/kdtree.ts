@@ -1,4 +1,9 @@
-﻿class KDTree {
+﻿/// <reference path="../maths/vector.ts" />
+/// <reference path="pointcloud.ts" />
+/// <reference path="neighbourhood.ts" />
+
+
+class KDTree {
 	root: KDTreeCell;
 	indices: number[];
 
@@ -130,7 +135,7 @@
 	}
 }
 
-class KDTreeCell{
+class KDTreeCell {
 	cutValue: number;
 	right: KDTreeCell;
 	left: KDTreeCell;

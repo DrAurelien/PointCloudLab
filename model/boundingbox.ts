@@ -1,5 +1,7 @@
 ﻿/// <reference path="../maths/vector.ts" />
 /// <reference path="../tools/picking.ts" />
+/// <reference path="../maths/vector.ts" />
+/// <reference path="../gui/opengl/drawingcontext.ts" />
 
 
 class BoundingBox {
@@ -146,8 +148,7 @@ class BoundingBox {
 			drawingContext.EnableNormals(false);
 			BoundingBox.InititalizeGL(drawingContext.gl);
 
-			var material = new Material([1.0, 1.0, 0.0]);
-			material.InitializeLightingModel(drawingContext);
+			drawingContext.gl.uniform3fv(drawingContext.color, new Float32Array([1.0, 1.0, 0.0]));
 
 			let size = this.GetSize();
 			let center = this.GetCenter();

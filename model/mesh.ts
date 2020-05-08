@@ -2,6 +2,8 @@
 /// <reference path="pointcloud.ts" />
 /// <reference path="meshface.ts" />
 /// <reference path="boundingbox.ts" />
+/// <reference path="../tools/picking.ts" />
+/// <reference path="../tools/longprocess.ts" />
 
 
 class Mesh {

@@ -1,4 +1,8 @@
-﻿abstract class Neighbourhood {
+﻿/// <reference path="../maths/vector.ts" />
+/// <reference path="pointcloud.ts" />
+
+
+abstract class Neighbourhood {
 	cloud: PointCloud;
 	queryPoint: Vector;
 	neighbours: Neighbour[];
@@ -14,7 +18,7 @@
 		return new Neighbour(distance, pointIndex);
 	}
 
-	Accept(distance: number) :boolean {
+	Accept(distance: number): boolean {
 		var sqrdist = distance * distance;
 		var maxdist = this.GetSqrDistance();
 		if (maxdist === null || sqrdist <= maxdist) {
@@ -24,7 +28,7 @@
 	}
 
 	abstract GetSqrDistance(): number;
-	abstract Push(index: number) : void;
+	abstract Push(index: number): void;
 
 	Neighbours(): Neighbour[] {
 		return this.neighbours;

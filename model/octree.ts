@@ -1,4 +1,11 @@
-﻿class Octree {
+﻿/// <reference path="../maths/vector.ts" />
+/// <reference path="mesh.ts" />
+/// <reference path="meshface.ts" />
+/// <reference path="boundingbox.ts" />
+/// <reference path="../tools/picking.ts" />
+
+
+class Octree {
 	private root: OctreeCell;
 	private facescache: MeshFace[];
 
@@ -13,7 +20,7 @@
 		this.root.Split();
 	}
 
-    RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray): Picking {
 		let result = new Picking(this.mesh);
 		if (this.root) {
 			this.root.RayIntersection(ray, result);
@@ -30,13 +37,12 @@
 	}
 }
 
-class OctreeCell{
-	depth : number;
+class OctreeCell {
+	depth: number;
 	faces: number[];
 	sons: OctreeCell[];
 
-	constructor(public octree: Octree, public parent : OctreeCell, public boundingbox: BoundingBox)
-	{
+	constructor(public octree: Octree, public parent: OctreeCell, public boundingbox: BoundingBox) {
 		let candidates: number[];
 		if (parent) {
 			this.depth = parent.depth + 1;
@@ -83,8 +89,7 @@ class OctreeCell{
 		boxes.push(new BoundingBox(new Vector([center.Get(0), min.Get(1), center.Get(2)]), new Vector([max.Get(0), center.Get(1), max.Get(2)])));
 		boxes.push(new BoundingBox(new Vector([center.Get(0), center.Get(1), center.Get(2)]), new Vector([max.Get(0), max.Get(1), max.Get(2)])));
 
-		for (let index = 0; index < boxes.length; index++)
-		{
+		for (let index = 0; index < boxes.length; index++) {
 			let son = new OctreeCell(this.octree, this, boxes[index]);
 			son.Split();
 			this.sons.push(son);
@@ -93,7 +98,7 @@ class OctreeCell{
 		return true;
 	}
 
-    RayIntersection(ray: Ray, result: Picking) {
+	RayIntersection(ray: Ray, result: Picking) {
 		let boxintersection = this.boundingbox.RayIntersection(ray);
 		if (boxintersection.HasIntersection() && boxintersection.Compare(result) < 0) {
 			let nbsons = this.sons.length;

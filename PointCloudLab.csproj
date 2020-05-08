@@ -71,7 +71,7 @@
     <Content Include="model\pointcloud.ts" />
     <Content Include="model\ransac.ts" />
     <Content Include="model\regiongrowth.ts" />
-    <Content Include="model\scene.ts" />
+    <Content Include="gui\objects\scene.ts" />
     <Content Include="model\shapes\cone.ts" />
     <Content Include="model\shapes\cylinder.ts" />
     <Content Include="model\shapes\plane.ts" />

@@ -1,4 +1,9 @@
-﻿/// <reference path="../tools/picking.ts" />
+﻿/// <reference path="pclnode.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="light.ts" />
+/// <reference path="lightscontainer.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../../model/boundingbox.ts" />
 
 
 class Scene extends PCLGroup {
