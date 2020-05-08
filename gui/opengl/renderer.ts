@@ -61,7 +61,7 @@
 		return root.RayIntersection(ray);
     }
 
-    PickObject(x: number, y: number, scene: Scene): CADNode {
+    PickObject(x: number, y: number, scene: Scene): Pickable {
         let ray : Ray = this.GetRay(x, y);
         let picked = this.ResolveRayIntersection(ray, scene.Contents);
 

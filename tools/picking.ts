@@ -1,7 +1,13 @@
-﻿class Picking {
+﻿/// <reference path="../maths/vector.ts" />
+
+
+interface Pickable {
+}
+
+class Picking {
     distance: number;
 
-    constructor(public object: CADNode) {
+	constructor(public object: Pickable) {
         this.distance = null;
     }
 
@@ -33,4 +39,13 @@
 		}
 		return 0;
     }
+}
+
+class Ray {
+	constructor(public from: Vector, public dir: Vector) {
+	}
+
+	GetPoint(distance: number) {
+		return this.from.Plus(this.dir.Times(distance));
+	}
 }

@@ -1,4 +1,8 @@
-﻿class QRDecomposition {
+﻿/// <reference path="vector.ts" />
+/// <reference path="matrix.ts" />
+
+
+class QRDecomposition {
 	Q: Matrix;
 	R: Matrix;
 

@@ -57,7 +57,6 @@
     <Content Include="maths\matrix.ts" />
     <Content Include="maths\polynomials.ts" />
     <Content Include="maths\qrdecomposition.ts" />
-    <Content Include="maths\ray.ts" />
     <Content Include="maths\rootsfinding.ts" />
     <Content Include="maths\vector.ts" />
     <Content Include="model\boundingbox.ts" />
@@ -89,7 +88,7 @@
     <Content Include="gui\opengl\drawingcontext.ts" />
     <Content Include="gui\opengl\materials.ts" />
     <Content Include="controler\mousetracker.ts" />
-    <Content Include="gui\opengl\picking.ts" />
+    <Content Include="tools\picking.ts" />
     <Content Include="gui\opengl\renderer.ts" />
     <Content Include="gui\opengl\renderingtype.ts" />
     <Content Include="help.html" />

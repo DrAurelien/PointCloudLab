@@ -1,4 +1,8 @@
-﻿class EigenElement {
+﻿/// <reference path="vector.ts" />
+/// <reference path="matrix.ts" />
+
+
+class EigenElement {
 	constructor(public eigenValue: number, public eigenVector: Vector) {
 	}
 }

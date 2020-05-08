@@ -1,4 +1,7 @@
-﻿class Polynomial {
+﻿/// <reference path="rootsfinding.ts" />
+
+
+class Polynomial {
 	//Coefs are given from lowest degree to higher degree
 	constructor(private coefficients) {
 	}

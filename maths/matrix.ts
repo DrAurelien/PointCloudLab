@@ -1,4 +1,8 @@
-﻿class Matrix {
+﻿/// <reference path="vector.ts" />
+/// <reference path="ludecomposition.ts" />
+
+
+class Matrix {
 	values: number[];
 
 	constructor(public width: number, public height: number, values: number[]) {

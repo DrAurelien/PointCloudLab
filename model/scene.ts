@@ -1,11 +1,14 @@
-﻿class Scene extends CADGroup {
-    constructor() {
+﻿/// <reference path="../tools/picking.ts" />
+
+
+class Scene extends CADGroup {
+	constructor() {
 		super("Scene");
 		this.deletable = false;
 
 		this.children = [null, null];
 
-        this.Contents = new CADPrimitivesContainer("Objects");
+		this.Contents = new CADPrimitivesContainer("Objects");
 		this.Contents.deletable = false;
 
 		this.Lights = new LightsContainer("Lights");
@@ -15,28 +18,28 @@
 
 		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]), this.Lights);
 		defaultLight.deletable = false;
-    }
+	}
 
-    get Contents(): CADPrimitivesContainer {
+	get Contents(): CADPrimitivesContainer {
 		return <CADPrimitivesContainer>this.children[1];
 	}
 	set Contents(c: CADPrimitivesContainer) {
 		this.children[1] = c;
 	}
 
-    get Lights(): LightsContainer {
+	get Lights(): LightsContainer {
 		return <LightsContainer>this.children[0];
 	}
 	set Lights(l: LightsContainer) {
 		this.children[0] = l;
 	}
 
-    Select(item: CADNode): void {
+	Select(item: Pickable): void {
 		this.Contents.Apply(p => {
 			p.selected = (p === item);
 			return true;
-		} );
-    }
+		});
+	}
 
 	GetSelected(): CADNode[] {
 		let selected: CADNode[] = [];

@@ -1,4 +1,7 @@
-﻿abstract class CADNode {
+﻿/// <reference path="../tools/picking.ts" />
+
+
+abstract class CADNode implements Pickable {
 	owner: CADGroup;
 	visible: boolean;
 	selected: boolean;

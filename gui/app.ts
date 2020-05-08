@@ -67,8 +67,8 @@ class PCLApp {
 		this.coordinatesSystem.Refresh();
 	}
 
-	UpdateSelectedElement(selectedItem: CADNode) {
-		this.dataHandler.currentItem = selectedItem;
+	UpdateSelectedElement(selectedItem: Pickable) {
+		this.dataHandler.currentItem = selectedItem as CADNode;
 		this.Refresh();
 	}
 

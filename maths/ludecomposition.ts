@@ -1,4 +1,7 @@
-﻿class LUDecomposition {
+﻿/// <reference path="matrix.ts" />
+
+
+class LUDecomposition {
 	matrix: Matrix;
 	swaps: number[];
 
