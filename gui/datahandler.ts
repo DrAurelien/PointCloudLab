@@ -3,7 +3,7 @@
     propertiesArea: Pannel;
     currentItem: CADNode;
 
-    constructor(public scene: Scene, private ownerView: Interface) {
+    constructor(public scene: Scene, private ownerView: PCLApp) {
 		super('DataWindow', HandlePosition.Right);
 
 		//Data visualization

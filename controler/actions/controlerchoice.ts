@@ -1,5 +1,5 @@
 ﻿class CameraModeAction extends Action {
-	constructor(private view: Interface) {
+	constructor(private view: PCLApp) {
 		super('Camera mode', 'The mouse can be used to control the position of the camera');
 	}
 
@@ -13,7 +13,7 @@
 }
 
 class TransformModeAction extends Action {
-	constructor(private view: Interface) {
+	constructor(private view: PCLApp) {
 		super('Transformation mode', 'The mouse can be used to control the geometry of the selected item');
 	}
 
@@ -27,7 +27,7 @@ class TransformModeAction extends Action {
 }
 
 class LightModeAction extends Action {
-	constructor(private view: Interface) {
+	constructor(private view: PCLApp) {
 		super('Light mode', 'The mouse can be used to control the position of the selected light');
 	}
 

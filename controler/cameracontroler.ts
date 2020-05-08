@@ -2,7 +2,7 @@
  * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
  */
 class CameraControler extends MouseControler {
-	constructor(view: Interface, private scene: Scene) {
+	constructor(view: PCLApp, private scene: Scene) {
 		super(view);
 	}
 

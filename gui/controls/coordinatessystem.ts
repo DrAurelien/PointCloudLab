@@ -4,7 +4,7 @@
 	private coordssystem: Scene;
 	private axesLabels: AxisLabel[];
 
-	constructor(private view : Interface) {
+	constructor(private view : PCLApp) {
 		//Create the coordinates axes to be rendered
 		let axes: Cylinder[] = [
 			new Cylinder(new Vector([.5, .0, .0]), new Vector([1.0, .0, .0]), .1, 1.0),

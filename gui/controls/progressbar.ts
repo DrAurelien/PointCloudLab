@@ -1,12 +1,15 @@
-﻿class ProgressBar implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="../../tools/longprocess.ts" />
+
+
+class ProgressBar implements Control, ProgessHandler {
 	control: HTMLDivElement;
 	container: HTMLDivElement;
 	message: HTMLDivElement;
 	progress: HTMLDivElement;
 	lastupdate: number;
 	refreshtime: number;
-	updatestep: number;
-
+	updatedelay: number;
 
 	constructor() {
 		this.control = document.createElement('div');
@@ -26,7 +29,20 @@
 
 		this.lastupdate = null;
 		this.refreshtime = 10;
-		this.updatestep = 500;
+		this.updatedelay = 500;
+	}
+
+	Initialize(message: string) {
+		this.SetMessage(message);
+		this.Show();
+	}
+
+	Finalize() {
+		this.Delete();
+	}
+
+	RefreshDelay(): number {
+		return this.refreshtime;
 	}
 
 	SetMessage(message: string): void {
@@ -46,7 +62,7 @@
 
 	Update(current: number, total: number) {
 		let now = (new Date()).getTime();
-		if (this.lastupdate == null || (now - this.lastupdate) > this.updatestep) {
+		if (this.lastupdate == null || (now - this.lastupdate) > this.updatedelay) {
 			this.progress.style.width = ((current / total) * this.container.scrollWidth) + 'px';
 			this.lastupdate = now;
 			return true;

@@ -1,22 +1,43 @@
-﻿class Interface {
-    sceneRenderer: Renderer;
+﻿/// <reference path="controls/control.ts" />
+/// <reference path="../tools/longprocess.ts" />
+
+
+//===========================================
+// Entry point for the point cloud application
+// Invoke PCLApp.Run() to start the whole thing
+//===========================================
+class PCLApp {
+	static instance: PCLApp;
+	sceneRenderer: Renderer;
 	dataHandler: DataHandler;
 	menu: Menu;
 	currentControler: MouseControler;
 	coordinatesSystem: CoordinatesSystem;
 
-    constructor(scene: Scene) {
-        let appInterface: Interface = this;
+	constructor(scene: Scene) {
+		let appInterface: PCLApp = this;
 
+		this.InitializeLongProcess();
 		this.InitializeDataHandler(scene);
 		this.InitializeMenu();
-        this.InitializeRenderers(scene);
+		this.InitializeRenderers(scene);
 
-        window.onresize = function () {
-            appInterface.Refresh();
-        }
-        this.Refresh();
-    }
+		window.onresize = function () {
+			appInterface.Refresh();
+		}
+		this.Refresh();
+	}
+
+	static Run() {
+		if (!PCLApp.instance) {
+			let scene = new Scene;
+			PCLApp.instance = new PCLApp(scene);
+		}
+	}
+
+	private InitializeLongProcess() {
+		LongProcess.progresFactory = () => new ProgressBar();
+	}
 
 	private InitializeDataHandler(scene: Scene) {
 		let self = this;
@@ -30,10 +51,10 @@
 		document.body.appendChild(self.menu.GetElement());
 	}
 
-    InitializeRenderers(scene: Scene) {
-        //Create the scene rendering component
-        this.sceneRenderer = new Renderer('SceneRendering');
-        document.body.appendChild(this.sceneRenderer.GetElement());
+	InitializeRenderers(scene: Scene) {
+		//Create the scene rendering component
+		this.sceneRenderer = new Renderer('SceneRendering');
+		document.body.appendChild(this.sceneRenderer.GetElement());
 
 		//Create the coordinates axes to be rendered
 		this.coordinatesSystem = new CoordinatesSystem(this);
@@ -44,15 +65,15 @@
 
 		this.sceneRenderer.Draw(scene);
 		this.coordinatesSystem.Refresh();
-    }
+	}
 
 	UpdateSelectedElement(selectedItem: CADNode) {
 		this.dataHandler.currentItem = selectedItem;
 		this.Refresh();
 	}
 
-    Refresh() {
-        this.dataHandler.Resize(window.innerWidth, window.innerHeight);
+	Refresh() {
+		this.dataHandler.Resize(window.innerWidth, window.innerHeight);
 		this.dataHandler.RefreshContent();
 
 		this.menu.RefreshSize();
@@ -71,8 +92,8 @@
 	}
 
 	RefreshRendering() {
-        this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
-        this.sceneRenderer.Draw(this.dataHandler.scene);
+		this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
+		this.sceneRenderer.Draw(this.dataHandler.scene);
 		this.coordinatesSystem.Refresh();
 	}
 

@@ -3,7 +3,7 @@
 	private targetElement: HTMLElement;
 	private cursor: Cursor;
 
-	constructor(protected view: Interface) {
+	constructor(protected view: PCLApp) {
 		this.targetElement = view.sceneRenderer.GetElement();
 		this.cursor = new Cursor();
 

@@ -1,7 +1,7 @@
 ﻿class Menu extends HideablePannel {
 	toolbar: Toolbar;
 
-	constructor(private ownerView : Interface)
+	constructor(private ownerView : PCLApp)
 	{
 		super('MenuToolbar', HandlePosition.Bottom);
 

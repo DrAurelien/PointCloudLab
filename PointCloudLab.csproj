@@ -47,7 +47,7 @@
     <Content Include="gui\controls\coordinatessystem.ts" />
     <Content Include="gui\cursor.ts" />
     <Content Include="gui\datahandler.ts" />
-    <Content Include="gui\interface.ts" />
+    <Content Include="gui\app.ts" />
     <Content Include="gui\menu.ts" />
     <Content Include="gui\nameprovider.ts" />
     <Content Include="gui\controls\properties\properties.ts" />

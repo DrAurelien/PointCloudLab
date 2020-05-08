@@ -1,5 +1,5 @@
 ﻿class TransformControler extends MouseControler {
-	constructor(view: Interface, private scene: Scene) {
+	constructor(view: PCLApp, private scene: Scene) {
 		super(view);
 	}
 

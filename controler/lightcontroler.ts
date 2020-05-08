@@ -4,7 +4,7 @@
 class LightControler extends MouseControler {
 	public light : Light;
 
-	constructor(view: Interface) {
+	constructor(view: PCLApp) {
 		super(view);
 
 		let item = this.view.dataHandler.currentItem;
