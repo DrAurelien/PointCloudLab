@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{E6C5B822-BD6C-4537-896B-DEFCE4334217}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Content Include="controler\actions\cameracenter.ts" />
     <Content Include="controler\actions\controlerchoice.ts" />
@@ -16,38 +19,38 @@
     <Content Include="files\fileloader.ts" />
     <Content Include="files\plyloader.ts" />
     <Content Include="controler\actions.ts" />
-    <Content Include="interface\controls\axislabel.ts" />
-    <Content Include="interface\controls\button.ts" />
-    <Content Include="interface\controls\selectdrop.ts" />
-    <Content Include="interface\controls\combobox.ts" />
-    <Content Include="interface\controls\container.ts" />
-    <Content Include="interface\controls\control.ts" />
-    <Content Include="interface\controls\dataitem.ts" />
-    <Content Include="interface\controls\dialog.ts" />
-    <Content Include="interface\controls\fileopener.ts" />
-    <Content Include="interface\controls\hideablepannel.ts" />
-    <Content Include="interface\controls\hint.ts" />
-    <Content Include="interface\controls\pannel.ts" />
-    <Content Include="interface\controls\popupitem.ts" />
-    <Content Include="interface\controls\properties\colorproperty.ts" />
-    <Content Include="interface\controls\properties\numberinrangeproperty.ts" />
-    <Content Include="interface\controls\properties\numberproperty.ts" />
-    <Content Include="interface\controls\popup.ts" />
-    <Content Include="interface\controls\progressbar.ts" />
-    <Content Include="interface\controls\properties\property.ts" />
-    <Content Include="interface\controls\properties\booleanproperty.ts" />
-    <Content Include="interface\controls\properties\propertygroup.ts" />
-    <Content Include="interface\controls\properties\propertywithvalue.ts" />
-    <Content Include="interface\controls\properties\vectorproperty.ts" />
-    <Content Include="interface\controls\properties\stringproperty.ts" />
-    <Content Include="interface\controls\toolbar.ts" />
-    <Content Include="interface\controls\coordinatessystem.ts" />
-    <Content Include="interface\cursor.ts" />
-    <Content Include="interface\datahandler.ts" />
-    <Content Include="interface\interface.ts" />
-    <Content Include="interface\menu.ts" />
-    <Content Include="interface\nameprovider.ts" />
-    <Content Include="interface\controls\properties\properties.ts" />
+    <Content Include="gui\controls\axislabel.ts" />
+    <Content Include="gui\controls\button.ts" />
+    <Content Include="gui\controls\selectdrop.ts" />
+    <Content Include="gui\controls\combobox.ts" />
+    <Content Include="gui\controls\container.ts" />
+    <Content Include="gui\controls\control.ts" />
+    <Content Include="gui\controls\dataitem.ts" />
+    <Content Include="gui\controls\dialog.ts" />
+    <Content Include="gui\controls\fileopener.ts" />
+    <Content Include="gui\controls\hideablepannel.ts" />
+    <Content Include="gui\controls\hint.ts" />
+    <Content Include="gui\controls\pannel.ts" />
+    <Content Include="gui\controls\popupitem.ts" />
+    <Content Include="gui\controls\properties\colorproperty.ts" />
+    <Content Include="gui\controls\properties\numberinrangeproperty.ts" />
+    <Content Include="gui\controls\properties\numberproperty.ts" />
+    <Content Include="gui\controls\popup.ts" />
+    <Content Include="gui\controls\progressbar.ts" />
+    <Content Include="gui\controls\properties\property.ts" />
+    <Content Include="gui\controls\properties\booleanproperty.ts" />
+    <Content Include="gui\controls\properties\propertygroup.ts" />
+    <Content Include="gui\controls\properties\propertywithvalue.ts" />
+    <Content Include="gui\controls\properties\vectorproperty.ts" />
+    <Content Include="gui\controls\properties\stringproperty.ts" />
+    <Content Include="gui\controls\toolbar.ts" />
+    <Content Include="gui\controls\coordinatessystem.ts" />
+    <Content Include="gui\cursor.ts" />
+    <Content Include="gui\datahandler.ts" />
+    <Content Include="gui\interface.ts" />
+    <Content Include="gui\menu.ts" />
+    <Content Include="gui\nameprovider.ts" />
+    <Content Include="gui\controls\properties\properties.ts" />
     <Content Include="maths\eigendecomposition.ts" />
     <Content Include="maths\geometry.ts" />
     <Content Include="maths\ludecomposition.ts" />
@@ -80,15 +83,15 @@
     <Content Include="model\shapes\shape.ts" />
     <Content Include="model\shapes\sphere.ts" />
     <Content Include="model\shapes\torus.ts" />
-    <Content Include="interface\opengl\camera.ts" />
+    <Content Include="gui\opengl\camera.ts" />
     <Content Include="controler\cameracontroler.ts" />
     <Content Include="controler\mousecontroler.ts" />
-    <Content Include="interface\opengl\drawingcontext.ts" />
-    <Content Include="interface\opengl\materials.ts" />
+    <Content Include="gui\opengl\drawingcontext.ts" />
+    <Content Include="gui\opengl\materials.ts" />
     <Content Include="controler\mousetracker.ts" />
-    <Content Include="interface\opengl\picking.ts" />
-    <Content Include="interface\opengl\renderer.ts" />
-    <Content Include="interface\opengl\renderingtype.ts" />
+    <Content Include="gui\opengl\picking.ts" />
+    <Content Include="gui\opengl\renderer.ts" />
+    <Content Include="gui\opengl\renderingtype.ts" />
     <Content Include="help.html" />
     <Content Include="index.html" />
     <Content Include="tsconfig.json" />
@@ -96,9 +99,6 @@
     <Content Include="tools\longprocess.ts" />
     <Content Include="tools\queue.ts" />
     <Content Include="tools\stringutils.ts" />
-  </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="interfaces.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
@@ -108,10 +108,10 @@
   </Target>
   <Target Name="Clean">
     <ItemGroup>
-        <JsFiles Include="**\*js"/>
-        <MapFiles Include="**\*js"/>
-    </ItemGroup>   
-    <Delete Files="@(JsFiles)" />   
-    <Delete Files="@(MapFiles)" />   
+      <JsFiles Include="**\*js" />
+      <MapFiles Include="**\*js" />
+    </ItemGroup>
+    <Delete Files="@(JsFiles)" />
+    <Delete Files="@(MapFiles)" />
   </Target>
 </Project>
