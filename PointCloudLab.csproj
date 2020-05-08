@@ -116,10 +116,10 @@
   <Target Name="Build">
     <Message Condition="'$(Configuration)' == 'Deploy'" Text="Switch to branch 'gh-pages'" Importance="high" />
     <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git checkout gh-pages" />
-    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Transpile typescript files" Importance="high" />
-    <Exec ContinueOnError="false" Command="tsc" />
     <Message Condition="'$(Configuration)' == 'Deploy'" Text="Merge 'master' branch to 'gh-pages'" Importance="high" />
     <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git merge master"/>
+    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Transpile typescript files" Importance="high" />
+    <Exec ContinueOnError="false" Command="tsc" />
     <Message Condition="'$(Configuration)' == 'Deploy'" Text="Publish 'gh-pages'" Importance="high" />
     <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git push"/>
   </Target>
