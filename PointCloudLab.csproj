@@ -1,5 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- List available configurations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Deploy'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Build'">
+  </PropertyGroup>
+  <!-- Visual studio things, keeps on comming back when removed -->
+  <PropertyGroup>
+    <ProjectGuid>{E6C5B822-BD6C-4537-896B-DEFCE4334217}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Files to be considered in the project -->
   <ItemGroup>
     <Content Include="controler\actions\cameracenter.ts" />
     <Content Include="controler\actions\controlerchoice.ts" />
@@ -97,21 +107,28 @@
     <Content Include="tools\queue.ts" />
     <Content Include="tools\stringutils.ts" />
   </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="interfaces.ts" />
-  </ItemGroup>
-  <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
+  <!-- Build and launch the app -->
+  <Target Name="Run" DependsOnTargets="Build">
     <Exec Command="index.html" />
   </Target>
+  <!-- The "Build" configuration simply transpiles Typscript files -->
+  <!-- The "Deploy" configuration also push the resulting files to the "gh-pages" repository, to  -->
   <Target Name="Build">
-    <Exec Command="tsc" />
+    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Switch to branch 'gh-pages'" Importance="high" />
+    <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git checkout gh-pages" />
+    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Transpile typescript files" Importance="high" />
+    <Exec ContinueOnError="false" Command="tsc" />
+    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Merge 'master' branch to 'gh-pages'" Importance="high" />
+    <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git merge master"/>
+    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Publish 'gh-pages'" Importance="high" />
+    <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git push"/>
   </Target>
   <Target Name="Clean">
     <ItemGroup>
-        <JsFiles Include="**\*js"/>
-        <MapFiles Include="**\*js"/>
-    </ItemGroup>   
-    <Delete Files="@(JsFiles)" />   
-    <Delete Files="@(MapFiles)" />   
+      <JsFiles Include="**\*js" />
+      <MapFiles Include="**\*js" />
+    </ItemGroup>
+    <Delete Files="@(JsFiles)" />
+    <Delete Files="@(MapFiles)" />
   </Target>
 </Project>
