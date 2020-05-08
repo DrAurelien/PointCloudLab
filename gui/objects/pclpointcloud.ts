@@ -1,5 +1,10 @@
 ﻿/// <reference path="../../model/pointcloud.ts" />
 /// <reference path="../../controler/actions/pointcloudactions.ts" />
+/// <reference path="../datahandler.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/booleanproperty.ts" />
+/// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../opengl/buffer.ts" />
 
@@ -14,7 +19,6 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 	ransac: Ransac;
 	fields: ScalarField[];
 	currentfield: number;
-	shownormals: boolean;
 	drawing: PointCloudDrawing;
 
 	static DensityFieldName = 'Density';
@@ -23,7 +27,6 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		super(NameProvider.GetName('PointCloud'));
 		this.fields = [];
 		this.currentfield = null;
-		this.shownormals = true;
 		this.drawing = new PointCloudDrawing();
 		if (!this.cloud) {
 			this.cloud = new PointCloud();
@@ -104,7 +107,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let properties = super.GetProperties();
 
 		let self = this;
-		let normals = new BooleanProperty('Lighting', this.shownormals, (b: boolean) => { self.shownormals = b });
+		let normals = new BooleanProperty('Lighting', this.drawing.lighting, (b: boolean) => { self.drawing.lighting = b });
 		properties.Push(normals);
 
 		let points = new NumberProperty('Points', this.cloud.Size(), null);
@@ -181,10 +184,12 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 class PointCloudDrawing {
 	glPointsBuffer: FloatBuffer;
 	glNormalsBuffer: FloatBuffer;
+	lighting: boolean;
 
 	constructor() {
 		this.glNormalsBuffer = null;
 		this.glPointsBuffer = null;
+		this.lighting = true;
 	}
 
 	Prepare(cloud: PointCloud, ctx: DrawingContext) {
@@ -196,7 +201,7 @@ class PointCloudDrawing {
 		}
 		this.glPointsBuffer.Bind(ctx.vertices);
 
-		if (cloud.normals) {
+		if (cloud.HasNormals() && this.lighting) {
 			ctx.EnableNormals(true);
 			if (!this.glNormalsBuffer) {
 				this.glNormalsBuffer = new FloatBuffer(cloud.normals, ctx, 3);
