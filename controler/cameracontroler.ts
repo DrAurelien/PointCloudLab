@@ -1,4 +1,12 @@
-﻿/**
+﻿/// <reference path="mousecontroler.ts" />
+/// <reference path="mousetracker.ts" />
+/// <reference path="actions/cameracenter.ts" />
+/// <reference path="../gui/objects/scene.ts" />
+/// <reference path="../gui/app.ts" />
+/// <reference path="../gui/cursor.ts" />
+
+
+/**
  * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
  */
 class CameraControler extends MouseControler {

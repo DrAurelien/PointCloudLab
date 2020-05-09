@@ -2,15 +2,15 @@
 	x: number;
 	y: number;
 	public button: number;
-    date: Date;
+	date: Date;
 	private static quickeventdelay: number = 200;
 
-    constructor(event: MouseEvent) {
+	constructor(event: MouseEvent) {
 		this.x = event.clientX;
 		this.y = event.clientY;
 		this.button = event.which;
-        this.date = new Date();
-    }
+		this.date = new Date();
+	}
 
 	IsQuickEvent(): boolean {
 		var now = new Date();

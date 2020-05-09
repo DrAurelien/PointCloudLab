@@ -1,10 +1,13 @@
-﻿class Toolbar implements Container {
-    private toolbar: HTMLDivElement;
+﻿/// <reference path="container.ts" />
 
-    constructor(classname : string="Toolbar") {
-        this.toolbar = document.createElement('div');
+
+class Toolbar implements Container {
+	private toolbar: HTMLDivElement;
+
+	constructor(classname: string = "Toolbar") {
+		this.toolbar = document.createElement('div');
 		this.toolbar.className = classname;
-    }
+	}
 
 	AddControl(control: Control) {
 		let container = document.createElement('span');
@@ -32,7 +35,7 @@
 		}
 	}
 
-    GetElement(): HTMLElement {
-        return this.toolbar;
-    }
+	GetElement(): HTMLElement {
+		return this.toolbar;
+	}
 }

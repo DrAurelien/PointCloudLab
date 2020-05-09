@@ -1,4 +1,8 @@
-﻿enum HandlePosition {
+﻿/// <reference path="control.ts" />
+/// <reference path="pannel.ts" />
+
+
+enum HandlePosition {
 	None,
 	Left,
 	Top,
@@ -9,7 +13,7 @@
 class Handle implements Control {
 	handle: HTMLDivElement;
 
-	constructor(private owner: HideablePannel, public position : HandlePosition) {
+	constructor(private owner: HideablePannel, public position: HandlePosition) {
 		let self = this;
 
 		this.handle = document.createElement('div');

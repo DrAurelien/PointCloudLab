@@ -1,4 +1,9 @@
-﻿class Dialog implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="toolbar.ts" />
+/// <reference path="button.ts" />
+
+
+class Dialog implements Control {
 	container: HTMLDivElement;
 
 	constructor(onAccept: DialogResultHandler, onCancel: DialogResultHandler) {
@@ -72,7 +77,7 @@
 		return this.InsertItem(title, valueControl);
 	}
 
-	GetValue(title: string) : any {
+	GetValue(title: string): any {
 		let table: HTMLTableElement = <HTMLTableElement>this.container.childNodes[0];
 		for (var index = 0; index < table.rows.length; index++) {
 			let row: HTMLTableRowElement = <HTMLTableRowElement>table.rows[index];
@@ -90,7 +95,7 @@
 		return null;
 	}
 
-    GetElement(): HTMLElement {
+	GetElement(): HTMLElement {
 		return this.container;
 	}
 }

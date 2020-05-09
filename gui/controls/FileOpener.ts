@@ -1,5 +1,13 @@
-﻿class FileOpener implements Control {
-	constructor(public label: string, public filehandler: Function, private hintMessage? : string) {
+﻿/// <reference path="control.ts" />
+/// <reference path="combobox.ts" />
+/// <reference path="progressbar.ts" />
+/// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../../files/csvloader.ts" />
+/// <reference path="../../files/plyloader.ts" />
+
+
+class FileOpener implements Control {
+	constructor(public label: string, public filehandler: Function, private hintMessage?: string) {
 	}
 
 	LoadFile(file: File) {

@@ -1,5 +1,6 @@
-﻿abstract class Property implements Control
-{
+﻿/// <reference path="../control.ts" />
+
+abstract class Property implements Control {
 	owner: Properties;
 
 	constructor(public name: string, protected changeHandler: PropertyChangeHandler) {

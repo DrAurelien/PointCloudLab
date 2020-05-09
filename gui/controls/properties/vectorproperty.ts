@@ -1,4 +1,10 @@
-﻿class VectorProperty extends PropertyGroup {
+﻿/// <reference path="property.ts" />
+/// <reference path="propertygroup.ts" />
+/// <reference path="numberproperty.ts" />
+/// <reference path="../../../maths/vector.ts" />
+
+
+class VectorProperty extends PropertyGroup {
 	constructor(name: string, private vector: Vector, private normalize: boolean = false, handler: PropertyChangeHandler = null) {
 		super(name, null, handler);
 

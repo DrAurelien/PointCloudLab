@@ -1,4 +1,9 @@
-﻿class Properties implements Control {
+﻿/// <reference path="../control.ts" />
+/// <reference path="property.ts" />
+/// <reference path="propertygroup.ts" />
+
+
+class Properties implements Control {
 	public onChange: Function;
 
 	constructor(private properties: Property[] = []) {

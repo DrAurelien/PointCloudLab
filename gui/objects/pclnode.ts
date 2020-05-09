@@ -1,5 +1,11 @@
 ﻿/// <reference path="../../tools/picking.ts" />
 /// <reference path="../../model/boundingbox.ts" />
+/// <reference path="../opengl/drawingcontext.ts" />
+/// <reference path="../opengl/buffer.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/stringproperty.ts" />
+/// <reference path="../controls/properties/booleanproperty.ts" />
+/// <reference path="../datahandler.ts" />
 
 
 interface PCLContainer {
@@ -37,6 +43,9 @@ abstract class PCLNode implements Pickable {
 	abstract RayIntersection(ray: Ray): Picking;
 	abstract GetBoundingBox(): BoundingBox;
 
+	// https://fontawesome.com/cheatsheet
+	abstract GetDisplayIcon(): string;
+
 	GetProperties(): Properties {
 		let self = this;
 		let properties = new Properties();
@@ -45,11 +54,16 @@ abstract class PCLNode implements Pickable {
 		return properties;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
 		let self = this;
 		let result: Action[] = [];
 		if (this.deletable) {
-			result.push(new SimpleAction('Remove', () => { self.owner.Remove(self); return onDone(null); }));
+			result.push(new SimpleAction('Remove', () => {
+				if (confirm('Are you sure you want to delete "' + self.name + '" ?')) {
+					self.owner.Remove(self);
+					return onDone(null);
+				}
+			}));
 		}
 		if (this.visible) {
 			result.push(new SimpleAction('Hide', () => { self.visible = false; return onDone(null); }));
@@ -64,12 +78,12 @@ abstract class PCLNode implements Pickable {
 		return [];
 	}
 
-	Apply(proc: CADNodeHandler): boolean {
+	Apply(proc: PCLNodeHandler): boolean {
 		return proc(this);
 	}
 }
 
-interface CADNodeHandler {
+interface PCLNodeHandler {
 	(primitive: PCLNode): boolean;
 }
 

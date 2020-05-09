@@ -1,8 +1,15 @@
-﻿/**
+﻿/// <reference path="mousecontroler.ts" />
+/// <reference path="mousetracker.ts" />
+/// <reference path="../gui/objects/light.ts" />
+/// <reference path="../gui/app.ts" />
+/// <reference path="../gui/cursor.ts" />
+
+
+/**
  * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
  */
 class LightControler extends MouseControler {
-	public light : Light;
+	public light: Light;
 
 	constructor(view: PCLApp) {
 		super(view);
@@ -55,7 +62,7 @@ class LightControler extends MouseControler {
 
 	protected HandleKey(key: number): boolean {
 		return true;
-    }
+	}
 
 	protected EndMouseEvent() {
 		this.view.Refresh();

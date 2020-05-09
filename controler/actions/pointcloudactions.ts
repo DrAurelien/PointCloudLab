@@ -1,4 +1,4 @@
-﻿/// <reference path="../actions.ts" />
+﻿/// <reference path="action.ts" />
 /// <reference path="../../tools/longprocess.ts" />
 /// <reference path="../../model/pointcloud.ts" />
 /// <reference path="../../model/scalarfield.ts" />
@@ -222,7 +222,7 @@ class GaussianSphereAction extends PCLCloudAction {
 // Connected components
 //===================================================
 class ConnectedComponentsAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: CADNodeHandler) {
+	constructor(cloud: PCLPointCloud, private onDone: PCLNodeHandler) {
 		super(cloud, 'Compute connected components', 'Split the point cloud into connected subsets');
 	}
 

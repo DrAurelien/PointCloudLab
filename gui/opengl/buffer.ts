@@ -1,4 +1,6 @@
-﻿class FloatBuffer {
+﻿/// <reference path="drawingcontext.ts" />
+
+class FloatBuffer {
 	glBuffer: WebGLBuffer;
 
 	constructor(data: number[], private ctx: DrawingContext, private dataSize: number) {

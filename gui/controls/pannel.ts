@@ -1,6 +1,9 @@
-﻿class Pannel implements Container {
+﻿/// <reference path="control.ts" />
+
+
+class Pannel implements Container {
 	protected pannel: HTMLDivElement;
-	
+
 	constructor(classname: string = "") {
 		this.pannel = document.createElement('div');
 		this.pannel.className = classname;

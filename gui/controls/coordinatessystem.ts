@@ -1,4 +1,15 @@
-﻿class CoordinatesSystem implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="axislabel.ts" />
+/// <reference path="../app.ts" />
+/// <reference path="../opengl/renderer.ts" />
+/// <reference path="../objects/scene.ts" />
+/// <reference path="../objects/light.ts" />
+/// <reference path="../objects/pclcylinder.ts" />
+/// <reference path="../../model/shapes/cylinder.ts" />
+/// <reference path="../../maths/vector.ts" />
+
+
+class CoordinatesSystem implements Control {
 	renderer: Renderer;
 	showAxesLabels: boolean;
 	private coordssystem: Scene;

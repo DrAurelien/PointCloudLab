@@ -1,5 +1,13 @@
-﻿/// <reference path="controls/control.ts" />
+﻿/// <reference path="opengl/renderer.ts" />
+/// <reference path="datahandler.ts" />
+/// <reference path="menu.ts" />
+/// <reference path="controls/progressbar.ts" />
+/// <reference path="controls/coordinatessystem.ts" />
+/// <reference path="objects/scene.ts" />
+/// <reference path="objects/pclnode.ts" />
 /// <reference path="../tools/longprocess.ts" />
+/// <reference path="../controler/mousecontroler.ts" />
+/// <reference path="../controler/cameracontroler.ts" />
 
 
 //===========================================
@@ -97,15 +105,11 @@ class PCLApp {
 		this.coordinatesSystem.Refresh();
 	}
 
-	UseCameraControler() {
-		this.currentControler = new CameraControler(this, this.dataHandler.scene);
+	SetCurrentControler(controler: MouseControler) {
+		this.currentControler = controler;
 	}
 
-	UseTransformationControler() {
-		this.currentControler = new TransformControler(this, this.dataHandler.scene);
-	}
-
-	UseLightControler() {
-		this.currentControler = new LightControler(this);
+	GetCurrentControler(): MouseControler {
+		return this.currentControler;
 	}
 }

@@ -1,4 +1,9 @@
-﻿class AxisLabel implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="coordinatessystem.ts" />
+/// <reference path="../../maths/vector.ts" />
+
+
+class AxisLabel implements Control {
 	container: HTMLDivElement;
 	depth: number;
 
@@ -8,7 +13,7 @@
 		this.container.className = 'AxisLabel';
 		this.container.style.color = 'rgb(' + color.join(',') + ')';
 		this.container.appendChild(document.createTextNode(label));
-		
+
 		this.container.onclick = (event: MouseEvent) => {
 			system.ChangeViewAxis(axis);
 		}

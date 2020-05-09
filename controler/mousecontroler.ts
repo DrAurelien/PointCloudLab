@@ -1,4 +1,9 @@
-﻿abstract class MouseControler {
+﻿/// <reference path="mousetracker.ts" />
+/// <reference path="../gui/app.ts" />
+/// <reference path="../gui/cursor.ts" />
+
+
+abstract class MouseControler {
 	mousetracker: MouseTracker;
 	private targetElement: HTMLElement;
 	private cursor: Cursor;

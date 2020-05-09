@@ -1,4 +1,9 @@
-﻿class ColorProperty extends PropertyWithValue
+﻿/// <reference path="property.ts" />
+/// <reference path="propertywithvalue.ts" />
+/// <reference path="../../../tools/stringutils.ts" />
+
+
+class ColorProperty extends PropertyWithValue
 {
 	constructor(name: string, value: number[], handler: PropertyChangeHandler)
 	{

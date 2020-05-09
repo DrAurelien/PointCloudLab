@@ -1,7 +1,17 @@
-﻿class PCLCylinder extends PCLShape {
-    constructor(public cylinder: Cylinder, owner: PCLGroup = null) {
-        super(NameProvider.GetName('Cylinder'), owner);
-    }
+﻿/// <reference path="pclshape.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="../nameprovider.ts" />
+/// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../model/shapes/cylinder.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/vectorproperty.ts" />
+/// <reference path="../controls/properties/numberproperty.ts" />
+
+
+class PCLCylinder extends PCLShape {
+	constructor(public cylinder: Cylinder, owner: PCLGroup = null) {
+		super(NameProvider.GetName('Cylinder'), owner);
+	}
 
 	GetShape(): Shape {
 		return this.cylinder;

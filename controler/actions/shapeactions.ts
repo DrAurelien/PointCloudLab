@@ -1,11 +1,12 @@
-﻿/// <reference path="../actions.ts" />
+﻿/// <reference path="action.ts" />
+/// <reference path="../../gui/datahandler.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
 /// <reference path="../../gui/objects/pclmesh.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
 
 
 class CreateShapeMeshAction extends Action {
-	constructor(private shape: Shape, private dataHandler: DataHandler, private onDone: CADNodeHandler) {
+	constructor(private shape: Shape, private dataHandler: DataHandler, private onDone: PCLNodeHandler) {
 		super('Create shape mesh', 'Builds the mesh sampling this shape');
 	}
 

@@ -1,4 +1,9 @@
-﻿class PopupItem implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="hint.ts" />
+/// <reference path="../../controler/actions/action.ts" />
+
+
+class PopupItem implements Control {
 	item: HTMLDivElement;
 	hint: Hint;
 

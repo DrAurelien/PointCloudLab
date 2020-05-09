@@ -1,4 +1,8 @@
-﻿class Button implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="hint.ts" />
+
+
+class Button implements Control {
     button: HTMLDivElement;
 	hint: Hint;
 	buttonLabel: Text;

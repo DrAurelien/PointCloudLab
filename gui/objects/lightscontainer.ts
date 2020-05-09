@@ -1,25 +1,29 @@
 ﻿/// <reference path="pclgroup.ts" />
 /// <reference path="pclgroup.ts" />
 /// <reference path="../datahandler.ts" />
+/// <reference path="../nameprovider.ts" />
+/// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../opengl/drawingcontext.ts" />
+/// <reference path="../../maths/vector.ts" />
 
 
 class LightsContainer extends PCLGroup {
-    constructor(name?: string, owner: PCLGroup = null) {
-        super(name || NameProvider.GetName('Lights'), owner);
-    }
+	constructor(name?: string, owner: PCLGroup = null) {
+		super(name || NameProvider.GetName('Lights'), owner);
+	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
 		result.push(null);
 		result.push(new NewLightAction(this, onDone));
-		
+
 		return result;
-    }
+	}
 }
 
 class NewLightAction extends Action {
-	constructor(private container: LightsContainer, private onDone: CADNodeHandler) {
+	constructor(private container: LightsContainer, private onDone: PCLNodeHandler) {
 		super('New light', 'Add up to ' + DrawingContext.NbMaxLights + ' light sources');
 	}
 

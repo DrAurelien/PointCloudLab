@@ -1,4 +1,15 @@
-﻿class TransformControler extends MouseControler {
+﻿/// <reference path="mousecontroler.ts" />
+/// <reference path="mousetracker.ts" />
+/// <reference path="actions/cameracenter.ts" />
+/// <reference path="../gui/objects/scene.ts" />
+/// <reference path="../gui/app.ts" />
+/// <reference path="../gui/cursor.ts" />
+
+
+/**
+ * The Transform Contorler handles mouse inputs in order to apply transformations the the currently selected element
+ */
+class TransformControler extends MouseControler {
 	constructor(view: PCLApp, private scene: Scene) {
 		super(view);
 	}
@@ -36,7 +47,7 @@
 			default:
 				return true;
 		}
-		
+
 		renderer.Draw(this.scene);
 
 		return true;
@@ -75,7 +86,7 @@
 
 	protected HandleKey(key: number): boolean {
 		return true;
-    }
+	}
 
 	protected EndMouseEvent() {
 		super.EndMouseEvent();

@@ -1,5 +1,8 @@
-﻿class NumberInRangeProperty extends PropertyWithValue
-{
+﻿/// <reference path="property.ts" />
+/// <reference path="propertywithvalue.ts" />
+
+
+class NumberInRangeProperty extends PropertyWithValue {
 	constructor(name: string, value: number, private min: number, private max: number, private step: number, handler: PropertyChangeHandler) {
 		super(name, 'range', value.toString(), handler);
 

@@ -1,8 +1,13 @@
-﻿class ScanFromCurrentViewPointAction extends Action {
+﻿/// <reference path="../../gui/datahandler.ts" />
+/// <reference path="../../gui/objects/pclnode.ts" />
+/// <reference path="../../gui/controls/dialog.ts" />
+
+
+class ScanFromCurrentViewPointAction extends Action {
 	static hSamplingTitle = 'Horizontal Sampling';
 	static vSamplingTitle = 'Vertical Sampling';
 
-	constructor(private group: PCLGroup, private dataHandler: DataHandler, private onDone: CADNodeHandler) {
+	constructor(private group: PCLGroup, private dataHandler: DataHandler, private onDone: PCLNodeHandler) {
 		super('Scan from current viewpoint', 'Create an new point cloud by simulating a LIDAR scanning of the group contents, from the current view point');
 	}
 

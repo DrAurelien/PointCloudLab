@@ -1,5 +1,16 @@
-﻿/// <reference path="../../model/shapes/shape.ts" />
+﻿/// <reference path="pclprimitive.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="pclmesh.ts" />
+/// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../model/mesh.ts" />
+/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../datahandler.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/propertygroup.ts" />
+/// <reference path="../../controler/actions/action.ts" />
 /// <reference path="../../controler/actions/shapeactions.ts" />
+/// <reference path="../../tools/picking.ts" />
 
 
 abstract class PCLShape extends PCLPrimitive implements Pickable {
@@ -57,7 +68,7 @@ abstract class PCLShape extends PCLPrimitive implements Pickable {
 		return properties;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
 		let result = super.GetActions(dataHandler, onDone);
 
 		result.push(null);

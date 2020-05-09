@@ -1,4 +1,11 @@
-﻿class DataItem implements Control {
+﻿/// <reference path="control.ts" />
+/// <reference path="popup.ts" />
+/// <reference path="../objects/pclnode.ts" />
+/// <reference path="../objects/pclgroup.ts" />
+/// <reference path="../datahandler.ts" />
+
+
+class DataItem implements Control {
 	container: HTMLDivElement;
 	itemContentContainer: HTMLDivElement;
 
@@ -11,21 +18,12 @@
 		this.container.appendChild(this.itemContentContainer);
 
 		let itemIcon = document.createElement('i');
-		if (this.item instanceof Scene) {
-			itemIcon.className = 'ItemIcon fa fa-desktop';
-		}
-		else if (this.item instanceof PCLGroup) {
-			itemIcon.className = 'ItemIcon fa fa-folder' + ((<PCLGroup>this.item).folded ? '' : '-open');
+		itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
+		this.itemContentContainer.appendChild(itemIcon);
+		if (this.item instanceof PCLGroup) {
 			itemIcon.onclick = this.ItemFolded();
 			this.itemContentContainer.ondblclick = this.ItemFolded();
 		}
-		else if (this.item instanceof Light) {
-			itemIcon.className = 'ItemIcon fa fa-lightbulb-o';
-		}
-		else {
-			itemIcon.className = 'ItemIcon fa fa-cube';
-		}
-		this.itemContentContainer.appendChild(itemIcon);
 
 		let visibilityIcon = document.createElement('i');
 		visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
@@ -38,7 +36,7 @@
 		let deletionIcon = null;
 		if (this.item.deletable) {
 			deletionIcon = document.createElement('i');
-			deletionIcon.className = 'ItemAction fa fa-close';
+			deletionIcon.className = 'ItemAction fa fa-trash';
 			this.itemContentContainer.appendChild(deletionIcon);
 		}
 
@@ -63,8 +61,8 @@
 			this.container.appendChild(son.GetContainerElement());
 		}
 	}
-	
-	//CAD Group folding management - When clickin a group icon
+
+	//Group folding management - When clickin a group icon
 	ItemFolded(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
@@ -76,7 +74,7 @@
 	}
 
 	//When left - clicking an item
-	ItemClicked(): (ev:MouseEvent)=>any {
+	ItemClicked(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
 			self.dataHandler.currentItem = self.item;
@@ -120,7 +118,7 @@
 		}
 	}
 
-	//When clickin the deletion icon next to an item
+	//When clicking the deletion icon next to an item
 	DeletionClicked(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {

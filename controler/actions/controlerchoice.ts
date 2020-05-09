@@ -1,45 +1,52 @@
-﻿class CameraModeAction extends Action {
-	constructor(private view: PCLApp) {
+﻿/// <reference path="action.ts" />
+/// <reference path="../cameracontroler.ts" />
+/// <reference path="../transformcontroler.ts" />
+/// <reference path="../lightcontroler.ts" />
+/// <reference path="../../gui/app.ts" />
+
+
+class CameraModeAction extends Action {
+	constructor(private app: PCLApp) {
 		super('Camera mode', 'The mouse can be used to control the position of the camera');
 	}
 
 	Run() {
-		this.view.UseCameraControler();
+		this.app.SetCurrentControler(new CameraControler(this.app, this.app.dataHandler.scene));
 	}
 
 	Enabled(): boolean {
-		return !(this.view.currentControler instanceof CameraControler);
+		return !(this.app.currentControler instanceof CameraControler);
 	}
 }
 
 class TransformModeAction extends Action {
-	constructor(private view: PCLApp) {
+	constructor(private app: PCLApp) {
 		super('Transformation mode', 'The mouse can be used to control the geometry of the selected item');
 	}
 
 	Run() {
-		this.view.UseTransformationControler();
+		this.app.SetCurrentControler(new TransformControler(this.app, this.app.dataHandler.scene));
 	}
 
 	Enabled(): boolean {
-		return !(this.view.currentControler instanceof TransformControler);
+		return !(this.app.currentControler instanceof TransformControler);
 	}
 }
 
 class LightModeAction extends Action {
-	constructor(private view: PCLApp) {
+	constructor(private app: PCLApp) {
 		super('Light mode', 'The mouse can be used to control the position of the selected light');
 	}
 
 	Run() {
-		this.view.UseLightControler();
+		this.app.SetCurrentControler(new LightControler(this.app));
 	}
 
 	Enabled(): boolean {
-		let item = this.view.dataHandler.currentItem;
+		let item = this.app.dataHandler.currentItem;
 		if (!(item && (item instanceof Light))) {
 			return false;
 		}
-		return !(this.view.currentControler instanceof LightControler);
+		return !(this.app.currentControler instanceof LightControler);
 	}
 }

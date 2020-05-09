@@ -1,4 +1,7 @@
-﻿class Hint implements Control {
+﻿/// <reference path="control.ts" />
+
+
+class Hint implements Control {
 	container: HTMLDivElement;
 	message: HTMLDivElement;
 

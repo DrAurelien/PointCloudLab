@@ -4,6 +4,7 @@
 /// <reference path="../nameprovider.ts" />
 /// <reference path="../opengl/materials.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
+/// <reference path="../opengl/buffer.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
 

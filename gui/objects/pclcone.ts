@@ -1,4 +1,14 @@
-﻿class PCLCone extends PCLShape {
+﻿/// <reference path="pclshape.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="../nameprovider.ts" />
+/// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../model/shapes/cone.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/vectorproperty.ts" />
+/// <reference path="../controls/properties/numberproperty.ts" />
+
+
+class PCLCone extends PCLShape {
 	constructor(public cone: Cone, owner: PCLGroup = null) {
 		super(NameProvider.GetName('Cone'), owner);
 	}

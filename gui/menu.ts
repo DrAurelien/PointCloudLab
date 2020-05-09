@@ -1,8 +1,17 @@
-﻿class Menu extends HideablePannel {
+﻿/// <reference path="controls/hideablepannel.ts" />
+/// <reference path="controls/toolbar.ts" />
+/// <reference path="controls/fileopener.ts" />
+/// <reference path="controls/button.ts" />
+/// <reference path="controls/selectdrop.ts" />
+/// <reference path="app.ts" />
+/// <reference path="../controler/actions/cameracenter.ts" />
+/// <reference path="../controler/actions/controlerchoice.ts" />
+
+
+class Menu extends HideablePannel {
 	toolbar: Toolbar;
 
-	constructor(private ownerView : PCLApp)
-	{
+	constructor(private ownerView: PCLApp) {
 		super('MenuToolbar', HandlePosition.Bottom);
 
 		this.toolbar = new Toolbar();
@@ -11,7 +20,7 @@
 		let dataHandler = ownerView.dataHandler;
 		let scene = dataHandler.scene;
 
-        this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject) {
+		this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject) {
 			if (createdObject != null) {
 				scene.Contents.Add(createdObject);
 				scene.Select(createdObject);
@@ -24,13 +33,13 @@
 		this.toolbar.AddControl(new Button('[Icon:video-camera] Center', () => {
 			center.Run();
 		},
-		center.hintMessage));
+			center.hintMessage));
 
 		this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
-				new CameraModeAction(ownerView),
-				new TransformModeAction(ownerView),
-				new LightModeAction(ownerView)
-			],
+			new CameraModeAction(ownerView),
+			new TransformModeAction(ownerView),
+			new LightModeAction(ownerView)
+		],
 			0,
 			'Change the current working mode (changes the mouse input '
 		));

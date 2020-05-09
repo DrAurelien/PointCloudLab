@@ -1,4 +1,14 @@
-﻿class PCLPlane extends PCLShape {
+﻿/// <reference path="pclshape.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="../nameprovider.ts" />
+/// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../model/shapes/plane.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/vectorproperty.ts" />
+/// <reference path="../controls/properties/numberproperty.ts" />
+
+
+class PCLPlane extends PCLShape {
 	constructor(public plane: Plane, owner: PCLGroup = null) {
 		super(NameProvider.GetName('Plane'), owner);
 	}

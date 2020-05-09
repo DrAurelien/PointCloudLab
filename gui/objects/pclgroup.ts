@@ -1,6 +1,19 @@
 ﻿/// <reference path="pclnode.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../../tools/picking.ts" />
+/// <reference path="../../model/boundingbox.ts" />
+/// <reference path="../datahandler.ts" />
+/// <reference path="pclshape.ts" />
+/// <reference path="pclplane.ts" />
+/// <reference path="pclsphere.ts" />
+/// <reference path="pclcylinder.ts" />
+/// <reference path="pclcone.ts" />
+/// <reference path="pcltorus.ts" />
+/// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../../controler/actions/scanfromcurrentviewpoint.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../maths/vector.ts" />
 
 
 class PCLGroup extends PCLNode {
@@ -68,7 +81,7 @@ class PCLGroup extends PCLNode {
 		return boundingbox;
 	}
 
-	Apply(proc: CADNodeHandler): boolean {
+	Apply(proc: PCLNodeHandler): boolean {
 		if (!super.Apply(proc)) {
 			return false;
 		}
@@ -87,7 +100,7 @@ class PCLGroup extends PCLNode {
 		return [];
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
 		let self = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 
@@ -131,7 +144,7 @@ class PCLGroup extends PCLNode {
 		return properties;
 	}
 
-	private GetShapeCreator(creator: PCLShapeCreator, dataHandler: DataHandler, onDone: CADNodeHandler): Function {
+	private GetShapeCreator(creator: PCLShapeCreator, dataHandler: DataHandler, onDone: PCLNodeHandler): Function {
 		return () => {
 			let shape = creator();
 			shape.PrepareForDrawing(dataHandler.GetSceneRenderer().drawingcontext);
@@ -179,6 +192,10 @@ class PCLGroup extends PCLNode {
 	}
 
 	IsScannable(): boolean {
-		return !this.Apply((p: PCLNode) => !(p instanceof Shape || p instanceof Mesh));
+		return !this.Apply((p: PCLNode) => !(p instanceof PCLShape || p instanceof PCLMesh));
+	}
+
+	GetDisplayIcon(): string {
+		return 'fa-folder' + (this.folded ? '' : '-open');
 	}
 }

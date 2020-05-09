@@ -67,7 +67,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return this.cloud.boundingbox;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: CADNodeHandler): Action[] {
+	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
 		let cloud = this;
 		let result: Action[] = super.GetActions(dataHandler, onDone);
 

@@ -67,4 +67,8 @@ class Scene extends PCLGroup {
 		});
 		return result;
 	}
+
+	GetDisplayIcon(): string {
+		return 'fa-desktop';
+	}
 }

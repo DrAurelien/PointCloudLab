@@ -1,4 +1,10 @@
-﻿class Material {
+﻿/// <reference path="drawingcontext.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/colorproperty.ts" />
+/// <reference path="../controls/properties/numberinrangeproperty.ts" />
+
+
+class Material {
 	constructor(public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.05, public specular: number = 0.4, public glossy: number = 10.0) {
 	}
 

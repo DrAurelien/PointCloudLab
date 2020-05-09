@@ -1,39 +1,47 @@
-﻿class DataHandler extends HideablePannel {
-    dataArea: Pannel;
-    propertiesArea: Pannel;
-    currentItem: PCLNode;
+﻿/// <reference path="controls/hideablepannel.ts" />
+/// <reference path="controls/pannel.ts" />
+/// <reference path="controls/dataitem.ts" />
+/// <reference path="objects/pclnode.ts" />
+/// <reference path="objects/pclgroup.ts" />
+/// <reference path="objects/scene.ts" />
+/// <reference path="app.ts" />
+/// <reference path="opengl/renderer.ts" />
 
-    constructor(public scene: Scene, private ownerView: PCLApp) {
+
+class DataHandler extends HideablePannel {
+	dataArea: Pannel;
+	propertiesArea: Pannel;
+	currentItem: PCLNode;
+
+	constructor(public scene: Scene, private ownerView: PCLApp) {
 		super('DataWindow', HandlePosition.Right);
 
 		//Data visualization
 		this.dataArea = new Pannel('DataArea');
 		this.AddControl(this.dataArea);
-		
+
 		//Properties visualization
 		this.propertiesArea = new Pannel('PropertiesArea');
 		this.AddControl(this.propertiesArea);
 
 		this.RefreshContent();
-    }
-	
+	}
+
 	Resize(width: number, height: number): void {
 		let pannel = this.GetElement();
-        pannel.style.height = (height - 2 * pannel.offsetTop) + 'px';
+		pannel.style.height = (height - 2 * pannel.offsetTop) + 'px';
 		this.RefreshSize();
-		
+
 		this.HandlePropertiesWindowVisibility();
 	}
-	
-	HandlePropertiesWindowVisibility() : void
-	{
+
+	HandlePropertiesWindowVisibility(): void {
 		let pannel = this.GetElement();
 		let dataArea = this.dataArea.GetElement();
 		let propertiesArea = this.propertiesArea.GetElement();
-		if(this.currentItem != null)
-        {
-            let height: number = pannel.clientHeight / 2;
-			dataArea.style.height = height+'px';
+		if (this.currentItem != null) {
+			let height: number = pannel.clientHeight / 2;
+			dataArea.style.height = height + 'px';
 			var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
 			dataArea.style.height = height + 'px';
@@ -41,9 +49,8 @@
 			dataArea.style.borderBottom = '1px solid lightGray';
 			propertiesArea.style.borderTop = '1px solid darkGray';
 		}
-		else
-        {
-            let height: number = pannel.clientHeight;
+		else {
+			let height: number = pannel.clientHeight;
 			dataArea.style.height = height + 'px';
 			var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
 			height -= delta;
@@ -54,10 +61,8 @@
 		}
 	}
 
-    AddCreatedObject(scene: Scene, createdObject: PCLNode)
-	{
-		if(createdObject)
-        {
+	AddCreatedObject(scene: Scene, createdObject: PCLNode) {
+		if (createdObject) {
 			//If the object does not have an owner, affect one
 			if (!createdObject.owner) {
 				let owner: PCLGroup = (createdObject instanceof Light) ? scene.Lights : scene.Contents;
@@ -77,30 +82,26 @@
 		this.ownerView.Refresh();
 	}
 
-	GetSceneRenderer(): Renderer{
+	GetSceneRenderer(): Renderer {
 		return this.ownerView.sceneRenderer;
 	}
 
-    //Refresh content of data and properties views
-    RefreshContent(): void
-	{
+	//Refresh content of data and properties views
+	RefreshContent(): void {
 		this.RefreshData();
 		this.RefreshProperties();
 	}
 
-    protected RefreshData() : void
-	{
+	protected RefreshData(): void {
 		this.dataArea.Clear();
 		let item = new DataItem(this.scene, this, this.scene);
 		this.dataArea.GetElement().appendChild(item.GetContainerElement());
 	}
-	
-	protected RefreshProperties() : void
-	{
+
+	protected RefreshProperties(): void {
 		this.HandlePropertiesWindowVisibility();
 		this.propertiesArea.Clear();
-		if(this.currentItem != null)
-		{
+		if (this.currentItem != null) {
 			let currentProperties = this.currentItem.GetProperties();
 			let self = this;
 			currentProperties.onChange = () => self.NotifyChange();

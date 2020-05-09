@@ -1,5 +1,4 @@
 ﻿/// <reference path="control.ts" />
-/// <reference path="../../tools/longprocess.ts" />
 
 
 class ProgressBar implements Control, ProgessHandler {

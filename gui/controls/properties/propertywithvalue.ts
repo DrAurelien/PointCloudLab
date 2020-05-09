@@ -1,5 +1,7 @@
-﻿abstract class PropertyWithValue extends Property
-{
+﻿/// <reference path="property.ts" />
+
+
+abstract class PropertyWithValue extends Property {
 	private container: HTMLDivElement;
 	protected input: HTMLInputElement;
 

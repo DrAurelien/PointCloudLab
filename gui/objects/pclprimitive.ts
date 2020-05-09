@@ -1,4 +1,9 @@
 ﻿/// <reference path="pclnode.ts" />
+/// <reference path="pclgroup.ts" />
+/// <reference path="../opengl/drawingcontext.ts" />
+/// <reference path="../opengl/materials.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../controls/properties/propertygroup.ts" />
 
 
 abstract class PCLPrimitive extends PCLNode {
@@ -25,5 +30,9 @@ abstract class PCLPrimitive extends PCLNode {
 	DrawNode(drawingContext: DrawingContext) {
 		this.material.InitializeLightingModel(drawingContext);
 		this.DrawPrimitive(drawingContext);
+	}
+
+	GetDisplayIcon(): string {
+		return 'fa-cube';
 	}
 }

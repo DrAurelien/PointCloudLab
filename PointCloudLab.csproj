@@ -17,7 +17,7 @@
     <Content Include="files\fileexporter.ts" />
     <Content Include="files\fileloader.ts" />
     <Content Include="files\plyloader.ts" />
-    <Content Include="controler\actions.ts" />
+    <Content Include="controler\actions\action.ts" />
     <Content Include="gui\controls\axislabel.ts" />
     <Content Include="gui\controls\button.ts" />
     <Content Include="gui\controls\selectdrop.ts" />

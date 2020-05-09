@@ -1,4 +1,8 @@
-﻿class PropertyGroup extends Property {
+﻿/// <reference path="property.ts" />
+/// <reference path="properties.ts" />
+
+
+class PropertyGroup extends Property {
 	public properties: Properties;
 
 	constructor(name: string, properties?: Properties, handler: PropertyChangeHandler = null) {
@@ -20,8 +24,7 @@
 	GetValue(): Object {
 		let result = {};
 		let nbProperties = this.properties.GetSize();
-		for (let index = 0; index < nbProperties; index++)
-		{
+		for (let index = 0; index < nbProperties; index++) {
 			let property = this.properties.GetProperty(index);
 			result[property.name] = property.GetValue();
 		}
