@@ -5,10 +5,10 @@
 /// <reference path="../../model/mesh.ts" />
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
-/// <reference path="../datahandler.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../../controler/actions/shapeactions.ts" />
 /// <reference path="../../tools/picking.ts" />
 
@@ -68,11 +68,11 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 		return properties;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
-		let result = super.GetActions(dataHandler, onDone);
+	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
+		let result = super.GetActions(delegate, onDone);
 
 		result.push(null);
-		result.push(new CreateShapeMeshAction(this.GetShape(), dataHandler, onDone));
+		result.push(new CreateShapeMeshAction(this.GetShape(), delegate, onDone));
 		return result;
 	}
 

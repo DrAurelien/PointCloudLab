@@ -1,5 +1,5 @@
 ﻿/// <reference path="action.ts" />
-/// <reference path="../../gui/objects/scene.ts" />
+/// <reference path="../controler.ts" />
 
 
 class CenterCameraAction extends Action {

@@ -1,12 +1,12 @@
 ﻿/// <reference path="action.ts" />
-/// <reference path="../../gui/datahandler.ts" />
+/// <reference path="delegate.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
 /// <reference path="../../gui/objects/pclmesh.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
 
 
 class CreateShapeMeshAction extends Action {
-	constructor(private shape: Shape, private dataHandler: DataHandler, private onDone: PCLNodeHandler) {
+	constructor(private shape: Shape, private delegate: ActionDelegate, private onDone: PCLNodeHandler) {
 		super('Create shape mesh', 'Builds the mesh sampling this shape');
 	}
 
@@ -25,7 +25,7 @@ class CreateShapeMeshAction extends Action {
 			() => true
 		);
 
-		dialog.InsertValue('Sampling', this.dataHandler.GetSceneRenderer().drawingcontext.sampling);
+		dialog.InsertValue('Sampling', this.delegate.GetShapesSampling());
 	}
 
 	CreateMesh(properties: Dialog): boolean {

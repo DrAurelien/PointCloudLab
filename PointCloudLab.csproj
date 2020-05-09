@@ -96,39 +96,18 @@
     <Content Include="tools\longprocess.ts" />
     <Content Include="tools\queue.ts" />
     <Content Include="tools\stringutils.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclpointcloud.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclmesh.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclshape.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\opengl\buffer.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="controler\actions\shapeactions.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclcylinder.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclplane.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclcone.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pclsphere.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="gui\objects\pcltorus.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="controler\controler.ts" />
+    <Content Include="controler\actions\delegate.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
@@ -144,4 +123,5 @@
     <Delete Files="@(JsFiles)" />
     <Delete Files="@(MapFiles)" />
   </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build"/>
 </Project>

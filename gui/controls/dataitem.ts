@@ -89,7 +89,7 @@ class DataItem implements Control {
 		let self = this;
 		return function (event: PointerEvent) {
 			let actions = self.item.GetActions(
-				self.dataHandler,
+				self.dataHandler.GetActionsDelegate(),
 				function (createdObject) {
 					if (createdObject) {
 						self.dataHandler.AddCreatedObject(self.scene, createdObject);

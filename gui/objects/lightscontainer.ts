@@ -1,8 +1,8 @@
 ﻿/// <reference path="pclgroup.ts" />
 /// <reference path="pclgroup.ts" />
-/// <reference path="../datahandler.ts" />
 /// <reference path="../nameprovider.ts" />
 /// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../../maths/vector.ts" />
 
@@ -12,8 +12,8 @@ class LightsContainer extends PCLGroup {
 		super(name || NameProvider.GetName('Lights'), owner);
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
-		let result: Action[] = super.GetActions(dataHandler, onDone);
+	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
+		let result: Action[] = super.GetActions(delegate, onDone);
 
 		result.push(null);
 		result.push(new NewLightAction(this, onDone));

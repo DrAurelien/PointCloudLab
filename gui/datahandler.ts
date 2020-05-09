@@ -6,6 +6,7 @@
 /// <reference path="objects/scene.ts" />
 /// <reference path="app.ts" />
 /// <reference path="opengl/renderer.ts" />
+/// <reference path="../controler/actions/delegate.ts" />
 
 
 class DataHandler extends HideablePannel {
@@ -107,5 +108,9 @@ class DataHandler extends HideablePannel {
 			currentProperties.onChange = () => self.NotifyChange();
 			this.propertiesArea.AddControl(currentProperties);
 		}
+	}
+
+	public GetActionsDelegate(): ActionDelegate {
+		return this.ownerView;
 	}
 }

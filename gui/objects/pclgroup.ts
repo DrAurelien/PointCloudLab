@@ -2,7 +2,6 @@
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../../model/boundingbox.ts" />
-/// <reference path="../datahandler.ts" />
 /// <reference path="pclshape.ts" />
 /// <reference path="pclplane.ts" />
 /// <reference path="pclsphere.ts" />
@@ -10,6 +9,7 @@
 /// <reference path="pclcone.ts" />
 /// <reference path="pcltorus.ts" />
 /// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../../controler/actions/scanfromcurrentviewpoint.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
@@ -100,9 +100,9 @@ class PCLGroup extends PCLNode {
 		return [];
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
+	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
 		let self = this;
-		let result: Action[] = super.GetActions(dataHandler, onDone);
+		let result: Action[] = super.GetActions(delegate, onDone);
 
 		result.push(null);
 
@@ -123,12 +123,12 @@ class PCLGroup extends PCLNode {
 			result.push(null);
 
 			result.push(new SimpleAction('New group', () => onDone(new PCLGroup(NameProvider.GetName('Group'), self)), 'A group is a hiearchical item that can be used to organize objects.'));
-			result.push(new SimpleAction('New plane', this.GetShapeCreator(this.GetPlaneCreator(), dataHandler, onDone)));
-			result.push(new SimpleAction('New sphere', this.GetShapeCreator(this.GetSphereCreator(), dataHandler, onDone)));
-			result.push(new SimpleAction('New cylinder', this.GetShapeCreator(this.GetCylinderCreator(), dataHandler, onDone)));
-			result.push(new SimpleAction('New cone', this.GetShapeCreator(this.GetConeCreator(), dataHandler, onDone)));
-			result.push(new SimpleAction('New torus', this.GetShapeCreator(this.GetTorusCreator(), dataHandler, onDone)));
-			result.push(new ScanFromCurrentViewPointAction(this, dataHandler, onDone));
+			result.push(new SimpleAction('New plane', this.GetShapeCreator(this.GetPlaneCreator(), delegate, onDone)));
+			result.push(new SimpleAction('New sphere', this.GetShapeCreator(this.GetSphereCreator(), delegate, onDone)));
+			result.push(new SimpleAction('New cylinder', this.GetShapeCreator(this.GetCylinderCreator(), delegate, onDone)));
+			result.push(new SimpleAction('New cone', this.GetShapeCreator(this.GetConeCreator(), delegate, onDone)));
+			result.push(new SimpleAction('New torus', this.GetShapeCreator(this.GetTorusCreator(), delegate, onDone)));
+			result.push(new ScanFromCurrentViewPointAction(this, delegate, onDone));
 		}
 
 		return result;
@@ -144,10 +144,9 @@ class PCLGroup extends PCLNode {
 		return properties;
 	}
 
-	private GetShapeCreator(creator: PCLShapeCreator, dataHandler: DataHandler, onDone: PCLNodeHandler): Function {
+	private GetShapeCreator(creator: PCLShapeCreator, delegate: ActionDelegate, onDone: PCLNodeHandler): Function {
 		return () => {
 			let shape = creator();
-			shape.PrepareForDrawing(dataHandler.GetSceneRenderer().drawingcontext);
 			onDone(shape);
 		}
 	}

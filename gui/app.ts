@@ -7,6 +7,7 @@
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="../tools/longprocess.ts" />
 /// <reference path="../controler/controler.ts" />
+/// <reference path="../controler/actions/delegate.ts" />
 /// <reference path="../controler/mousecontroler.ts" />
 /// <reference path="../controler/cameracontroler.ts" />
 
@@ -15,7 +16,7 @@
 // Entry point for the point cloud application
 // Invoke PCLApp.Run() to start the whole thing
 //===========================================
-class PCLApp implements Controlable {
+class PCLApp implements Controlable, ActionDelegate {
 	static instance: PCLApp;
 	sceneRenderer: Renderer;
 	dataHandler: DataHandler;
@@ -195,5 +196,23 @@ class PCLApp implements Controlable {
 				break;
 		}
 		this.RenderScene();
+	}
+
+	//===================================
+	// Implement ActionsDelegate interface
+	// ==================================
+	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number, onDone: Function) {
+		this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling,
+			(cloud) => {
+				group.Add(cloud);
+				if (onDone) {
+					onDone(cloud);
+				}
+			}
+		);
+	}
+
+	GetShapesSampling(): number {
+		return this.sceneRenderer.drawingcontext.sampling;
 	}
 }

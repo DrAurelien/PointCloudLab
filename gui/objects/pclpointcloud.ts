@@ -1,6 +1,6 @@
 ﻿/// <reference path="../../model/pointcloud.ts" />
 /// <reference path="../../controler/actions/pointcloudactions.ts" />
-/// <reference path="../datahandler.ts" />
+/// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/booleanproperty.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
@@ -67,9 +67,9 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return this.cloud.boundingbox;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
+	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
 		let cloud = this;
-		let result: Action[] = super.GetActions(dataHandler, onDone);
+		let result: Action[] = super.GetActions(delegate, onDone);
 
 		result.push(null);
 		if (this.cloud.HasNormals()) {

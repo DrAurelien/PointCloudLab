@@ -5,7 +5,7 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/stringproperty.ts" />
 /// <reference path="../controls/properties/booleanproperty.ts" />
-/// <reference path="../datahandler.ts" />
+/// <reference path="../../controler/actions/delegate.ts" />
 
 
 interface PCLContainer {
@@ -54,7 +54,7 @@ abstract class PCLNode implements Pickable {
 		return properties;
 	}
 
-	GetActions(dataHandler: DataHandler, onDone: PCLNodeHandler): Action[] {
+	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
 		let self = this;
 		let result: Action[] = [];
 		if (this.deletable) {
