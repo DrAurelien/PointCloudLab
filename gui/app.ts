@@ -6,6 +6,7 @@
 /// <reference path="objects/scene.ts" />
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="../tools/longprocess.ts" />
+/// <reference path="../controler/controler.ts" />
 /// <reference path="../controler/mousecontroler.ts" />
 /// <reference path="../controler/cameracontroler.ts" />
 
@@ -14,12 +15,12 @@
 // Entry point for the point cloud application
 // Invoke PCLApp.Run() to start the whole thing
 //===========================================
-class PCLApp {
+class PCLApp implements Controlable {
 	static instance: PCLApp;
 	sceneRenderer: Renderer;
 	dataHandler: DataHandler;
 	menu: Menu;
-	currentControler: MouseControler;
+	currentControler: Controler;
 	coordinatesSystem: CoordinatesSystem;
 
 	constructor(scene: Scene) {
@@ -69,7 +70,7 @@ class PCLApp {
 		document.body.appendChild(this.coordinatesSystem.GetElement());
 
 		//Create the default controler (camera controler)
-		this.currentControler = new CameraControler(this, scene);
+		this.currentControler = new CameraControler(this);
 
 		this.sceneRenderer.Draw(scene);
 		this.coordinatesSystem.Refresh();
@@ -89,27 +90,110 @@ class PCLApp {
 		this.RefreshRendering();
 	}
 
-	TemporaryHideHideables() {
-		this.dataHandler.TemporaryHide();
-		this.menu.TemporaryHide();
-	}
-
-	RestoreHideables() {
-		this.dataHandler.RestoreVisibility();
-		this.menu.RestoreVisibility();
+	RenderScene() {
+		this.sceneRenderer.Draw(this.dataHandler.scene);
 	}
 
 	RefreshRendering() {
 		this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
-		this.sceneRenderer.Draw(this.dataHandler.scene);
+		this.RenderScene();
 		this.coordinatesSystem.Refresh();
 	}
 
-	SetCurrentControler(controler: MouseControler) {
+	//=========================================
+	// Implement Controlable interface
+	//=========================================
+	GetViewPoint(): ViewPoint {
+		return this.sceneRenderer.camera;
+	}
+
+	GetLightPosition(): LightingPosition {
+		let scene = this.dataHandler.scene;
+		if (scene.Lights.children.length == 1)
+			return scene.Lights.children[0] as Light;
+
+		let item = this.dataHandler.currentItem;
+		if (item && item instanceof Light) {
+			return item as Light;
+		}
+	}
+
+	GetCurrentTransformable(): Transformable {
+		let item = this.dataHandler.currentItem;
+		if (item instanceof PCLShape)
+			return item;
+		return null;
+	}
+
+	NotifyControlStart() {
+		this.dataHandler.TemporaryHide();
+		this.menu.TemporaryHide();
+	}
+
+	NotifyControlEnd() {
+		this.dataHandler.RestoreVisibility();
+		this.menu.RestoreVisibility();
+	}
+
+	NotifyPendingControl() {
+	}
+
+	NotifyViewPointChange(c: ViewPointChange) {
+		if (c === ViewPointChange.Rotation || c === ViewPointChange.Position) {
+			this.coordinatesSystem.Refresh();
+		}
+		this.RenderScene();
+	}
+
+	NotifyTransform() {
+		this.RenderScene();
+	}
+
+	GetRengeringArea(): HTMLElement {
+		return this.sceneRenderer.GetElement();
+	}
+
+	SetCurrentControler(controler: Controler) {
 		this.currentControler = controler;
 	}
 
-	GetCurrentControler(): MouseControler {
+	GetCurrentControler(): Controler {
 		return this.currentControler;
+	}
+
+	PickItem(x: number, y: number) {
+		let scene = this.dataHandler.scene;
+		let selected = this.sceneRenderer.PickObject(x, y, scene);
+		scene.Select(selected);
+		this.UpdateSelectedElement(selected);
+	}
+
+	FocusOnCurrentItem() {
+		let scene = this.dataHandler.scene;
+		let selectionbb = scene.GetSelectionBoundingBox();
+		if (selectionbb && this.sceneRenderer.camera.CenterOnBox(selectionbb)) {
+			this.sceneRenderer.Draw(scene);
+		}
+	}
+
+	CanFocus(): boolean {
+		let selectionbb = this.dataHandler.scene.GetSelectionBoundingBox();
+		return (selectionbb && selectionbb.IsValid());
+	}
+
+	ToggleRendering(mode: RenderingMode) {
+		let rendering = this.sceneRenderer.drawingcontext.rendering;
+		switch (mode) {
+			case RenderingMode.Point:
+				rendering.Point(!rendering.Point());
+				break;
+			case RenderingMode.Wire:
+				rendering.Wire(!rendering.Wire());
+				break;
+			case RenderingMode.Surface:
+				rendering.Surface(!rendering.Surface());
+				break;
+		}
+		this.RenderScene();
 	}
 }

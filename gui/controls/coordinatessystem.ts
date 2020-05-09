@@ -30,7 +30,7 @@ class CoordinatesSystem implements Control {
 
 		//Refine lighting
 		let light = <Light>this.coordssystem.Lights.children[0];
-		this.coordssystem.Lights.Add(new Light(light.center.Times(-1.0)));
+		this.coordssystem.Lights.Add(new Light(light.position.Times(-1.0)));
 
 		//Create labels
 		this.axesLabels = [

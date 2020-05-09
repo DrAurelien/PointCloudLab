@@ -13,7 +13,7 @@
 /// <reference path="../../tools/picking.ts" />
 
 
-abstract class PCLShape extends PCLPrimitive implements Pickable {
+abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable {
 	visible: boolean;
 	mesh: Mesh;
 	drawing: MeshDrawing;

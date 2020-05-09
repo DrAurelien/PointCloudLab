@@ -44,7 +44,7 @@
     <Content Include="gui\controls\properties\stringproperty.ts" />
     <Content Include="gui\controls\toolbar.ts" />
     <Content Include="gui\controls\coordinatessystem.ts" />
-    <Content Include="gui\cursor.ts" />
+    <Content Include="controler\cursor.ts" />
     <Content Include="gui\datahandler.ts" />
     <Content Include="gui\app.ts" />
     <Content Include="gui\menu.ts" />
@@ -126,6 +126,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="gui\objects\pcltorus.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="controler\controler.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />

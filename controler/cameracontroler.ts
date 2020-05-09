@@ -1,17 +1,15 @@
 ﻿/// <reference path="mousecontroler.ts" />
 /// <reference path="mousetracker.ts" />
-/// <reference path="actions/cameracenter.ts" />
-/// <reference path="../gui/objects/scene.ts" />
-/// <reference path="../gui/app.ts" />
-/// <reference path="../gui/cursor.ts" />
+/// <reference path="mousecontroler.ts" />
+/// <reference path="cursor.ts" />
 
 
 /**
  * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
  */
 class CameraControler extends MouseControler {
-	constructor(view: PCLApp, private scene: Scene) {
-		super(view);
+	constructor(target: Controlable) {
+		super(target);
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
@@ -19,44 +17,39 @@ class CameraControler extends MouseControler {
 			return true;
 		}
 
-		let renderer = this.view.sceneRenderer;
-
+		let camera = this.target.GetViewPoint();
 		switch (displacement.button) {
 			case 1: //Left mouse
 				let x = this.mousetracker.x - displacement.dx;
 				let y  = this.mousetracker.y - displacement.dy;
-				renderer.camera.Rotate(x, y, this.mousetracker.x, this.mousetracker.y);
-				this.view.coordinatesSystem.Refresh();
+				camera.Rotate(x, y, this.mousetracker.x, this.mousetracker.y);
+				this.target.NotifyViewPointChange(ViewPointChange.Rotation);
 				this.Cursor = Cursor.Rotate;
 				break;
 			case 2: //Middle mouse
-				renderer.camera.Zoom(-displacement.dy / 10);
+				camera.Zoom(-displacement.dy / 10);
+				this.target.NotifyViewPointChange(ViewPointChange.Zoom);
 				this.Cursor = Cursor.Scale;
 				break;
 			case 3: //Right mouse
-				renderer.camera.Pan(displacement.dx, displacement.dy);
+				camera.Pan(displacement.dx, displacement.dy);
+				this.target.NotifyViewPointChange(ViewPointChange.Panning);
 				this.Cursor = Cursor.Translate;
 				break;
 			default:
 				return true;
 		}
-		renderer.Draw(this.scene);
 
 		return true;
 	}
 
 	protected HandleClick(tracker: MouseTracker): boolean {
-		let renderer = this.view.sceneRenderer;
-
 		switch (tracker.button) {
 			case 1: //Left mouse
-				let selected = renderer.PickObject(tracker.x, tracker.y, this.scene);
-				this.scene.Select(selected);
-				this.view.UpdateSelectedElement(selected);
+				this.target.PickItem(tracker.x, tracker.y);
 				break;
 			case 2: //Middle mouse
-				let center = new CenterCameraAction(this.scene, this.view);
-				center.Run();
+				this.target.FocusOnCurrentItem();
 				break;
 			default:
 				return true;
@@ -65,30 +58,26 @@ class CameraControler extends MouseControler {
 	}
 
 	protected HandleWheel(delta: number): boolean {
-		let renderer = this.view.sceneRenderer;
-
-		renderer.camera.Zoom(delta / 100);
-		renderer.Draw(this.scene);
+		let camera = this.target.GetViewPoint();
+		camera.Zoom(-delta / 100);
+		this.target.NotifyViewPointChange(ViewPointChange.Zoom);
 		return true;
 	}
 
 	protected HandleKey(key: number): boolean {
-		let renderer = this.view.sceneRenderer;
-
 		switch (key) {
 			case 'p'.charCodeAt(0):
-				renderer.drawingcontext.rendering.Point(!renderer.drawingcontext.rendering.Point());
+				this.target.ToggleRendering(RenderingMode.Point);
 				break;
 			case 'w'.charCodeAt(0):
-				renderer.drawingcontext.rendering.Wire(!renderer.drawingcontext.rendering.Wire());
+				this.target.ToggleRendering(RenderingMode.Wire);
 				break;
 			case 's'.charCodeAt(0):
-				renderer.drawingcontext.rendering.Surface(!renderer.drawingcontext.rendering.Surface());
+				this.target.ToggleRendering(RenderingMode.Surface);
 				break;
 			default:
 				return true;
 		}
-		renderer.Draw(this.scene);
 		return true;
     }
 }

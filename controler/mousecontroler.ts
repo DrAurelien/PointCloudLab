@@ -1,15 +1,15 @@
 ﻿/// <reference path="mousetracker.ts" />
-/// <reference path="../gui/app.ts" />
-/// <reference path="../gui/cursor.ts" />
+/// <reference path="controler.ts" />
+/// <reference path="cursor.ts" />
 
 
-abstract class MouseControler {
-	mousetracker: MouseTracker;
+abstract class MouseControler implements Controler {
+	protected mousetracker: MouseTracker;
 	private targetElement: HTMLElement;
 	private cursor: Cursor;
 
-	constructor(protected view: PCLApp) {
-		this.targetElement = view.sceneRenderer.GetElement();
+	constructor(protected target: Controlable) {
+		this.targetElement = target.GetRengeringArea();
 		this.cursor = new Cursor();
 
 		let self = this;
@@ -39,8 +39,7 @@ abstract class MouseControler {
 			if (self.mousetracker) {
 				let delta = self.mousetracker.UpdatePosition(event);
 				self.HandleMouseMove(delta);
-
-				self.view.dataHandler.Hide();
+				self.target.NotifyPendingControl();
 			}
 			return true;
 		};
@@ -60,7 +59,7 @@ abstract class MouseControler {
 	private Start(event: MouseEvent) {
 		this.mousetracker = new MouseTracker(event);
 
-		this.view.TemporaryHideHideables();
+		this.target.NotifyControlStart();
 		this.StartMouseEvent();
 	}
 
@@ -70,7 +69,7 @@ abstract class MouseControler {
 		}
 		this.mousetracker = null;
 
-		this.view.RestoreHideables();
+		this.target.NotifyControlEnd();
 		this.cursor.Restore(this.targetElement);
 		this.EndMouseEvent();
 	}

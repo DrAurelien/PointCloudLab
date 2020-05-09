@@ -37,7 +37,7 @@ class Renderer implements Control {
 		for (var index = 0; index < scene.Lights.children.length; index++) {
 			let light = <Light>scene.Lights.children[index];
 			if (light.visible) {
-				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.center.Flatten()));
+				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.position.Flatten()));
 				this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolors[nbLights], new Float32Array(light.color));
 				nbLights++;
 			}

@@ -2,6 +2,7 @@
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../model/boundingbox.ts" />
+/// <reference path="../../controler/controler.ts" />
 
 
 class ScreenDimensions {
@@ -14,7 +15,7 @@ class Base {
 	}
 }
 
-class Camera {
+class Camera implements ViewPoint {
 	//Camera location
 	at: Vector;
 	//Camera aim point
@@ -104,6 +105,10 @@ class Camera {
 		return deltax.Plus(deltay);
 	}
 
+	GetScreenHeight() {
+		return this.screen.height;
+	}
+
 	Pan(dx: number, dy: number) {
 		let delta = this.GetTranslationVector(dx, dy);
 		this.at = this.at.Plus(delta);
@@ -145,6 +150,14 @@ class Camera {
 
 	Zoom(d: number): void {
 		this.Distance *= Math.pow(0.9, d);
+	}
+
+	GetPosition(): Vector {
+		return this.at;
+	}
+
+	SetPosition(p: Vector) {
+		this.at = p;
 	}
 
 	ComputeProjection(v: Vector, applyViewPort: boolean): Vector {

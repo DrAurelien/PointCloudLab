@@ -29,11 +29,10 @@ class Menu extends HideablePannel {
 			}
 		}, 'Load data from a file'));
 
-		let center = new CenterCameraAction(scene, ownerView);
 		this.toolbar.AddControl(new Button('[Icon:video-camera] Center', () => {
-			center.Run();
+			ownerView.FocusOnCurrentItem();
 		},
-			center.hintMessage));
+			'Foxus current viewpoint on the selected item'));
 
 		this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
 			new CameraModeAction(ownerView),

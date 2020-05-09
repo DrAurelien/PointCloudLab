@@ -10,13 +10,14 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/colorproperty.ts" />
+/// <reference path="../../controler/controler.ts" />
 
 
-class Light extends PCLNode {
+class Light extends PCLNode implements LightingPosition {
 	color: number[];
 	glPointsBuffer: FloatBuffer;
 
-	constructor(public center: Vector, owner: LightsContainer = null) {
+	constructor(public position: Vector, owner: LightsContainer = null) {
 		super(NameProvider.GetName("Light"), owner);
 
 		this.color = [1.0, 1.0, 1.0];
@@ -27,7 +28,7 @@ class Light extends PCLNode {
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, false, new Float32Array(shapetransform.values));
 
 		if (!this.glPointsBuffer) {
-			this.glPointsBuffer = new FloatBuffer(this.center.Flatten(), drawingContext, 3);
+			this.glPointsBuffer = new FloatBuffer(this.position.Flatten(), drawingContext, 3);
 		}
 		this.glPointsBuffer.Bind(drawingContext.vertices);
 	}
@@ -48,12 +49,20 @@ class Light extends PCLNode {
 	GetProperties(): Properties {
 		let self = this;
 		let properties = super.GetProperties();
-		properties.Push(new VectorProperty('Position', this.center, false, (newPosition) => self.center = newPosition));
+		properties.Push(new VectorProperty('Position', this.position, false, (newPosition) => self.position = newPosition));
 		properties.Push(new ColorProperty('Color', this.color, (newColor) => self.color = newColor));
 		return properties;
 	}
 
 	GetDisplayIcon(): string {
 		return 'fa-lightbulb-o';
+	}
+
+	GetPosition(): Vector {
+		return this.position;
+	}
+
+	SetPositon(p: Vector) {
+		this.position = p;
 	}
 }
