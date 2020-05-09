@@ -83,12 +83,13 @@ class Mesh {
 		return this.pointcloud.boundingbox;
 	}
 
-	RayIntersection(ray: Ray, meshWrapper: Pickable): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		if (this.octree) {
-			return this.octree.RayIntersection(ray);
+			return this.octree.RayIntersection(ray, wrapper);
 		}
 
-		let result = new Picking(meshWrapper);
+		//We should never get here !!! but just in case ...
+		let result = new Picking(wrapper);
 		for (let ii = 0; ii < this.Size(); ii++) {
 			let tt = this.GetFace(ii).LineFaceIntersection(ray);
 			if (tt !== null) {

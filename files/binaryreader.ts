@@ -64,9 +64,9 @@ class BinaryReader {
 		let match = null;
 		do {
 			match = this.GetNextMatchingAsciiStr(words, true);
-			if(match)
+			if (match)
 				count++;
-		} while(match)
+		} while (match)
 		return count;
 	}
 
@@ -103,7 +103,7 @@ class BinaryReader {
 
 	GetNextUInt8(move: boolean = true): number {
 		let result = this.stream.getInt8(this.cursor);
-		if(move)
+		if (move)
 			this.cursor++;
 		return result;
 	}

@@ -1,4 +1,6 @@
 ﻿/// <reference path="fileloader.ts" />
+/// <reference path="binaryreader.ts" />
+/// <reference path="../maths/vector.ts" />
 /// <reference path="../tools/longprocess.ts" />
 /// <reference path="../gui/objects/pclpointcloud.ts" />
 

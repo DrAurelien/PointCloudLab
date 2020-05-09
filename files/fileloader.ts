@@ -2,7 +2,8 @@
 	public result: PCLNode;
 
 	constructor() {
+		this.result = null;
 	}
 
-	abstract Load(onDone : Function) : void;
+	abstract Load(onDone: Function): void;
 }

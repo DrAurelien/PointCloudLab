@@ -20,8 +20,8 @@ class Octree {
 		this.root.Split();
 	}
 
-	RayIntersection(ray: Ray): Picking {
-		let result = new Picking(this.mesh);
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
+		let result = new Picking(wrapper);
 		if (this.root) {
 			this.root.RayIntersection(ray, result);
 		}
