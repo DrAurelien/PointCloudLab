@@ -52,8 +52,9 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 }
 
 class MeshDrawing {
-	glIndexBuffer: IndicesBuffer;
+	glIndexBuffer: ElementArrayBuffer;
 	pcdrawing: PointCloudDrawing;
+	context: DrawingContext;
 
 	constructor() {
 		this.pcdrawing = new PointCloudDrawing();
@@ -61,10 +62,11 @@ class MeshDrawing {
 	}
 
 	Prepare(mesh: Mesh, ctx: DrawingContext) {
+		this.context = ctx;
 		this.pcdrawing.Prepare(mesh.pointcloud, null, ctx);
 
 		if (!this.glIndexBuffer) {
-			this.glIndexBuffer = new IndicesBuffer(mesh.faces, ctx);
+			this.glIndexBuffer = new ElementArrayBuffer(mesh.faces, ctx);
 		}
 		this.glIndexBuffer.Bind();
 
@@ -79,6 +81,14 @@ class MeshDrawing {
 		}
 		if (ctx.rendering.Wire()) {
 			ctx.gl.drawElements(ctx.gl.LINES, mesh.size, ctx.GetIntType(), 0);
+		}
+	}
+
+	Clear() {
+		this.pcdrawing.Clear();
+		if (this.glIndexBuffer) {
+			this.glIndexBuffer.Clear();
+			this.glIndexBuffer = null;
 		}
 	}
 }

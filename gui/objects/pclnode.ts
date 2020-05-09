@@ -88,8 +88,8 @@ interface PCLNodeHandler {
 }
 
 class BoundingBoxDrawing {
-	static glIndexBuffer: IndicesBuffer;
-	static glPointsBuffer: FloatBuffer;
+	static glIndexBuffer: ElementArrayBuffer;
+	static glPointsBuffer: FloatArrayBuffer;
 	static drawnElements: GLBufferElement[];
 
 	static Initialize(ctx: DrawingContext) {
@@ -122,8 +122,8 @@ class BoundingBoxDrawing {
 				new GLBufferElement(14, 2, ctx.gl.LINES)
 			];
 
-			BoundingBoxDrawing.glPointsBuffer = new FloatBuffer(points, ctx, 3);
-			BoundingBoxDrawing.glIndexBuffer = new IndicesBuffer(indices, ctx);
+			BoundingBoxDrawing.glPointsBuffer = new FloatArrayBuffer(points, ctx, 3);
+			BoundingBoxDrawing.glIndexBuffer = new ElementArrayBuffer(indices, ctx);
 		}
 	}
 
@@ -144,13 +144,13 @@ class BoundingBoxDrawing {
 
 			ctx.gl.uniformMatrix4fv(ctx.shapetransform, false, new Float32Array(shapetransform.values));
 
-			BoundingBoxDrawing.glPointsBuffer.Bind(ctx.vertices);
+			BoundingBoxDrawing.glPointsBuffer.BindAttribute(ctx.vertices);
 			BoundingBoxDrawing.glIndexBuffer.Bind();
 			let sizeOfUnisgnedShort = 2;
 
 			for (var index = 0; index < BoundingBoxDrawing.drawnElements.length; index++) {
 				let element = BoundingBoxDrawing.drawnElements[index];
-				let type = BoundingBoxDrawing.glIndexBuffer.dataType;
+				let type = BoundingBoxDrawing.glIndexBuffer.inttype;
 				ctx.gl.drawElements(element.type, element.count, type, ctx.GetSize(type) * element.from);
 			}
 		}

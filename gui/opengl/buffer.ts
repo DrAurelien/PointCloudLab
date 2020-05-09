@@ -1,34 +1,40 @@
 ﻿/// <reference path="drawingcontext.ts" />
 
-class FloatBuffer {
+
+class GLBuffer {
 	glBuffer: WebGLBuffer;
 
-	constructor(data: number[], private ctx: DrawingContext, private dataSize: number) {
+	constructor(data: ArrayBuffer, protected ctx: DrawingContext, protected type: number) {
 		this.glBuffer = ctx.gl.createBuffer();
-		ctx.gl.bindBuffer(ctx.gl.ARRAY_BUFFER, this.glBuffer);
-		ctx.gl.bufferData(ctx.gl.ARRAY_BUFFER, new Float32Array(data), ctx.gl.STATIC_DRAW);
-	}
-
-	Bind(attribute: number) {
-		let gl = this.ctx.gl;
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
-		gl.vertexAttribPointer(attribute, this.dataSize, gl.FLOAT, false, 0, 0);
-	}
-}
-
-class IndicesBuffer {
-	private glBuffer: WebGLBuffer;
-	public dataType: number;
-
-	constructor(data: number[], private ctx: DrawingContext, short: boolean = false) {
-		this.dataType = ctx.GetIntType(short);
-		this.glBuffer = ctx.gl.createBuffer();
-		ctx.gl.bindBuffer(ctx.gl.ELEMENT_ARRAY_BUFFER, this.glBuffer);
-		ctx.gl.bufferData(ctx.gl.ELEMENT_ARRAY_BUFFER, ctx.GetIntArray(data, short), ctx.gl.STATIC_DRAW);
+		ctx.gl.bindBuffer(type, this.glBuffer);
+		ctx.gl.bufferData(type, data, ctx.gl.STATIC_DRAW);
 	}
 
 	Bind() {
-		let gl = this.ctx.gl;
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glBuffer);
+		this.ctx.gl.bindBuffer(this.type, this.glBuffer);
+	}
+
+	Clear() {
+		this.ctx.gl.deleteBuffer(this.glBuffer);
+	}
+}
+
+class FloatArrayBuffer extends GLBuffer {
+	constructor(data: number[], ctx: DrawingContext, private dataSize: number) {
+		super(new Float32Array(data), ctx, ctx.gl.ARRAY_BUFFER);
+	}
+
+	BindAttribute(attribute: number) {
+		this.Bind();
+		this.ctx.gl.vertexAttribPointer(attribute, this.dataSize, this.ctx.gl.FLOAT, false, 0, 0);
+	}
+}
+
+class ElementArrayBuffer extends GLBuffer {
+	public inttype: number;
+
+	constructor(data: number[], ctx: DrawingContext, short: boolean = false) {
+		super(ctx.GetIntArray(data, short), ctx, ctx.gl.ELEMENT_ARRAY_BUFFER);
+		this.inttype = ctx.GetIntType(short);
 	}
 }

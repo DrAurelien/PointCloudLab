@@ -174,9 +174,9 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 }
 
 class PointCloudDrawing {
-	glPointsBuffer: FloatBuffer;
-	glNormalsBuffer: FloatBuffer;
-	glScalarBuffer: FloatBuffer;
+	glPointsBuffer: FloatArrayBuffer;
+	glNormalsBuffer: FloatArrayBuffer;
+	glScalarBuffer: FloatArrayBuffer;
 	bufferedScalarField: ScalarField;
 	lighting: boolean;
 
@@ -191,16 +191,16 @@ class PointCloudDrawing {
 		ctx.gl.uniformMatrix4fv(ctx.shapetransform, false, new Float32Array(shapetransform.values));
 
 		if (!this.glPointsBuffer) {
-			this.glPointsBuffer = new FloatBuffer(cloud.points, ctx, 3);
+			this.glPointsBuffer = new FloatArrayBuffer(cloud.points, ctx, 3);
 		}
-		this.glPointsBuffer.Bind(ctx.vertices);
+		this.glPointsBuffer.BindAttribute(ctx.vertices);
 
 		if (cloud.HasNormals() && this.lighting) {
 			ctx.EnableNormals(true);
 			if (!this.glNormalsBuffer) {
-				this.glNormalsBuffer = new FloatBuffer(cloud.normals, ctx, 3);
+				this.glNormalsBuffer = new FloatArrayBuffer(cloud.normals, ctx, 3);
 			}
-			this.glNormalsBuffer.Bind(ctx.normals);
+			this.glNormalsBuffer.BindAttribute(ctx.normals);
 		}
 		else {
 			ctx.EnableNormals(false);
@@ -209,12 +209,12 @@ class PointCloudDrawing {
 		if (field) {
 			ctx.EnableScalars(true);
 			if (!this.glScalarBuffer || this.bufferedScalarField !== field) {
-				this.glScalarBuffer = new FloatBuffer(field.values, ctx, 1);
+				this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
 				this.bufferedScalarField = field;
 				ctx.gl.uniform1f(ctx.minscalarvalue, field.Min());
 				ctx.gl.uniform1f(ctx.maxscalarvalue, field.Max());
 			}
-			this.glScalarBuffer.Bind(ctx.scalarvalue);
+			this.glScalarBuffer.BindAttribute(ctx.scalarvalue);
 		}
 		else {
 			ctx.EnableScalars(false);
@@ -224,5 +224,20 @@ class PointCloudDrawing {
 	Draw(cloud: PointCloud, ctx: DrawingContext) {
 		ctx.gl.drawArrays(ctx.gl.POINTS, 0, cloud.Size());
 		ctx.EnableScalars(false);
+	}
+
+	Clear() {
+		if (this.glPointsBuffer) {
+			this.glPointsBuffer.Clear();
+			this.glPointsBuffer = null;
+		}
+		if (this.glNormalsBuffer) {
+			this.glNormalsBuffer.Clear();
+			this.glNormalsBuffer = null;
+		}
+		if (this.glScalarBuffer) {
+			this.glScalarBuffer.Clear();
+			this.glScalarBuffer = null;
+		}
 	}
 }

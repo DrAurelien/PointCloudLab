@@ -79,6 +79,7 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 	Invalidate() {
 		this.mesh = null;
 		this.GetShape().boundingbox = null;
+		this.drawing.Clear();
 	}
 
 	protected GeometryChangeHandler(update?: PropertyChangeHandler): PropertyChangeHandler {

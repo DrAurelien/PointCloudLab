@@ -15,7 +15,7 @@
 
 class Light extends PCLNode implements LightingPosition {
 	color: number[];
-	glPointsBuffer: FloatBuffer;
+	glPointsBuffer: FloatArrayBuffer;
 
 	constructor(public position: Vector, owner: LightsContainer = null) {
 		super(NameProvider.GetName("Light"), owner);
@@ -28,9 +28,9 @@ class Light extends PCLNode implements LightingPosition {
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, false, new Float32Array(shapetransform.values));
 
 		if (!this.glPointsBuffer) {
-			this.glPointsBuffer = new FloatBuffer(this.position.Flatten(), drawingContext, 3);
+			this.glPointsBuffer = new FloatArrayBuffer(this.position.Flatten(), drawingContext, 3);
 		}
-		this.glPointsBuffer.Bind(drawingContext.vertices);
+		this.glPointsBuffer.BindAttribute(drawingContext.vertices);
 	}
 
 	DrawNode(drawingContext: DrawingContext): void {
