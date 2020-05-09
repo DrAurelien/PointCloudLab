@@ -129,24 +129,16 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let self = this;
 		return new BooleanProperty(this.fields[index].name, index === this.currentfield, (value: boolean) => {
 			self.currentfield = value ? index : null;
-			ScalarField.InvalidateBufferedField();
 		});
 	}
 
 
 	DrawPrimitive(drawingContext: DrawingContext) {
-		this.drawing.Prepare(this.cloud, drawingContext);
+		let field = this.currentfield !== null ? this.fields[this.currentfield] : null;
 
-		if (this.currentfield !== null) {
-			this.fields[this.currentfield].PrepareRendering(drawingContext);
-		}
-		else {
-			ScalarField.ClearRendering(drawingContext);
-		}
+		this.drawing.Prepare(this.cloud, field, drawingContext);
 
 		this.drawing.Draw(this.cloud, drawingContext);
-
-		ScalarField.ClearRendering(drawingContext);
 	}
 
 	GetCSVData(): string {
@@ -184,6 +176,8 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 class PointCloudDrawing {
 	glPointsBuffer: FloatBuffer;
 	glNormalsBuffer: FloatBuffer;
+	glScalarBuffer: FloatBuffer;
+	bufferedScalarField: ScalarField;
 	lighting: boolean;
 
 	constructor() {
@@ -192,7 +186,7 @@ class PointCloudDrawing {
 		this.lighting = true;
 	}
 
-	Prepare(cloud: PointCloud, ctx: DrawingContext) {
+	Prepare(cloud: PointCloud, field: ScalarField, ctx: DrawingContext) {
 		var shapetransform = Matrix.Identity(4);
 		ctx.gl.uniformMatrix4fv(ctx.shapetransform, false, new Float32Array(shapetransform.values));
 
@@ -211,9 +205,24 @@ class PointCloudDrawing {
 		else {
 			ctx.EnableNormals(false);
 		}
+
+		if (field) {
+			ctx.EnableScalars(true);
+			if (!this.glScalarBuffer || this.bufferedScalarField !== field) {
+				this.glScalarBuffer = new FloatBuffer(field.values, ctx, 1);
+				this.bufferedScalarField = field;
+				ctx.gl.uniform1f(ctx.minscalarvalue, field.Min());
+				ctx.gl.uniform1f(ctx.maxscalarvalue, field.Max());
+			}
+			this.glScalarBuffer.Bind(ctx.scalarvalue);
+		}
+		else {
+			ctx.EnableScalars(false);
+		}
 	}
 
 	Draw(cloud: PointCloud, ctx: DrawingContext) {
 		ctx.gl.drawArrays(ctx.gl.POINTS, 0, cloud.Size());
+		ctx.EnableScalars(false);
 	}
 }

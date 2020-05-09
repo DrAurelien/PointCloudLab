@@ -102,6 +102,17 @@ class DrawingContext {
 		}
 	}
 
+	EnableScalars(b): void {
+		if (b) {
+			this.gl.uniform1i(this.usescalars, 1);
+			this.gl.enableVertexAttribArray(this.scalarvalue);
+		}
+		else {
+			this.gl.uniform1i(this.usescalars, 0);
+			this.gl.disableVertexAttribArray(this.scalarvalue);
+		}
+	}
+
 	GetIntType(forceshort: boolean=false): number {
 		if (this.useuint && !forceshort) {
 			return this.gl.UNSIGNED_INT;

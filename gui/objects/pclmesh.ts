@@ -61,7 +61,7 @@ class MeshDrawing {
 	}
 
 	Prepare(mesh: Mesh, ctx: DrawingContext) {
-		this.pcdrawing.Prepare(mesh.pointcloud, ctx);
+		this.pcdrawing.Prepare(mesh.pointcloud, null, ctx);
 
 		if (!this.glIndexBuffer) {
 			this.glIndexBuffer = new IndicesBuffer(mesh.faces, ctx);
