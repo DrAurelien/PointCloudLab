@@ -1,7 +1,8 @@
 ﻿{
     "compilerOptions": {
         "sourceMap": true,
-        "target": "ES5"
+        "target": "ES5",
+        "outFile": "PointCloudLab.js"
     },
     "include": [
         "**/*.ts"
