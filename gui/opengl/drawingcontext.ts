@@ -102,18 +102,32 @@ class DrawingContext {
 		}
 	}
 
-	GetIntType(): number {
-		if (this.useuint) {
+	GetIntType(forceshort: boolean=false): number {
+		if (this.useuint && !forceshort) {
 			return this.gl.UNSIGNED_INT;
 		}
 		return this.gl.UNSIGNED_SHORT;
 	}
 
-	GetIntArray(content: number[]): ArrayBuffer {
-		if (this.useuint) {
+	GetIntArray(content: number[], forceshort: boolean = false): ArrayBuffer {
+		if (this.useuint && !forceshort) {
 			return new Uint32Array(content);
 		}
 		return new Uint16Array(content);
+	}
+
+	GetSize(type: number): number {
+		switch (type) {
+			case this.gl.UNSIGNED_SHORT:
+			case this.gl.SHORT:
+				return 2;
+			case this.gl.UNSIGNED_INT:
+			case this.gl.INT:
+			case this.gl.FLOAT:
+				return 4;
+			default:
+				throw 'Cannot handle type ' + type;
+		}
 	}
 
 	GetShader(identifier): WebGLShader {

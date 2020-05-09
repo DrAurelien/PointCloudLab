@@ -15,12 +15,14 @@
 }
 
 class IndicesBuffer {
-	glBuffer: WebGLBuffer;
+	private glBuffer: WebGLBuffer;
+	public dataType: number;
 
-	constructor(data: number[], private ctx: DrawingContext) {
+	constructor(data: number[], private ctx: DrawingContext, short: boolean = false) {
+		this.dataType = ctx.GetIntType(short);
 		this.glBuffer = ctx.gl.createBuffer();
 		ctx.gl.bindBuffer(ctx.gl.ELEMENT_ARRAY_BUFFER, this.glBuffer);
-		ctx.gl.bufferData(ctx.gl.ELEMENT_ARRAY_BUFFER, ctx.GetIntArray(data), ctx.gl.STATIC_DRAW);
+		ctx.gl.bufferData(ctx.gl.ELEMENT_ARRAY_BUFFER, ctx.GetIntArray(data, short), ctx.gl.STATIC_DRAW);
 	}
 
 	Bind() {

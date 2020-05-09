@@ -3,6 +3,8 @@
   <PropertyGroup>
     <ProjectGuid>{E6C5B822-BD6C-4537-896B-DEFCE4334217}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'PointCloudLab'">
+  </PropertyGroup>
   <ItemGroup>
     <Content Include="controler\actions\cameracenter.ts" />
     <Content Include="controler\actions\controlerchoice.ts" />
