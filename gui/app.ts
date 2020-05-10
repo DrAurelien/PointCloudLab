@@ -94,6 +94,7 @@ class PCLApp implements Controlable, ActionDelegate {
 		if (this.menu) {
 			this.menu.RefreshSize();
 		}
+		this.RefreshRendering();
 	}
 
 	RenderScene() {

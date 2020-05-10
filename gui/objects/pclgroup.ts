@@ -150,6 +150,7 @@ class PCLGroup extends PCLNode {
 		return () => {
 			let shape = creator();
 			self.Add(shape);
+			shape.Select(true);
 		}
 	}
 

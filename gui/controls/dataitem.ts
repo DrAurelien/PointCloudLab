@@ -10,6 +10,7 @@ class DataItem implements Control {
 	itemContentContainer: HTMLDivElement;
 	itemChildContainer: HTMLDivElement;
 	itemIcon: HTMLElement;
+	itemName: Text;
 	visibilityIcon: HTMLElement;
 	sons: DataItem[];
 
@@ -54,8 +55,8 @@ class DataItem implements Control {
 		//The item name by itself
 		let itemNameContainer = document.createElement('span');
 		itemNameContainer.className = 'ItemNameContainer';
-		let itemContent = document.createTextNode(this.item.name);
-		itemNameContainer.appendChild(itemContent);
+		this.itemName = document.createTextNode(this.item.name);
+		itemNameContainer.appendChild(this.itemName);
 		this.itemContentContainer.appendChild(itemNameContainer);
 
 		//Handle left/right click on the item title
@@ -76,7 +77,14 @@ class DataItem implements Control {
 
 		//Bind HTML content to match the actual state of the item
 		let self = this;
-		item.AddChangeListener(() => self.Refresh());
+		item.AddChangeListener((source: PCLNode) => {
+			if (source == self.item) {
+				self.Refresh();
+				if (source.selected) {
+					self.dataHandler.SetCurrentItem(source);
+				}
+			}
+		});
 	}
 
 	AddSon(item: PCLNode, index?: number) {
@@ -119,6 +127,7 @@ class DataItem implements Control {
 		if (this.item instanceof PCLGroup) {
 			this.UpdateGroupFolding(this.item as PCLGroup);
 		}
+		this.itemName.data = this.item.name;
 		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
 		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
 		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
@@ -173,8 +182,8 @@ class DataItem implements Control {
 				self.dataHandler.GetActionsDelegate(),
 				(item: PCLNode) => self.AddCreateObject(item)
 			);
-			Popup.CreatePopup(self, actions);
 			self.dataHandler.SetCurrentItem(self.item);
+			Popup.CreatePopup(self, actions);
 			self.CancelBubbling(event);
 			return false;
 		}
