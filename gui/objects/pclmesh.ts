@@ -36,9 +36,8 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 		return this.mesh.RayIntersection(ray, this);
 	}
 
-	GetProperties(): Properties {
-		let properties = super.GetProperties();
-
+	CompleteProperties(properties: Properties) {
+		super.CompleteProperties(properties);
 		let self = this;
 		let points = new NumberProperty('Points', () => self.mesh.pointcloud.Size(), null);
 		points.SetReadonly();
@@ -47,8 +46,6 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 
 		properties.Push(points);
 		properties.Push(faces);
-
-		return properties;
 	}
 }
 

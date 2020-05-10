@@ -20,12 +20,10 @@ abstract class PCLPrimitive extends PCLNode {
 		this.material.baseColor = color;
 	}
 
-	GetProperties(): Properties {
-		let properties = super.GetProperties();
+	CompleteProperties(properties: Properties) {
 		let self = this;
 		properties.Push(new BooleanProperty('Lighting', () => self.lighting, (l: boolean) => { self.lighting = l; }));
 		properties.Push(new PropertyGroup('Material', this.material.GetProperties()));
-		return properties;
 	}
 
 	abstract DrawPrimitive(drawingContext: DrawingContext);

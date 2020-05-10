@@ -74,10 +74,9 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 		}
 	}
 
-	GetProperties(): Properties {
-		let properties = super.GetProperties();
+	CompleteProperties(properties: Properties) {
+		super.CompleteProperties(properties);
 		properties.Push(new PropertyGroup('Geometry', this.GetGeometry()));
-		return properties;
 	}
 
 	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {

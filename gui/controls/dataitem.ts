@@ -119,6 +119,7 @@ class DataItem implements Control {
 		if (this.item instanceof PCLGroup) {
 			this.UpdateGroupFolding(this.item as PCLGroup);
 		}
+		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
 		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
 		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
 		this.RefreshChildsList();

@@ -45,12 +45,10 @@ class Light extends PCLNode implements LightingPosition {
 		return null;
 	}
 
-	GetProperties(): Properties {
+	CompleteProperties(properties: Properties) {
 		let self = this;
-		let properties = super.GetProperties();
 		properties.Push(new VectorProperty('Position', () => self.position, false, (newPosition) => self.position = newPosition));
 		properties.Push(new ColorProperty('Color', () => self.color, (newColor) => self.color = newColor));
-		return properties;
 	}
 
 	GetDisplayIcon(): string {

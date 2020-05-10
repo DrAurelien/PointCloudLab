@@ -65,14 +65,14 @@ class DataHandler extends HideablePannel {
 		this.HandlePropertiesWindowVisibility();
 		if (item != this.currentItem) {
 			if (this.currentItem) {
-				this.currentItem.selected = false;
+				this.currentItem.Select(false);
 				this.currentItem.ClearProperties();
 				this.propertiesArea.Clear();
 			}
 
 			this.currentItem = item;
 			if (this.currentItem != null) {
-				this.currentItem.selected = true;
+				this.currentItem.Select(true);
 				let currentProperties = this.currentItem.GetProperties();
 				this.propertiesArea.AddControl(currentProperties);
 			}

@@ -138,15 +138,11 @@ class PCLGroup extends PCLNode {
 		return result;
 	}
 
-	GetProperties(): Properties {
-		let properties = super.GetProperties();
-
+	CompleteProperties(properties: Properties) {
 		let self = this;
 		let children = new NumberProperty('Children', () => self.children.length, null);
 		children.SetReadonly();
 		properties.Push(children);
-
-		return properties;
 	}
 
 	private WrapNodeCreator(creator: PCLNodeCreator): Function {

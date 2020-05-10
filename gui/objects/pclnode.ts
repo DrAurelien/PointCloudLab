@@ -1,4 +1,5 @@
-﻿/// <reference path="../../tools/picking.ts" />
+﻿
+/// <reference path="../../tools/picking.ts" />
 /// <reference path="../../model/boundingbox.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../opengl/buffer.ts" />
@@ -55,10 +56,21 @@ abstract class PCLNode implements Pickable, Notifiable {
 		let self = this;
 		if (!this.properties) {
 			this.properties = new Properties();
+			this.properties.onChange = () => self.NotifyChange(self);
 			this.properties.Push(new StringProperty('Name', () => self.name, (newName) => self.name = newName));
 			this.properties.Push(new BooleanProperty('Visible', () => self.visible, (newVilibility) => self.visible = newVilibility));
+			this.CompleteProperties(this.properties);
 		}
 		return this.properties;
+	}
+	protected abstract CompleteProperties(properties: Properties);
+
+	Select(b: boolean) {
+		let change = (b !== this.selected);
+		this.selected = b;
+		if (change) {
+			this.NotifyChange(this);
+		}
 	}
 
 	ToggleVisibility() {

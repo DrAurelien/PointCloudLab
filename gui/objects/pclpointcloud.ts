@@ -18,6 +18,7 @@
 class PCLPointCloud extends PCLPrimitive implements Pickable {
 	ransac: Ransac;
 	fields: ScalarField[];
+	fieldsProperty: PropertyGroup;
 	currentfield: number;
 	drawing: PointCloudDrawing;
 
@@ -37,6 +38,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let field = new ScalarField(name);
 		field.Reserve(this.cloud.Size());
 		this.fields.push(field);
+		this.AddScaralFieldProperty(this.fields.length - 1);
 		return field;
 	}
 
@@ -104,23 +106,26 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return result;
 	}
 
-	GetProperties(): Properties {
-		let properties = super.GetProperties();
-
+	CompleteProperties(properties: Properties) {
+		super.CompleteProperties(properties);
 		let self = this;
 		let points = new NumberProperty('Points', () => self.cloud.Size(), null);
 		points.SetReadonly();
 		properties.Push(points);
 
 		if (this.fields.length) {
-			let fields = new PropertyGroup('Scalar fields');
+			this.fieldsProperty = new PropertyGroup('Scalar fields');
 			for (let index = 0; index < this.fields.length; index++) {
-				fields.Add(this.GetScalarFieldProperty(index));
+				this.AddScaralFieldProperty(index);
 			}
-			properties.Push(fields);
+			properties.Push(this.fieldsProperty);
 		}
+	}
 
-		return properties;
+	AddScaralFieldProperty(index: number) {
+		if (this.fieldsProperty) {
+			this.fieldsProperty.Add(this.GetScalarFieldProperty(index));
+		}
 	}
 
 	private GetScalarFieldProperty(index: number): Property {
