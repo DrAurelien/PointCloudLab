@@ -1,5 +1,5 @@
 ﻿/// <reference path="control.ts" />
-/// <reference path="coordinatessystem.ts" />
+/// <reference path="../coordinatessystem.ts" />
 /// <reference path="../../maths/vector.ts" />
 
 

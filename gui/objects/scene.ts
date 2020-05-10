@@ -7,7 +7,7 @@
 
 
 class Scene extends PCLGroup {
-	constructor() {
+	constructor(private notifhandler: Notifiable) {
 		super("Scene");
 		this.deletable = false;
 
@@ -30,6 +30,7 @@ class Scene extends PCLGroup {
 	}
 	set Contents(c: PCLGroup) {
 		this.children[1] = c;
+		c.owner = this;
 	}
 
 	get Lights(): LightsContainer {
@@ -37,6 +38,7 @@ class Scene extends PCLGroup {
 	}
 	set Lights(l: LightsContainer) {
 		this.children[0] = l;
+		l.owner = this;
 	}
 
 	Select(item: Pickable): void {
@@ -70,5 +72,11 @@ class Scene extends PCLGroup {
 
 	GetDisplayIcon(): string {
 		return 'fa-desktop';
+	}
+
+	NotifyChange(source: PCLNode) {
+		if (this.notifhandler) {
+			this.notifhandler.NotifyChange(source);
+		}
 	}
 }

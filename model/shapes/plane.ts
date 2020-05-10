@@ -3,7 +3,7 @@
 		super();
 	}
 
-	ComputeMesh(sampling: number): Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling + 1);
 
@@ -24,8 +24,7 @@
 			mesh.PushFace([ii, sampling, (ii + 1) % sampling]);
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}

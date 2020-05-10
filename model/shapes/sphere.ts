@@ -26,7 +26,7 @@
 		return matrix;
 	}
 
-	ComputeMesh(sampling: number): Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let halfSampling = Math.ceil(sampling / 2);
 		let points = new PointCloud();
 		points.Reserve(sampling * halfSampling + 2);
@@ -80,8 +80,7 @@
 			}
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}

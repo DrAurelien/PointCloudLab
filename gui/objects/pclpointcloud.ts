@@ -107,9 +107,6 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let properties = super.GetProperties();
 
 		let self = this;
-		let normals = new BooleanProperty('Lighting', this.drawing.lighting, (b: boolean) => { self.drawing.lighting = b });
-		properties.Push(normals);
-
 		let points = new NumberProperty('Points', this.cloud.Size(), null);
 		points.SetReadonly();
 		properties.Push(points);
@@ -136,9 +133,9 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 	DrawPrimitive(drawingContext: DrawingContext) {
 		let field = this.currentfield !== null ? this.fields[this.currentfield] : null;
 
-		this.drawing.Prepare(this.cloud, field, drawingContext);
-
-		this.drawing.Draw(this.cloud, drawingContext);
+		this.drawing.FillBuffers(this.cloud, field, drawingContext);
+		this.drawing.BindBuffers(this.lighting, !!field, drawingContext);
+		this.drawing.Draw(drawingContext);
 	}
 
 	GetCSVData(): string {
@@ -178,42 +175,45 @@ class PointCloudDrawing {
 	glNormalsBuffer: FloatArrayBuffer;
 	glScalarBuffer: FloatArrayBuffer;
 	bufferedScalarField: ScalarField;
-	lighting: boolean;
+	cloudsize: number;
+	static shapetransform = new Float32Array(Matrix.Identity(4).values);
 
 	constructor() {
 		this.glNormalsBuffer = null;
 		this.glPointsBuffer = null;
-		this.lighting = true;
 	}
 
-	Prepare(cloud: PointCloud, field: ScalarField, ctx: DrawingContext) {
-		var shapetransform = Matrix.Identity(4);
-		ctx.gl.uniformMatrix4fv(ctx.shapetransform, false, new Float32Array(shapetransform.values));
+	FillBuffers(cloud: PointCloud, field: ScalarField, ctx: DrawingContext) {
+		this.cloudsize = cloud.Size();
 
 		if (!this.glPointsBuffer) {
 			this.glPointsBuffer = new FloatArrayBuffer(cloud.points, ctx, 3);
 		}
-		this.glPointsBuffer.BindAttribute(ctx.vertices);
 
-		if (cloud.HasNormals() && this.lighting) {
+		if (cloud.HasNormals() && !this.glNormalsBuffer) {
+			this.glNormalsBuffer = new FloatArrayBuffer(cloud.normals, ctx, 3);
+		}
+		if (field && (!this.glScalarBuffer || this.bufferedScalarField !== field)) {
+			this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
+			this.bufferedScalarField = field;
+			ctx.gl.uniform1f(ctx.minscalarvalue, field.Min());
+			ctx.gl.uniform1f(ctx.maxscalarvalue, field.Max());
+		}
+	}
+
+	BindBuffers(uselighting: boolean, usescalars: boolean, ctx: DrawingContext) {
+		ctx.gl.uniformMatrix4fv(ctx.shapetransform, false, PointCloudDrawing.shapetransform);
+
+		this.glPointsBuffer.BindAttribute(ctx.vertices);
+		if (uselighting && this.glNormalsBuffer) {
 			ctx.EnableNormals(true);
-			if (!this.glNormalsBuffer) {
-				this.glNormalsBuffer = new FloatArrayBuffer(cloud.normals, ctx, 3);
-			}
 			this.glNormalsBuffer.BindAttribute(ctx.normals);
 		}
 		else {
 			ctx.EnableNormals(false);
 		}
-
-		if (field) {
+		if (usescalars && this.glScalarBuffer) {
 			ctx.EnableScalars(true);
-			if (!this.glScalarBuffer || this.bufferedScalarField !== field) {
-				this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
-				this.bufferedScalarField = field;
-				ctx.gl.uniform1f(ctx.minscalarvalue, field.Min());
-				ctx.gl.uniform1f(ctx.maxscalarvalue, field.Max());
-			}
 			this.glScalarBuffer.BindAttribute(ctx.scalarvalue);
 		}
 		else {
@@ -221,8 +221,8 @@ class PointCloudDrawing {
 		}
 	}
 
-	Draw(cloud: PointCloud, ctx: DrawingContext) {
-		ctx.gl.drawArrays(ctx.gl.POINTS, 0, cloud.Size());
+	Draw(ctx: DrawingContext) {
+		ctx.gl.drawArrays(ctx.gl.POINTS, 0, this.cloudsize);
 		ctx.EnableScalars(false);
 	}
 

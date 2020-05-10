@@ -15,13 +15,13 @@
 
 abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable {
 	visible: boolean;
-	mesh: Mesh;
 	drawing: MeshDrawing;
+	private meshsampling: number;
 
 	constructor(name: string, owner: PCLGroup) {
 		super(name, owner);
-		this.mesh = null;
 		this.drawing = new MeshDrawing();
+		this.meshsampling = 0;
 	}
 
 	abstract GetGeometry(): Properties;
@@ -51,15 +51,27 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 		return this.GetShape().RayIntersection(ray, this);
 	}
 
-	PrepareForDrawing(drawingContext: DrawingContext) {
-		if (!this.mesh)
-			this.mesh = this.GetShape().ComputeMesh(drawingContext.sampling);
+	PrepareForDrawing(drawingContext: DrawingContext): boolean {
+		if (this.meshsampling !== drawingContext.sampling) {
+			//Asynchroneous computation of the mesh to be rendered
+			let self = this;
+			this.GetShape().ComputeMesh(drawingContext.sampling, (mesh: Mesh) => {
+				if (self.meshsampling != drawingContext.sampling) {
+					self.meshsampling = drawingContext.sampling;
+					self.drawing.FillBuffers(mesh, drawingContext);
+					self.NotifyChange(self);
+				}
+			});
+			//Not ready yet. Wait for NotifyChange to be handled 
+			return false;
+		}
+		return true;
 	}
 
 	DrawPrimitive(drawingContext: DrawingContext) {
-		this.PrepareForDrawing(drawingContext);
-		this.drawing.Prepare(this.mesh, drawingContext);
-		this.drawing.Draw(this.mesh, drawingContext);
+		if (this.PrepareForDrawing(drawingContext)) {
+			this.drawing.Draw(this.lighting, drawingContext);
+		}
 	}
 
 	GetProperties(): Properties {
@@ -77,7 +89,7 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 	}
 
 	Invalidate() {
-		this.mesh = null;
+		this.meshsampling = 0;
 		this.GetShape().boundingbox = null;
 		this.drawing.Clear();
 	}

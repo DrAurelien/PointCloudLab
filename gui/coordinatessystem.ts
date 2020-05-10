@@ -1,15 +1,16 @@
-﻿/// <reference path="control.ts" />
-/// <reference path="axislabel.ts" />
-/// <reference path="../app.ts" />
-/// <reference path="../opengl/renderer.ts" />
-/// <reference path="../objects/scene.ts" />
-/// <reference path="../objects/light.ts" />
-/// <reference path="../objects/pclcylinder.ts" />
-/// <reference path="../../model/shapes/cylinder.ts" />
-/// <reference path="../../maths/vector.ts" />
+﻿/// <reference path="controls/control.ts" />
+/// <reference path="controls/axislabel.ts" />
+/// <reference path="app.ts" />
+/// <reference path="opengl/renderer.ts" />
+/// <reference path="objects/pclnode.ts" />
+/// <reference path="objects/scene.ts" />
+/// <reference path="objects/light.ts" />
+/// <reference path="objects/pclcylinder.ts" />
+/// <reference path="../model/shapes/cylinder.ts" />
+/// <reference path="../maths/vector.ts" />
 
 
-class CoordinatesSystem implements Control {
+class CoordinatesSystem implements Control, Notifiable {
 	renderer: Renderer;
 	showAxesLabels: boolean;
 	private coordssystem: Scene;
@@ -22,7 +23,7 @@ class CoordinatesSystem implements Control {
 			new PCLCylinder(new Cylinder(new Vector([.0, .5, .0]), new Vector([.0, 1.0, .0]), .1, 1.0)),
 			new PCLCylinder(new Cylinder(new Vector([.0, .0, .5]), new Vector([.0, .0, 1.0]), .1, 1.0))
 		];
-		this.coordssystem = new Scene();
+		this.coordssystem = new Scene(this);
 		for (let index = 0; index < axes.length; index++) {
 			axes[index].SetBaseColor(axes[index].cylinder.axis.Flatten());
 			this.coordssystem.Contents.Add(axes[index]);
@@ -74,5 +75,9 @@ class CoordinatesSystem implements Control {
 
 	private get MainRenderer(): Renderer {
 		return this.view.sceneRenderer;
+	}
+
+	NotifyChange(node: PCLNode) {
+		this.view.Refresh();
 	}
 }

@@ -9,11 +9,16 @@
 
 
 interface PCLContainer {
-	Add(PCLNode);
-	Remove(PCLNode);
+	Add(child: PCLNode);
+	Remove(child: PCLNode);
+	NotifyChange(source: PCLNode);
 }
 
-abstract class PCLNode implements Pickable {
+interface Notifiable {
+	NotifyChange(source: PCLNode);
+}
+
+abstract class PCLNode implements Pickable, Notifiable {
 	owner: PCLContainer;
 	visible: boolean;
 	selected: boolean;
@@ -81,6 +86,12 @@ abstract class PCLNode implements Pickable {
 	Apply(proc: PCLNodeHandler): boolean {
 		return proc(this);
 	}
+
+	NotifyChange(source: PCLNode) {
+		if (this.owner) {
+			this.owner.NotifyChange(source);
+		}
+	}
 }
 
 interface PCLNodeHandler {
@@ -146,7 +157,6 @@ class BoundingBoxDrawing {
 
 			BoundingBoxDrawing.glPointsBuffer.BindAttribute(ctx.vertices);
 			BoundingBoxDrawing.glIndexBuffer.Bind();
-			let sizeOfUnisgnedShort = 2;
 
 			for (var index = 0; index < BoundingBoxDrawing.drawnElements.length; index++) {
 				let element = BoundingBoxDrawing.drawnElements[index];

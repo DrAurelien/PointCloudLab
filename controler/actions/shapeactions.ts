@@ -30,8 +30,11 @@ class CreateShapeMeshAction extends Action {
 
 	CreateMesh(properties: Dialog): boolean {
 		let sampling = parseInt(properties.GetValue('Sampling'));
-		let mesh = this.shape.ComputeMesh(sampling);
-		let result = new PCLMesh(mesh);
+		let result: PCLMesh;
+		let mesh = this.shape.ComputeMesh(sampling, () => {
+			if (result) result.NotifyChange(result)
+		});
+		result = new PCLMesh(mesh);
 		let self = this;
 		let ondone = () => {
 			if (self.onDone) {

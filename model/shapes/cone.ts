@@ -45,7 +45,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number): Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let points = new PointCloud();
 		points.Reserve(1 + 3 * sampling);
 
@@ -86,8 +86,7 @@
 			mesh.PushFace([ii + shift + sampling, ((ii + 1) % sampling) + shift, ((ii + 1) % sampling) + shift + sampling]);
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}

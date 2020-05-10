@@ -6,7 +6,7 @@
 		this.boundingbox = null;
 	}
 
-    abstract ComputeMesh(sampling: number): Mesh;
+    abstract ComputeMesh(sampling: number, onDone: Function): Mesh;
 	abstract ComputeBoundingBox(): BoundingBox;
 
 	abstract Distance(point: Vector): number;

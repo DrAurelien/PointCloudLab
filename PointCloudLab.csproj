@@ -43,7 +43,7 @@
     <Content Include="gui\controls\properties\vectorproperty.ts" />
     <Content Include="gui\controls\properties\stringproperty.ts" />
     <Content Include="gui\controls\toolbar.ts" />
-    <Content Include="gui\controls\coordinatessystem.ts" />
+    <Content Include="gui\coordinatessystem.ts" />
     <Content Include="controler\cursor.ts" />
     <Content Include="gui\datahandler.ts" />
     <Content Include="gui\app.ts" />
@@ -123,5 +123,5 @@
     <Delete Files="@(JsFiles)" />
     <Delete Files="@(MapFiles)" />
   </Target>
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build"/>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 </Project>

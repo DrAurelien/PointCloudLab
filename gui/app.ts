@@ -1,8 +1,8 @@
 ﻿/// <reference path="opengl/renderer.ts" />
 /// <reference path="datahandler.ts" />
 /// <reference path="menu.ts" />
+/// <reference path="coordinatessystem.ts" />
 /// <reference path="controls/progressbar.ts" />
-/// <reference path="controls/coordinatessystem.ts" />
 /// <reference path="objects/scene.ts" />
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="../tools/longprocess.ts" />
@@ -24,9 +24,10 @@ class PCLApp implements Controlable, ActionDelegate {
 	currentControler: Controler;
 	coordinatesSystem: CoordinatesSystem;
 
-	constructor(scene: Scene) {
+	constructor() {
 		let appInterface: PCLApp = this;
 
+		let scene = new Scene(this);
 		this.InitializeLongProcess();
 		this.InitializeDataHandler(scene);
 		this.InitializeMenu();
@@ -40,8 +41,7 @@ class PCLApp implements Controlable, ActionDelegate {
 
 	static Run() {
 		if (!PCLApp.instance) {
-			let scene = new Scene;
-			PCLApp.instance = new PCLApp(scene);
+			PCLApp.instance = new PCLApp();
 		}
 	}
 
@@ -214,5 +214,12 @@ class PCLApp implements Controlable, ActionDelegate {
 
 	GetShapesSampling(): number {
 		return this.sceneRenderer.drawingcontext.sampling;
+	}
+
+	//===================================
+	// Implement Notifiable interface
+	// ==================================
+	NotifyChange(source: PCLNode) {
+		this.RenderScene();
 	}
 }

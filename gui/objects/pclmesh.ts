@@ -28,8 +28,8 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 	}
 
 	DrawPrimitive(drawingContext: DrawingContext): void {
-		this.drawing.Prepare(this.mesh, drawingContext);
-		this.drawing.Draw(this.mesh, drawingContext);
+		this.drawing.FillBuffers(this.mesh, drawingContext);
+		this.drawing.Draw(this.lighting, drawingContext);
 	}
 
 	RayIntersection(ray: Ray): Picking {
@@ -55,32 +55,36 @@ class MeshDrawing {
 	glIndexBuffer: ElementArrayBuffer;
 	pcdrawing: PointCloudDrawing;
 	context: DrawingContext;
+	buffersize: number;
 
 	constructor() {
 		this.pcdrawing = new PointCloudDrawing();
 		this.glIndexBuffer = null;
 	}
 
-	Prepare(mesh: Mesh, ctx: DrawingContext) {
+	FillBuffers(mesh: Mesh, ctx: DrawingContext) {
 		this.context = ctx;
-		this.pcdrawing.Prepare(mesh.pointcloud, null, ctx);
+		this.buffersize = mesh.size;
+
+		this.pcdrawing.FillBuffers(mesh.pointcloud, null, ctx);
 
 		if (!this.glIndexBuffer) {
 			this.glIndexBuffer = new ElementArrayBuffer(mesh.faces, ctx);
 		}
-		this.glIndexBuffer.Bind();
-
 	}
 
-	Draw(mesh: Mesh, ctx: DrawingContext) {
+	Draw(lighting: boolean, ctx: DrawingContext) {
+		this.pcdrawing.BindBuffers(lighting, null, ctx);
+		this.glIndexBuffer.Bind();
+
 		if (ctx.rendering.Point()) {
-			ctx.gl.drawElements(ctx.gl.POINTS, mesh.size, ctx.GetIntType(), 0);
+			ctx.gl.drawElements(ctx.gl.POINTS, this.buffersize, ctx.GetIntType(), 0);
 		}
 		if (ctx.rendering.Surface()) {
-			ctx.gl.drawElements(ctx.gl.TRIANGLES, mesh.size, ctx.GetIntType(), 0);
+			ctx.gl.drawElements(ctx.gl.TRIANGLES, this.buffersize, ctx.GetIntType(), 0);
 		}
 		if (ctx.rendering.Wire()) {
-			ctx.gl.drawElements(ctx.gl.LINES, mesh.size, ctx.GetIntType(), 0);
+			ctx.gl.drawElements(ctx.gl.LINES, this.buffersize, ctx.GetIntType(), 0);
 		}
 	}
 

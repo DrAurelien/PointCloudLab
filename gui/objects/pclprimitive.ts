@@ -8,11 +8,12 @@
 
 abstract class PCLPrimitive extends PCLNode {
 	private material: Material;
+	protected lighting: boolean;
 
 	constructor(public name: string, owner: PCLGroup = null) {
 		super(name, owner);
 		this.material = new Material([0.0, 1.0, 0.0]);
-
+		this.lighting = true;
 	}
 
 	SetBaseColor(color: number[]) {
@@ -21,6 +22,8 @@ abstract class PCLPrimitive extends PCLNode {
 
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
+		let self = this;
+		properties.Push(new BooleanProperty('Lighting', this.lighting, (l: boolean) => { self.lighting = l; }));
 		properties.Push(new PropertyGroup('Material', this.material.GetProperties()));
 		return properties;
 	}
