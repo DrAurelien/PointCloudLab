@@ -3,8 +3,12 @@
 /// <reference path="propertygroup.ts" />
 
 
+//==========================================
+// Provides a way to get a list of propeties as a displayable table
+//==========================================
 class Properties implements Control {
 	public onChange: Function;
+	private element: HTMLTableElement;
 
 	constructor(private properties: Property[] = []) {
 	}
@@ -12,6 +16,15 @@ class Properties implements Control {
 	Push(property: Property): void {
 		this.properties.push(property);
 		property.owner = this;
+		if (this.element) {
+			this.AddPropertyElement(property);
+		}
+	}
+
+	Refresh() {
+		for (let index = 0; index < this.properties.length; index++) {
+			this.properties[index].Refresh();
+		}
 	}
 
 	GetSize(): number {
@@ -47,40 +60,42 @@ class Properties implements Control {
 	}
 
 	GetElement(): HTMLElement {
-		var table = document.createElement('table');
-		table.className = 'Properties';
+		this.element = document.createElement('table');
+		this.element.className = 'Properties';
 		for (let index = 0; index < this.properties.length; index++) {
-			let property = this.properties[index];
+			this.AddPropertyElement(this.properties[index]);
+		}
+		return this.element;
+	}
+
+	private AddPropertyElement(property: Property) {
+		let row = document.createElement('tr');
+		row.className = 'Property';
+		this.element.appendChild(row);
+
+		let leftCol = document.createElement('td');
+		leftCol.className = 'PropertyName';
+		let leftColContent = document.createTextNode(property.name);
+		leftCol.appendChild(leftColContent);
+		row.appendChild(leftCol);
+
+		if (property instanceof PropertyGroup) {
+			leftCol.colSpan = 2;
 			let row = document.createElement('tr');
 			row.className = 'Property';
-			table.appendChild(row);
+			this.element.appendChild(row);
 
-			let leftCol = document.createElement('td');
-			leftCol.className = 'PropertyName';
-			let leftColContent = document.createTextNode(property.name);
-			leftCol.appendChild(leftColContent);
-			row.appendChild(leftCol);
-
-			if (property instanceof PropertyGroup) {
-				leftCol.colSpan = 2;
-				let row = document.createElement('tr');
-				row.className = 'Property';
-				table.appendChild(row);
-
-				let col = document.createElement('td');
-				col.colSpan = 2;
-				col.className = 'PropertyCompound';
-				col.appendChild(property.GetElement());
-				row.appendChild(col);
-			}
-			else {
-				let rightCol = document.createElement('td');
-				rightCol.className = 'PropertyValue';
-				rightCol.appendChild(property.GetElement());
-				row.appendChild(rightCol);
-			}
+			let col = document.createElement('td');
+			col.colSpan = 2;
+			col.className = 'PropertyCompound';
+			col.appendChild(property.GetElement());
+			row.appendChild(col);
 		}
-
-		return table;
+		else {
+			let rightCol = document.createElement('td');
+			rightCol.className = 'PropertyValue';
+			rightCol.appendChild(property.GetElement());
+			row.appendChild(rightCol);
+		}
 	}
 }

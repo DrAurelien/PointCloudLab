@@ -30,13 +30,14 @@ class PCLApp implements Controlable, ActionDelegate {
 		let scene = new Scene(this);
 		this.InitializeLongProcess();
 		this.InitializeDataHandler(scene);
-		this.InitializeMenu();
 		this.InitializeRenderers(scene);
+		this.InitializeMenu();
+		this.Resize();
 
 		window.onresize = function () {
-			appInterface.Refresh();
+			appInterface.Resize();
 		}
-		this.Refresh();
+		this.RefreshRendering();
 	}
 
 	static Run() {
@@ -78,27 +79,34 @@ class PCLApp implements Controlable, ActionDelegate {
 	}
 
 	UpdateSelectedElement(selectedItem: Pickable) {
-		this.dataHandler.currentItem = selectedItem as PCLNode;
-		this.Refresh();
-	}
-
-	Refresh() {
-		this.dataHandler.Resize(window.innerWidth, window.innerHeight);
-		this.dataHandler.RefreshContent();
-
-		this.menu.RefreshSize();
-
+		this.dataHandler.SetCurrentItem(selectedItem as PCLNode);
 		this.RefreshRendering();
 	}
 
+
+	Resize() {
+		if (this.sceneRenderer) {
+			this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
+		}
+		if (this.dataHandler) {
+			this.dataHandler.Resize(window.innerWidth, window.innerHeight);
+		}
+		if (this.menu) {
+			this.menu.RefreshSize();
+		}
+	}
+
 	RenderScene() {
-		this.sceneRenderer.Draw(this.dataHandler.scene);
+		if (this.sceneRenderer) {
+			this.sceneRenderer.Draw(this.dataHandler.scene);
+		}
 	}
 
 	RefreshRendering() {
-		this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
 		this.RenderScene();
-		this.coordinatesSystem.Refresh();
+		if (this.coordinatesSystem) {
+			this.coordinatesSystem.Refresh();
+		}
 	}
 
 	//=========================================
@@ -113,14 +121,14 @@ class PCLApp implements Controlable, ActionDelegate {
 		if (scene.Lights.children.length == 1)
 			return scene.Lights.children[0] as Light;
 
-		let item = this.dataHandler.currentItem;
+		let item = this.dataHandler.GetCurrentItem();
 		if (item && item instanceof Light) {
 			return item as Light;
 		}
 	}
 
 	GetCurrentTransformable(): Transformable {
-		let item = this.dataHandler.currentItem;
+		let item = this.dataHandler.GetCurrentItem();
 		if (item instanceof PCLShape)
 			return item;
 		return null;
@@ -140,8 +148,10 @@ class PCLApp implements Controlable, ActionDelegate {
 	}
 
 	NotifyViewPointChange(c: ViewPointChange) {
-		if (c === ViewPointChange.Rotation || c === ViewPointChange.Position) {
-			this.coordinatesSystem.Refresh();
+		if (this.coordinatesSystem) {
+			if (c === ViewPointChange.Rotation || c === ViewPointChange.Position) {
+				this.coordinatesSystem.Refresh();
+			}
 		}
 		this.RenderScene();
 	}
@@ -165,7 +175,6 @@ class PCLApp implements Controlable, ActionDelegate {
 	PickItem(x: number, y: number) {
 		let scene = this.dataHandler.scene;
 		let selected = this.sceneRenderer.PickObject(x, y, scene);
-		scene.Select(selected);
 		this.UpdateSelectedElement(selected);
 	}
 

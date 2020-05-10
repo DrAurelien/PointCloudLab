@@ -39,9 +39,10 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
 
-		let points = new NumberProperty('Points', this.mesh.pointcloud.Size(), null);
+		let self = this;
+		let points = new NumberProperty('Points', () => self.mesh.pointcloud.Size(), null);
 		points.SetReadonly();
-		let faces = new NumberProperty('Faces', this.mesh.Size(), null);
+		let faces = new NumberProperty('Faces', () => self.mesh.Size(), null);
 		faces.SetReadonly();
 
 		properties.Push(points);

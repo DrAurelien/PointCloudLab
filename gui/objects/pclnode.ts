@@ -23,15 +23,15 @@ abstract class PCLNode implements Pickable, Notifiable {
 	visible: boolean;
 	selected: boolean;
 	deletable: boolean;
+	private changeListeners: Function[];
+	private properties: Properties;
 
-	constructor(public name: string, owner: PCLContainer = null) {
+	constructor(public name: string) {
 		this.visible = true;
 		this.selected = false;
 		this.deletable = true;
 		this.owner = null;
-		if (owner) {
-			owner.Add(this);
-		}
+		this.changeListeners = [];
 	}
 
 	Draw(drawingContext: DrawingContext): void {
@@ -53,10 +53,17 @@ abstract class PCLNode implements Pickable, Notifiable {
 
 	GetProperties(): Properties {
 		let self = this;
-		let properties = new Properties();
-		properties.Push(new StringProperty('Name', this.name, (newName) => self.name = newName));
-		properties.Push(new BooleanProperty('Visible', this.visible, (newVilibility) => self.visible = newVilibility));
-		return properties;
+		if (!this.properties) {
+			this.properties = new Properties();
+			this.properties.Push(new StringProperty('Name', () => self.name, (newName) => self.name = newName));
+			this.properties.Push(new BooleanProperty('Visible', () => self.visible, (newVilibility) => self.visible = newVilibility));
+		}
+		return this.properties;
+	}
+
+	ToggleVisibility() {
+		this.visible = !this.visible;
+		this.NotifyChange(this);
 	}
 
 	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
@@ -88,9 +95,25 @@ abstract class PCLNode implements Pickable, Notifiable {
 	}
 
 	NotifyChange(source: PCLNode) {
+		if (this.properties) {
+			this.properties.Refresh();
+		}
+		if (source == this) {
+			for (let index = 0; index < this.changeListeners.length; index++) {
+				this.changeListeners[index](this);
+			}
+		}
 		if (this.owner) {
 			this.owner.NotifyChange(source);
 		}
+	}
+
+	AddChangeListener(onchange: Function) {
+		this.changeListeners.push(onchange);
+	}
+
+	ClearProperties() {
+		delete this.properties;
 	}
 }
 

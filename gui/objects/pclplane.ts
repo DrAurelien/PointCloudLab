@@ -9,8 +9,8 @@
 
 
 class PCLPlane extends PCLShape {
-	constructor(public plane: Plane, owner: PCLGroup = null) {
-		super(NameProvider.GetName('Plane'), owner);
+	constructor(public plane: Plane) {
+		super(NameProvider.GetName('Plane'));
 	}
 
 	GetShape(): Shape {
@@ -20,9 +20,9 @@ class PCLPlane extends PCLShape {
 	GetGeometry(): Properties {
 		let self = this;
 		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.plane.center, false, this.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Normal', this.plane.normal, true, this.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Patch Radius', this.plane.patchRadius, this.GeometryChangeHandler((value) => self.plane.patchRadius = value)));
+		geometry.Push(new VectorProperty('Center', () => self.plane.center, false, this.GeometryChangeHandler()));
+		geometry.Push(new VectorProperty('Normal', () => self.plane.normal, true, this.GeometryChangeHandler()));
+		geometry.Push(new NumberProperty('Patch Radius', () => self.plane.patchRadius, this.GeometryChangeHandler((value) => self.plane.patchRadius = value)));
 		return geometry;
 	}
 }

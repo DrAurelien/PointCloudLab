@@ -17,9 +17,8 @@ class Light extends PCLNode implements LightingPosition {
 	color: number[];
 	glPointsBuffer: FloatArrayBuffer;
 
-	constructor(public position: Vector, owner: LightsContainer = null) {
-		super(NameProvider.GetName("Light"), owner);
-
+	constructor(public position: Vector) {
+		super(NameProvider.GetName("Light"));
 		this.color = [1.0, 1.0, 1.0];
 	}
 
@@ -49,8 +48,8 @@ class Light extends PCLNode implements LightingPosition {
 	GetProperties(): Properties {
 		let self = this;
 		let properties = super.GetProperties();
-		properties.Push(new VectorProperty('Position', this.position, false, (newPosition) => self.position = newPosition));
-		properties.Push(new ColorProperty('Color', this.color, (newColor) => self.color = newColor));
+		properties.Push(new VectorProperty('Position', () => self.position, false, (newPosition) => self.position = newPosition));
+		properties.Push(new ColorProperty('Color', () => self.color, (newColor) => self.color = newColor));
 		return properties;
 	}
 

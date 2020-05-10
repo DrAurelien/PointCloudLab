@@ -21,7 +21,8 @@ class Scene extends PCLGroup {
 		this.Lights.visible = false;
 		this.Lights.folded = true;
 
-		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]), this.Lights);
+		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]));
+		this.Lights.Add(defaultLight);
 		defaultLight.deletable = false;
 	}
 
@@ -39,13 +40,6 @@ class Scene extends PCLGroup {
 	set Lights(l: LightsContainer) {
 		this.children[0] = l;
 		l.owner = this;
-	}
-
-	Select(item: Pickable): void {
-		this.Contents.Apply(p => {
-			p.selected = (p === item);
-			return true;
-		});
 	}
 
 	GetSelected(): PCLNode[] {

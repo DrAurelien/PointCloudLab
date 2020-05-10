@@ -2,9 +2,9 @@
 /// <reference path="propertywithvalue.ts" />
 
 
-class NumberProperty extends PropertyWithValue {
-	constructor(name: string, value: number, handler: PropertyChangeHandler) {
-		super(name, 'text', value.toString(), handler);
+class NumberProperty extends PropertyWithValue<number> {
+	constructor(name: string, value: PropertyValueProvider<number>, handler: PropertyChangeHandler) {
+		super(name, 'text', value, handler);
 	}
 
 	GetValue(): number {

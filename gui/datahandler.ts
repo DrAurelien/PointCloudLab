@@ -12,7 +12,7 @@
 class DataHandler extends HideablePannel {
 	dataArea: Pannel;
 	propertiesArea: Pannel;
-	currentItem: PCLNode;
+	private currentItem: PCLNode;
 
 	constructor(public scene: Scene, private ownerView: PCLApp) {
 		super('DataWindow', HandlePosition.Right);
@@ -20,12 +20,11 @@ class DataHandler extends HideablePannel {
 		//Data visualization
 		this.dataArea = new Pannel('DataArea');
 		this.AddControl(this.dataArea);
+		this.dataArea.AddControl(new DataItem(this.scene, this));
 
 		//Properties visualization
 		this.propertiesArea = new Pannel('PropertiesArea');
 		this.AddControl(this.propertiesArea);
-
-		this.RefreshContent();
 	}
 
 	Resize(width: number, height: number): void {
@@ -62,52 +61,30 @@ class DataHandler extends HideablePannel {
 		}
 	}
 
-	AddCreatedObject(scene: Scene, createdObject: PCLNode) {
-		if (createdObject) {
-			//If the object does not have an owner, affect one
-			if (!createdObject.owner) {
-				let owner: PCLGroup = (createdObject instanceof Light) ? scene.Lights : scene.Contents;
-				if (this.currentItem && this.currentItem instanceof PCLGroup) {
-					owner = (<PCLGroup>this.currentItem);
-				}
-				owner.Add(createdObject);
+	SetCurrentItem(item: PCLNode) {
+		this.HandlePropertiesWindowVisibility();
+		if (item != this.currentItem) {
+			if (this.currentItem) {
+				this.currentItem.selected = false;
+				this.currentItem.ClearProperties();
+				this.propertiesArea.Clear();
 			}
-			//Select the new item, and make it the current active object
-			scene.Select(createdObject);
-			this.currentItem = createdObject;
-			this.NotifyChange();
+
+			this.currentItem = item;
+			if (this.currentItem != null) {
+				this.currentItem.selected = true;
+				let currentProperties = this.currentItem.GetProperties();
+				this.propertiesArea.AddControl(currentProperties);
+			}
 		}
 	}
 
-	NotifyChange() {
-		this.ownerView.Refresh();
+	GetCurrentItem(): PCLNode {
+		return this.currentItem;
 	}
 
 	GetSceneRenderer(): Renderer {
 		return this.ownerView.sceneRenderer;
-	}
-
-	//Refresh content of data and properties views
-	RefreshContent(): void {
-		this.RefreshData();
-		this.RefreshProperties();
-	}
-
-	protected RefreshData(): void {
-		this.dataArea.Clear();
-		let item = new DataItem(this.scene, this, this.scene);
-		this.dataArea.GetElement().appendChild(item.GetContainerElement());
-	}
-
-	protected RefreshProperties(): void {
-		this.HandlePropertiesWindowVisibility();
-		this.propertiesArea.Clear();
-		if (this.currentItem != null) {
-			let currentProperties = this.currentItem.GetProperties();
-			let self = this;
-			currentProperties.onChange = () => self.NotifyChange();
-			this.propertiesArea.AddControl(currentProperties);
-		}
 	}
 
 	public GetActionsDelegate(): ActionDelegate {

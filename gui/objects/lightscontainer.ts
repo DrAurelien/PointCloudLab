@@ -8,27 +8,28 @@
 
 
 class LightsContainer extends PCLGroup {
-	constructor(name?: string, owner: PCLGroup = null) {
-		super(name || NameProvider.GetName('Lights'), owner);
+	constructor(name?: string) {
+		super(name || NameProvider.GetName('Lights'));
 	}
 
 	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
 		let result: Action[] = super.GetActions(delegate, onDone);
 
 		result.push(null);
-		result.push(new NewLightAction(this, onDone));
+		result.push(new NewLightAction(this));
 
 		return result;
 	}
 }
 
 class NewLightAction extends Action {
-	constructor(private container: LightsContainer, private onDone: PCLNodeHandler) {
+	constructor(private container: LightsContainer) {
 		super('New light', 'Add up to ' + DrawingContext.NbMaxLights + ' light sources');
 	}
 
 	Run() {
-		this.onDone(new Light(new Vector([100.0, 100.0, 100.0]), this.container));
+		let light = new Light(new Vector([100.0, 100.0, 100.0]));
+		this.container.Add(light);
 	}
 
 	Enabled(): boolean {

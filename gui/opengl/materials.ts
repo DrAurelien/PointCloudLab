@@ -20,11 +20,11 @@ class Material {
 		let self = this;
 
 		let properties = new Properties;
-		properties.Push(new ColorProperty('Color', self.baseColor, (value) => self.baseColor = value));
-		properties.Push(new NumberInRangeProperty('Ambiant', self.ambiant * 100.0, 0, 100, 1, (value) => self.ambiant = value / 100.0));
-		properties.Push(new NumberInRangeProperty('Diffuse', self.diffuse * 100.0, 0, 100, 1, (value) => self.diffuse = value / 100.0));
-		properties.Push(new NumberInRangeProperty('Specular', self.specular * 100.0, 0, 100, 1, (value) => self.specular = value / 100.0));
-		properties.Push(new NumberInRangeProperty('Glossy', self.glossy, 0, 100, 1, (value) => self.glossy = value));
+		properties.Push(new ColorProperty('Color', () => self.baseColor, (value) => self.baseColor = value));
+		properties.Push(new NumberInRangeProperty('Ambiant', () => self.ambiant * 100.0, 0, 100, 1, (value) => self.ambiant = value / 100.0));
+		properties.Push(new NumberInRangeProperty('Diffuse', () => self.diffuse * 100.0, 0, 100, 1, (value) => self.diffuse = value / 100.0));
+		properties.Push(new NumberInRangeProperty('Specular', () => self.specular * 100.0, 0, 100, 1, (value) => self.specular = value / 100.0));
+		properties.Push(new NumberInRangeProperty('Glossy', () => self.glossy, 0, 100, 1, (value) => self.glossy = value));
 
 		return properties;
 	}

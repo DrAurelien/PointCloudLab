@@ -8,57 +8,138 @@
 class DataItem implements Control {
 	container: HTMLDivElement;
 	itemContentContainer: HTMLDivElement;
+	itemChildContainer: HTMLDivElement;
+	itemIcon: HTMLElement;
+	visibilityIcon: HTMLElement;
+	sons: DataItem[];
 
-	constructor(public item: PCLNode, private dataHandler: DataHandler, private scene: Scene) {
+	constructor(public item: PCLNode, private dataHandler: DataHandler) {
+		this.sons = [];
+
 		this.container = <HTMLDivElement>document.createElement('div');
 		this.container.className = 'TreeItemContainer';
 
 		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
-		this.itemContentContainer.className = (this.item == this.dataHandler.currentItem) ? 'SelectedSceneItem' : 'SceneItem';
+		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
 		this.container.appendChild(this.itemContentContainer);
 
-		let itemIcon = document.createElement('i');
-		itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
-		this.itemContentContainer.appendChild(itemIcon);
+		//Diplay a small icon to show the itam nature
+		this.itemIcon = document.createElement('i');
+		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
+		this.itemContentContainer.appendChild(this.itemIcon);
 		if (this.item instanceof PCLGroup) {
-			itemIcon.onclick = this.ItemFolded();
+			this.itemIcon.onclick = this.ItemFolded();
 			this.itemContentContainer.ondblclick = this.ItemFolded();
 		}
 
-		let visibilityIcon = document.createElement('i');
-		visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
-		this.itemContentContainer.appendChild(visibilityIcon);
+		//Quick actions (visibility, menu, deletion)
+		this.visibilityIcon = document.createElement('i');
+		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
+		this.itemContentContainer.appendChild(this.visibilityIcon);
+		this.visibilityIcon.onclick = this.ViewClicked();
 
 		let menuIcon = document.createElement('i');
 		menuIcon.className = 'ItemAction fa fa-ellipsis-h';
 		this.itemContentContainer.appendChild(menuIcon);
+		menuIcon.onclick = this.ItemMenu();
 
 		let deletionIcon = null;
 		if (this.item.deletable) {
 			deletionIcon = document.createElement('i');
 			deletionIcon.className = 'ItemAction fa fa-trash';
 			this.itemContentContainer.appendChild(deletionIcon);
+			deletionIcon.onclick = this.DeletionClicked();
 		}
 
+		//The item name by itself
 		let itemNameContainer = document.createElement('span');
 		itemNameContainer.className = 'ItemNameContainer';
-
 		let itemContent = document.createTextNode(this.item.name);
 		itemNameContainer.appendChild(itemContent);
 		this.itemContentContainer.appendChild(itemNameContainer);
 
+		//Handle left/right click on the item title
 		this.itemContentContainer.onclick = this.ItemClicked();
 		this.itemContentContainer.oncontextmenu = this.ItemMenu();
-		menuIcon.onclick = this.ItemMenu();
-		visibilityIcon.onclick = this.ViewClicked();
-		if (deletionIcon) {
-			deletionIcon.onclick = this.DeletionClicked();
-		}
 
+		//Populate children
+		this.itemChildContainer = document.createElement('div');
+		this.itemChildContainer.className = 'ItemChildContainer';
+		if (item instanceof PCLGroup) {
+			this.UpdateGroupFolding(item);
+		}
+		this.container.appendChild(this.itemChildContainer);
 		let children = this.item.GetChildren();
 		for (let index = 0; index < children.length; index++) {
-			let son = new DataItem(children[index], dataHandler, scene);
-			this.container.appendChild(son.GetContainerElement());
+			this.AddSon(children[index]);
+		}
+
+		//Bind HTML content to match the actual state of the item
+		let self = this;
+		item.AddChangeListener(() => self.Refresh());
+	}
+
+	AddSon(item: PCLNode, index?: number) {
+		let son = new DataItem(item, this.dataHandler);
+		if (index === null) {
+			this.sons.push(son);
+			this.itemChildContainer.appendChild(son.GetContainerElement());
+		}
+		else {
+			this.sons.splice(index, 0, son);
+			this.itemChildContainer.insertBefore(son.GetContainerElement(), this.itemChildContainer.childNodes[index]);
+		}
+	}
+
+	RemoveSon(index: number) {
+		this.sons.splice(index, 1);
+		this.itemChildContainer.removeChild(this.itemChildContainer.childNodes[index]);
+	}
+
+	SwapSons(a: number, b: number) {
+		let son = this.sons[a];
+		this.sons[a] = this.sons[b];
+		this.sons[b] = son;
+
+		let container = this.itemChildContainer;
+		let child = container.removeChild(container.childNodes[a]);
+		container.insertBefore(container.childNodes[b], container.childNodes[a]);
+		container.insertBefore(child, container.childNodes.length > b ? container.childNodes[b] : null);
+	}
+
+	FindSon(item: PCLNode): number {
+		for (let index = 0; index < this.sons.length; index++) {
+			if (this.sons[index].item === item)
+				return index;
+		}
+		return -1;
+	}
+
+	Refresh() {
+		if (this.item instanceof PCLGroup) {
+			this.UpdateGroupFolding(this.item as PCLGroup);
+		}
+		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
+		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
+		this.RefreshChildsList();
+	}
+
+	RefreshChildsList() {
+		let children = this.item.GetChildren();
+		//First - check for insertions
+		for (let index = 0; index < children.length; index++) {
+			let child = children[index];
+			let sonIndex = this.FindSon(child);
+			if (sonIndex < 0) {
+				this.AddSon(child, index);
+			}
+			else if (sonIndex != index) {
+				this.SwapSons(sonIndex, index);
+			}
+		}
+		//Now sons equals item.children from 0 to item.chidren.length. The remaining nodes must be removed
+		while (this.sons.length > children.length) {
+			this.RemoveSon(children.length);
 		}
 	}
 
@@ -66,20 +147,19 @@ class DataItem implements Control {
 	ItemFolded(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
-			let group = <PCLGroup>self.item;
-			group.folded = !group.folded;
-			self.dataHandler.NotifyChange();
+			(self.item as PCLGroup).ToggleFolding();
 			self.CancelBubbling(event);
 		}
+	}
+	UpdateGroupFolding(item: PCLGroup) {
+		this.itemChildContainer.style.display = item.folded ? 'none' : 'block';
 	}
 
 	//When left - clicking an item
 	ItemClicked(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
-			self.dataHandler.currentItem = self.item;
-			self.scene.Select(self.item);
-			self.dataHandler.NotifyChange();
+			self.dataHandler.SetCurrentItem(self.item);
 			self.CancelBubbling(event);
 		}
 	}
@@ -90,31 +170,27 @@ class DataItem implements Control {
 		return function (event: PointerEvent) {
 			let actions = self.item.GetActions(
 				self.dataHandler.GetActionsDelegate(),
-				function (createdObject) {
-					if (createdObject) {
-						self.dataHandler.AddCreatedObject(self.scene, createdObject);
-					}
-					else {
-						self.dataHandler.NotifyChange();
-					}
-					return true;
-				}
+				(item: PCLNode) => self.AddCreateObject(item)
 			);
 			Popup.CreatePopup(self, actions);
-			self.dataHandler.currentItem = self.item;
-			self.scene.Select(self.item);
-			self.dataHandler.NotifyChange();
+			self.dataHandler.SetCurrentItem(self.item);
 			self.CancelBubbling(event);
 			return false;
 		}
+	}
+	AddCreateObject(item: PCLNode): boolean {
+		if (item) {
+			(this.item as PCLGroup).Add(item);
+			this.dataHandler.SetCurrentItem(item);
+		}
+		return true;
 	}
 
 	//When clicking the visibility icon next to an item
 	ViewClicked(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
-			self.item.visible = !self.item.visible;
-			self.dataHandler.NotifyChange();
+			self.item.ToggleVisibility();
 		}
 	}
 
@@ -126,8 +202,7 @@ class DataItem implements Control {
 
 			if (confirm('Are you sure you want to delete "' + self.item.name + '" ?')) {
 				self.item.owner.Remove(self.item);
-				self.dataHandler.currentItem = null;
-				self.dataHandler.NotifyChange();
+				self.dataHandler.SetCurrentItem(null);
 				self.CancelBubbling(event);
 			}
 		}
@@ -143,7 +218,7 @@ class DataItem implements Control {
 	}
 
 	GetElement(): HTMLElement {
-		return this.itemContentContainer;
+		return this.container;
 	}
 
 	GetContainerElement(): HTMLElement {

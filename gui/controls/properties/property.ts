@@ -8,6 +8,7 @@ abstract class Property implements Control {
 
 	abstract GetElement(): HTMLElement;
 	abstract GetValue(): any;
+	abstract Refresh();
 
 	NotifyChange() {
 		let value = this.GetValue();

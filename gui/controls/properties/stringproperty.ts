@@ -2,8 +2,8 @@
 /// <reference path="propertywithvalue.ts" />
 
 
-class StringProperty extends PropertyWithValue {
-	constructor(name: string, value: string, handler: PropertyChangeHandler) {
+class StringProperty extends PropertyWithValue<string> {
+	constructor(name: string, value: PropertyValueProvider<string>, handler: PropertyChangeHandler) {
 		super(name, 'text', value, handler);
 	}
 

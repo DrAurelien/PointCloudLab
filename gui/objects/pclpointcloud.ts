@@ -108,7 +108,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let properties = super.GetProperties();
 
 		let self = this;
-		let points = new NumberProperty('Points', this.cloud.Size(), null);
+		let points = new NumberProperty('Points', () => self.cloud.Size(), null);
 		points.SetReadonly();
 		properties.Push(points);
 
@@ -125,7 +125,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 
 	private GetScalarFieldProperty(index: number): Property {
 		let self = this;
-		return new BooleanProperty(this.fields[index].name, index === this.currentfield, (value: boolean) => {
+		return new BooleanProperty(this.fields[index].name, () => (index === self.currentfield), (value: boolean) => {
 			self.currentfield = value ? index : null;
 		});
 	}

@@ -10,8 +10,8 @@ abstract class PCLPrimitive extends PCLNode {
 	private material: Material;
 	protected lighting: boolean;
 
-	constructor(public name: string, owner: PCLGroup = null) {
-		super(name, owner);
+	constructor(public name: string) {
+		super(name);
 		this.material = new Material([0.0, 1.0, 0.0]);
 		this.lighting = true;
 	}
@@ -23,7 +23,7 @@ abstract class PCLPrimitive extends PCLNode {
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
 		let self = this;
-		properties.Push(new BooleanProperty('Lighting', this.lighting, (l: boolean) => { self.lighting = l; }));
+		properties.Push(new BooleanProperty('Lighting', () => self.lighting, (l: boolean) => { self.lighting = l; }));
 		properties.Push(new PropertyGroup('Material', this.material.GetProperties()));
 		return properties;
 	}

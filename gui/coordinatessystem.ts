@@ -78,6 +78,6 @@ class CoordinatesSystem implements Control, Notifiable {
 	}
 
 	NotifyChange(node: PCLNode) {
-		this.view.Refresh();
+		this.view.RefreshRendering();
 	}
 }

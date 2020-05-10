@@ -17,6 +17,10 @@ class PropertyGroup extends Property {
 		this.properties.Push(property);
 	}
 
+	Refresh() {
+		this.properties.Refresh();
+	}
+
 	GetElement(): HTMLElement {
 		return this.properties.GetElement();
 	}

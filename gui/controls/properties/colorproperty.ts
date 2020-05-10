@@ -3,11 +3,11 @@
 /// <reference path="../../../tools/stringutils.ts" />
 
 
-class ColorProperty extends PropertyWithValue
+class ColorProperty extends PropertyWithValue<string>
 {
-	constructor(name: string, value: number[], handler: PropertyChangeHandler)
+	constructor(name: string, private colorvalue: PropertyValueProvider<number[]>, handler: PropertyChangeHandler)
 	{
-		super(name, 'color', ColorProperty.RGBToStr(value), handler);
+		super(name, 'color', () => ColorProperty.RGBToStr(colorvalue()), handler);
 	}
 
 	private static RGBToStr(rgb: number[]): string {

@@ -18,8 +18,8 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 	drawing: MeshDrawing;
 	private meshsampling: number;
 
-	constructor(name: string, owner: PCLGroup) {
-		super(name, owner);
+	constructor(name: string) {
+		super(name);
 		this.drawing = new MeshDrawing();
 		this.meshsampling = 0;
 	}
@@ -103,8 +103,4 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 			self.Invalidate();
 		};
 	}
-}
-
-interface PCLShapeCreator {
-	(): PCLShape;
 }

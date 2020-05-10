@@ -2,11 +2,15 @@
 /// <reference path="propertywithvalue.ts" />
 
 
-class BooleanProperty extends PropertyWithValue {
-	constructor(name: string, value: boolean, handler: PropertyChangeHandler) {
-		super(name, 'checkbox', value.toString(), handler);
+class BooleanProperty extends PropertyWithValue<boolean> {
+	constructor(name: string, value: PropertyValueProvider<boolean>, handler: PropertyChangeHandler) {
+		super(name, 'checkbox', value, handler);
 
-		this.input.checked = value;
+		this.input.checked = value();
+	}
+
+	Refresh() {
+		this.input.checked = this.value();
 	}
 
 	GetValue(): boolean {

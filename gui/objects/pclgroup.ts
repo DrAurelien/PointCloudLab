@@ -21,11 +21,16 @@ class PCLGroup extends PCLNode {
 	folded: boolean;
 	supportsPrimitivesCreation: boolean;
 
-	constructor(name: string, owner: PCLGroup = null, supportPrimitives: boolean = true) {
-		super(name, owner);
+	constructor(name: string, supportPrimitives: boolean = true) {
+		super(name);
 		this.children = [];
 		this.folded = false;
 		this.supportsPrimitivesCreation = supportPrimitives;
+	}
+
+	ToggleFolding() {
+		this.folded = !this.folded;
+		this.NotifyChange(this);
 	}
 
 	DrawNode(drawingContext: DrawingContext): void {
@@ -53,6 +58,7 @@ class PCLGroup extends PCLNode {
 		}
 		son.owner = this;
 		this.children.push(son);
+		this.NotifyChange(this);
 	}
 
 	Remove(son: PCLNode): void {
@@ -66,6 +72,7 @@ class PCLGroup extends PCLNode {
 		if (position >= 0) {
 			son.owner = null;
 			this.children.splice(position, 1);
+			this.NotifyChange(this);
 		}
 	}
 
@@ -94,10 +101,7 @@ class PCLGroup extends PCLNode {
 	}
 
 	GetChildren(): PCLNode[] {
-		if (!this.folded) {
-			return this.children;
-		}
-		return [];
+		return this.children;
 	}
 
 	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
@@ -122,12 +126,12 @@ class PCLGroup extends PCLNode {
 		if (this.supportsPrimitivesCreation) {
 			result.push(null);
 
-			result.push(new SimpleAction('New group', () => onDone(new PCLGroup(NameProvider.GetName('Group'), self)), 'A group is a hiearchical item that can be used to organize objects.'));
-			result.push(new SimpleAction('New plane', this.GetShapeCreator(this.GetPlaneCreator(), delegate, onDone)));
-			result.push(new SimpleAction('New sphere', this.GetShapeCreator(this.GetSphereCreator(), delegate, onDone)));
-			result.push(new SimpleAction('New cylinder', this.GetShapeCreator(this.GetCylinderCreator(), delegate, onDone)));
-			result.push(new SimpleAction('New cone', this.GetShapeCreator(this.GetConeCreator(), delegate, onDone)));
-			result.push(new SimpleAction('New torus', this.GetShapeCreator(this.GetTorusCreator(), delegate, onDone)));
+			result.push(new SimpleAction('New group', this.WrapNodeCreator(this.GetGroupCreator()), 'A group is a hiearchical item that can be used to organize objects.'));
+			result.push(new SimpleAction('New plane', this.WrapNodeCreator(this.GetPlaneCreator())));
+			result.push(new SimpleAction('New sphere', this.WrapNodeCreator(this.GetSphereCreator())));
+			result.push(new SimpleAction('New cylinder', this.WrapNodeCreator(this.GetCylinderCreator())));
+			result.push(new SimpleAction('New cone', this.WrapNodeCreator(this.GetConeCreator())));
+			result.push(new SimpleAction('New torus', this.WrapNodeCreator(this.GetTorusCreator())));
 			result.push(new ScanFromCurrentViewPointAction(this, delegate, onDone));
 		}
 
@@ -137,56 +141,60 @@ class PCLGroup extends PCLNode {
 	GetProperties(): Properties {
 		let properties = super.GetProperties();
 
-		let children = new NumberProperty('Children', this.children.length, null);
+		let self = this;
+		let children = new NumberProperty('Children', () => self.children.length, null);
 		children.SetReadonly();
 		properties.Push(children);
 
 		return properties;
 	}
 
-	private GetShapeCreator(creator: PCLShapeCreator, delegate: ActionDelegate, onDone: PCLNodeHandler): Function {
+	private WrapNodeCreator(creator: PCLNodeCreator): Function {
+		let self = this;
 		return () => {
 			let shape = creator();
-			onDone(shape);
+			self.Add(shape);
 		}
 	}
 
-	private GetPlaneCreator(): PCLShapeCreator {
-		let self = this;
+	private GetGroupCreator(): PCLNodeCreator {
+		return (): PCLGroup => {
+			return new PCLGroup(NameProvider.GetName('Group'));
+		};
+	}
+
+	private GetPlaneCreator(): PCLNodeCreator {
 		return (): PCLShape => {
 			let plane = new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1);
-			return new PCLPlane(plane, self);
+			return new PCLPlane(plane);
 		};
 	}
-	private GetSphereCreator(): PCLShapeCreator {
-		let self = this;
+
+	private GetSphereCreator(): PCLNodeCreator {
 		return (): PCLShape => {
 			let sphere = new Sphere(new Vector([0, 0, 0]), 1);
-			return new PCLSphere(sphere, self);
+			return new PCLSphere(sphere);
 		};
 	}
 
-	private GetCylinderCreator(): PCLShapeCreator {
-		let self = this;
+	private GetCylinderCreator(): PCLNodeCreator {
 		return (): PCLShape => {
 			let cylinder = new Cylinder(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 1, 1);
-			return new PCLCylinder(cylinder, self);
+			return new PCLCylinder(cylinder);
 		};
 	}
 
-	private GetConeCreator(): PCLShapeCreator {
-		let self = this;
+	private GetConeCreator(): PCLNodeCreator {
 		return (): PCLShape => {
 			let cone = new Cone(new Vector([0, 0, 0]), new Vector([0, 0, 1]), Math.PI / 6.0, 1);
-			return new PCLCone(cone, self);
+			return new PCLCone(cone);
 		};
 	}
 
-	private GetTorusCreator(): PCLShapeCreator {
-		let self = this;
+	private GetTorusCreator(): PCLNodeCreator {
 		return (): PCLShape => {
 			let torus = new Torus(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 2, 1);
-			return new PCLTorus(torus, self);
+			return new PCLTorus(torus);
 		};
 	}
 
@@ -197,4 +205,8 @@ class PCLGroup extends PCLNode {
 	GetDisplayIcon(): string {
 		return 'fa-folder' + (this.folded ? '' : '-open');
 	}
+}
+
+interface PCLNodeCreator {
+	(): PCLNode;
 }

@@ -23,9 +23,7 @@ class Menu extends HideablePannel {
 		this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject) {
 			if (createdObject != null) {
 				scene.Contents.Add(createdObject);
-				scene.Select(createdObject);
-				dataHandler.currentItem = createdObject;
-				dataHandler.NotifyChange();
+				dataHandler.SetCurrentItem(createdObject);
 			}
 		}, 'Load data from a file'));
 

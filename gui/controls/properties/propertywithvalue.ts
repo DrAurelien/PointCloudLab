@@ -1,11 +1,15 @@
 ﻿/// <reference path="property.ts" />
 
+interface PropertyValueProvider<T> {
+	(): T;
+}
 
-abstract class PropertyWithValue extends Property {
+abstract class PropertyWithValue<T> extends Property {
 	private container: HTMLDivElement;
 	protected input: HTMLInputElement;
 
-	constructor(name: string, inputType: string, value: string, changeHandler: PropertyChangeHandler) {
+	// value() might be called anytime, to refresh the control displayed value so that its refelect that actual value
+	constructor(name: string, inputType: string, protected value: PropertyValueProvider<T>, changeHandler: PropertyChangeHandler) {
 		super(name, changeHandler);
 
 		let self = this;
@@ -14,9 +18,13 @@ abstract class PropertyWithValue extends Property {
 		this.input.type = inputType;
 		this.input.width = 20;
 		this.input.className = 'PropertyValue';
-		this.input.value = value;
+		this.input.value = value().toString();
 		this.input.onchange = (ev) => self.NotifyChange();
 		this.container.appendChild(this.input);
+	}
+
+	Refresh() {
+		this.input.value = this.value().toString();
 	}
 
 	GetElement(): HTMLElement {
