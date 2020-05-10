@@ -35,6 +35,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 
 	AddScalarField(name: string) {
 		let field = new ScalarField(name);
+		field.Reserve(this.cloud.Size());
 		this.fields.push(field);
 		return field;
 	}

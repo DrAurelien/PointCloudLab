@@ -8,11 +8,13 @@
 	}
 
 	Reserve(capacity: number) {
-		let values = new Float32Array(capacity);
-		for (let index = 0; index < this.nbvalues; index++) {
-			values[index] = this.values[index];
+		if (capacity > this.nbvalues) {
+			let values = new Float32Array(capacity);
+			for (let index = 0; index < this.nbvalues; index++) {
+				values[index] = this.values[index];
+			}
+			this.values = values;
 		}
-		this.values = values;
 	}
 
 	GetValue(index: number): number {
