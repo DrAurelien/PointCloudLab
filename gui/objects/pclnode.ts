@@ -105,7 +105,7 @@ class BoundingBoxDrawing {
 
 	static Initialize(ctx: DrawingContext) {
 		if (!BoundingBoxDrawing.glIndexBuffer) {
-			let points = [
+			let points = new Float32Array([
 				-0.5, -0.5, -0.5,
 				-0.5, 0.5, -0.5,
 				0.5, 0.5, -0.5,
@@ -113,7 +113,7 @@ class BoundingBoxDrawing {
 				-0.5, -0.5, 0.5,
 				-0.5, 0.5, 0.5,
 				0.5, 0.5, 0.5,
-				0.5, -0.5, 0.5];
+				0.5, -0.5, 0.5]);
 
 			let indices = [
 				0, 1, 2, 3,

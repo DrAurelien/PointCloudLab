@@ -28,7 +28,7 @@ class Light extends PCLNode implements LightingPosition {
 		drawingContext.gl.uniformMatrix4fv(drawingContext.shapetransform, false, new Float32Array(shapetransform.values));
 
 		if (!this.glPointsBuffer) {
-			this.glPointsBuffer = new FloatArrayBuffer(this.position.Flatten(), drawingContext, 3);
+			this.glPointsBuffer = new FloatArrayBuffer(new Float32Array(this.position.Flatten()), drawingContext, 3);
 		}
 		this.glPointsBuffer.BindAttribute(drawingContext.vertices);
 	}

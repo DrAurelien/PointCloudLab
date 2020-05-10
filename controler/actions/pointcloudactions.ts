@@ -144,7 +144,7 @@ class NormalsComputer extends IterativeLongProcess {
 
 	Initialize() {
 		if (this.cloud.normals.length != this.cloud.points.length) {
-			this.cloud.normals = new Array(this.cloud.points.length);
+			this.cloud.normals = new Float32Array(this.cloud.points.length);
 		}
 		this.cloud.ClearNormals();
 	}

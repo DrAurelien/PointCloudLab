@@ -8,17 +8,17 @@
 
 
 class PointCloud {
-	points: number[];
+	points: Float32Array;
 	pointssize: number;
-	normals: number[];
+	normals: Float32Array;
 	normalssize: number;
 	tree: KDTree = null;
 	boundingbox: BoundingBox;
 
 	constructor() {
-		this.points = [];
+		this.points = new Float32Array([]);
 		this.pointssize = 0;
-		this.normals = [];
+		this.normals = new Float32Array([]);
 		this.normalssize = 0;
 		this.boundingbox = new BoundingBox();
 	}
@@ -37,13 +37,13 @@ class PointCloud {
 	}
 
 	Reserve(capacity: number) {
-		var points = new Array(3 * capacity);
+		var points = new Float32Array(3 * capacity);
 		for (var index = 0; index < this.pointssize; index++) {
 			points[index] = this.points[index];
 		}
 		this.points = points;
 
-		var normals = new Array(3 * capacity);
+		var normals = new Float32Array(3 * capacity);
 		for (var index = 0; index < this.normalssize; index++) {
 			normals[index] = this.normals[index];
 		}

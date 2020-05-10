@@ -20,8 +20,8 @@ class GLBuffer {
 }
 
 class FloatArrayBuffer extends GLBuffer {
-	constructor(data: number[], ctx: DrawingContext, private dataSize: number) {
-		super(new Float32Array(data), ctx, ctx.gl.ARRAY_BUFFER);
+	constructor(data: Float32Array, ctx: DrawingContext, private dataSize: number) {
+		super(data, ctx, ctx.gl.ARRAY_BUFFER);
 	}
 
 	BindAttribute(attribute: number) {

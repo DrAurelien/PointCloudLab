@@ -1,14 +1,14 @@
 ﻿class ScalarField {
-	public values: number[];
+	public values: Float32Array;
 	private nbvalues: number;
 
 	constructor(public name: string) {
-		this.values = [];
+		this.values = new Float32Array([]);
 		this.nbvalues = 0;
 	}
 
 	Reserve(capacity: number) {
-		let values = new Array(capacity);
+		let values = new Float32Array(capacity);
 		for (let index = 0; index < this.nbvalues; index++) {
 			values[index] = this.values[index];
 		}
