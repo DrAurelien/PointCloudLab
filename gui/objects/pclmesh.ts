@@ -32,20 +32,28 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 		this.drawing.Draw(this.lighting, drawingContext);
 	}
 
+	InvalidateDrawing() {
+		this.drawing.Clear();
+		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+	}
+
+
 	RayIntersection(ray: Ray): Picking {
 		return this.mesh.RayIntersection(ray, this);
 	}
 
-	CompleteProperties(properties: Properties) {
-		super.CompleteProperties(properties);
-		let self = this;
-		let points = new NumberProperty('Points', () => self.mesh.pointcloud.Size(), null);
-		points.SetReadonly();
-		let faces = new NumberProperty('Faces', () => self.mesh.Size(), null);
-		faces.SetReadonly();
+	FillProperties() {
+		super.FillProperties();
+		if (this.properties) {
+			let self = this;
+			let points = new NumberProperty('Points', () => self.mesh.pointcloud.Size(), null);
+			points.SetReadonly();
+			let faces = new NumberProperty('Faces', () => self.mesh.Size(), null);
+			faces.SetReadonly();
 
-		properties.Push(points);
-		properties.Push(faces);
+			this.properties.Push(points);
+			this.properties.Push(faces);
+		}
 	}
 }
 

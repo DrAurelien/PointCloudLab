@@ -2,6 +2,6 @@
 
 
 interface ActionDelegate {
-	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number, onDone: Function);
+	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number);
 	GetShapesSampling(): number;
 }

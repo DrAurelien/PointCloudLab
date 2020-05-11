@@ -77,16 +77,10 @@ class DataItem implements Control {
 
 		//Bind HTML content to match the actual state of the item
 		let self = this;
-		item.AddChangeListener((source: PCLNode) => {
-			if (source == self.item) {
-				self.Refresh();
-				if (source.selected) {
-					self.dataHandler.SetCurrentItem(source);
-				}
-			}
-		});
+		item.AddChangeListener((source: PCLNode, change: ChangeType) => self.OnItemChange(source, change));
 	}
 
+	// Hierarchy management
 	AddSon(item: PCLNode, index?: number) {
 		let son = new DataItem(item, this.dataHandler);
 		if (index === null) {
@@ -131,7 +125,6 @@ class DataItem implements Control {
 		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
 		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
 		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
-		this.RefreshChildsList();
 	}
 
 	RefreshChildsList() {
@@ -153,7 +146,44 @@ class DataItem implements Control {
 		}
 	}
 
-	//Group folding management - When clickin a group icon
+	//Whenever the data changes, handle it
+	OnItemChange(source: PCLNode, change: ChangeType) {
+		this.Refresh();
+
+		if (change & ChangeType.Selection) {
+			let currentItem = this.dataHandler.GetCurrentItem();
+			if (source.selected && currentItem !== source) {
+				this.dataHandler.SetCurrentItem(source);
+			}
+			else if (!source.selected && currentItem === source) {
+				this.dataHandler.SetCurrentItem(null);
+			}
+		}
+
+		if (change & ChangeType.Creation) {
+			if (!source.owner) {
+				let owner = this.dataHandler.GetNewItemOwner();
+				owner.Add(source);
+			}
+			this.dataHandler.SetCurrentItem(source);
+		}
+
+		if (change & ChangeType.Children) {
+			this.RefreshChildsList();
+		}
+
+		if (change & ChangeType.Display) {
+			this.dataHandler.AskRendering();
+		}
+
+		if (change & ChangeType.Properties) {
+			if (this.dataHandler.GetCurrentItem() == source) {
+				source.GetProperties().Refresh();
+			}
+		}
+	}
+
+	//Group folding management - When clicking a group icon
 	ItemFolded(): (ev: MouseEvent) => any {
 		let self = this;
 		return function (event: MouseEvent) {
@@ -179,21 +209,13 @@ class DataItem implements Control {
 		let self = this;
 		return function (event: PointerEvent) {
 			let actions = self.item.GetActions(
-				self.dataHandler.GetActionsDelegate(),
-				(item: PCLNode) => self.AddCreateObject(item)
+				self.dataHandler.GetActionsDelegate()
 			);
 			self.dataHandler.SetCurrentItem(self.item);
 			Popup.CreatePopup(self, actions);
 			self.CancelBubbling(event);
 			return false;
 		}
-	}
-	AddCreateObject(item: PCLNode): boolean {
-		if (item) {
-			(this.item as PCLGroup).Add(item);
-			this.dataHandler.SetCurrentItem(item);
-		}
-		return true;
 	}
 
 	//When clicking the visibility icon next to an item

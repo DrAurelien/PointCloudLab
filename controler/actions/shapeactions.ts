@@ -2,11 +2,12 @@
 /// <reference path="delegate.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
 /// <reference path="../../gui/objects/pclmesh.ts" />
+/// <reference path="../../gui/objects/pclshape.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
 
 
 class CreateShapeMeshAction extends Action {
-	constructor(private shape: Shape, private delegate: ActionDelegate, private onDone: PCLNodeHandler) {
+	constructor(private shape: PCLShape, private sampling: number) {
 		super('Create shape mesh', 'Builds the mesh sampling this shape');
 	}
 
@@ -25,23 +26,20 @@ class CreateShapeMeshAction extends Action {
 			() => true
 		);
 
-		dialog.InsertValue('Sampling', this.delegate.GetShapesSampling());
+		dialog.InsertValue('Sampling', this.sampling);
 	}
 
 	CreateMesh(properties: Dialog): boolean {
 		let sampling = parseInt(properties.GetValue('Sampling'));
 		let result: PCLMesh;
-		let mesh = this.shape.ComputeMesh(sampling, () => {
-			if (result) result.NotifyChange(result)
+		let mesh = this.shape.GetShape().ComputeMesh(sampling, () => {
+			if (result) result.InvalidateDrawing();
 		});
 		result = new PCLMesh(mesh);
 		let self = this;
-		let ondone = () => {
-			if (self.onDone) {
-				self.onDone(result);
-			}
-		}
-		mesh.ComputeOctree(ondone);
+		mesh.ComputeOctree(() => {
+			self.shape.NotifyChange(result, ChangeType.Creation);
+		});
 		return true;
 	}
 }

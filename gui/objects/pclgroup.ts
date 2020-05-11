@@ -30,7 +30,7 @@ class PCLGroup extends PCLNode {
 
 	ToggleFolding() {
 		this.folded = !this.folded;
-		this.NotifyChange(this);
+		this.NotifyChange(this, ChangeType.Folding);
 	}
 
 	DrawNode(drawingContext: DrawingContext): void {
@@ -58,7 +58,7 @@ class PCLGroup extends PCLNode {
 		}
 		son.owner = this;
 		this.children.push(son);
-		this.NotifyChange(this);
+		this.NotifyChange(this, ChangeType.Children | ChangeType.Properties);
 	}
 
 	Remove(son: PCLNode): void {
@@ -72,7 +72,7 @@ class PCLGroup extends PCLNode {
 		if (position >= 0) {
 			son.owner = null;
 			this.children.splice(position, 1);
-			this.NotifyChange(this);
+			this.NotifyChange(this, ChangeType.Children | ChangeType.Display | ChangeType.Properties);
 		}
 	}
 
@@ -104,22 +104,22 @@ class PCLGroup extends PCLNode {
 		return this.children;
 	}
 
-	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
+	GetActions(delegate: ActionDelegate): Action[] {
 		let self = this;
-		let result: Action[] = super.GetActions(delegate, onDone);
+		let result: Action[] = super.GetActions(delegate);
 
 		result.push(null);
 
 		if (this.folded) {
 			result.push(new SimpleAction('Unfold', () => {
 				self.folded = false;
-				return onDone(null);
+				self.NotifyChange(self, ChangeType.Folding);
 			}));
 		}
 		else {
 			result.push(new SimpleAction('Fold', () => {
 				self.folded = true;
-				return onDone(null);
+				self.NotifyChange(self, ChangeType.Folding);
 			}));
 		}
 
@@ -132,17 +132,19 @@ class PCLGroup extends PCLNode {
 			result.push(new SimpleAction('New cylinder', this.WrapNodeCreator(this.GetCylinderCreator())));
 			result.push(new SimpleAction('New cone', this.WrapNodeCreator(this.GetConeCreator())));
 			result.push(new SimpleAction('New torus', this.WrapNodeCreator(this.GetTorusCreator())));
-			result.push(new ScanFromCurrentViewPointAction(this, delegate, onDone));
+			result.push(new ScanFromCurrentViewPointAction(this, delegate));
 		}
 
 		return result;
 	}
 
-	CompleteProperties(properties: Properties) {
-		let self = this;
-		let children = new NumberProperty('Children', () => self.children.length, null);
-		children.SetReadonly();
-		properties.Push(children);
+	FillProperties() {
+		if (this.properties) {
+			let self = this;
+			let children = new NumberProperty('Children', () => self.children.length, null);
+			children.SetReadonly();
+			this.properties.Push(children);
+		}
 	}
 
 	private WrapNodeCreator(creator: PCLNodeCreator): Function {

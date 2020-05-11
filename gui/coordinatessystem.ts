@@ -17,16 +17,18 @@ class CoordinatesSystem implements Control, Notifiable {
 	private axesLabels: AxisLabel[];
 
 	constructor(private view: PCLApp) {
+		let self = this;
 		//Create the coordinates axes to be rendered
 		let axes: PCLCylinder[] = [
 			new PCLCylinder(new Cylinder(new Vector([.5, .0, .0]), new Vector([1.0, .0, .0]), .1, 1.0)),
 			new PCLCylinder(new Cylinder(new Vector([.0, .5, .0]), new Vector([.0, 1.0, .0]), .1, 1.0)),
 			new PCLCylinder(new Cylinder(new Vector([.0, .0, .5]), new Vector([.0, .0, 1.0]), .1, 1.0))
 		];
-		this.coordssystem = new Scene(this);
+		this.coordssystem = new Scene();
 		for (let index = 0; index < axes.length; index++) {
 			axes[index].SetBaseColor(axes[index].cylinder.axis.Flatten());
 			this.coordssystem.Contents.Add(axes[index]);
+			axes[index].AddChangeListener(() => self.renderer.Draw(self.coordssystem));
 		}
 
 		//Refine lighting

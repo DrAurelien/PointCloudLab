@@ -4,7 +4,9 @@
 /// <reference path="../../model/scalarfield.ts" />
 /// <reference path="../../model/ransac.ts" />
 /// <reference path="../../model/regiongrowth.ts" />
+/// <reference path="../../model/shapes/shape.ts" />
 /// <reference path="../../gui/objects/pclpointcloud.ts" />
+/// <reference path="../../gui/objects/pclshapewrapper.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
 /// <reference path="../../files/fileexporter.ts" />
 
@@ -43,7 +45,7 @@ abstract class CloudProcess extends IterativeLongProcess {
 // Shapes detection
 //===================================================
 class ResetDetectionAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Reset detection');
 	}
 
@@ -53,13 +55,11 @@ class ResetDetectionAction extends PCLCloudAction {
 
 	Run() {
 		this.GetPCLCloud().ransac = null;
-		if (this.onDone)
-			this.onDone();
 	}
 }
 
 class RansacDetectionAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape', 'Try to detect the shape a shape in the poiutn cloud');
 	}
 
@@ -87,7 +87,8 @@ class RansacDetectionAction extends PCLCloudAction {
 			dialog.InsertCheckBox('Cylinders', true);
 		}
 		else {
-			cloud.ransac.FindBestFittingShape(this.onDone);
+			let self = this;
+			cloud.ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s));
 		}
 	}
 
@@ -110,8 +111,16 @@ class RansacDetectionAction extends PCLCloudAction {
 			generators.push(Ransac.RansacCylinder);
 		ransac.SetGenerators(generators);
 
-		ransac.FindBestFittingShape(this.onDone);
+		let self = this;
+		ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s));
 		return true;
+	}
+
+	HandleResult(shape: Shape) {
+		let pclshape = new PCLShapeWrapper(shape).GetPCLShape();
+		let owner = this.GetPCLCloud().owner;
+		owner.Add(pclshape);
+		owner.NotifyChange(pclshape, ChangeType.Creation);
 	}
 }
 
@@ -119,7 +128,7 @@ class RansacDetectionAction extends PCLCloudAction {
 // Normals computation
 //===================================================
 class ComputeNormalsAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Compute normals', 'Compute the vectors normal to the surface sampled by this point cloud');
 	}
 
@@ -129,7 +138,8 @@ class ComputeNormalsAction extends PCLCloudAction {
 
 	Run() {
 		let k = 30;
-		let ondone = () => this.onDone();
+		let cloud = this.GetPCLCloud();
+		let ondone = () => cloud.InvalidateDrawing();
 		let ncomputer = new NormalsComputer(this.GetCloud(), k);
 		let nharmonizer = new NormalsComputer(this.GetCloud(), k);
 		ncomputer.SetNext(nharmonizer).SetNext(ondone);
@@ -180,7 +190,7 @@ class NormalsHarmonizer extends RegionGrowthProcess {
 };
 
 class ClearNormalsAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Clear normals', 'Clear previously computed normals');
 	}
 
@@ -190,13 +200,12 @@ class ClearNormalsAction extends PCLCloudAction {
 
 	Run() {
 		this.GetCloud().ClearNormals();
-		if (this.onDone)
-			this.onDone();
+		this.GetPCLCloud().InvalidateDrawing();
 	}
 }
 
 class GaussianSphereAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Extract the gaussian sphere', 'Builds a new point cloud made of the point cloud normals. The resulting point cloud will sample the unit sphere (since normals are unit vectors) - hence the name.');
 	}
 
@@ -213,8 +222,7 @@ class GaussianSphereAction extends PCLCloudAction {
 		for (let index = 0; index < cloudSize; index++) {
 			gcloud.PushPoint(cloud.GetNormal(index));
 		}
-		if (this.onDone)
-			this.onDone(gsphere);
+		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.Creation);
 	}
 }
 
@@ -222,7 +230,7 @@ class GaussianSphereAction extends PCLCloudAction {
 // Connected components
 //===================================================
 class ConnectedComponentsAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: PCLNodeHandler) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Compute connected components', 'Split the point cloud into connected subsets');
 	}
 
@@ -232,7 +240,8 @@ class ConnectedComponentsAction extends PCLCloudAction {
 
 	Run() {
 		let k = 30;
-		let ondone = (b: ConnecterComponentsBuilder) => this.onDone(b.result);
+		let self = this;
+		let ondone = (b: ConnecterComponentsBuilder) => self.GetPCLCloud().NotifyChange(b.result, ChangeType.Creation);
 		let builder = new ConnecterComponentsBuilder(this.GetCloud(), k, this.GetPCLCloud().name);
 		builder.SetNext(ondone);
 		builder.Start();
@@ -262,7 +271,7 @@ class ConnecterComponentsBuilder extends RegionGrowthProcess {
 // Density
 //===================================================
 class ComputeDensityAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Compute density', 'Estimate the points density at each point of the cloud, and assign the corresponding scalar field');
 	}
 
@@ -273,7 +282,8 @@ class ComputeDensityAction extends PCLCloudAction {
 	Run() {
 		let k = 30;
 		let density = new DensityComputer(this.GetPCLCloud(), k);
-		let ondone = () => this.onDone();
+		let cloud = this.GetPCLCloud();
+		let ondone = () => { cloud.lighting = false; cloud.InvalidateDrawing(); }
 		density.SetNext(ondone);
 		density.Start();
 	}
@@ -304,7 +314,7 @@ class DensityComputer extends IterativeLongProcess {
 }
 
 class ExportPointCloudFileAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private onDone: Function) {
+	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Export file');
 	}
 

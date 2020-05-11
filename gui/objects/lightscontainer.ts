@@ -12,8 +12,8 @@ class LightsContainer extends PCLGroup {
 		super(name || NameProvider.GetName('Lights'));
 	}
 
-	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
-		let result: Action[] = super.GetActions(delegate, onDone);
+	GetActions(delegate: ActionDelegate): Action[] {
+		let result: Action[] = super.GetActions(delegate);
 
 		result.push(null);
 		result.push(new NewLightAction(this));

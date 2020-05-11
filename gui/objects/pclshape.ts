@@ -59,7 +59,7 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 				if (self.meshsampling != drawingContext.sampling) {
 					self.meshsampling = drawingContext.sampling;
 					self.drawing.FillBuffers(mesh, drawingContext);
-					self.NotifyChange(self);
+					self.NotifyChange(self, ChangeType.Display);
 				}
 			});
 			//Not ready yet. Wait for NotifyChange to be handled 
@@ -74,16 +74,18 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 		}
 	}
 
-	CompleteProperties(properties: Properties) {
-		super.CompleteProperties(properties);
-		properties.Push(new PropertyGroup('Geometry', this.GetGeometry()));
+	FillProperties() {
+		super.FillProperties();
+		if (this.properties) {
+			this.properties.Push(new PropertyGroup('Geometry', this.GetGeometry()));
+		}
 	}
 
-	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
-		let result = super.GetActions(delegate, onDone);
+	GetActions(delegate: ActionDelegate): Action[] {
+		let result = super.GetActions(delegate);
 
 		result.push(null);
-		result.push(new CreateShapeMeshAction(this.GetShape(), delegate, onDone));
+		result.push(new CreateShapeMeshAction(this, delegate.GetShapesSampling()));
 		return result;
 	}
 

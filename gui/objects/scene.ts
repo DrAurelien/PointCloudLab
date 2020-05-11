@@ -7,7 +7,7 @@
 
 
 class Scene extends PCLGroup {
-	constructor(private notifhandler: Notifiable) {
+	constructor() {
 		super("Scene");
 		this.deletable = false;
 
@@ -66,11 +66,5 @@ class Scene extends PCLGroup {
 
 	GetDisplayIcon(): string {
 		return 'fa-desktop';
-	}
-
-	NotifyChange(source: PCLNode) {
-		if (this.notifhandler) {
-			this.notifhandler.NotifyChange(source);
-		}
 	}
 }

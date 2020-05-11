@@ -16,10 +16,13 @@ class VectorProperty extends PropertyGroup {
 	}
 
 	private UpdateValue(index, value) {
-		this.vector().Set(index, value);
+		let vect = this.vector();
+		vect.Set(index, value);
 		if (this.normalize) {
-			this.vector().Normalize();
+			vect.Normalize();
+			this.properties.Refresh();
 		}
+		this.NotifyChange();
 	}
 
 	GetValue(): Vector {

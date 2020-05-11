@@ -83,9 +83,13 @@ class Renderer implements Control {
 		return null;
 	}
 
-	ScanFromCurrentViewPoint(group: PCLNode, hsampling: number, vsampling: number, resultHandler: Function) {
+	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number) {
 		let scanner = new SceneScanner(this, group, hsampling, vsampling);
-		scanner.SetNext((s: SceneScanner) => resultHandler(new PCLPointCloud(s.cloud)));
+		scanner.SetNext((s: SceneScanner) => {
+			let cloud = new PCLPointCloud(s.cloud);
+			group.Add(cloud);
+			cloud.NotifyChange(cloud, ChangeType.Creation);
+		});
 		scanner.Start();
 	}
 }

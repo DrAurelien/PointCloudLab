@@ -65,9 +65,9 @@ class DataHandler extends HideablePannel {
 		this.HandlePropertiesWindowVisibility();
 		if (item != this.currentItem) {
 			if (this.currentItem) {
-				this.currentItem.Select(false);
-				this.currentItem.ClearProperties();
 				this.propertiesArea.Clear();
+				this.currentItem.ClearProperties();
+				this.currentItem.Select(false);
 			}
 
 			this.currentItem = item;
@@ -76,11 +76,20 @@ class DataHandler extends HideablePannel {
 				let currentProperties = this.currentItem.GetProperties();
 				this.propertiesArea.AddControl(currentProperties);
 			}
+			this.HandlePropertiesWindowVisibility();
+			this.AskRendering();
 		}
 	}
 
 	GetCurrentItem(): PCLNode {
 		return this.currentItem;
+	}
+
+	GetNewItemOwner(): PCLContainer {
+		let owner = (this.currentItem && this.currentItem.owner) ? this.currentItem : this.scene.Contents;
+		if (owner instanceof PCLGroup)
+			return owner as PCLGroup;
+		return owner.owner;
 	}
 
 	GetSceneRenderer(): Renderer {
@@ -89,5 +98,9 @@ class DataHandler extends HideablePannel {
 
 	public GetActionsDelegate(): ActionDelegate {
 		return this.ownerView;
+	}
+
+	AskRendering() {
+		this.ownerView.RefreshRendering();
 	}
 }

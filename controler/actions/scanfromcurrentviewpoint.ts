@@ -7,7 +7,7 @@ class ScanFromCurrentViewPointAction extends Action {
 	static hSamplingTitle = 'Horizontal Sampling';
 	static vSamplingTitle = 'Vertical Sampling';
 
-	constructor(private group: PCLGroup, private deletgate: ActionDelegate, private onDone: PCLNodeHandler) {
+	constructor(private group: PCLGroup, private deletgate: ActionDelegate) {
 		super('Scan from current viewpoint', 'Create an new point cloud by simulating a LIDAR scanning of the group contents, from the current view point');
 	}
 
@@ -37,7 +37,7 @@ class ScanFromCurrentViewPointAction extends Action {
 			return false;
 		}
 
-		this.deletgate.ScanFromCurrentViewPoint(this.group, hsampling, vsampling, this.onDone);
+		this.deletgate.ScanFromCurrentViewPoint(this.group, hsampling, vsampling);
 		return true;
 	}
 }

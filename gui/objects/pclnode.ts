@@ -9,14 +9,27 @@
 /// <reference path="../../controler/actions/delegate.ts" />
 
 
-interface PCLContainer {
-	Add(child: PCLNode);
-	Remove(child: PCLNode);
-	NotifyChange(source: PCLNode);
+enum ChangeType {
+	Selection	= 0x000001,
+	Creation	= 0x000002,
+	Properties	= 0x000004,
+	Display		= 0x000008,
+	Folding		= 0x000010,
+	Children	= 0x000020
 }
 
 interface Notifiable {
-	NotifyChange(source: PCLNode);
+	NotifyChange(source: PCLNode, type: ChangeType);
+}
+
+interface ChangeHandler {
+	(source: PCLNode, type: ChangeType): void;
+}
+
+interface PCLContainer {
+	Add(child: PCLNode);
+	Remove(child: PCLNode);
+	NotifyChange(source: PCLNode, type: ChangeType);
 }
 
 abstract class PCLNode implements Pickable, Notifiable {
@@ -24,8 +37,8 @@ abstract class PCLNode implements Pickable, Notifiable {
 	visible: boolean;
 	selected: boolean;
 	deletable: boolean;
-	private changeListeners: Function[];
-	private properties: Properties;
+	private changeListeners: ChangeHandler[];
+	protected properties: Properties;
 
 	constructor(public name: string) {
 		this.visible = true;
@@ -56,44 +69,43 @@ abstract class PCLNode implements Pickable, Notifiable {
 		let self = this;
 		if (!this.properties) {
 			this.properties = new Properties();
-			this.properties.onChange = () => self.NotifyChange(self);
 			this.properties.Push(new StringProperty('Name', () => self.name, (newName) => self.name = newName));
 			this.properties.Push(new BooleanProperty('Visible', () => self.visible, (newVilibility) => self.visible = newVilibility));
-			this.CompleteProperties(this.properties);
+			this.FillProperties();
+
+			this.properties.onChange = () => self.NotifyChange(self, ChangeType.Properties | ChangeType.Display);
 		}
 		return this.properties;
 	}
-	protected abstract CompleteProperties(properties: Properties);
-
+	protected abstract FillProperties();
 	Select(b: boolean) {
 		let change = (b !== this.selected);
 		this.selected = b;
 		if (change) {
-			this.NotifyChange(this);
+			this.NotifyChange(this, ChangeType.Selection);
 		}
 	}
 
 	ToggleVisibility() {
 		this.visible = !this.visible;
-		this.NotifyChange(this);
+		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
 	}
 
-	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
+	GetActions(delegate: ActionDelegate): Action[] {
 		let self = this;
 		let result: Action[] = [];
 		if (this.deletable) {
 			result.push(new SimpleAction('Remove', () => {
 				if (confirm('Are you sure you want to delete "' + self.name + '" ?')) {
 					self.owner.Remove(self);
-					return onDone(null);
 				}
 			}));
 		}
 		if (this.visible) {
-			result.push(new SimpleAction('Hide', () => { self.visible = false; return onDone(null); }));
+			result.push(new SimpleAction('Hide', () => { self.visible = false; self.NotifyChange(self, ChangeType.Display | ChangeType.Properties); }));
 		}
 		else {
-			result.push(new SimpleAction('Show', () => { self.visible = true; return onDone(null); }));
+			result.push(new SimpleAction('Show', () => { self.visible = true; self.NotifyChange(self, ChangeType.Display | ChangeType.Properties); }));
 		}
 		return result;
 	}
@@ -106,26 +118,20 @@ abstract class PCLNode implements Pickable, Notifiable {
 		return proc(this);
 	}
 
-	NotifyChange(source: PCLNode) {
-		if (this.properties) {
-			this.properties.Refresh();
-		}
-		if (source == this) {
-			for (let index = 0; index < this.changeListeners.length; index++) {
-				this.changeListeners[index](this);
-			}
-		}
-		if (this.owner) {
-			this.owner.NotifyChange(source);
+	NotifyChange(source: PCLNode, type: ChangeType) {
+		for (let index = 0; index < this.changeListeners.length; index++) {
+			this.changeListeners[index](source, type);
 		}
 	}
 
-	AddChangeListener(onchange: Function) {
+	AddChangeListener(onchange: ChangeHandler) {
 		this.changeListeners.push(onchange);
 	}
 
 	ClearProperties() {
-		delete this.properties;
+		if (this.properties) {
+			delete this.properties;
+		}
 	}
 }
 

@@ -109,6 +109,9 @@
     <Content Include="controler\controler.ts" />
     <Content Include="controler\actions\delegate.ts" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclshapewrapper.ts" />
+  </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
   </Target>

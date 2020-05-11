@@ -8,7 +8,7 @@
 
 abstract class PCLPrimitive extends PCLNode {
 	private material: Material;
-	protected lighting: boolean;
+	public lighting: boolean;
 
 	constructor(public name: string) {
 		super(name);
@@ -20,10 +20,12 @@ abstract class PCLPrimitive extends PCLNode {
 		this.material.baseColor = color;
 	}
 
-	CompleteProperties(properties: Properties) {
-		let self = this;
-		properties.Push(new BooleanProperty('Lighting', () => self.lighting, (l: boolean) => { self.lighting = l; }));
-		properties.Push(new PropertyGroup('Material', this.material.GetProperties()));
+	FillProperties() {
+		if (this.properties) {
+			let self = this;
+			this.properties.Push(new BooleanProperty('Lighting', () => self.lighting, (l: boolean) => { self.lighting = l; }));
+			this.properties.Push(new PropertyGroup('Material', this.material.GetProperties()));
+		}
 	}
 
 	abstract DrawPrimitive(drawingContext: DrawingContext);

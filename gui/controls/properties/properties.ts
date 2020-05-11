@@ -19,6 +19,7 @@ class Properties implements Control {
 		if (this.element) {
 			this.AddPropertyElement(property);
 		}
+		this.NotifyChange(property);
 	}
 
 	Refresh() {

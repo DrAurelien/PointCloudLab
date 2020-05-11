@@ -25,9 +25,9 @@ class PCLApp implements Controlable, ActionDelegate {
 	coordinatesSystem: CoordinatesSystem;
 
 	constructor() {
-		let appInterface: PCLApp = this;
+		let self: PCLApp = this;
 
-		let scene = new Scene(this);
+		let scene = new Scene();
 		this.InitializeLongProcess();
 		this.InitializeDataHandler(scene);
 		this.InitializeRenderers(scene);
@@ -35,7 +35,7 @@ class PCLApp implements Controlable, ActionDelegate {
 		this.Resize();
 
 		window.onresize = function () {
-			appInterface.Resize();
+			self.Resize();
 		}
 		this.RefreshRendering();
 	}
@@ -211,15 +211,8 @@ class PCLApp implements Controlable, ActionDelegate {
 	//===================================
 	// Implement ActionsDelegate interface
 	// ==================================
-	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number, onDone: Function) {
-		this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling,
-			(cloud) => {
-				group.Add(cloud);
-				if (onDone) {
-					onDone(cloud);
-				}
-			}
-		);
+	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number) {
+		this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling);
 	}
 
 	GetShapesSampling(): number {

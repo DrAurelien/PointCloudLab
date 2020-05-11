@@ -18,10 +18,10 @@
 class PCLPointCloud extends PCLPrimitive implements Pickable {
 	ransac: Ransac;
 	fields: ScalarField[];
-	fieldsProperty: PropertyGroup;
 	currentfield: number;
 	drawing: PointCloudDrawing;
 
+	private static ScalarFieldPropertyName: string = 'Scalar fields';
 	static DensityFieldName = 'Density';
 
 	constructor(public cloud: PointCloud = null) {
@@ -70,61 +70,68 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return this.cloud.boundingbox;
 	}
 
-	GetActions(delegate: ActionDelegate, onDone: PCLNodeHandler): Action[] {
+	GetActions(delegate: ActionDelegate): Action[] {
 		let cloud = this;
-		let result: Action[] = super.GetActions(delegate, onDone);
+		let result: Action[] = super.GetActions(delegate);
 
 		result.push(null);
 		if (this.cloud.HasNormals()) {
-			result.push(new ClearNormalsAction(this, onDone));
+			result.push(new ClearNormalsAction(this));
 		}
 		else {
-			result.push(new ComputeNormalsAction(this, onDone));
+			result.push(new ComputeNormalsAction(this));
 		}
-		result.push(new GaussianSphereAction(this, onDone));
+		result.push(new GaussianSphereAction(this));
 
 		result.push(null);
 
-		result.push(new ConnectedComponentsAction(this, onDone));
-		result.push(new ComputeDensityAction(this, onDone));
+		result.push(new ConnectedComponentsAction(this));
+		result.push(new ComputeDensityAction(this));
 
 		result.push(null);
 		let ransac = false;
 		if (cloud.ransac) {
-			result.push(new ResetDetectionAction(this, onDone));
+			result.push(new ResetDetectionAction(this));
 			ransac = true;
 		}
 		if (!(cloud.ransac && cloud.ransac.IsDone())) {
-			result.push(new RansacDetectionAction(this, onDone));
+			result.push(new RansacDetectionAction(this));
 			ransac = true;
 		}
 
 		if (ransac)
 			result.push(null);
-		result.push(new ExportPointCloudFileAction(this, onDone));
+		result.push(new ExportPointCloudFileAction(this));
 
 		return result;
 	}
 
-	CompleteProperties(properties: Properties) {
-		super.CompleteProperties(properties);
-		let self = this;
-		let points = new NumberProperty('Points', () => self.cloud.Size(), null);
-		points.SetReadonly();
-		properties.Push(points);
+	FillProperties() {
+		super.FillProperties();
+		if (this.properties) {
+			let self = this;
+			let points = new NumberProperty('Points', () => self.cloud.Size(), null);
+			points.SetReadonly();
+			this.properties.Push(points);
 
-		if (this.fields.length) {
-			this.fieldsProperty = new PropertyGroup('Scalar fields');
-			for (let index = 0; index < this.fields.length; index++) {
-				this.AddScaralFieldProperty(index);
+			if (this.fields.length) {
+				let fieldsProperty = new PropertyGroup(PCLPointCloud.ScalarFieldPropertyName);
+				for (let index = 0; index < this.fields.length; index++) {
+					fieldsProperty.Add(this.GetScalarFieldProperty(index));
+				}
+				this.properties.Push(fieldsProperty);
 			}
-			properties.Push(this.fieldsProperty);
 		}
 	}
 
 	AddScaralFieldProperty(index: number) {
-		if (this.fieldsProperty) {
-			this.fieldsProperty.Add(this.GetScalarFieldProperty(index));
+		if (this.properties) {
+			let fieldsProperty = this.properties.GetPropertyByName(PCLPointCloud.ScalarFieldPropertyName) as PropertyGroup;
+			if (!fieldsProperty) {
+				fieldsProperty = new PropertyGroup(PCLPointCloud.ScalarFieldPropertyName);
+				this.properties.Push(fieldsProperty);
+			}
+			fieldsProperty.Add(this.GetScalarFieldProperty(index));
 		}
 	}
 
@@ -142,6 +149,11 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		this.drawing.FillBuffers(this.cloud, field, drawingContext);
 		this.drawing.BindBuffers(this.lighting, !!field, drawingContext);
 		this.drawing.Draw(drawingContext);
+	}
+
+	InvalidateDrawing() {
+		this.drawing.Clear();
+		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
 	}
 
 	GetCSVData(): string {
