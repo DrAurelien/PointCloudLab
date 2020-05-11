@@ -9,7 +9,7 @@
 
 class LightsContainer extends PCLGroup {
 	constructor(name?: string) {
-		super(name || NameProvider.GetName('Lights'));
+		super(name || NameProvider.GetName('Lights'), false);
 	}
 
 	GetActions(delegate: ActionDelegate): Action[] {
