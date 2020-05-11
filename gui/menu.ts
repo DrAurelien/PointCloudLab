@@ -20,10 +20,12 @@ class Menu extends HideablePannel {
 		let dataHandler = ownerView.dataHandler;
 		let scene = dataHandler.scene;
 
-		this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject) {
+		this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject: PCLNode) {
 			if (createdObject != null) {
-				scene.Contents.Add(createdObject);
-				dataHandler.SetCurrentItem(createdObject);
+				let owner = dataHandler.GetNewItemOwner();
+				owner.Add(createdObject);
+				createdObject.NotifyChange(createdObject, ChangeType.Creation);
+
 			}
 		}, 'Load data from a file'));
 

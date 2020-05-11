@@ -61,7 +61,7 @@ class DataHandler extends HideablePannel {
 		}
 	}
 
-	SetCurrentItem(item: PCLNode) {
+	SetCurrentItem(item: PCLNode, focus: boolean = false) {
 		this.HandlePropertiesWindowVisibility();
 		if (item != this.currentItem) {
 			if (this.currentItem) {
@@ -77,7 +77,12 @@ class DataHandler extends HideablePannel {
 				this.propertiesArea.AddControl(currentProperties);
 			}
 			this.HandlePropertiesWindowVisibility();
-			this.AskRendering();
+			if (focus) {
+				this.ownerView.FocusOnCurrentItem();
+			}
+			else {
+				this.ownerView.RefreshRendering();
+			}
 		}
 	}
 
@@ -86,7 +91,9 @@ class DataHandler extends HideablePannel {
 	}
 
 	GetNewItemOwner(): PCLContainer {
-		let owner = (this.currentItem && this.currentItem.owner) ? this.currentItem : this.scene.Contents;
+		let owner = (this.currentItem && this.currentItem.owner && !(this.currentItem instanceof LightsContainer)) ?
+			this.currentItem :
+			this.scene.Contents;
 		if (owner instanceof PCLGroup)
 			return owner as PCLGroup;
 		return owner.owner;

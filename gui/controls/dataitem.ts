@@ -165,7 +165,7 @@ class DataItem implements Control {
 				let owner = this.dataHandler.GetNewItemOwner();
 				owner.Add(source);
 			}
-			this.dataHandler.SetCurrentItem(source);
+			this.dataHandler.SetCurrentItem(source, true);
 		}
 
 		if (change & ChangeType.Children) {

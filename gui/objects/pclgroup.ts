@@ -34,8 +34,10 @@ class PCLGroup extends PCLNode {
 	}
 
 	DrawNode(drawingContext: DrawingContext): void {
-		for (var index = 0; index < this.children.length; index++) {
-			this.children[index].Draw(drawingContext);
+		if (this.visible) {
+			for (var index = 0; index < this.children.length; index++) {
+				this.children[index].Draw(drawingContext);
+			}
 		}
 	}
 
@@ -80,7 +82,7 @@ class PCLGroup extends PCLNode {
 		let boundingbox = new BoundingBox();
 		for (var index = 0; index < this.children.length; index++) {
 			let bb = this.children[index].GetBoundingBox();
-			if (bb.IsValid()) {
+			if (bb && bb.IsValid()) {
 				boundingbox.Add(bb.min);
 				boundingbox.Add(bb.max);
 			}
