@@ -1,4 +1,14 @@
-﻿class Sphere extends Shape {
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
+
+
+class Sphere extends Shape {
 	constructor(public center: Vector, public radius: number) {
 		super();
 	}
@@ -87,8 +97,8 @@
 
 	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFrom = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDir = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		//Solve [t] : sqrnorm(innerFrom[i]+t*innerDir[i])=radius
 		let aa = 0;
@@ -119,14 +129,8 @@
 		return Math.abs(point.Minus(this.center).Norm() - this.radius);
 	}
 
-	Rotate(rotation: Matrix) {
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-	}
-
-	Scale(scale: number) {
-		this.radius *= scale;
+	ApplyTransform(transform: Transform) {
+		this.center = transform.TransformPoint(this.center);
+		this.radius *= transform.scalefactor;
 	}
 }

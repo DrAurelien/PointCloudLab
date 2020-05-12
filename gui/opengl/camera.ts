@@ -143,9 +143,9 @@ class Camera implements ViewPoint {
 		let rotation = this.GetRotationMatrix(fromx, fromy, tox, toy);
 
 		let p = this.at.Minus(this.to);
-		p = Matrix.ToVector(rotation.Multiply(Matrix.FromPoint(p)));
+		p = Homogeneous.ToVector(rotation.Multiply(new HomogeneousPoint(p)));
 		this.at = this.to.Plus(p);
-		this.up = Matrix.ToVector(rotation.Multiply(Matrix.FromVector(this.up)));
+		this.up = Homogeneous.ToVector(rotation.Multiply(new HomogeneousVector(this.up)));
 	}
 
 	Zoom(d: number): void {
@@ -162,10 +162,7 @@ class Camera implements ViewPoint {
 
 	ComputeProjection(v: Vector, applyViewPort: boolean): Vector {
 		let u: Matrix;
-		if (v.Dimension() == 3)
-			u = new Matrix(1, 4, v.Flatten().concat([1.0]));
-		else
-			u = new Matrix(1, 4, v.Flatten());
+		u = new HomogeneousPoint(v);
 		let projection = this.GetProjectionMatrix();
 		let modelview = this.GetModelViewMatrix();
 		let render = projection.Multiply(modelview);
@@ -180,10 +177,7 @@ class Camera implements ViewPoint {
 
 	ComputeInvertedProjection(p: Vector): Vector {
 		var u: Matrix;
-		if (p.Dimension() == 3)
-			u = new Matrix(1, 4, p.Flatten().concat([1.0]));
-		else
-			u = new Matrix(1, 4, p.Flatten());
+		u = new HomogeneousPoint(p);
 		//First : screen to normalized screen coordinates
 		u.SetValue(0, 0, 2.0 * u.GetValue(0, 0) / this.screen.width - 1.0);
 		u.SetValue(1, 0, 1.0 - 2.0 * u.GetValue(1, 0) / this.screen.height);

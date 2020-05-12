@@ -8,6 +8,8 @@
  * The Transform Contorler handles mouse inputs in order to apply transformations the the currently selected element
  */
 class TransformControler extends MouseControler {
+	currentItem: Transformable;
+
 	constructor(target: Controlable) {
 		super(target);
 	}
@@ -17,8 +19,7 @@ class TransformControler extends MouseControler {
 			return true;
 		}
 
-		let item = this.target.GetCurrentTransformable();
-		if (!item) {
+		if (!this.currentItem) {
 			return false;
 		}
 
@@ -28,17 +29,17 @@ class TransformControler extends MouseControler {
 				let x = this.mousetracker.x - displacement.dx;
 				let y = this.mousetracker.y - displacement.dy;
 				let rotation = camera.GetRotationMatrix(this.mousetracker.x, this.mousetracker.y, x, y);
-				item.Rotate(rotation);
+				this.currentItem.Rotate(rotation);
 				this.Cursor = Cursor.Combine([Cursor.Edit, Cursor.Rotate]);
 				break;
 			case 2: //Middle mouse
 				let scale = 1.0 - (displacement.dy / camera.GetScreenHeight());
-				item.Scale(scale);
+				this.currentItem.Scale(scale);
 				this.Cursor = Cursor.Combine([Cursor.Edit, Cursor.Scale]);
 				break;
 			case 3: //Right mouse
 				let translation = camera.GetTranslationVector(-displacement.dx, -displacement.dy);
-				item.Translate(translation);
+				this.currentItem.Translate(translation);
 				this.Cursor = Cursor.Combine([Cursor.Edit, Cursor.Translate]);
 				break;
 			default:
@@ -47,6 +48,20 @@ class TransformControler extends MouseControler {
 
 		this.target.NotifyTransform();
 		return true;
+	}
+
+	StartMouseEvent() {
+		this.currentItem = this.target.GetCurrentTransformable();
+		if (this.currentItem) {
+			this.currentItem.InititalizeTransform();
+		}
+	}
+
+	EndMouseEvent() {
+		if (this.currentItem) {
+			this.currentItem.ApplyTransform();
+			this.currentItem = null;
+		}
 	}
 
 	protected HandleClick(tracker: MouseTracker): boolean {

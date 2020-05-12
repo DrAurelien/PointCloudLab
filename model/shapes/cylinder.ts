@@ -1,8 +1,24 @@
-﻿class Cylinder extends Shape {
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
+
+
+class Cylinder extends Shape {
 	constructor(public center: Vector, public axis: Vector, public radius: number, public height: number) {
 		super();
 	}
 
+	ApplyTransform(transform: Transform) {
+		this.axis = transform.TransformVector(this.axis).Normalized();
+		this.center = transform.TransformPoint(this.center);
+		this.radius *= transform.scalefactor;
+		this.height *= transform.scalefactor;
+	}
 
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([
@@ -13,20 +29,6 @@
 		let bb = new BoundingBox();
 		bb.Set(this.center, size);
 		return bb;
-	}
-
-	Rotate(rotation: Matrix) {
-		let a = rotation.Multiply(Matrix.FromVector(this.axis));
-		this.axis = Matrix.ToVector(a);
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-	}
-
-	Scale(scale: number) {
-		this.radius *= scale;
-		this.height *= scale;
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
@@ -111,8 +113,8 @@
 
 	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFrom = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDir = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		//haveing p[t] = (innerFrom[i]+t*innerDir[i])
 		//Solve p[t].x^2+p[t].y^2=radius for each i<3

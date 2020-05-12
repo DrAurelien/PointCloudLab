@@ -3,18 +3,12 @@
 
 
 class Matrix {
-	values: number[];
-
-	constructor(public width: number, public height: number, values: number[]) {
-		this.values = new Array(values.length);
-		for (var index = 0; index < values.length; index++) {
-			this.values[index] = values[index];
-		}
+	constructor(public width: number, public height: number,  public values: Float32Array) {
 	}
 
 	//Common matrix Builders
 	static Null(width: number, height: number): Matrix {
-		var values = new Array(width * height);
+		var values = new Float32Array(width * height);
 		for (var index = 0; index < values.length; index++) {
 			values[index] = 0.0;
 		}
@@ -60,23 +54,6 @@ class Matrix {
 		return result;
 	}
 
-	static FromVector(v: Vector): Matrix {
-		return new Matrix(1, v.Dimension() + 1, v.Flatten().concat(0));
-	}
-
-	static FromPoint(p: Vector): Matrix {
-		return new Matrix(1, p.Dimension() + 1, p.Flatten().concat(1));
-	}
-
-	static ToVector(m: Matrix): Vector {
-		let s = m.height - 1;
-		let c = new Array(s);
-		for (let index = 0; index < s; index++) {
-			c[index] = m.GetValue(index, 0);
-		}
-		return new Vector(c);
-	}
-
 	private FlatIndex(row: number, col: number): number {
 		//Column-Major flat storage
 		return row + col * this.width;
@@ -91,11 +68,12 @@ class Matrix {
 	}
 
 	Clone(): Matrix {
-		return new Matrix(this.width, this.height, this.values);
+		var values = new Float32Array(this.values);
+		return new Matrix(this.width, this.height, values);
 	}
 
 	Times(s: number): Matrix {
-		var result = new Array(this.width * this.height);
+		var result = new Float32Array(this.width * this.height);
 		for (var index = 0; index < this.values.length; index++) {
 			result[index] = this.values[index] * s;
 		}
@@ -205,5 +183,37 @@ class Matrix {
 			line += ' |';
 			console.log(line);
 		}
+	}
+}
+
+//Extends N-D vector space with a (N+1)th "homegeneous" coordinate, for matrix multiplications
+class Homogeneous extends Matrix {
+	constructor(v: Vector, uniformcoord: number) {
+		super(1, v.Dimension() + 1, new Float32Array(v.Flatten().concat(uniformcoord)));
+	}
+
+	static ToVector(m: Matrix): Vector {
+		if (m.width != 1) {
+			throw 'Matrix (' + m.width + 'x' + m.height + ') cannot be interpreted as a unifrom vector';
+		}
+		let s = m.height - 1;
+		let c = new Array<number>(s);
+		let f = m.GetValue(s , 0) || 1;
+		for (let index = 0; index < s; index++) {
+			c[index] = m.GetValue(index, 0) / f;
+		}
+		return new Vector(c);
+	}
+}
+
+class HomogeneousVector extends Homogeneous {
+	constructor(v: Vector) {
+		super(v, 0.0);
+	}
+}
+
+class HomogeneousPoint extends Homogeneous {
+	constructor(v: Vector) {
+		super(v, 1.0);
 	}
 }

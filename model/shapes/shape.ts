@@ -1,4 +1,13 @@
-﻿abstract class Shape {
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+
+
+abstract class Shape {
 	boundingbox: BoundingBox;
     visible: boolean;
 
@@ -11,9 +20,7 @@
 
 	abstract Distance(point: Vector): number;
 
-	abstract Rotate(rotation: Matrix);
-	abstract Translate(translation: Vector);
-	abstract Scale(scale: number);
+	abstract ApplyTransform(transform: Transform);
 
 	abstract RayIntersection(ray: Ray, wrapper: Pickable);
 

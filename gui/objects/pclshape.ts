@@ -11,9 +11,10 @@
 /// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../../controler/actions/shapeactions.ts" />
 /// <reference path="../../tools/picking.ts" />
+/// <reference path="../../tools/transform.ts" />
 
 
-abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable {
+abstract class PCLShape extends PCLPrimitive implements Pickable {
 	visible: boolean;
 	drawing: MeshDrawing;
 	private meshsampling: number;
@@ -28,22 +29,12 @@ abstract class PCLShape extends PCLPrimitive implements Pickable, Transformable 
 
 	abstract GetShape(): Shape;
 
-	Rotate(rotation: Matrix) {
-		this.GetShape().Rotate(rotation);
+	TransformPrivitive(transform: Transform) {
+		this.GetShape().ApplyTransform(transform);
 		this.Invalidate();
 	}
 
-	Translate(translation: Vector) {
-		this.GetShape().Translate(translation);
-		this.Invalidate();
-	}
-
-	Scale(scale: number) {
-		this.GetShape().Scale(scale);
-		this.Invalidate();
-	}
-
-	GetBoundingBox(): BoundingBox {
+	GetPrimitiveBoundingBox(): BoundingBox {
 		return this.GetShape().GetBoundingBox();
 	}
 

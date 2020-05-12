@@ -1,4 +1,14 @@
-﻿class Cone extends Shape {
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
+
+
+class Cone extends Shape {
 	constructor(public apex: Vector, public axis: Vector, public angle: number, public height: number) {
 		super();
 	}
@@ -16,19 +26,12 @@
 		return bb;
 	}
 
-	Rotate(rotation: Matrix) {
+	ApplyTransform(transform: Transform) {
+		this.axis = transform.TransformVector(this.axis).Normalized();
+		this.height *= transform.scalefactor;
 		let c = this.apex.Plus(this.axis.Times(this.height * 0.5));
-		let a = rotation.Multiply(Matrix.FromVector(this.axis));
-		this.axis = Matrix.ToVector(a);
+		c = transform.TransformPoint(c);
 		this.apex = c.Minus(this.axis.Times(this.height * 0.5));
-	}
-
-	Translate(translation: Vector) {
-		this.apex = this.apex.Plus(translation);
-	}
-
-	Scale(scale: number) {
-		this.height *= scale;
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
@@ -93,8 +96,8 @@
 
 	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = Matrix.ToVector(worldToBase.Multiply(Matrix.FromPoint(ray.from)));
-		let innerDir = Matrix.ToVector(worldToBase.Multiply(Matrix.FromVector(ray.dir)));
+		let innerFrom = Homogeneous.ToVector(worldToBase.Multiply(new HomogeneousPoint(ray.from)));
+		let innerDir = Homogeneous.ToVector(worldToBase.Multiply(new HomogeneousVector(ray.dir)));
 
 		//having p[t] = (innerFrom[i]+t*innerDir[i])
 		//Solve p[t].x^2+p[t].y^2-(p[t].z * tan(a))^2=0 for each i<3

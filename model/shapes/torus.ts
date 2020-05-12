@@ -1,4 +1,14 @@
-﻿class Torus extends Shape {
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
+
+
+class Torus extends Shape {
 	constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number) {
 		super();
 	}
@@ -77,8 +87,8 @@
 
 	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFromMatrix = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDirMatrix = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		let innerDir = new Vector([innerDirMatrix.GetValue(0, 0), innerDirMatrix.GetValue(1, 0), innerDirMatrix.GetValue(2, 0)]);
 		let innerFrom = new Vector([innerFromMatrix.GetValue(0, 0), innerFromMatrix.GetValue(1, 0), innerFromMatrix.GetValue(2, 0)]);
@@ -119,17 +129,10 @@
 		return 0;
 	}
 
-	Rotate(rotation: Matrix) {
-		let a = rotation.Multiply(Matrix.FromVector(this.axis));
-		this.axis = Matrix.ToVector(a);
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-	}
-
-	Scale(scale: number) {
-		this.greatRadius *= scale;
-		this.smallRadius *= scale;
+	ApplyTransform(transform: Transform) {
+		this.axis = transform.TransformVector(this.axis).Normalized();
+		this.center = transform.TransformPoint(this.center);
+		this.greatRadius *= transform.scalefactor;
+		this.smallRadius *= transform.scalefactor;
 	}
 }

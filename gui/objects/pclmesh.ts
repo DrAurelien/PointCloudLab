@@ -23,7 +23,7 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 		this.drawing = new MeshDrawing();
 	}
 
-	GetBoundingBox(): BoundingBox {
+	GetPrimitiveBoundingBox(): BoundingBox {
 		return this.mesh.GetBoundingBox();
 	}
 
@@ -40,6 +40,10 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 
 	RayIntersection(ray: Ray): Picking {
 		return this.mesh.RayIntersection(ray, this);
+	}
+
+	TransformPrivitive(transform: Transform) {
+		this.mesh.ApplyTransform(transform);
 	}
 
 	FillProperties() {

@@ -32,9 +32,11 @@ interface LightingPosition {
 }
 
 interface Transformable {
+	InititalizeTransform();
 	Rotate(rotation: Matrix);
 	Scale(scale: number);
 	Translate(translation: Vector);
+	ApplyTransform();
 }
 
 interface Controler {

@@ -5,6 +5,7 @@
 /// <reference path="../maths/vector.ts" />
 /// <reference path="../maths/matrix.ts" />
 /// <reference path="../maths/eigendecomposition.ts" />
+/// <reference path="../tools/transform.ts" />
 
 
 class PointCloud {
@@ -29,7 +30,7 @@ class PointCloud {
 			this.Reserve(this.points.length + p.Dimension());
 		}
 
-		for (var index = 0; index < p.Dimension(); index++) {
+		for (let index = 0; index < p.Dimension(); index++) {
 			this.points[this.pointssize++] = p.Get(index);
 		}
 		this.boundingbox.Add(p);
@@ -37,25 +38,32 @@ class PointCloud {
 	}
 
 	Reserve(capacity: number) {
-		var points = new Float32Array(3 * capacity);
-		for (var index = 0; index < this.pointssize; index++) {
+		let points = new Float32Array(3 * capacity);
+		for (let index = 0; index < this.pointssize; index++) {
 			points[index] = this.points[index];
 		}
 		this.points = points;
 
-		var normals = new Float32Array(3 * capacity);
-		for (var index = 0; index < this.normalssize; index++) {
+		let normals = new Float32Array(3 * capacity);
+		for (let index = 0; index < this.normalssize; index++) {
 			normals[index] = this.normals[index];
 		}
 		this.normals = normals;
 	}
 
 	GetPoint(i: number): Vector {
-		var index = 3 * i;
+		let index = 3 * i;
 		return new Vector([
 			this.points[index],
 			this.points[index + 1],
 			this.points[index + 2]]);
+	}
+
+	private static SetValues(i: number, p: Vector, target: Float32Array) {
+		let index = 3 * i;
+		for (let ii = 0; ii < 3; ii++) {
+			target[index + ii] = p.Get(ii);
+		}
 	}
 
 	GetPointCoordinate(i: number, j: number): number {
@@ -72,13 +80,13 @@ class PointCloud {
 			this.Reserve(this.normals.length + n.Dimension());
 		}
 
-		for (var index = 0; index < n.Dimension(); index++) {
+		for (let index = 0; index < n.Dimension(); index++) {
 			this.normals[this.normalssize++] = n.Get(index);
 		}
 	}
 
 	GetNormal(i: number): Vector {
-		var index = 3 * i;
+		let index = 3 * i;
 		return new Vector([
 			this.normals[index],
 			this.normals[index + 1],
@@ -105,7 +113,7 @@ class PointCloud {
 			this.tree = new KDTree(this);
 		}
 
-		var knn = new KNearestNeighbours(k);
+		let knn = new KNearestNeighbours(k);
 		this.tree.FindNearestNeighbours(queryPoint, knn);
 		return knn.Neighbours();
 	}
@@ -116,45 +124,60 @@ class PointCloud {
 
 	ComputeNormal(index: number, k: number): Vector {
 		//Get the K-nearest neighbours (including the query point)
-		var point = this.GetPoint(index);
+		let point = this.GetPoint(index);
 		let knn = this.KNearestNeighbours(point, k + 1);
 
-		//Compute the covariance matrix
-		var covariance = Matrix.Null(3, 3);
-		var center = new Vector([0, 0, 0]);
-		for (var ii = 0; ii < knn.length; ii++) {
+		//Compute the coletiance matrix
+		let coletiance = Matrix.Null(3, 3);
+		let center = new Vector([0, 0, 0]);
+		for (let ii = 0; ii < knn.length; ii++) {
 			if (knn[ii].index != index) {
 				center = center.Plus(this.GetPoint(knn[ii].index));
 			}
 		}
 		center = center.Times(1 / (knn.length - 1));
-		for (var kk = 0; kk < knn.length; kk++) {
+		for (let kk = 0; kk < knn.length; kk++) {
 			if (knn[kk].index != index) {
-				var vec = this.GetPoint(knn[kk].index).Minus(center);
-				for (var ii = 0; ii < 3; ii++) {
-					for (var jj = 0; jj < 3; jj++) {
-						covariance.SetValue(ii, jj,
-							covariance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj))
+				let vec = this.GetPoint(knn[kk].index).Minus(center);
+				for (let ii = 0; ii < 3; ii++) {
+					for (let jj = 0; jj < 3; jj++) {
+						coletiance.SetValue(ii, jj,
+							coletiance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj))
 						);
 					}
 				}
 			}
 		}
 
-		//The normal is the eigenvector having the smallest eigenvalue in the covariance matrix
-		for (var ii = 0; ii < 3; ii++) {
-			//Check no column is null in the covariance matrix
-			if (covariance.GetColumnVector(ii).SqrNorm() <= 1.0e-12) {
-				var result = new Vector([0, 0, 0]);
+		//The normal is the eigenvector having the smallest eigenvalue in the coletiance matrix
+		for (let ii = 0; ii < 3; ii++) {
+			//Check no column is null in the coletiance matrix
+			if (coletiance.GetColumnVector(ii).SqrNorm() <= 1.0e-12) {
+				let result = new Vector([0, 0, 0]);
 				result.Set(ii, 1);
 				return result;
 			}
 		}
-		var eigen = new EigenDecomposition(covariance);
+		let eigen = new EigenDecomposition(coletiance);
 		if (eigen) {
 			return eigen[0].eigenVector.Normalized();
 		}
 
 		return null;
+	}
+
+	ApplyTransform(transform: Transform) {
+		this.boundingbox = new BoundingBox();
+		for (let index = 0; index < this.Size(); index++) {
+			let p = this.GetPoint(index);
+			p = transform.TransformPoint(p);
+			PointCloud.SetValues(index, p, this.points);
+			this.boundingbox.Add(p);
+			if (this.HasNormals()) {
+				let n = this.GetPoint(index);
+				n = transform.TransformVector(n);
+				PointCloud.SetValues(index, n, this.normals);
+			}
+		}
 	}
 }

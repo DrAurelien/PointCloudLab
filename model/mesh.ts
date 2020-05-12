@@ -98,6 +98,10 @@ class Mesh {
 		}
 		return result;
 	}
+
+	ApplyTransform(transform: Transform) {
+		this.pointcloud.ApplyTransform(transform);
+	}
 }
 
 class MeshNormalsComputer extends IterativeLongProcess {

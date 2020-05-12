@@ -66,7 +66,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return new Picking(this);
 	}
 
-	GetBoundingBox(): BoundingBox {
+	GetPrimitiveBoundingBox(): BoundingBox {
 		return this.cloud.boundingbox;
 	}
 
@@ -104,6 +104,10 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		result.push(new ExportPointCloudFileAction(this));
 
 		return result;
+	}
+
+	TransformPrivitive(transform: Transform) {
+		this.cloud.ApplyTransform(transform);
 	}
 
 	FillProperties() {
@@ -194,7 +198,6 @@ class PointCloudDrawing {
 	glScalarBuffer: FloatArrayBuffer;
 	bufferedScalarField: ScalarField;
 	cloudsize: number;
-	static shapetransform = new Float32Array(Matrix.Identity(4).values);
 
 	constructor() {
 		this.glNormalsBuffer = null;
@@ -220,8 +223,6 @@ class PointCloudDrawing {
 	}
 
 	BindBuffers(uselighting: boolean, usescalars: boolean, ctx: DrawingContext) {
-		ctx.gl.uniformMatrix4fv(ctx.shapetransform, false, PointCloudDrawing.shapetransform);
-
 		this.glPointsBuffer.BindAttribute(ctx.vertices);
 		if (uselighting && this.glNormalsBuffer) {
 			ctx.EnableNormals(true);
