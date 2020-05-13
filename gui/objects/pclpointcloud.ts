@@ -23,6 +23,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 
 	private static ScalarFieldPropertyName: string = 'Scalar fields';
 	static DensityFieldName = 'Density';
+	static NoiseFieldName = 'Noise	';
 
 	constructor(public cloud: PointCloud = null) {
 		super(NameProvider.GetName('PointCloud'));
@@ -51,10 +52,14 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return null;
 	}
 
-	SetCurrentField(name: string): boolean {
+	SetCurrentField(name: string, disableLighting: boolean = true): boolean {
 		for (let index = 0; index < this.fields.length; index++) {
 			if (this.fields[index].name === name) {
 				this.currentfield = index;
+				if (disableLighting) {
+					this.lighting = false;
+				}
+				this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
 				return true;
 			}
 		}
@@ -87,6 +92,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 
 		result.push(new ConnectedComponentsAction(this));
 		result.push(new ComputeDensityAction(this));
+		result.push(new ComputeNoiseAction(this));
 
 		result.push(null);
 		let ransac = false;
