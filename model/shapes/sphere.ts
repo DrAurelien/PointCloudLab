@@ -1,16 +1,18 @@
-﻿class Sphere extends Shape {
-    constructor(public center: Vector, public radius: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Sphere'), owner);
-    }
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
 
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, this.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Radius', this.radius, this.GeometryChangeHandler((value) => self.radius = value)));
-		return geometry;
-	};
-	
+
+class Sphere extends Shape {
+	constructor(public center: Vector, public radius: number) {
+		super();
+	}
+
 	ComputeBoundingBox(): BoundingBox {
 		let size = new Vector([1, 1, 1]).Times(2 * this.radius);
 		let bb = new BoundingBox();
@@ -34,7 +36,7 @@
 		return matrix;
 	}
 
-	ComputeMesh(sampling: number) : Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let halfSampling = Math.ceil(sampling / 2);
 		let points = new PointCloud();
 		points.Reserve(sampling * halfSampling + 2);
@@ -88,16 +90,15 @@
 			}
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFrom = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDir = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		//Solve [t] : sqrnorm(innerFrom[i]+t*innerDir[i])=radius
 		let aa = 0;
@@ -112,7 +113,7 @@
 		//Solve [t] : aa.t^2 + bb.t + cc = radius
 		cc -= this.radius * this.radius;
 		let dd = bb * bb - 4.0 * aa * cc;
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		if (Math.abs(dd) < 0.0000001) {
 			result.Add(-bb / 2.0 * aa);
 		}
@@ -128,16 +129,8 @@
 		return Math.abs(point.Minus(this.center).Norm() - this.radius);
 	}
 
-	Rotate(rotation: Matrix) {
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-		this.Invalidate();
-	}
-
-	Scale(scale: number) {
-		this.radius *= scale;
-		this.Invalidate();
+	ApplyTransform(transform: Transform) {
+		this.center = transform.TransformPoint(this.center);
+		this.radius *= transform.scalefactor;
 	}
 }

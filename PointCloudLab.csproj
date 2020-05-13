@@ -1,22 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- List available configurations -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Deploy'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Build'">
-  </PropertyGroup>
-  <!-- Visual studio things, keeps on comming back when removed -->
   <PropertyGroup>
     <ProjectGuid>{E6C5B822-BD6C-4537-896B-DEFCE4334217}</ProjectGuid>
   </PropertyGroup>
-  <!-- Files to be considered in the project -->
+  <PropertyGroup Condition="'$(Configuration)' == 'PointCloudLab'">
+  </PropertyGroup>
   <ItemGroup>
     <Content Include="controler\actions\cameracenter.ts" />
     <Content Include="controler\actions\controlerchoice.ts" />
-    <Content Include="controler\actions\pointcloudmisc.ts" />
-    <Content Include="controler\actions\pointclouddetection.ts" />
-    <Content Include="controler\actions\pointcloudexport.ts" />
-    <Content Include="controler\actions\pointcloudnormals.ts" />
+    <Content Include="controler\actions\pointcloudactions.ts" />
     <Content Include="controler\actions\scanfromcurrentviewpoint.ts" />
     <Content Include="controler\lightcontroler.ts" />
     <Content Include="controler\transformcontroler.ts" />
@@ -25,57 +17,55 @@
     <Content Include="files\fileexporter.ts" />
     <Content Include="files\fileloader.ts" />
     <Content Include="files\plyloader.ts" />
-    <Content Include="controler\actions.ts" />
-    <Content Include="interface\controls\axislabel.ts" />
-    <Content Include="interface\controls\button.ts" />
-    <Content Include="interface\controls\selectdrop.ts" />
-    <Content Include="interface\controls\combobox.ts" />
-    <Content Include="interface\controls\container.ts" />
-    <Content Include="interface\controls\control.ts" />
-    <Content Include="interface\controls\dataitem.ts" />
-    <Content Include="interface\controls\dialog.ts" />
-    <Content Include="interface\controls\fileopener.ts" />
-    <Content Include="interface\controls\hideablepannel.ts" />
-    <Content Include="interface\controls\hint.ts" />
-    <Content Include="interface\controls\pannel.ts" />
-    <Content Include="interface\controls\popupitem.ts" />
-    <Content Include="interface\controls\properties\colorproperty.ts" />
-    <Content Include="interface\controls\properties\numberinrangeproperty.ts" />
-    <Content Include="interface\controls\properties\numberproperty.ts" />
-    <Content Include="interface\controls\popup.ts" />
-    <Content Include="interface\controls\progressbar.ts" />
-    <Content Include="interface\controls\properties\property.ts" />
-    <Content Include="interface\controls\properties\booleanproperty.ts" />
-    <Content Include="interface\controls\properties\propertygroup.ts" />
-    <Content Include="interface\controls\properties\propertywithvalue.ts" />
-    <Content Include="interface\controls\properties\vectorproperty.ts" />
-    <Content Include="interface\controls\properties\stringproperty.ts" />
-    <Content Include="interface\controls\toolbar.ts" />
-    <Content Include="interface\controls\coordinatessystem.ts" />
-    <Content Include="interface\cursor.ts" />
-    <Content Include="interface\datahandler.ts" />
-    <Content Include="interface\interface.ts" />
-    <Content Include="interface\menu.ts" />
-    <Content Include="interface\nameprovider.ts" />
-    <Content Include="interface\controls\properties\properties.ts" />
+    <Content Include="controler\actions\action.ts" />
+    <Content Include="gui\controls\axislabel.ts" />
+    <Content Include="gui\controls\button.ts" />
+    <Content Include="gui\controls\selectdrop.ts" />
+    <Content Include="gui\controls\combobox.ts" />
+    <Content Include="gui\controls\container.ts" />
+    <Content Include="gui\controls\control.ts" />
+    <Content Include="gui\controls\dataitem.ts" />
+    <Content Include="gui\controls\dialog.ts" />
+    <Content Include="gui\controls\fileopener.ts" />
+    <Content Include="gui\controls\hideablepannel.ts" />
+    <Content Include="gui\controls\hint.ts" />
+    <Content Include="gui\controls\pannel.ts" />
+    <Content Include="gui\controls\popupitem.ts" />
+    <Content Include="gui\controls\properties\colorproperty.ts" />
+    <Content Include="gui\controls\properties\numberinrangeproperty.ts" />
+    <Content Include="gui\controls\properties\numberproperty.ts" />
+    <Content Include="gui\controls\popup.ts" />
+    <Content Include="gui\controls\progressbar.ts" />
+    <Content Include="gui\controls\properties\property.ts" />
+    <Content Include="gui\controls\properties\booleanproperty.ts" />
+    <Content Include="gui\controls\properties\propertygroup.ts" />
+    <Content Include="gui\controls\properties\propertywithvalue.ts" />
+    <Content Include="gui\controls\properties\vectorproperty.ts" />
+    <Content Include="gui\controls\properties\stringproperty.ts" />
+    <Content Include="gui\controls\toolbar.ts" />
+    <Content Include="gui\coordinatessystem.ts" />
+    <Content Include="controler\cursor.ts" />
+    <Content Include="gui\datahandler.ts" />
+    <Content Include="gui\app.ts" />
+    <Content Include="gui\menu.ts" />
+    <Content Include="gui\nameprovider.ts" />
+    <Content Include="gui\controls\properties\properties.ts" />
     <Content Include="maths\eigendecomposition.ts" />
     <Content Include="maths\geometry.ts" />
     <Content Include="maths\ludecomposition.ts" />
     <Content Include="maths\matrix.ts" />
     <Content Include="maths\polynomials.ts" />
     <Content Include="maths\qrdecomposition.ts" />
-    <Content Include="maths\ray.ts" />
     <Content Include="maths\rootsfinding.ts" />
     <Content Include="maths\vector.ts" />
     <Content Include="model\boundingbox.ts" />
-    <Content Include="model\cadprimitivescontainer.ts" />
     <Content Include="model\meshface.ts" />
     <Content Include="model\octree.ts" />
-    <Content Include="model\light.ts" />
-    <Content Include="model\lightscontainer.ts" />
-    <Content Include="model\cadgroup.ts" />
-    <Content Include="model\cadnode.ts" />
-    <Content Include="model\cadprimitive.ts" />
+    <Content Include="gui\objects\light.ts" />
+    <Content Include="gui\objects\lightscontainer.ts" />
+    <Content Include="gui\objects\pclgroup.ts" />
+    <Content Include="gui\objects\pclnode.ts" />
+    <Content Include="gui\objects\pclprimitive.ts" />
     <Content Include="model\kdtree.ts" />
     <Content Include="model\mesh.ts" />
     <Content Include="model\neighbourhood.ts" />
@@ -83,22 +73,22 @@
     <Content Include="model\pointcloud.ts" />
     <Content Include="model\ransac.ts" />
     <Content Include="model\regiongrowth.ts" />
-    <Content Include="model\scene.ts" />
+    <Content Include="gui\objects\scene.ts" />
     <Content Include="model\shapes\cone.ts" />
     <Content Include="model\shapes\cylinder.ts" />
     <Content Include="model\shapes\plane.ts" />
     <Content Include="model\shapes\shape.ts" />
     <Content Include="model\shapes\sphere.ts" />
     <Content Include="model\shapes\torus.ts" />
-    <Content Include="interface\opengl\camera.ts" />
+    <Content Include="gui\opengl\camera.ts" />
     <Content Include="controler\cameracontroler.ts" />
     <Content Include="controler\mousecontroler.ts" />
-    <Content Include="interface\opengl\drawingcontext.ts" />
-    <Content Include="interface\opengl\materials.ts" />
+    <Content Include="gui\opengl\drawingcontext.ts" />
+    <Content Include="gui\opengl\materials.ts" />
     <Content Include="controler\mousetracker.ts" />
-    <Content Include="interface\opengl\picking.ts" />
-    <Content Include="interface\opengl\renderer.ts" />
-    <Content Include="interface\opengl\renderingtype.ts" />
+    <Content Include="tools\picking.ts" />
+    <Content Include="gui\opengl\renderer.ts" />
+    <Content Include="gui\opengl\renderingtype.ts" />
     <Content Include="help.html" />
     <Content Include="index.html" />
     <Content Include="tsconfig.json" />
@@ -106,22 +96,30 @@
     <Content Include="tools\longprocess.ts" />
     <Content Include="tools\queue.ts" />
     <Content Include="tools\stringutils.ts" />
+    <Content Include="gui\objects\pclpointcloud.ts" />
+    <Content Include="gui\objects\pclmesh.ts" />
+    <Content Include="gui\objects\pclshape.ts" />
+    <Content Include="gui\opengl\buffer.ts" />
+    <Content Include="controler\actions\shapeactions.ts" />
+    <Content Include="gui\objects\pclcylinder.ts" />
+    <Content Include="gui\objects\pclplane.ts" />
+    <Content Include="gui\objects\pclcone.ts" />
+    <Content Include="gui\objects\pclsphere.ts" />
+    <Content Include="gui\objects\pcltorus.ts" />
+    <Content Include="controler\controler.ts" />
+    <Content Include="controler\actions\delegate.ts" />
   </ItemGroup>
-  <!-- Build and launch the app -->
-  <Target Name="Run" DependsOnTargets="Build">
+  <ItemGroup>
+    <Content Include="gui\objects\pclshapewrapper.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="tools\transform.ts" />
+  </ItemGroup>
+  <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
   </Target>
-  <!-- The "Build" configuration simply transpiles Typscript files -->
-  <!-- The "Deploy" configuration also push the resulting files to the "gh-pages" repository, to  -->
   <Target Name="Build">
-    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Switch to branch 'gh-pages'" Importance="high" />
-    <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git checkout gh-pages" />
-    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Merge 'master' branch to 'gh-pages'" Importance="high" />
-    <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git merge master"/>
-    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Transpile typescript files" Importance="high" />
-    <Exec ContinueOnError="false" Command="tsc" />
-    <Message Condition="'$(Configuration)' == 'Deploy'" Text="Publish 'gh-pages'" Importance="high" />
-    <Exec Condition="'$(Configuration)' == 'Deploy'" ContinueOnError="false" Command="git push"/>
+    <Exec Command="tsc" />
   </Target>
   <Target Name="Clean">
     <ItemGroup>
@@ -131,4 +129,5 @@
     <Delete Files="@(JsFiles)" />
     <Delete Files="@(MapFiles)" />
   </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 </Project>

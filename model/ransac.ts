@@ -1,4 +1,14 @@
-﻿class Ransac {
+﻿/// <reference path="../maths/vector.ts" />
+/// <reference path="../maths/geometry.ts" />
+/// <reference path="pointcloud.ts" />
+/// <reference path="shapes/shape.ts" />
+/// <reference path="shapes/plane.ts" />
+/// <reference path="shapes/sphere.ts" />
+/// <reference path="shapes/cylinder.ts" />
+/// <reference path="../tools/longprocess.ts" />
+
+
+class Ransac {
 	nbPoints: number;
 	nbFailure: number;
 	noise: number;

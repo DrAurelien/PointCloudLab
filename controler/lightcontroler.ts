@@ -1,19 +1,21 @@
-﻿/**
+﻿/// <reference path="controler.ts" />
+/// <reference path="mousecontroler.ts" />
+/// <reference path="mousetracker.ts" />
+/// <reference path="cursor.ts" />
+
+
+/**
  * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
  */
 class LightControler extends MouseControler {
-	public light : Light;
+	public light: LightingPosition;
 
-	constructor(view: Interface) {
-		super(view);
+	constructor(target: Controlable) {
+		super(target);
 
-		let item = this.view.dataHandler.currentItem;
-		if (item && item instanceof Light) {
-			this.light = <Light>item;
-
-			this.view.sceneRenderer.camera.at = this.light.Position;
-			this.view.RefreshRendering();
-		}
+		this.light = this.target.GetLightPosition();
+		target.GetViewPoint().SetPosition(this.light.GetPosition());
+		target.NotifyViewPointChange(ViewPointChange.Position);
 	}
 
 	protected HandleMouseMove(displacement: MouseDisplacement): boolean {
@@ -21,26 +23,27 @@ class LightControler extends MouseControler {
 			return true;
 		}
 
-		let renderer = this.view.sceneRenderer;
-
+		let camera = this.target.GetViewPoint();
 		switch (displacement.button) {
 			case 1: //Left mouse
 				let x = this.mousetracker.x - displacement.dx;
 				let y = this.mousetracker.y - displacement.dy;
-				renderer.camera.Rotate(x, y, this.mousetracker.x, this.mousetracker.y);
+				camera.Rotate(x, y, this.mousetracker.x, this.mousetracker.y);
+				this.target.NotifyViewPointChange(ViewPointChange.Rotation);
 				break;
 			case 2: //Middle mouse
-				renderer.camera.Zoom(-displacement.dy / 10);
+				camera.Zoom(-displacement.dy / 10);
+				this.target.NotifyViewPointChange(ViewPointChange.Zoom);
 				break;
 			case 3: //Right mouse
-				renderer.camera.Pan(displacement.dx, displacement.dy);
+				camera.Pan(displacement.dx, displacement.dy);
+				this.target.NotifyViewPointChange(ViewPointChange.Panning);
 				break;
 			default:
 				return true;
 		}
-		this.light.Position = renderer.camera.at;
+		this.light.SetPositon(camera.GetPosition());
 		this.Cursor = Cursor.Light;
-		this.view.RefreshRendering();
 
 		return true;
 	}
@@ -55,9 +58,5 @@ class LightControler extends MouseControler {
 
 	protected HandleKey(key: number): boolean {
 		return true;
-    }
-
-	protected EndMouseEvent() {
-		this.view.Refresh();
 	}
 }

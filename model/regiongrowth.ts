@@ -1,4 +1,10 @@
-﻿enum RegionGrowthStatus {
+﻿/// <reference path="../tools/queue.ts" />
+/// <reference path="../tools/longprocess.ts" />
+/// <reference path="pointcloud.ts" />
+/// <reference path="neighbourhood.ts" />
+
+
+enum RegionGrowthStatus {
 	unprocessed,
 	enqueued,
 	processed

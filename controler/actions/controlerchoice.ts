@@ -1,45 +1,51 @@
-﻿class CameraModeAction extends Action {
-	constructor(private view: Interface) {
+﻿/// <reference path="action.ts" />
+/// <reference path="../cameracontroler.ts" />
+/// <reference path="../transformcontroler.ts" />
+/// <reference path="../lightcontroler.ts" />
+
+
+class CameraModeAction extends Action {
+	constructor(private target: Controlable) {
 		super('Camera mode', 'The mouse can be used to control the position of the camera');
 	}
 
 	Run() {
-		this.view.UseCameraControler();
+		this.target.SetCurrentControler(new CameraControler(this.target));
 	}
 
 	Enabled(): boolean {
-		return !(this.view.currentControler instanceof CameraControler);
+		return !(this.target.GetCurrentControler() instanceof CameraControler);
 	}
 }
 
 class TransformModeAction extends Action {
-	constructor(private view: Interface) {
+	constructor(private target: Controlable) {
 		super('Transformation mode', 'The mouse can be used to control the geometry of the selected item');
 	}
 
 	Run() {
-		this.view.UseTransformationControler();
+		this.target.SetCurrentControler(new TransformControler(this.target));
 	}
 
 	Enabled(): boolean {
-		return !(this.view.currentControler instanceof TransformControler);
+		if (!this.target.GetCurrentTransformable())
+			return false;
+		return !(this.target.GetCurrentControler() instanceof TransformControler);
 	}
 }
 
 class LightModeAction extends Action {
-	constructor(private view: Interface) {
+	constructor(private target: Controlable) {
 		super('Light mode', 'The mouse can be used to control the position of the selected light');
 	}
 
 	Run() {
-		this.view.UseLightControler();
+		this.target.SetCurrentControler(new LightControler(this.target));
 	}
 
 	Enabled(): boolean {
-		let item = this.view.dataHandler.currentItem;
-		if (!(item && (item instanceof Light))) {
+		if (!this.target.GetLightPosition())
 			return false;
-		}
-		return !(this.view.currentControler instanceof LightControler);
+		return !(this.target.GetCurrentControler() instanceof LightControler);
 	}
 }

@@ -1,7 +1,7 @@
 ﻿abstract class Process {
 	private next: Process | Function;
 
-	Start(caller : Process = null) {
+	Start(caller: Process = null) {
 		var self = this;
 		this.Initialize(caller);
 		this.Run(() => {
@@ -33,8 +33,22 @@
 	protected abstract Run(ondone: Function);
 }
 
-abstract class LongProcess extends Process
-{
+//================================================
+// Process taking significant time
+// At least, enough time to let the user know he/she has to wait
+//================================================
+interface ProgessHandler {
+	Initialize(message: string);
+	Update(current: number, target: number);
+	Finalize();
+	RefreshDelay(): number;
+}
+
+interface ProgessFactory {
+	(): ProgessHandler;
+}
+
+abstract class LongProcess extends Process {
 	constructor(private message: string) {
 		super();
 	}
@@ -43,16 +57,17 @@ abstract class LongProcess extends Process
 	protected abstract get Current(): number;
 	protected abstract get Target(): number;
 
+	static progresFactory: ProgessFactory = null;;
+
 	public get Done(): boolean {
 		return this.Target <= this.Current;
 	}
 
 	protected Run(ondone: Function) {
-		let progress = null;
-		if (this.message) {
-			progress = new ProgressBar();
-			progress.SetMessage(this.message);
-			progress.Show();
+		let progress: ProgessHandler = null;
+		if (this.message && LongProcess.progresFactory) {
+			progress = LongProcess.progresFactory();
+			progress.Initialize(this.message);
 		}
 
 		let self = this;
@@ -60,13 +75,13 @@ abstract class LongProcess extends Process
 			while (!self.Done) {
 				self.Step();
 				if (progress && progress.Update(self.Current, self.Target)) {
-					setTimeout(RunInternal, progress.refreshtime);
+					setTimeout(RunInternal, progress.RefreshDelay());
 					return false;
 				}
 			}
 
 			if (progress) {
-				progress.Delete();
+				progress.Finalize();
 			}
 			if (ondone) {
 				ondone();
@@ -75,7 +90,7 @@ abstract class LongProcess extends Process
 		}
 
 		if (progress) {
-			setTimeout(RunInternal, progress.refreshtime);
+			setTimeout(RunInternal, progress.RefreshDelay());
 		}
 		else {
 			RunInternal();
@@ -83,10 +98,14 @@ abstract class LongProcess extends Process
 	}
 }
 
+//================================================
+// Long process, where the total number of steps is defined right from the start
+//================================================
 abstract class IterativeLongProcess extends LongProcess {
-	protected currentstep = 0;
+	private currentstep: number;
 	constructor(protected nbsteps: number, message: string) {
 		super(message);
+		this.currentstep = 0;
 	}
 
 	protected Step() {

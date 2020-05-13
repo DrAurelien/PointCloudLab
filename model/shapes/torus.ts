@@ -1,19 +1,19 @@
-﻿class Torus extends Shape {
-    constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number, owner: CADPrimitivesContainer=null) {
-        super(NameProvider.GetName('Torus'), owner);
-    }
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
 
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, this.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Axis', this.axis, true, this.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Great Radius', this.greatRadius, this.GeometryChangeHandler((value) => self.greatRadius=value )));
-		geometry.Push(new NumberProperty('Small Radius', this.smallRadius, this.GeometryChangeHandler((value) => self.smallRadius=value)));
-		return geometry;
+
+class Torus extends Shape {
+	constructor(public center: Vector, public axis: Vector, public greatRadius: number, public smallRadius: number) {
+		super();
 	}
 
-	ComputeMesh(sampling: number): Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling * sampling);
 
@@ -54,8 +54,7 @@
 			}
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}
@@ -86,10 +85,10 @@
 		return basechange.Multiply(translation);
 	}
 
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFromMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDirMatrix = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFromMatrix = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDirMatrix = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		let innerDir = new Vector([innerDirMatrix.GetValue(0, 0), innerDirMatrix.GetValue(1, 0), innerDirMatrix.GetValue(2, 0)]);
 		let innerFrom = new Vector([innerFromMatrix.GetValue(0, 0), innerFromMatrix.GetValue(1, 0), innerFromMatrix.GetValue(2, 0)]);
@@ -118,7 +117,7 @@
 		]);
 
 		let roots = quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		for (let index = 0; index < roots.length; index++) {
 			result.Add(roots[index]);
 		}
@@ -130,20 +129,10 @@
 		return 0;
 	}
 
-	Rotate(rotation: Matrix) {
-		let a = rotation.Multiply(Matrix.FromVector(this.axis));
-		this.axis = Matrix.ToVector(a);
-		this.Invalidate();
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-		this.Invalidate();
-	}
-
-	Scale(scale: number) {
-		this.greatRadius *= scale;
-		this.smallRadius *= scale;
-		this.Invalidate();
+	ApplyTransform(transform: Transform) {
+		this.axis = transform.TransformVector(this.axis).Normalized();
+		this.center = transform.TransformPoint(this.center);
+		this.greatRadius *= transform.scalefactor;
+		this.smallRadius *= transform.scalefactor;
 	}
 }

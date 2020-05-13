@@ -1,16 +1,23 @@
-﻿class Cylinder extends Shape {
-    constructor(public center: Vector, public axis: Vector, public radius: number, public height: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Cylinder'), owner);
-    }
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
 
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, self.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Axis', this.axis, true, self.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Radius', this.radius, self.GeometryChangeHandler((value) => this.radius = value)));
-		geometry.Push(new NumberProperty('Height', this.height, self.GeometryChangeHandler((value) => this.height = value)));
-		return geometry;
+
+class Cylinder extends Shape {
+	constructor(public center: Vector, public axis: Vector, public radius: number, public height: number) {
+		super();
+	}
+
+	ApplyTransform(transform: Transform) {
+		this.axis = transform.TransformVector(this.axis).Normalized();
+		this.center = transform.TransformPoint(this.center);
+		this.radius *= transform.scalefactor;
+		this.height *= transform.scalefactor;
 	}
 
 	ComputeBoundingBox(): BoundingBox {
@@ -22,23 +29,6 @@
 		let bb = new BoundingBox();
 		bb.Set(this.center, size);
 		return bb;
-	}
-
-	Rotate(rotation: Matrix) {
-		let a = rotation.Multiply(Matrix.FromVector(this.axis));
-		this.axis = Matrix.ToVector(a);
-		this.Invalidate();
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-		this.Invalidate();
-	}
-
-	Scale(scale: number) {
-		this.radius *= scale;
-		this.height *= scale;
-		this.Invalidate();
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
@@ -55,7 +45,7 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number) : Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let points = new PointCloud();
 		points.Reserve(4 * sampling + 2);
 
@@ -116,16 +106,15 @@
 			mesh.PushFace([ba, ab, bb]);
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray) : Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFrom = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDir = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		//haveing p[t] = (innerFrom[i]+t*innerDir[i])
 		//Solve p[t].x^2+p[t].y^2=radius for each i<3
@@ -143,7 +132,7 @@
 		let sqrRadius = this.radius * this.radius;
 		cc -= sqrRadius;
 		let dd = bb * bb - 4.0 * aa * cc;
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		let nbResults = 0;
 		function acceptValue(value) {
 			let point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(value));
@@ -188,7 +177,7 @@
 		return Math.abs(op - this.radius);
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud) : void {
+	ComputeBounds(points: number[], cloud: PointCloud): void {
 		let min = 0;
 		let max = 0;
 		for (let ii = 0; ii < points.length; ii++) {

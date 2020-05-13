@@ -1,5 +1,8 @@
 ﻿/// <reference path="fileloader.ts" />
+/// <reference path="binaryreader.ts" />
+/// <reference path="../maths/vector.ts" />
 /// <reference path="../tools/longprocess.ts" />
+/// <reference path="../gui/objects/pclpointcloud.ts" />
 
 
 class CsvLoader extends FileLoader {
@@ -13,9 +16,8 @@ class CsvLoader extends FileLoader {
 
 	Load(ondone: Function) {
 		let self = this;
-		this.result = new PointCloud();
 		this.parser.SetNext((p: CSVParser) => {
-			self.result = p.cloud;
+			self.result = p.pclcloud;
 			ondone();
 		});
 		this.parser.Start();
@@ -29,8 +31,7 @@ class CSVParser extends IterativeLongProcess {
 	headermapping: Object;
 	done: boolean;
 	public separator: string;
-	public cloud: PointCloud;
-	private fields: ScalarField[];
+	public pclcloud: PCLPointCloud;
 
 	static PointCoordinates = ['x', 'y', 'z'];
 	static NormalCoordinates = ['nx', 'ny', 'nz'];
@@ -47,9 +48,9 @@ class CSVParser extends IterativeLongProcess {
 		this.headermapping = null;
 		this.done = false;
 
-		this.cloud = new PointCloud();
+		this.pclcloud = new PCLPointCloud();
 		this.nbsteps = this.reader.CountAsciiOccurences('\n');
-		this.cloud.Reserve(this.nbsteps);
+		this.pclcloud.cloud.Reserve(this.nbsteps);
 		this.reader.Reset();
 	}
 
@@ -61,14 +62,16 @@ class CSVParser extends IterativeLongProcess {
 			}
 			else {
 				var point = this.GetVector(line, CSVParser.PointCoordinates);
+				let cloud = this.pclcloud.cloud;
+				let fields = this.pclcloud.fields;
 				if (point) {
-					this.cloud.PushPoint(point);
+					cloud.PushPoint(point);
 					var normal = this.GetVector(line, CSVParser.NormalCoordinates);
 					if (normal) {
-						this.cloud.PushNormal(normal);
+						cloud.PushNormal(normal);
 					}
-					for(let index = 0; index < this.cloud.fields.length; index++) {
-						let field = this.cloud.fields[index];
+					for(let index = 0; index < fields.length; index++) {
+						let field = fields[index];
 						field.PushValue(this.GetValue(line, field.name));
 					}
 				}
@@ -99,7 +102,7 @@ class CSVParser extends IterativeLongProcess {
 				let ciKey = key.toLocaleLowerCase();
 				this.header[ciKey] = index;
 				if (!this.IsCoordinate(ciKey)) {
-					this.cloud.AddScalarField(key).Reserve(this.nbsteps);
+					this.pclcloud.AddScalarField(key).Reserve(this.nbsteps);
 				}
 			}
 		}

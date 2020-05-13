@@ -1,4 +1,8 @@
-﻿class Geometry {
+﻿/// <reference path="vector.ts" />
+/// <reference path="../tools/picking.ts" />
+
+
+class Geometry {
 	static LinesIntersection(a: Ray, b: Ray): Vector {
 		var d = a.dir.Dot(b.dir);
 		var sqrLenA = a.dir.SqrNorm();

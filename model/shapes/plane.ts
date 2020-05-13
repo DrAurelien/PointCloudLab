@@ -1,19 +1,19 @@
-﻿class Plane extends Shape {
-    constructor(public center: Vector, public normal: Vector, public patchRadius: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Plane'), owner);
-    }
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
 
-	private Updaye
-	GetGeometry(): Properties {
-		let self = this
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Center', this.center, false, self.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Normal', this.normal, true, self.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Patch Radius', this.patchRadius, self.GeometryChangeHandler((value) => self.patchRadius = value)));
-		return geometry;
+
+class Plane extends Shape {
+	constructor(public center: Vector, public normal: Vector, public patchRadius: number) {
+		super();
 	}
 
-	ComputeMesh(sampling: number): Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let points = new PointCloud();
 		points.Reserve(sampling + 1);
 
@@ -34,8 +34,7 @@
 			mesh.PushFace([ii, sampling, (ii + 1) % sampling]);
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}
@@ -44,20 +43,10 @@
 		return Math.abs(point.Minus(this.center).Dot(this.normal));
 	}
 
-	Rotate(rotation: Matrix) {
-		let a = rotation.Multiply(Matrix.FromVector(this.normal));
-		this.normal = Matrix.ToVector(a);
-		this.Invalidate();
-	}
-
-	Translate(translation: Vector) {
-		this.center = this.center.Plus(translation);
-		this.Invalidate();
-	}
-
-	Scale(scale: number) {
-		this.patchRadius *= scale;
-		this.Invalidate();
+	ApplyTransform(transform: Transform) {
+		this.normal = transform.TransformVector(this.normal).Normalized();
+		this.center = transform.TransformPoint(this.center);
+		this.patchRadius *= transform.scalefactor;
 	}
 
 	ComputeBoundingBox(): BoundingBox {
@@ -85,13 +74,13 @@
 		return basechange.Multiply(translation);
 	}
 
-	RayIntersection(ray: Ray): Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = worldToBase.Multiply(new Matrix(1, 4, ray.from.Flatten().concat([1])));
-		let innerDir = worldToBase.Multiply(new Matrix(1, 4, ray.dir.Flatten().concat([0])));
+		let innerFrom = worldToBase.Multiply(new HomogeneousPoint(ray.from));
+		let innerDir = worldToBase.Multiply(new HomogeneousVector(ray.dir));
 
 		//solve [t] : p[t].z = 0
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		let tt = -innerFrom.GetValue(2, 0) / innerDir.GetValue(2, 0);
 		let point = new Vector(innerFrom.values).Plus(new Vector(innerDir.values).Times(tt));
 		if (point.Get(0) * point.Get(0) + point.Get(1) * point.Get(1) <= (this.patchRadius * this.patchRadius)) {

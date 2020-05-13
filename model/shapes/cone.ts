@@ -1,16 +1,16 @@
-﻿class Cone extends Shape {
-    constructor(public apex: Vector, public axis: Vector, public angle: number, public height: number, owner: CADPrimitivesContainer = null) {
-        super(NameProvider.GetName('Cone'), owner);
-    }
+﻿/// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../tools/transform.ts" />
+/// <reference path="../../tools/picking.ts" />
+/// <reference path="../boundingbox.ts" />
+/// <reference path="../pointcloud.ts" />
+/// <reference path="../mesh.ts" />
+/// <reference path="shape.ts" />
 
-	GetGeometry(): Properties {
-		let self = this;
-		let geometry = new Properties();
-		geometry.Push(new VectorProperty('Apex', this.apex, false, self.GeometryChangeHandler()));
-		geometry.Push(new VectorProperty('Axis', this.axis, true, self.GeometryChangeHandler()));
-		geometry.Push(new NumberProperty('Angle', Geometry.RadianToDegree(this.angle), self.GeometryChangeHandler((value) => this.angle = Geometry.DegreeToRadian(value))));
-		geometry.Push(new NumberProperty('Height', this.height, self.GeometryChangeHandler((value) => this.height = value)));
-		return geometry;
+
+class Cone extends Shape {
+	constructor(public apex: Vector, public axis: Vector, public angle: number, public height: number) {
+		super();
 	}
 
 	ComputeBoundingBox(): BoundingBox {
@@ -26,22 +26,12 @@
 		return bb;
 	}
 
-	Rotate(rotation: Matrix) {
+	ApplyTransform(transform: Transform) {
+		this.axis = transform.TransformVector(this.axis).Normalized();
+		this.height *= transform.scalefactor;
 		let c = this.apex.Plus(this.axis.Times(this.height * 0.5));
-		let a = rotation.Multiply(Matrix.FromVector(this.axis));
-		this.axis = Matrix.ToVector(a);
+		c = transform.TransformPoint(c);
 		this.apex = c.Minus(this.axis.Times(this.height * 0.5));
-		this.Invalidate();
-	}
-
-	Translate(translation: Vector) {
-		this.apex = this.apex.Plus(translation);
-		this.Invalidate();
-	}
-
-	Scale(scale: number) {
-		this.height *= scale;
-		this.Invalidate();
 	}
 
 	GetWorldToInnerBaseMatrix(): Matrix {
@@ -58,9 +48,9 @@
 		return basechange.Multiply(translation);
 	}
 
-	ComputeMesh(sampling: number) : Mesh {
+	ComputeMesh(sampling: number, onDone: Function): Mesh {
 		let points = new PointCloud();
-		points.Reserve(1 + 3*sampling);
+		points.Reserve(1 + 3 * sampling);
 
 		let xx = this.axis.GetOrthogonnal();
 		let yy = this.axis.Cross(xx).Normalized();
@@ -99,16 +89,15 @@
 			mesh.PushFace([ii + shift + sampling, ((ii + 1) % sampling) + shift, ((ii + 1) % sampling) + shift + sampling]);
 		}
 
-		let self = this;
-		mesh.ComputeNormals();
+		mesh.ComputeNormals(onDone);
 
 		return mesh;
 	}
 
-	RayIntersection(ray: Ray) : Picking {
+	RayIntersection(ray: Ray, wrapper: Pickable): Picking {
 		let worldToBase = this.GetWorldToInnerBaseMatrix();
-		let innerFrom = Matrix.ToVector(worldToBase.Multiply(Matrix.FromPoint(ray.from)));
-		let innerDir = Matrix.ToVector(worldToBase.Multiply(Matrix.FromVector(ray.dir)));
+		let innerFrom = Homogeneous.ToVector(worldToBase.Multiply(new HomogeneousPoint(ray.from)));
+		let innerDir = Homogeneous.ToVector(worldToBase.Multiply(new HomogeneousVector(ray.dir)));
 
 		//having p[t] = (innerFrom[i]+t*innerDir[i])
 		//Solve p[t].x^2+p[t].y^2-(p[t].z * tan(a))^2=0 for each i<3
@@ -125,12 +114,12 @@
 
 		//Solve [t] aa.t^2 + bb.t + cc.t = 0
 		let dd = bb * bb - 4.0 * aa * cc;
-		let result = new Picking(this);
+		let result = new Picking(wrapper);
 		let nbResults = 0;
 		let height = this.height;
 		function acceptValue(value) {
 			let point = innerFrom.Plus(innerDir.Times(value));
-			if (0<= point.Get(2) && point.Get(2) <= height) {
+			if (0 <= point.Get(2) && point.Get(2) <= height) {
 				result.Add(value);
 				nbResults++;
 			}
@@ -161,7 +150,7 @@
 		return 0.0;
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud) : void {
+	ComputeBounds(points: number[], cloud: PointCloud): void {
 		let min = 0;
 		let max = 0;
 		for (let ii = 0; ii < points.length; ii++) {

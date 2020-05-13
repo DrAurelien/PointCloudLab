@@ -1,8 +1,13 @@
-﻿class ScanFromCurrentViewPointAction extends Action {
+﻿/// <reference path="delegate.ts" />
+/// <reference path="../../gui/objects/pclnode.ts" />
+/// <reference path="../../gui/controls/dialog.ts" />
+
+
+class ScanFromCurrentViewPointAction extends Action {
 	static hSamplingTitle = 'Horizontal Sampling';
 	static vSamplingTitle = 'Vertical Sampling';
 
-	constructor(private group: CADPrimitivesContainer, private dataHandler: DataHandler, private onDone: CADNodeHandler) {
+	constructor(private group: PCLGroup, private deletgate: ActionDelegate) {
 		super('Scan from current viewpoint', 'Create an new point cloud by simulating a LIDAR scanning of the group contents, from the current view point');
 	}
 
@@ -32,15 +37,7 @@
 			return false;
 		}
 
-		let self = this;
-		this.dataHandler.GetSceneRenderer().ScanFromCurrentViewPoint(this.group, hsampling, vsampling,
-			(cloud) => {
-				self.group.Add(cloud);
-				if (self.onDone) {
-					self.onDone(cloud);
-				}
-			}
-		);
+		this.deletgate.ScanFromCurrentViewPoint(this.group, hsampling, vsampling);
 		return true;
 	}
 }
