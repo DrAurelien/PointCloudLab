@@ -8,7 +8,7 @@ class Transform {
 	scalefactor: number;
 	matrix: Matrix;
 
-	constructor(private rotationCenter: Vector) {
+	constructor(private rotationCenter?: Vector) {
 		this.rotation = Matrix.Identity(4);
 		this.translation = new Vector([0.0, 0.0, 0.0]);
 		this.scalefactor = 1.0;
@@ -36,9 +36,11 @@ class Transform {
 			for (let row = 0; row < 3; row++) {
 				this.matrix.SetValue(row, 3, this.translation.Get(row));
 			}
-			this.matrix.SetValue(3, 3, 1.0	 / this.scalefactor);
-			if (shift) {
-				this.matrix = shift.Multiply(this.matrix.Multiply(shift.Times(-1)));
+			this.matrix.SetValue(3, 3, 1.0 / this.scalefactor);
+			if (this.rotationCenter) {
+				let shift = Matrix.Translation(this.rotationCenter.Times(-1));
+				let unshift = Matrix.Translation(this.rotationCenter);
+				this.matrix = unshift.Multiply(this.matrix.Multiply(shift));
 			}
 		}
 		return this.matrix;
