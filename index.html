@@ -20,9 +20,9 @@
 		void main(void) {
 		gl_PointSize = 5.0;
 		gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
-
 		Position = VertexPosition;
-		Normal = NormalVector;
+
+		Normal = vec3((ShapeTransform * vec4(NormalVector, 0.0)).xyz);
 		Scalar = ScalarValue;
 		}
 	</script>

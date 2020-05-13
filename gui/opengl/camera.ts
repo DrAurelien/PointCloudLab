@@ -48,11 +48,11 @@ class Camera implements ViewPoint {
 
 		//ModelView
 		var modelview = this.GetModelViewMatrix();
-		context.gl.uniformMatrix4fv(context.modelview, false, new Float32Array(modelview.values));
+		context.gl.uniformMatrix4fv(context.modelview, false, modelview.values);
 
 		//Projection
 		var projection = this.GetProjectionMatrix();
-		context.gl.uniformMatrix4fv(context.projection, false, new Float32Array(projection.values));
+		context.gl.uniformMatrix4fv(context.projection, false, projection.values);
 
 		//Lighting
 		context.gl.uniform3fv(context.eyeposition, new Float32Array(this.at.Flatten()));
@@ -186,11 +186,7 @@ class Camera implements ViewPoint {
 		var modelview = this.GetModelViewMatrix();
 		var render = projection.Multiply(modelview);
 		var v = render.LUSolve(u);
-		var w = new Vector([0, 0, 0]);
-		for (var index = 0; index < 3; index++) {
-			w.Set(index, v.GetValue(index, 0) / v.GetValue(3, 0));
-		}
-		return w;
+		return Homogeneous.ToVector(v);
 	}
 
 	CenterOnBox(box: BoundingBox): boolean {

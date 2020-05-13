@@ -38,7 +38,7 @@ class Transform {
 			}
 			this.matrix.SetValue(3, 3, 1.0	 / this.scalefactor);
 			if (shift) {
-				this.matrix = shift.Times(-1).Multiply(this.matrix).Multiply(shift);
+				this.matrix = shift.Multiply(this.matrix.Multiply(shift.Times(-1)));
 			}
 		}
 		return this.matrix;
