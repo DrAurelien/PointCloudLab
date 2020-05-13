@@ -109,7 +109,6 @@ class PointCloud {
 
 	KNearestNeighbours = function (queryPoint: Vector, k: number) {
 		if (!this.tree) {
-			console.log('Computing KD-Tree for point cloud "' + this.name + '"');
 			this.tree = new KDTree(this);
 		}
 
@@ -174,10 +173,13 @@ class PointCloud {
 			PointCloud.SetValues(index, p, this.points);
 			this.boundingbox.Add(p);
 			if (this.HasNormals()) {
-				let n = this.GetPoint(index);
-				n = transform.TransformVector(n);
+				let n = this.GetNormal(index);
+				n = transform.TransformVector(n).Normalized();
 				PointCloud.SetValues(index, n, this.normals);
 			}
+		}
+		if (this.tree) {
+			delete this.tree;
 		}
 	}
 }

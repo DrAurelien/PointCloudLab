@@ -108,6 +108,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 
 	TransformPrivitive(transform: Transform) {
 		this.cloud.ApplyTransform(transform);
+		this.InvalidateDrawing();
 	}
 
 	FillProperties() {
