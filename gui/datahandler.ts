@@ -83,7 +83,21 @@ class DataHandler extends HideablePannel {
 			else {
 				this.ownerView.RefreshRendering();
 			}
+			this.RefreshColorScale(this.currentItem);
 		}
+	}
+
+	RefreshColorScale(item: PCLNode) {
+		if (item && (item instanceof PCLPointCloud)) {
+			let cloud = item as PCLPointCloud;
+			let field = cloud.GetCurrentField();
+			if (field)
+				ColorScale.Show().Refresh(field.Min(), field.Max());
+			else
+				ColorScale.Hide();
+		}
+		else
+			ColorScale.Hide();
 	}
 
 	GetCurrentItem(): PCLNode {

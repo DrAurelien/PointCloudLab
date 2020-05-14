@@ -321,15 +321,12 @@ class ComputeNoiseAction extends PCLCloudAction {
 	Enabled(): boolean {
 		if (!this.GetCloud().HasNormals())
 			return false;
-		return !this.GetPCLCloud().GetScalarField(PCLPointCloud.DensityFieldName);
+		return !this.GetPCLCloud().GetScalarField(PCLPointCloud.NoiseFieldName);
 	}
 
 	Run() {
 		let k = 10;
 		let noise = new NoiseComputer(this.GetPCLCloud(), k);
-		let cloud = this.GetPCLCloud();
-		let ondone = () => { cloud.NotifyChange(cloud, ChangeType.Display | ChangeType.Properties); }
-		noise.SetNext(ondone);
 		noise.Start();
 	}
 }
@@ -357,7 +354,7 @@ class NoiseComputer extends IterativeLongProcess {
 		let nbh = cloud.KNearestNeighbours(point, this.k + 1);
 		let noise = 0;
 		for (let index = 0; index < nbh.length; index++) {
-			noise += normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point)) / (1 + nbh[index].distance);
+			noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].distance);
 		}
 		this.scalarfield.PushValue(noise);
 	}

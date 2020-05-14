@@ -59,12 +59,19 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 				if (disableLighting) {
 					this.lighting = false;
 				}
-				this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+				this.NotifyChange(this, ChangeType.Display | ChangeType.Properties | ChangeType.ColorScale);
 				return true;
 			}
 		}
 		this.currentfield = null;
 		return false;
+	}
+
+	GetCurrentField(): ScalarField {
+		if (this.currentfield !== null) {
+			return this.fields[this.currentfield];
+		}
+		return null;
 	}
 
 	RayIntersection(ray: Ray): Picking {
@@ -150,6 +157,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let self = this;
 		return new BooleanProperty(this.fields[index].name, () => (index === self.currentfield), (value: boolean) => {
 			self.currentfield = value ? index : null;
+			self.NotifyChange(self, ChangeType.ColorScale);
 		});
 	}
 
