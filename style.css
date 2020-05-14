@@ -357,3 +357,37 @@ div.AxisLabel
 	cursor : pointer;
 	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;
 }
+
+div.ColorScale {
+	position: fixed;
+	right: 10px;
+	top: 100px;
+	z-index: 1;
+	display: flex;
+	flex-direction: row;
+	color: white;
+	border: 1px solid white;
+}
+
+.ColorRenderer {
+	width: 20px;
+	height: 200px;
+}
+
+.ColorScaleCaption {
+	position: relative;
+}
+
+.ColorScaleMin {
+	position: absolute;
+	margin-bottom: 0px;
+	bottom: 0px;
+	right: 5px;
+}
+
+.ColorScaleMax {
+	position: absolute;
+	margin-top: 0px;
+	top: 0px;
+	right: 5px;
+}

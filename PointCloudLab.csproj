@@ -115,6 +115,9 @@
   <ItemGroup>
     <Content Include="tools\transform.ts" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\colorscale.ts" />
+  </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
   </Target>

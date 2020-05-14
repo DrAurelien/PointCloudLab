@@ -282,9 +282,6 @@ class ComputeDensityAction extends PCLCloudAction {
 	Run() {
 		let k = 30;
 		let density = new DensityComputer(this.GetPCLCloud(), k);
-		let cloud = this.GetPCLCloud();
-		let ondone = () => { cloud.lighting = false; cloud.InvalidateDrawing(); }
-		density.SetNext(ondone);
 		density.Start();
 	}
 }
@@ -313,6 +310,59 @@ class DensityComputer extends IterativeLongProcess {
 	}
 }
 
+//===================================================
+// Noise
+//===================================================
+class ComputeNoiseAction extends PCLCloudAction {
+	constructor(cloud: PCLPointCloud) {
+		super(cloud, 'Estimate noise', 'Estimate the noise, based on the mean weighted distance to the local planar surface at each point (requires normals).');
+	}
+
+	Enabled(): boolean {
+		if (!this.GetCloud().HasNormals())
+			return false;
+		return !this.GetPCLCloud().GetScalarField(PCLPointCloud.NoiseFieldName);
+	}
+
+	Run() {
+		let k = 10;
+		let noise = new NoiseComputer(this.GetPCLCloud(), k);
+		noise.Start();
+	}
+}
+
+
+class NoiseComputer extends IterativeLongProcess {
+	scalarfield: ScalarField;
+
+	constructor(private cloud: PCLPointCloud, private k: number) {
+		super(cloud.cloud.Size(), 'Computing points noise');
+	}
+
+	Initialize() {
+		this.scalarfield = this.cloud.AddScalarField(PCLPointCloud.NoiseFieldName);
+	}
+
+	Finalize() {
+		this.cloud.SetCurrentField(PCLPointCloud.NoiseFieldName);
+	}
+
+	Iterate(step: number) {
+		let cloud = this.cloud.cloud;
+		let point = cloud.GetPoint(step);
+		let normal = cloud.GetNormal(step);
+		let nbh = cloud.KNearestNeighbours(point, this.k + 1);
+		let noise = 0;
+		for (let index = 0; index < nbh.length; index++) {
+			noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].distance);
+		}
+		this.scalarfield.PushValue(noise);
+	}
+}
+
+//===================================================
+// File export
+//===================================================
 class ExportPointCloudFileAction extends PCLCloudAction {
 	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Export file');

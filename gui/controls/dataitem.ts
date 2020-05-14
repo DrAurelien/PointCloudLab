@@ -3,6 +3,7 @@
 /// <reference path="../objects/pclnode.ts" />
 /// <reference path="../objects/pclgroup.ts" />
 /// <reference path="../datahandler.ts" />
+/// <reference path="../colorscale.ts" />
 
 
 class DataItem implements Control {
@@ -174,6 +175,10 @@ class DataItem implements Control {
 
 		if (change & ChangeType.Display) {
 			this.dataHandler.AskRendering();
+		}
+
+		if (change & ChangeType.ColorScale) {
+			this.dataHandler.RefreshColorScale(source);
 		}
 
 		if (change & ChangeType.Properties) {
