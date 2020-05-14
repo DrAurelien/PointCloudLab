@@ -7,12 +7,14 @@
 
 class VectorProperty extends PropertyGroup {
 	constructor(name: string, private vector: PropertyValueProvider<Vector>, private normalize: boolean = false, handler: PropertyChangeHandler = null) {
-		super(name, null, handler);
+		super(name, null, null);
 
 		let self = this;
 		this.Add(new NumberProperty('X', () => vector().Get(0), (x) => self.UpdateValue(0, x)));
 		this.Add(new NumberProperty('Y', () => vector().Get(1), (y) => self.UpdateValue(1, y)));
 		this.Add(new NumberProperty('Z', () => vector().Get(2), (z) => self.UpdateValue(2, z)));
+		//The change handler might be invoked curing the construction, above. Wait for the whole thing to be ready, before the change handler is set
+		this.changeHandler = handler;
 	}
 
 	private UpdateValue(index, value) {
