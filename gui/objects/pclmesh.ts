@@ -44,6 +44,7 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 
 	TransformPrivitive(transform: Transform) {
 		this.mesh.ApplyTransform(transform);
+		this.InvalidateDrawing();
 	}
 
 	FillProperties() {

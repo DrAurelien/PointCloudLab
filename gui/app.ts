@@ -5,6 +5,7 @@
 /// <reference path="controls/progressbar.ts" />
 /// <reference path="objects/scene.ts" />
 /// <reference path="objects/pclnode.ts" />
+/// <reference path="objects/pclprimitive.ts" />
 /// <reference path="../tools/longprocess.ts" />
 /// <reference path="../controler/controler.ts" />
 /// <reference path="../controler/actions/delegate.ts" />
@@ -130,7 +131,7 @@ class PCLApp implements Controlable, ActionDelegate {
 
 	GetCurrentTransformable(): Transformable {
 		let item = this.dataHandler.GetCurrentItem();
-		if (item instanceof PCLShape)
+		if (item instanceof PCLPrimitive)
 			return item;
 		return null;
 	}
