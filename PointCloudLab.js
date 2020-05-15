@@ -1063,7 +1063,8 @@ var DrawingContext = /** @class */ (function () {
         this.sampling = 30;
         this.rendering = new RenderingType();
         console.log('Initializing gl context');
-        this.gl = (this.renderingArea.getContext("webgl") || this.renderingArea.getContext("experimental-webgl"));
+        this.gl = (this.renderingArea.getContext("webgl", { preserveDrawingBuffer: true }) ||
+            this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
@@ -1599,26 +1600,21 @@ var StringUtils = /** @class */ (function () {
         }
         return result;
     };
-    return StringUtils;
-}());
-/// <reference path="property.ts" />
-/// <reference path="propertywithvalue.ts" />
-/// <reference path="../../../tools/stringutils.ts" />
-var ColorProperty = /** @class */ (function (_super) {
-    __extends(ColorProperty, _super);
-    function ColorProperty(name, colorvalue, handler) {
-        var _this = _super.call(this, name, 'color', function () { return ColorProperty.RGBToStr(colorvalue()); }, handler) || this;
-        _this.colorvalue = colorvalue;
-        return _this;
-    }
-    ColorProperty.RGBToStr = function (rgb) {
+    StringUtils.RGBiToStr = function (rgb) {
         var result = '#' +
-            StringUtils.LeftPad((rgb[0] * 255).toString(16), '0', 2) +
-            StringUtils.LeftPad((rgb[1] * 255).toString(16), '0', 2) +
-            StringUtils.LeftPad((rgb[2] * 255).toString(16), '0', 2);
+            StringUtils.LeftPad((rgb[0]).toString(16), '0', 2) +
+            StringUtils.LeftPad((rgb[1]).toString(16), '0', 2) +
+            StringUtils.LeftPad((rgb[2]).toString(16), '0', 2);
         return result;
     };
-    ColorProperty.StrToRGB = function (str) {
+    StringUtils.RGBfToStr = function (rgb) {
+        return StringUtils.RGBiToStr([
+            Math.round(255 * rgb[0]),
+            Math.round(255 * rgb[1]),
+            Math.round(255 * rgb[2])
+        ]);
+    };
+    StringUtils.StrToRGB = function (str) {
         var red = str.substr(1, 2);
         var green = str.substr(3, 2);
         var blue = str.substr(5, 2);
@@ -1629,8 +1625,20 @@ var ColorProperty = /** @class */ (function (_super) {
         ];
         return result;
     };
+    return StringUtils;
+}());
+/// <reference path="property.ts" />
+/// <reference path="propertywithvalue.ts" />
+/// <reference path="../../../tools/stringutils.ts" />
+var ColorProperty = /** @class */ (function (_super) {
+    __extends(ColorProperty, _super);
+    function ColorProperty(name, colorvalue, handler) {
+        var _this = _super.call(this, name, 'color', function () { return StringUtils.RGBfToStr(colorvalue()); }, handler) || this;
+        _this.colorvalue = colorvalue;
+        return _this;
+    }
     ColorProperty.prototype.GetValue = function () {
-        return ColorProperty.StrToRGB(this.input.value);
+        return StringUtils.StrToRGB(this.input.value);
     };
     return ColorProperty;
 }(PropertyWithValue));
@@ -4317,6 +4325,8 @@ var ScalarField = /** @class */ (function () {
         this.name = name;
         this.values = new Float32Array([]);
         this.nbvalues = 0;
+        this.min = null;
+        this.max = null;
     }
     ScalarField.prototype.Reserve = function (capacity) {
         if (capacity > this.nbvalues) {
@@ -4332,35 +4342,25 @@ var ScalarField = /** @class */ (function () {
     };
     ScalarField.prototype.SetValue = function (index, value) {
         this.values[index] = value;
+        if (this.min === null || value < this.min) {
+            this.min = value;
+        }
+        if (this.max === null || value > this.max) {
+            this.max = value;
+        }
     };
     ScalarField.prototype.PushValue = function (value) {
-        this.values[this.nbvalues] = value;
+        this.SetValue(this.nbvalues, value);
         this.nbvalues++;
     };
     ScalarField.prototype.Size = function () {
-        return this.values.length;
+        return this.nbvalues;
     };
     ScalarField.prototype.Min = function () {
-        if (this.nbvalues) {
-            var min = this.values[0];
-            for (var index = 1; index < this.nbvalues; index++) {
-                if (this.values[index] < min)
-                    min = this.values[index];
-            }
-            return min;
-        }
-        return null;
+        return this.min;
     };
     ScalarField.prototype.Max = function () {
-        if (this.nbvalues) {
-            var max = this.values[0];
-            for (var index = 1; index < this.nbvalues; index++) {
-                if (this.values[index] > max)
-                    max = this.values[index];
-            }
-            return max;
-        }
-        return 0;
+        return this.max;
     };
     return ScalarField;
 }());
@@ -6632,41 +6632,199 @@ var Popup = /** @class */ (function () {
     };
     return Popup;
 }());
+/// <reference path="scalarfield.ts" />
+var Histogram = /** @class */ (function () {
+    function Histogram(values, nbchunks) {
+        if (nbchunks <= 0) {
+            throw "Invalid histogram parameter : " + nbchunks;
+        }
+        this.chunkcounters = new Array(nbchunks);
+        for (var index = 0; index < nbchunks; index++) {
+            this.chunkcounters[index] = 0;
+        }
+        this.minvalue = values.Min();
+        this.maxvalue = values.Max();
+        this.total = values.Size();
+        this.maxcounter = 0;
+        var chunkwidth = (this.maxvalue - this.minvalue) / nbchunks;
+        for (var index = 0; index < values.Size(); index++) {
+            var chunkindex = Math.floor((values.GetValue(index) - this.minvalue) / chunkwidth);
+            if (chunkindex == nbchunks) {
+                chunkindex--;
+            }
+            this.chunkcounters[chunkindex]++;
+            if (this.chunkcounters[chunkindex] > this.maxcounter) {
+                this.maxcounter = this.chunkcounters[chunkindex];
+            }
+        }
+    }
+    Histogram.prototype.Size = function () {
+        return this.chunkcounters.length;
+    };
+    Histogram.prototype.GetChunk = function (chunkindex) {
+        if (chunkindex === void 0) { chunkindex = null; }
+        if (chunkindex === null) {
+            return new HistogramChunk(this, this.minvalue, this.maxvalue, this.total);
+        }
+        var histowidth = this.maxvalue - this.minvalue;
+        var chunkwidth = histowidth / this.chunkcounters.length;
+        return new HistogramChunk(this, this.minvalue + (chunkindex * chunkwidth), this.minvalue + ((chunkindex + 1) * chunkwidth), this.chunkcounters[chunkindex]);
+    };
+    return Histogram;
+}());
+var HistogramChunk = /** @class */ (function () {
+    function HistogramChunk(histogram, from, to, count) {
+        this.histogram = histogram;
+        this.from = from;
+        this.to = to;
+        this.count = count;
+    }
+    HistogramChunk.prototype.GetStartingValue = function () {
+        return this.from;
+    };
+    HistogramChunk.prototype.GetNormalizedStartingValue = function () {
+        return (this.from - this.histogram.minvalue) / (this.histogram.maxvalue - this.histogram.minvalue);
+    };
+    HistogramChunk.prototype.GetEndingValue = function () {
+        return this.to;
+    };
+    HistogramChunk.prototype.GetNormalizedEndingValue = function () {
+        return (this.to - this.histogram.minvalue) / (this.histogram.maxvalue - this.histogram.minvalue);
+    };
+    HistogramChunk.prototype.GetWidth = function () {
+        return this.to - this.from;
+    };
+    HistogramChunk.prototype.GetNormalizedWidth = function () {
+        return this.GetWidth() / (this.histogram.maxvalue - this.histogram.minvalue);
+    };
+    HistogramChunk.prototype.GetCount = function () {
+        return this.count;
+    };
+    HistogramChunk.prototype.GetNormalizedCount = function () {
+        return this.count / this.histogram.total;
+    };
+    HistogramChunk.prototype.GetMaxNormalizedCount = function () {
+        return this.count /= this.histogram.maxcounter;
+    };
+    return HistogramChunk;
+}());
+/// <reference path="control.ts" />
+/// <reference path="../../model/histogram.ts" />
+var HistogramViewer = /** @class */ (function () {
+    function HistogramViewer(values, color) {
+        if (color === void 0) { color = null; }
+        this.values = values;
+        this.color = color;
+        this.canvas = document.createElement('canvas');
+        this.canvas.className = 'HistogramViewer';
+        this.nbrequestedchunks = 30;
+        var self = this;
+        this.canvas.onwheel = function (event) {
+            self.nbrequestedchunks += event.deltaY > 0 ? -1 : 1;
+            if (self.nbrequestedchunks < 1) {
+                self.nbrequestedchunks = 1;
+            }
+            self.Refresh();
+            event.stopPropagation();
+        };
+    }
+    HistogramViewer.prototype.Refresh = function () {
+        var histogram = new Histogram(this.values, this.nbrequestedchunks);
+        var ctx = this.canvas.getContext('2d');
+        var width = this.canvas.width;
+        var height = this.canvas.height;
+        ctx.fillStyle = 'white';
+        ctx.clearRect(0, 0, width, height);
+        for (var index = 0; index < histogram.Size(); index++) {
+            var chunck = histogram.GetChunk(index);
+            if (this.color) {
+                var midvalue = 0.5 * (chunck.GetStartingValue() + chunck.GetEndingValue());
+                ctx.fillStyle = this.color(midvalue);
+            }
+            ctx.fillRect(0, height * (1.0 - chunck.GetNormalizedEndingValue()), chunck.GetMaxNormalizedCount() * width, chunck.GetNormalizedWidth() * height);
+        }
+    };
+    HistogramViewer.prototype.IsCollapsed = function () {
+        return this.canvas.classList.contains(HistogramViewer.CollapsedClassName);
+    };
+    HistogramViewer.prototype.Collapse = function () {
+        if (!this.IsCollapsed()) {
+            this.canvas.classList.add(HistogramViewer.CollapsedClassName);
+        }
+    };
+    HistogramViewer.prototype.Expand = function () {
+        if (this.IsCollapsed()) {
+            this.canvas.classList.remove(HistogramViewer.CollapsedClassName);
+        }
+    };
+    HistogramViewer.prototype.GetElement = function () {
+        return this.canvas;
+    };
+    HistogramViewer.CollapsedClassName = 'Collapsed';
+    return HistogramViewer;
+}());
 /// <reference path="opengl/drawingcontext.ts" />
 /// <reference path="controls/control.ts" />
+/// <reference path="controls/histogramviewer.ts" />
 /// <reference path="controls/pannel.ts" />
+/// <reference path="../model/scalarfield.ts" />
+/// <reference path="../tools/stringutils.ts" />
 var ColorScale = /** @class */ (function (_super) {
     __extends(ColorScale, _super);
-    function ColorScale() {
+    function ColorScale(field) {
         var _this = _super.call(this, 'ColorScale') || this;
+        _this.field = field;
         _this.renderer = new ColorScaleRenderer();
-        _this.caption = new ColorScaleCaption(_this.renderer);
-        _super.prototype.AddControl.call(_this, _this.caption);
-        _super.prototype.AddControl.call(_this, _this.renderer);
+        _this.caption = new ColorScaleCaption();
+        _this.histo = new HistogramViewer(_this.field, function (v) { return self.GetColor(v); });
+        _this.AddControl(_this.caption);
+        _this.AddControl(_this.renderer);
+        _this.AddControl(_this.histo);
+        var self = _this;
+        _this.renderer.GetElement().onclick = function () {
+            self.histo.IsCollapsed() ? self.histo.Expand() : self.histo.Collapse();
+        };
+        _this.histo.GetElement().onclick = function () {
+            self.histo.Collapse();
+        };
         return _this;
     }
-    ColorScale.Show = function () {
+    ColorScale.prototype.GetColor = function (value) {
+        var ratio = (value - this.field.Min()) / (this.field.Max() - this.field.Min());
+        return this.renderer.GetColor(ratio);
+    };
+    ColorScale.Show = function (field) {
+        if (this.instance && this.instance.field !== field) {
+            this.Hide();
+        }
         if (!this.instance) {
-            this.instance = new ColorScale();
+            this.instance = new ColorScale(field);
+            if (!ColorScale.showHisto) {
+                this.instance.histo.Collapse();
+            }
             document.body.appendChild(this.instance.GetElement());
         }
         return this.instance;
     };
     ColorScale.Hide = function () {
         if (this.instance) {
+            ColorScale.showHisto = this.instance.histo && !this.instance.histo.IsCollapsed();
             document.body.removeChild(this.instance.GetElement());
             delete this.instance;
         }
     };
-    ColorScale.prototype.Refresh = function (min, max) {
+    ColorScale.prototype.Refresh = function () {
+        var min = this.field.Min();
+        var max = this.field.Max();
         this.renderer.Refresh(min, max);
         this.caption.Refresh(min, max);
+        this.histo.Refresh();
     };
+    ColorScale.showHisto = true;
     return ColorScale;
 }(Pannel));
 var ColorScaleCaption = /** @class */ (function () {
-    function ColorScaleCaption(boundScaleRenderer) {
-        this.boundScaleRenderer = boundScaleRenderer;
+    function ColorScaleCaption() {
         this.container = document.createElement('div');
         this.container.className = 'ColorScaleCaption';
         var minContainer = document.createElement('div');
@@ -6686,7 +6844,6 @@ var ColorScaleCaption = /** @class */ (function () {
     ColorScaleCaption.prototype.Refresh = function (min, max) {
         this.min.data = Number(min).toFixed(2);
         this.max.data = Number(max).toFixed(2);
-        this.container.style.height = this.boundScaleRenderer.GetElement().clientHeight + 'px';
     };
     return ColorScaleCaption;
 }());
@@ -6725,6 +6882,12 @@ var ColorScaleRenderer = /** @class */ (function () {
     };
     ColorScaleRenderer.prototype.GetElement = function () {
         return this.scaleRenderingArea;
+    };
+    ColorScaleRenderer.prototype.GetColor = function (v) {
+        var gl = this.drawingcontext.gl;
+        var pixel = new Uint8Array(4);
+        gl.readPixels(0, Math.round(v * gl.drawingBufferHeight), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        return StringUtils.RGBiToStr(pixel);
     };
     return ColorScaleRenderer;
 }());
@@ -7035,7 +7198,7 @@ var DataHandler = /** @class */ (function (_super) {
             var cloud = item;
             var field = cloud.GetCurrentField();
             if (field)
-                ColorScale.Show().Refresh(field.Min(), field.Max());
+                ColorScale.Show(field).Refresh();
             else
                 ColorScale.Hide();
         }
