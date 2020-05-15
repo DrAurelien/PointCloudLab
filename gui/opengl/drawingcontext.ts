@@ -35,7 +35,8 @@ class DrawingContext {
 		this.rendering = new RenderingType();
 
 		console.log('Initializing gl context');
-		this.gl = <WebGLRenderingContext>(this.renderingArea.getContext("webgl") || this.renderingArea.getContext("experimental-webgl"));
+		this.gl = <WebGLRenderingContext>(this.renderingArea.getContext("webgl", { preserveDrawingBuffer: true }) ||
+			this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
 		this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		this.gl.enable(this.gl.DEPTH_TEST);
 		this.gl.disable(this.gl.CULL_FACE);

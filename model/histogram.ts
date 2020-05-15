@@ -1,11 +1,13 @@
-﻿class Histogram {
+﻿/// <reference path="scalarfield.ts" />
+
+class Histogram {
 	chunkcounters: number[];
 	total: number;
 	maxcounter: number;
 	minvalue: number;
 	maxvalue: number;
 
-	constructor(values: ArrayLike<number>, nbchunks: number) {
+	constructor(values: ScalarField, nbchunks: number) {
 		if (nbchunks <= 0) {
 			throw "Invalid histogram parameter : " + nbchunks;
 		}
@@ -13,20 +15,19 @@
 		this.chunkcounters = new Array<number>(nbchunks);
 		for (let index = 0; index < nbchunks; index++) {
 			this.chunkcounters[index] = 0;
-			if (index === 0 || values[index] < this.minvalue) {
-				this.minvalue = values[index];
-			}
-			if (index === 0 || values[index] > this.maxvalue) {
-				this.maxvalue = values[index];
-			}
 		}
 
-		this.total = values.length;
+		this.minvalue = values.Min();
+		this.maxvalue = values.Max();
+		this.total = values.Size();
 		this.maxcounter = 0;
 
 		let chunkwidth = (this.maxvalue - this.minvalue) / nbchunks;
-		for (let index = 0; index < nbchunks; index++) {
-			let chunkindex = Math.floor((values[index] - this.minvalue) / chunkwidth);
+		for (let index = 0; index < values.Size(); index++) {
+			let chunkindex = Math.floor((values.GetValue(index) - this.minvalue) / chunkwidth);
+			if (chunkindex == nbchunks) {
+				chunkindex--;
+			}
 			this.chunkcounters[chunkindex]++;
 			if (this.chunkcounters[chunkindex] > this.maxcounter) {
 				this.maxcounter = this.chunkcounters[chunkindex];
@@ -77,7 +78,7 @@ class HistogramChunk {
 	}
 
 	GetWidth(): number {
-		return this.from - this.to;
+		return this.to - this.from;
 	}
 
 	GetNormalizedWidth(): number {

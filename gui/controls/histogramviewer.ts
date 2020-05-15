@@ -6,19 +6,26 @@ class HistogramViewer implements Control {
 	canvas: HTMLCanvasElement;
 	nbrequestedchunks: number;
 
-	expandedWidth: number;
-	expandedHeight: number;
+	private static CollapsedClassName = 'Collapsed';
 
-	constructor() {
+	constructor(private values: ScalarField, private color: ColorProvider = null) {
 		this.canvas = document.createElement('canvas');
 		this.canvas.className = 'HistogramViewer';
 		this.nbrequestedchunks = 30;
-		this.expandedWidth = this.canvas.clientWidth;
-		this.expandedHeight = this.canvas.clientHeight;
+
+		let self = this;
+		this.canvas.onwheel = (event: WheelEvent) => {
+			self.nbrequestedchunks += event.deltaY > 0 ? -1 : 1;
+			if (self.nbrequestedchunks < 1) {
+				self.nbrequestedchunks = 1;
+			}
+			self.Refresh();
+			event.stopPropagation();
+		}
 	}
 
-	Refresh(values: ArrayLike<number>) {
-		let histogram = new Histogram(values, this.nbrequestedchunks);
+	Refresh() {
+		let histogram = new Histogram(this.values, this.nbrequestedchunks);
 		let ctx = this.canvas.getContext('2d');
 		let width = this.canvas.width;
 		let height = this.canvas.height;
@@ -28,7 +35,10 @@ class HistogramViewer implements Control {
 		for (var index = 0; index < histogram.Size(); index++) {
 			let chunck = histogram.GetChunk(index);
 
-			//BottomtoTop
+			if (this.color) {
+				let midvalue = 0.5 * (chunck.GetStartingValue() + chunck.GetEndingValue());
+				ctx.fillStyle = this.color(midvalue);
+			}
 			ctx.fillRect(
 				0,
 				height * (1.0 - chunck.GetNormalizedEndingValue()),
@@ -36,34 +46,29 @@ class HistogramViewer implements Control {
 				chunck.GetNormalizedWidth() * height
 			);
 		}
-
-		ctx.fillRect(0, 0, 50, 50);
-	}
-
-	Resize(width: number, height: number) {
-		this.expandedWidth = width;
-		this.expandedHeight = height;
-		if (!this.IsCollapsed()) {
-			this.canvas.style.width = width + 'px';
-			this.canvas.style.height = height + 'px';
-		}
 	}
 
 	IsCollapsed() {
-		return this.canvas.clientHeight === 0 || this.canvas.clientWidth === 0;
+		return this.canvas.classList.contains(HistogramViewer.CollapsedClassName);
 	}
 
 	Collapse() {
-		this.canvas.style.height = 0 + 'px';
-		this.canvas.style.width = 0 + 'px';
+		if (!this.IsCollapsed()) {
+			this.canvas.classList.add(HistogramViewer.CollapsedClassName)
+		}
 	}
 
 	Expand() {
-		this.canvas.style.height = this.expandedHeight + 'px';
-		this.canvas.style.width = this.expandedWidth + 'px';
+		if (this.IsCollapsed()) {
+			this.canvas.classList.remove(HistogramViewer.CollapsedClassName);
+		}
 	}
 
 	GetElement(): HTMLElement {
 		return this.canvas;
 	}
+}
+
+interface ColorProvider {
+	(v: number): string;
 }

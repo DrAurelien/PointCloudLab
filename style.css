@@ -1,31 +1,28 @@
-﻿body
-{
-	overflow : hidden;
-	padding : 0px;
-	margin : 0px;
-	font-size : 11px;
-	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+﻿body {
+	overflow: hidden;
+	padding: 0px;
+	margin: 0px;
+	font-size: 11px;
+	font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 }
 
-canvas.SceneRendering
-{
-	position : fixed;
-	top : 0px;
-	left : 0px;
-	margin : 0px;
+canvas.SceneRendering {
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	margin: 0px;
 }
 
-canvas.CoordsRendering
-{
-	position : fixed;
-	margin : 0px;
-	bottom : 10px;
-	right : 10px;
-	width : 120px;
-	height : 120px;
-	z-index : 1;
-	border : 1px solid white;
-	border-radius : 7px;
+canvas.CoordsRendering {
+	position: fixed;
+	margin: 0px;
+	bottom: 10px;
+	right: 10px;
+	width: 120px;
+	height: 120px;
+	z-index: 1;
+	border: 1px solid white;
+	border-radius: 7px;
 }
 
 div.DataWindow, div.MenuToolbar {
@@ -48,9 +45,9 @@ div.DataWindow {
 	overflow: hidden;
 }
 
-div.DataWindow div.HideablePannelContainer {
-	width: 300px;
-}
+	div.DataWindow div.HideablePannelContainer {
+		width: 300px;
+	}
 
 div.MenuToolbar {
 	left: 320px;
@@ -68,31 +65,33 @@ div.HideablePannelHandle {
 	height: 7px;
 }
 
-div.HideablePannelHandle:hover {
-	background-color: lightgray;
-}
+	div.HideablePannelHandle:hover {
+		background-color: lightgray;
+	}
 
-div.HideablePannelHandle[Position=Right] {
-	right: 0px;
-	top:0px;
-	bottom: 0px;
-}
-div.HideablePannelHandle[Position=Left] {
-	left: 0px;
-	top: 0px;
-	bottom: 0px;
-}
-div.HideablePannelHandle[Position=Top] {
-	right: 0px;
-	top: 0px;
-	left: 0px;
-}
+	div.HideablePannelHandle[Position=Right] {
+		right: 0px;
+		top: 0px;
+		bottom: 0px;
+	}
 
-div.HideablePannelHandle[Position=Bottom] {
-	right: 0px;
-	left: 0px;
-	bottom: 0px;
-}
+	div.HideablePannelHandle[Position=Left] {
+		left: 0px;
+		top: 0px;
+		bottom: 0px;
+	}
+
+	div.HideablePannelHandle[Position=Top] {
+		right: 0px;
+		top: 0px;
+		left: 0px;
+	}
+
+	div.HideablePannelHandle[Position=Bottom] {
+		right: 0px;
+		left: 0px;
+		bottom: 0px;
+	}
 
 div.DataToolbar, div.DataArea, div.PropertiesArea {
 	margin: 0px;
@@ -100,262 +99,236 @@ div.DataToolbar, div.DataArea, div.PropertiesArea {
 	overflow: auto;
 }
 
-div.TreeItemContainer
-{
-	padding-left : 10px;
+div.TreeItemContainer {
+	padding-left: 10px;
 }
 
-div.SceneItem, div.SelectedSceneItem
-{
-	cursor : pointer;
+div.SceneItem, div.SelectedSceneItem {
+	cursor: pointer;
 }
 
-div.SelectedSceneItem
-{
-	background-color : black;
-	color : white;
-	font-weight : bold;
+div.SelectedSceneItem {
+	background-color: black;
+	color: white;
+	font-weight: bold;
 }
 
-div.SceneItem:hover
-{
-	background-color : lightgray;
+div.SceneItem:hover {
+	background-color: lightgray;
 }
 
-div.Button, div.ComboButton, div.FileOpener
-{
-	vertical-align : middle;
-	border : 1px solid lightgray;
+div.Button, div.ComboButton, div.FileOpener {
+	vertical-align: middle;
+	border: 1px solid lightgray;
 	border-radius: 3px;
-	padding : 10px;
-	margin : auto;
-	cursor : pointer;
+	padding: 10px;
+	margin: auto;
+	cursor: pointer;
 }
 
-div.Button:hover, div.ComboButton:hover, div.FileOpener:hover
-{
-	background-color : lightgray;
-	border : 1px solid darkgray;
-}
+	div.Button:hover, div.ComboButton:hover, div.FileOpener:hover {
+		background-color: lightgray;
+		border: 1px solid darkgray;
+	}
 
 div.Toolbar {
 	display: flex;
 }
 
-div.Toolbar *.ButtonIcon {
-	font-size: x-large;
-	margin : 0px;
-	margin-right : 5px;
-}
+	div.Toolbar *.ButtonIcon {
+		font-size: x-large;
+		margin: 0px;
+		margin-right: 5px;
+	}
 
-div.Popup
-{
-	position : fixed;
-	background-color : lightgray;
+div.Popup {
+	position: fixed;
+	background-color: lightgray;
 	border-radius: 3px;
-	padding : 10px;
-	opacity : 1;
-	z-index : 100;
-	border : 1px solid darkgray;
+	padding: 10px;
+	opacity: 1;
+	z-index: 100;
+	border: 1px solid darkgray;
 }
 
-div.PopupOption
-{
-	cursor : pointer;
+div.PopupOption {
+	cursor: pointer;
 }
 
-div.PopupOptionInactive
-{
-	color : darkgray;
+div.PopupOptionInactive {
+	color: darkgray;
 }
 
-div.PopupSeparator
-{
-	height : 0px;
-	width : 100%;
-	padding : 0px;
-	margin : 0px;
-	margin-top : 0.2em;
-	margin-bottom : 0.2em;
-	border-bottom : 1px solid darkgray;
+div.PopupSeparator {
+	height: 0px;
+	width: 100%;
+	padding: 0px;
+	margin: 0px;
+	margin-top: 0.2em;
+	margin-bottom: 0.2em;
+	border-bottom: 1px solid darkgray;
 }
 
-div.PopupOption:hover
-{
-	background-color : darkgray;
+div.PopupOption:hover {
+	background-color: darkgray;
 }
 
-div.Hint
-{
-	position : fixed;
-	left : 320px;
-	bottom : 10px;
-	width : 500px;
-	overflow : hidden;
-	margin : 0px;
-	padding : 1em;
-	background-color : white;
-	opacity : 0.8;
-	z-index : 1;
+div.Hint {
+	position: fixed;
+	left: 320px;
+	bottom: 10px;
+	width: 500px;
+	overflow: hidden;
+	margin: 0px;
+	padding: 1em;
+	background-color: white;
+	opacity: 0.8;
+	z-index: 1;
 	border-radius: 7px;
 }
 
-div.Dialog
-{
-	position : fixed;
-	left : 400px;
-	top : 200px;
-	display : inline-block;
-	background-color : white;
+div.Dialog {
+	position: fixed;
+	left: 400px;
+	top: 200px;
+	display: inline-block;
+	background-color: white;
 	border-radius: 3px;
-	padding : 10px;
-	opacity : 0.95;
-	z-index : 200;
-	border : 1px solid black;
-	margin : auto;
-	overflow : auto;
+	padding: 10px;
+	opacity: 0.95;
+	z-index: 200;
+	border: 1px solid black;
+	margin: auto;
+	overflow: auto;
 }
 
-table.DialogContent
-{
-	width : 100%;
+table.DialogContent {
+	width: 100%;
 }
 
-input.FileOpener
-{
-	display : none;
+input.FileOpener {
+	display: none;
 }
 
-table.Properties
-{
-	padding : 0px;
-    border-spacing : 0px;
+table.Properties {
+	padding: 0px;
+	border-spacing: 0px;
 }
 
-td
-{
+td {
 	vertical-align: top;
-	font-size : 11px;
-	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
-	padding : 0px;
-	padding-left : 10px;
-	margin : 0px;
+	font-size: 11px;
+	font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	padding: 0px;
+	padding-left: 10px;
+	margin: 0px;
 }
 
-td.PropertyCompound
-{
-	margin : 0px;
-	padding : 0px;
-	padding-left : 2em;
+	td.PropertyCompound {
+		margin: 0px;
+		padding: 0px;
+		padding-left: 2em;
+	}
+
+	td.PropertyName {
+		font-weight: bold;
+	}
+
+input.PropertyValue, input.PropertyValueReadonly {
+	font-size: 11px;
+	font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	border: 0px;
+	margin: 0px;
+	padding: 0px;
 }
 
-td.PropertyName
-{
-	font-weight : bold;
-}
+	input.PropertyValue:hover {
+		background-color: lightgray;
+	}
 
-input.PropertyValue, input.PropertyValueReadonly
-{
-	font-size : 11px;
-	font-family : "Lucida Sans Unicode", "Lucida Grande", sans-serif;
-	border : 0px;
-	margin : 0px;
-	padding : 0px;
-}
-
-input.PropertyValue:hover
-{
-	background-color : lightgray;
-}
-
-div.ProgressControl
-{
-	position : fixed;
-	right : 10px;
-	bottom : 10px;
-	width : 500px;
-	height : 40px;
-	overflow : hidden;
-	margin : 0px;
-	padding : 0px;
-	background-color : white;
-	opacity : 0.8;
-	z-index : 1;
+div.ProgressControl {
+	position: fixed;
+	right: 10px;
+	bottom: 10px;
+	width: 500px;
+	height: 40px;
+	overflow: hidden;
+	margin: 0px;
+	padding: 0px;
+	background-color: white;
+	opacity: 0.8;
+	z-index: 1;
 	border-radius: 7px;
 }
 
-div.ProgressMessage
-{
-	width : 450px;
-	height : 20px;
-	overflow : hidden;
-	margin : auto;
+div.ProgressMessage {
+	width: 450px;
+	height: 20px;
+	overflow: hidden;
+	margin: auto;
 }
 
-div.ProgressContainer
-{
-	width : 450px;
-	height : 10px;
-	overflow : hidden;
-	margin : auto;
-	padding : 0px;
-	background-color : darkgray;
-	z-index : 2;
+div.ProgressContainer {
+	width: 450px;
+	height: 10px;
+	overflow: hidden;
+	margin: auto;
+	padding: 0px;
+	background-color: darkgray;
+	z-index: 2;
 	border-radius: 5px;
 }
 
-div.ProgressBar
-{
-	width : 0px;
-	height : 10px;
-	overflow : hidden;
-	margin : 0px;
-	padding : 0px;
-	background-color : green;
-	z-index : 3;
+div.ProgressBar {
+	width: 0px;
+	height: 10px;
+	overflow: hidden;
+	margin: 0px;
+	padding: 0px;
+	background-color: green;
+	z-index: 3;
 	border-radius: 5px;
 }
 
-.ButtonIcon
-{
-	margin-right : 1em;
+.ButtonIcon {
+	margin-right: 1em;
 }
 
-.ItemIcon
-{
-	margin-right : 1em;
-	font-size : 120%;
+.ItemIcon {
+	margin-right: 1em;
+	font-size: 120%;
 	float: left;
 }
-.ItemAction
-{
-	margin-right : 5px;
-	font-size : 120%;
+
+.ItemAction {
+	margin-right: 5px;
+	font-size: 120%;
 	float: right;
 }
 
-.ItemAction:hover
-{
-	color: red;
-}
+	.ItemAction:hover {
+		color: red;
+	}
 
-div.AxisLabel
-{
-	position : fixed;
-	width : 12px;
-	height : 12px;
-	z-index : 2;
-	font-size : 10px;
-	stroke : white;
-	font-weight : bold;
-	background-color : darkgray;
-	border : 1px solid black;
-	background-color : lightgray;
-	text-align : center;
-	vertical-align : middle;
+div.AxisLabel {
+	position: fixed;
+	width: 12px;
+	height: 12px;
+	z-index: 2;
+	font-size: 10px;
+	stroke: white;
+	font-weight: bold;
+	background-color: darkgray;
+	border: 1px solid black;
+	background-color: lightgray;
+	text-align: center;
+	vertical-align: middle;
 	border-radius: 3px;
-	cursor : pointer;
-	-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;
+	cursor: pointer;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
 div.ColorScale {
@@ -369,32 +342,43 @@ div.ColorScale {
 	border: 1px solid white;
 }
 
-.ColorRenderer {
-	position: relative;
-	width: 20px;
-	height: 200px;
-	cursor: pointer;
-}
+	div.ColorScale * {
+		position: relative;
+		height: 200px;
+	}
 
-div.ColorScale .HistogramViewer {
-	position: relative;
-	cursor: pointer;
-}
+	div.ColorScale .ColorRenderer {
+		width: 20px;
+		cursor: pointer;
+	}
 
-.ColorScaleCaption {
-	position: relative;
-}
+	div.ColorScale .ColorScaleCaption {
+	}
 
-.ColorScaleMin {
-	position: absolute;
-	margin-bottom: 0px;
-	bottom: 0px;
-	right: 5px;
-}
+		div.ColorScale .ColorScaleCaption .ColorScaleMin {
+			position: absolute;
+			margin-bottom: 0px;
+			bottom: 0px;
+			right: 5px;
+			height: unset;
+		}
 
-.ColorScaleMax {
-	position: absolute;
-	margin-top: 0px;
-	top: 0px;
-	right: 5px;
-}
+		div.ColorScale .ColorScaleCaption .ColorScaleMax {
+			position: absolute;
+			margin-top: 0px;
+			top: 0px;
+			right: 5px;
+			height: unset;
+		}
+
+	div.ColorScale .HistogramViewer {
+		position: relative;
+		cursor: pointer;
+		width: 100px;
+		height: 200px;
+	}
+
+		div.ColorScale .HistogramViewer.Collapsed {
+			width: 0px;
+			height: 200px;
+		}
