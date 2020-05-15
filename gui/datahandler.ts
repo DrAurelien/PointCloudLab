@@ -92,7 +92,7 @@ class DataHandler extends HideablePannel {
 			let cloud = item as PCLPointCloud;
 			let field = cloud.GetCurrentField();
 			if (field)
-				ColorScale.Show().Refresh(field.Min(), field.Max());
+				ColorScale.Show(field).Refresh();
 			else
 				ColorScale.Hide();
 		}

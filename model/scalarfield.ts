@@ -1,10 +1,14 @@
 ﻿class ScalarField {
 	public values: Float32Array;
 	private nbvalues: number;
+	private min: number;
+	private max: number;
 
 	constructor(public name: string) {
 		this.values = new Float32Array([]);
 		this.nbvalues = 0;
+		this.min = null;
+		this.max = null;
 	}
 
 	Reserve(capacity: number) {
@@ -23,38 +27,28 @@
 
 	SetValue(index: number, value: number) {
 		this.values[index] = value;
+		if (this.min === null || value < this.min) {
+			this.min = value;
+		}
+		if (this.max === null || value > this.max) {
+			this.max = value;
+		}
 	}
 
 	PushValue(value: number) {
-		this.values[this.nbvalues] = value;
+		this.SetValue(this.nbvalues, value);
 		this.nbvalues++;
 	}
 
 	Size(): number {
-		return this.values.length;
+		return this.nbvalues;
 	}
 
 	Min(): number {
-		if (this.nbvalues) {
-			let min = this.values[0];
-			for (let index = 1; index < this.nbvalues; index++) {
-				if (this.values[index] < min)
-					min = this.values[index];
-			}
-			return min;
-		}
-		return null;
+		return this.min;
 	}
 
 	Max(): number {
-		if (this.nbvalues) {
-			let max = this.values[0];
-			for (let index = 1; index < this.nbvalues; index++) {
-				if (this.values[index] > max)
-					max = this.values[index];
-			}
-			return max;
-		}
-		return 0;
+		return this.max;
 	}
 }
