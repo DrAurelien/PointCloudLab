@@ -1,26 +1,38 @@
 ﻿/// <reference path="opengl/drawingcontext.ts" />
 /// <reference path="controls/control.ts" />
+/// <reference path="controls/histogramviewer.ts" />
 /// <reference path="controls/pannel.ts" />
+/// <reference path="../model/scalarfield.ts" />
 
 
 class ColorScale extends Pannel {
 	renderer: ColorScaleRenderer;
 	caption: ColorScaleCaption;
+	histo: HistogramViewer;
 
 	private static instance: ColorScale;
 
-	constructor() {
+	constructor(private field: ScalarField) {
 		super('ColorScale');
 
 		this.renderer = new ColorScaleRenderer();
 		this.caption = new ColorScaleCaption(this.renderer);
-		super.AddControl(this.caption);
-		super.AddControl(this.renderer);
+		this.AddControl(this.caption);
+		this.AddControl(this.renderer);
+
+		let self = this;
+		this.renderer.GetElement().onclick = () => {
+			let histo = self.GetHistogram();
+			histo.IsCollapsed() ? histo.Expand() : histo.Collapse()
+		}
 	}
 
-	static Show(): ColorScale {
+	static Show(field: ScalarField): ColorScale {
+		if (this.instance && this.instance.field !== field) {
+			this.Hide();
+		}
 		if (!this.instance) {
-			this.instance = new ColorScale();
+			this.instance = new ColorScale(field);
 			document.body.appendChild(this.instance.GetElement());
 		}
 		return this.instance;
@@ -33,9 +45,32 @@ class ColorScale extends Pannel {
 		}
 	}
 
-	Refresh(min: number, max: number) {
+	Refresh() {
+		let min = this.field.Min();
+		let max = this.field.Max();
+
 		this.renderer.Refresh(min, max);
 		this.caption.Refresh(min, max);
+		if (this.histo) {
+			this.histo.Refresh(this.field.values);
+		}
+	}
+
+	GetHistogram(): HistogramViewer {
+		if (!this.histo) {
+			this.histo = new HistogramViewer();
+			this.histo.Collapse();
+			this.AddControl(this.histo);
+			let height = this.renderer.GetElement().clientHeight;
+			this.histo.Resize(Math.round(height * 0.5), height);
+			this.histo.Refresh(this.field.values);
+
+			let self = this;
+			this.histo.GetElement().onclick = () => {
+				self.histo.Collapse();
+			}
+		}
+		return this.histo;
 	}
 }
 

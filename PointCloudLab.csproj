@@ -118,6 +118,12 @@
   <ItemGroup>
     <Content Include="gui\colorscale.ts" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="model\histogram.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\controls\histogramviewer.ts" />
+  </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
   </Target>

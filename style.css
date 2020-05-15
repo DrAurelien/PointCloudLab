@@ -370,8 +370,15 @@ div.ColorScale {
 }
 
 .ColorRenderer {
+	position: relative;
 	width: 20px;
 	height: 200px;
+	cursor: pointer;
+}
+
+div.ColorScale .HistogramViewer {
+	position: relative;
+	cursor: pointer;
 }
 
 .ColorScaleCaption {
