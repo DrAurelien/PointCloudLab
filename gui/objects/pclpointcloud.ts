@@ -219,7 +219,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 				s.PushFloat32(self.cloud.points[index]);
 			}
 		});
-		if (this.cloud.HasNormals) {
+		if (this.cloud.HasNormals()) {
 			serializer.PushParameter('normals', (s) => {
 				s.PushInt32(self.cloud.normalssize);
 				for (let index = 0; index < self.cloud.normalssize; index++) {
@@ -232,7 +232,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 			serializer.PushParameter('scalarfield', (s) => {
 				s.PushUILenghedString(field.name);
 				s.PushInt32(field.Size());
-				for (let ii = 0; ii < field.Size(); index++) {
+				for (let ii = 0; ii < field.Size(); ii++) {
 					s.PushFloat32(field.GetValue(ii));
 				}
 			});

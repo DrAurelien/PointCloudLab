@@ -10,7 +10,7 @@ class BinaryStream {
 
 	constructor(public buffer: ArrayBuffer) {
 		this.cursor = 0;
-		this.stream = new DataView(buffer);
+		this.stream = buffer ? new DataView(buffer) : null;
 
 		var tmp = new ArrayBuffer(2);
 		new DataView(tmp).setInt16(0, 256, true);

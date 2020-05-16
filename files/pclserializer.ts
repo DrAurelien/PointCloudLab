@@ -14,8 +14,8 @@ interface PCLSerializationHandler {
 
 class PCLSerializer {
 	writer: BinaryWriter;
-	constructor() {
-		this.writer = new BinaryWriter();
+	constructor(buffersize) {
+		this.writer = new BinaryWriter(buffersize);
 
 		this.writer.PushString('>>>HEADER\n');
 		this.PushParameter(this.writer.endianness == Endianness.BigEndian ? 'bigendian' : 'littleendian');
@@ -40,7 +40,11 @@ class PCLSerializer {
 	}
 
 	GetBuffer(): ArrayBuffer {
-		return this.writer.buffer.slice(0, this.writer.cursor);
+		return this.writer.buffer;
+	}
+
+	GetBufferSize(): number {
+		return this.writer.cursor;
 	}
 }
 

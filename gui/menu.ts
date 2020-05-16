@@ -30,7 +30,11 @@ class Menu extends HideablePannel {
 		}, 'Load data from a file'));
 
 		this.toolbar.AddControl(new Button('[Icon:save]', () => {
-			let serializer = new PCLSerializer();
+			//Dry run (to get the buffer size)
+			let serializer = new PCLSerializer(null);
+			scene.Serialize(serializer);
+			//Actual serialization
+			serializer = new PCLSerializer(serializer.GetBufferSize());
 			scene.Serialize(serializer);
 			FileExporter.ExportFile('Scene.pcld', serializer.GetBuffer(), 'model');
 		}, 'Save the scene data to a file'));
