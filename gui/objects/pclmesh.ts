@@ -7,6 +7,7 @@
 /// <reference path="../opengl/buffer.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 //=================================================
@@ -59,6 +60,27 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 			this.properties.Push(points);
 			this.properties.Push(faces);
 		}
+	}
+
+	GetSerializationID(): string {
+		return 'POINTCLOUD';
+	}
+
+	SerializePrimitive(serializer: PCLSerializer) {
+		let cloud = this.mesh.pointcloud;
+		serializer.PushParameter('points', (s) => {
+			s.PushInt32(cloud.pointssize);
+			for (let index = 0; index < cloud.pointssize; index++) {
+				s.PushFloat32(cloud.points[index]);
+			}
+		});
+		let mesh = this.mesh;
+		serializer.PushParameter('faces', (s) => {
+			s.PushInt32(mesh.size);
+			for (let index = 0; index < mesh.size; index++) {
+				s.PushInt32(mesh.faces[index]);
+			}
+		});
 	}
 }
 

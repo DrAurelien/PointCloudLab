@@ -26,4 +26,28 @@ class PCLCylinder extends PCLShape {
 		geometry.Push(new NumberProperty('Height', () => self.cylinder.height, self.GeometryChangeHandler((value) => self.cylinder.height = value)));
 		return geometry;
 	}
+
+	GetSerializationID(): string {
+		return 'CYLINDER';
+	}
+
+	SerializePrimitive(serializer: PCLSerializer) {
+		let cylinder = this.cylinder;
+		serializer.PushParameter('center', (s) => {
+			s.PushFloat32(cylinder.center.Get(0));
+			s.PushFloat32(cylinder.center.Get(1));
+			s.PushFloat32(cylinder.center.Get(2));
+		});
+		serializer.PushParameter('axis', (s) => {
+			s.PushFloat32(cylinder.axis.Get(0));
+			s.PushFloat32(cylinder.axis.Get(1));
+			s.PushFloat32(cylinder.axis.Get(2));
+		});
+		serializer.PushParameter('radius', (s) => {
+			s.PushFloat32(cylinder.radius);
+		});
+		serializer.PushParameter('height', (s) => {
+			s.PushFloat32(cylinder.height);
+		});
+	}
 }

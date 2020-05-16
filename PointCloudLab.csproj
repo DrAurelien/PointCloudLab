@@ -124,6 +124,15 @@
   <ItemGroup>
     <Content Include="gui\controls\histogramviewer.ts" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="files\binarywriter.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="files\binarystream.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="files\pclserializer.ts" />
+  </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
   </Target>

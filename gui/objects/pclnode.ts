@@ -7,6 +7,7 @@
 /// <reference path="../controls/properties/stringproperty.ts" />
 /// <reference path="../controls/properties/booleanproperty.ts" />
 /// <reference path="../../controler/actions/delegate.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 enum ChangeType {
@@ -33,7 +34,7 @@ interface PCLContainer {
 	NotifyChange(source: PCLNode, type: ChangeType);
 }
 
-abstract class PCLNode implements Pickable, Notifiable {
+abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 	owner: PCLContainer;
 	visible: boolean;
 	selected: boolean;
@@ -66,11 +67,24 @@ abstract class PCLNode implements Pickable, Notifiable {
 	// https://fontawesome.com/cheatsheet
 	abstract GetDisplayIcon(): string;
 
+	abstract GetSerializationID(): string;
+	Serialize(serializer: PCLSerializer) {
+		let self = this;
+		serializer.Start(this);
+		serializer.PushParameter('name', (s) => s.PushString(self.name));
+		if (!this.deletable) {
+			serializer.PushParameter('nodelete');
+		}
+		this.SerializeNode(serializer);
+		serializer.End(this);
+	}
+	protected abstract SerializeNode(serializer: PCLSerializer);
+
 	GetProperties(): Properties {
 		let self = this;
 		if (!this.properties) {
 			this.properties = new Properties();
-			this.properties.Push(new StringProperty('Name', () => self.name, (newName) => self.name = newName));
+			this.properties.Push(new StringProperty('Name', () => self.name, (newName) => self.name = newName.replace(/\//g, ' ')));
 			this.properties.Push(new BooleanProperty('Visible', () => self.visible, (newVilibility) => self.visible = newVilibility));
 			this.FillProperties();
 

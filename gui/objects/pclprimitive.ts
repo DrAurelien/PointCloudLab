@@ -5,6 +5,7 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../../tools/transform.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 abstract class PCLPrimitive extends PCLNode implements Transformable {
@@ -66,9 +67,11 @@ abstract class PCLPrimitive extends PCLNode implements Transformable {
 	}
 
 	ApplyTransform() {
-		this.TransformPrivitive(this.transform);
-		this.transform = null;
-		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		if (this.transform) {
+			this.TransformPrivitive(this.transform);
+			this.transform = null;
+			this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		}
 	}
 
 	abstract TransformPrivitive(transform: Transform);
@@ -90,4 +93,12 @@ abstract class PCLPrimitive extends PCLNode implements Transformable {
 	GetDisplayIcon(): string {
 		return 'fa-cube';
 	}
+
+	SerializeNode(serializer: PCLSerializer) {
+		let self = this;
+		this.ApplyTransform();
+		serializer.PushParameter('material', () => self.material.Serialize(serializer));
+		this.SerializePrimitive(serializer);
+	}
+	abstract SerializePrimitive(serializer: PCLSerializer);
 }

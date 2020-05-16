@@ -5,6 +5,7 @@
 /// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 class LightsContainer extends PCLGroup {
@@ -19,6 +20,10 @@ class LightsContainer extends PCLGroup {
 		result.push(new NewLightAction(this));
 
 		return result;
+	}
+
+	GetSerializationID(): string {
+		return 'LIGHTSSET';
 	}
 }
 

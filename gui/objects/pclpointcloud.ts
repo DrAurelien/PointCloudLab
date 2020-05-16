@@ -7,6 +7,7 @@
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../opengl/buffer.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 //=================================================
@@ -204,6 +205,38 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 			result += '\n';
 		}
 		return result;
+	}
+
+	GetSerializationID(): string {
+		return 'POINTCLOUD';
+	}
+
+	SerializePrimitive(serializer: PCLSerializer) {
+		let self = this;
+		serializer.PushParameter('points', (s) => {
+			s.PushInt32(self.cloud.pointssize);
+			for (let index = 0; index < self.cloud.pointssize; index++) {
+				s.PushFloat32(self.cloud.points[index]);
+			}
+		});
+		if (this.cloud.HasNormals) {
+			serializer.PushParameter('normals', (s) => {
+				s.PushInt32(self.cloud.normalssize);
+				for (let index = 0; index < self.cloud.normalssize; index++) {
+					s.PushFloat32(self.cloud.normals[index]);
+				}
+			});
+		}
+		for (let index = 0; index < this.fields.length; index++) {
+			let field = this.fields[index];
+			serializer.PushParameter('scalarfield', (s) => {
+				s.PushUILenghedString(field.name);
+				s.PushInt32(field.Size());
+				for (let ii = 0; ii < field.Size(); index++) {
+					s.PushFloat32(field.GetValue(ii));
+				}
+			});
+		}
 	}
 }
 

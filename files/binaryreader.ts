@@ -1,30 +1,9 @@
-﻿enum Endianness {
-	BigEndian,
-	LittleEndian
-}
+﻿/// <reference path="binarystream.ts" />
 
-class BinaryReader {
-	cursor: number;
-	stream: DataView;
-	endianness: Endianness;
-	private innerendianness: Endianness;
 
+class BinaryReader extends BinaryStream {
 	constructor(buffer: ArrayBuffer) {
-		this.cursor = 0;
-		this.stream = new DataView(buffer);
-		this.endianness = Endianness.BigEndian;
-
-		var tmp = new ArrayBuffer(2);
-		new DataView(tmp).setInt16(0, 256, true);
-		this.innerendianness = (new Int16Array(tmp)[0] === 256 ? Endianness.LittleEndian : Endianness.BigEndian);
-	}
-
-	Reset() {
-		this.cursor = 0;
-	}
-
-	Eof(): boolean {
-		return (this.cursor >= this.stream.byteLength) || (this.stream[this.cursor] == 3);
+		super(buffer);
 	}
 
 	CountAsciiOccurences(asciichar: string): number {
@@ -101,6 +80,18 @@ class BinaryReader {
 		return result;
 	}
 
+	GetNextString(length: number, move: boolean = true): string {
+		let cursor = this.cursor;
+		let result = '';
+		for (let index = 0; index < length && !this.Eof(); index++) {
+			result += this.GetNextAsciiChar(true);
+		}
+		if (!move) {
+			this.cursor = cursor;
+		}
+		return result;
+	}
+
 	GetNextUInt8(move: boolean = true): number {
 		let result = this.stream.getInt8(this.cursor);
 		if (move)
@@ -119,6 +110,16 @@ class BinaryReader {
 		var result = this.stream.getFloat32(this.cursor, this.endianness == Endianness.LittleEndian);
 		if (move)
 			this.cursor += 4;
+		return result;
+	}
+
+	GetNextUILenghedString(move: boolean = true): string {
+		let cursor = this.cursor;
+		let length = this.GetNextUInt8(true);
+		let result = this.GetNextString(length, true);
+		if (!move) {
+			this.cursor = cursor;
+		}
 		return result;
 	}
 }

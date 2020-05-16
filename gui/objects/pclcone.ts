@@ -6,6 +6,7 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 class PCLCone extends PCLShape {
@@ -25,5 +26,29 @@ class PCLCone extends PCLShape {
 		geometry.Push(new NumberProperty('Angle', () => Geometry.RadianToDegree(self.cone.angle), self.GeometryChangeHandler((value) => self.cone.angle = Geometry.DegreeToRadian(value))));
 		geometry.Push(new NumberProperty('Height', () => self.cone.height, self.GeometryChangeHandler((value) => self.cone.height = value)));
 		return geometry;
+	}
+
+	GetSerializationID(): string {
+		return 'CONE';
+	}
+
+	SerializePrimitive(serializer: PCLSerializer) {
+		let cone = this.cone;
+		serializer.PushParameter('apex', (s) => {
+			s.PushFloat32(cone.apex.Get(0));
+			s.PushFloat32(cone.apex.Get(1));
+			s.PushFloat32(cone.apex.Get(2));
+		});
+		serializer.PushParameter('axis', (s) => {
+			s.PushFloat32(cone.axis.Get(0));
+			s.PushFloat32(cone.axis.Get(1));
+			s.PushFloat32(cone.axis.Get(2));
+		});
+		serializer.PushParameter('angle', (s) => {
+			s.PushFloat32(cone.angle);
+		});
+		serializer.PushParameter('height', (s) => {
+			s.PushFloat32(cone.height);
+		});
 	}
 }

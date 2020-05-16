@@ -2,9 +2,10 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/colorproperty.ts" />
 /// <reference path="../controls/properties/numberinrangeproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
-class Material {
+class Material implements PCLSerializable {
 	constructor(public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.05, public specular: number = 0.4, public glossy: number = 10.0) {
 	}
 
@@ -27,5 +28,25 @@ class Material {
 		properties.Push(new NumberInRangeProperty('Glossy', () => self.glossy, 0, 100, 1, (value) => self.glossy = value));
 
 		return properties;
+	}
+
+	GetSerializationID() {
+		return 'MATERIAL';
+	}
+
+	Serialize(serializer: PCLSerializer) {
+		//public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.05, public specular: number = 0.4, public glossy: number = 10.0
+		let self = this;
+		serializer.Start(this);
+		serializer.PushParameter('color', (s) => {
+			s.PushFloat32(self.baseColor[0]);
+			s.PushFloat32(self.baseColor[1]);
+			s.PushFloat32(self.baseColor[2]);
+		});
+		serializer.PushParameter('ambiant', (s) => s.PushFloat32(self.ambiant));
+		serializer.PushParameter('diffuse', (s) => s.PushFloat32(self.diffuse));
+		serializer.PushParameter('specular', (s) => s.PushFloat32(self.specular));
+		serializer.PushParameter('glossy', (s) => s.PushFloat32(self.glossy));
+		serializer.End(this);
 	}
 }

@@ -11,6 +11,7 @@
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/colorproperty.ts" />
 /// <reference path="../../controler/controler.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 class Light extends PCLNode implements LightingPosition {
@@ -63,5 +64,23 @@ class Light extends PCLNode implements LightingPosition {
 
 	SetPositon(p: Vector) {
 		this.position = p;
+	}
+
+	GetSerializationID(): string {
+		return 'LIGHT';
+	}
+
+	SerializeNode(serializer: PCLSerializer) {
+		let self = this;
+		serializer.PushParameter('position', (s) => {
+			s.PushFloat32(self.position.Get(0));
+			s.PushFloat32(self.position.Get(1));
+			s.PushFloat32(self.position.Get(2));
+		});
+		serializer.PushParameter('color', (s) => {
+			s.PushFloat32(self.color[0]);
+			s.PushFloat32(self.color[1]);
+			s.PushFloat32(self.color[2]);
+		});
 	}
 }

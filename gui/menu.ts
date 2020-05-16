@@ -20,7 +20,7 @@ class Menu extends HideablePannel {
 		let dataHandler = ownerView.dataHandler;
 		let scene = dataHandler.scene;
 
-		this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject: PCLNode) {
+		this.toolbar.AddControl(new FileOpener('[Icon:file-o]', function (createdObject: PCLNode) {
 			if (createdObject != null) {
 				let owner = dataHandler.GetNewItemOwner();
 				owner.Add(createdObject);
@@ -29,10 +29,16 @@ class Menu extends HideablePannel {
 			}
 		}, 'Load data from a file'));
 
-		this.toolbar.AddControl(new Button('[Icon:video-camera] Center', () => {
+		this.toolbar.AddControl(new Button('[Icon:save]', () => {
+			let serializer = new PCLSerializer();
+			scene.Serialize(serializer);
+			FileExporter.ExportFile('Scene.pcld', serializer.GetBuffer(), 'model');
+		}, 'Save the scene data to a file'));
+
+		this.toolbar.AddControl(new Button('[Icon:search]', () => {
 			ownerView.FocusOnCurrentItem();
 		},
-			'Foxus current viewpoint on the selected item'));
+			'Focus current viewpoint on the selected item'));
 
 		this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
 			new CameraModeAction(ownerView),
@@ -43,7 +49,7 @@ class Menu extends HideablePannel {
 			'Change the current working mode (changes the mouse input '
 		));
 
-		this.toolbar.AddControl(new Button('[Icon:question-circle] Help', function () {
+		this.toolbar.AddControl(new Button('[Icon:question-circle]', function () {
 			window.open('help.html', '_blank');
 		}));
 	}

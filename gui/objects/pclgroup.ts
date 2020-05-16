@@ -14,18 +14,17 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 class PCLGroup extends PCLNode {
 	children: PCLNode[];
 	folded: boolean;
-	supportsPrimitivesCreation: boolean;
 
-	constructor(name: string, supportPrimitives: boolean = true) {
+	constructor(name: string, public supportsPrimitivesCreation: boolean = true) {
 		super(name);
 		this.children = [];
 		this.folded = false;
-		this.supportsPrimitivesCreation = supportPrimitives;
 	}
 
 	ToggleFolding() {
@@ -205,6 +204,23 @@ class PCLGroup extends PCLNode {
 
 	GetDisplayIcon(): string {
 		return 'fa-folder' + (this.folded ? '' : '-open');
+	}
+
+
+	GetSerializationID(): string {
+		return 'GROUP';
+	}
+
+	SerializeNode(serializer: PCLSerializer) {
+		let self = this;
+		if (!this.supportsPrimitivesCreation) {
+			serializer.PushParameter('noprimitives');
+		}
+		serializer.PushParameter('nbchildren', (s) => s.PushInt32(self.children.length));
+		serializer.PushParameter('children');
+		for (let index = 0; index < this.children.length; index++) {
+			this.children[index].Serialize(serializer);
+		}
 	}
 }
 

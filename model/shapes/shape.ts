@@ -9,7 +9,6 @@
 
 abstract class Shape {
 	boundingbox: BoundingBox;
-    visible: boolean;
 
 	constructor() {
 		this.boundingbox = null;
