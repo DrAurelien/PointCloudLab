@@ -11,9 +11,9 @@ class Mesh {
 	size: number;
 	octree: Octree;
 
-	constructor(public pointcloud: PointCloud) {
-		this.faces = [];
-		this.size = 0;
+	constructor(public pointcloud: PointCloud, faces?: number[]) {
+		this.faces = faces || [];
+		this.size = this.faces.length;
 	}
 
 	PushFace(f: number[]): void {
@@ -58,7 +58,7 @@ class Mesh {
 		return this.size / 3;
 	}
 
-	ComputeOctree(onDone: Function) {
+	ComputeOctree(onDone: Function = null) {
 		if (!this.octree) {
 			let self = this;
 			self.octree = new Octree(this);

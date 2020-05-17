@@ -22,8 +22,23 @@ class LightsContainer extends PCLGroup {
 		return result;
 	}
 
+	static SerializationID = 'LIGHTSSET';
 	GetSerializationID(): string {
-		return 'LIGHTSSET';
+		return LightsContainer.SerializationID;
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new LightsContainerParsingHandler();
+	}
+}
+
+class LightsContainerParsingHandler extends PCLGroupParsingHandler {
+	constructor() {
+		super();
+	}
+
+	GetObject() {
+		return new LightsContainer(this.name);
 	}
 }
 

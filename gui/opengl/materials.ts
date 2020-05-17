@@ -30,8 +30,9 @@ class Material implements PCLSerializable {
 		return properties;
 	}
 
+	static SerializationID = 'MATERIAL';
 	GetSerializationID() {
-		return 'MATERIAL';
+		return Material.SerializationID;
 	}
 
 	Serialize(serializer: PCLSerializer) {
@@ -48,5 +49,49 @@ class Material implements PCLSerializable {
 		serializer.PushParameter('specular', (s) => s.PushFloat32(self.specular));
 		serializer.PushParameter('glossy', (s) => s.PushFloat32(self.glossy));
 		serializer.End(this);
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new MaterialParsingHandler();
+	}
+}
+
+class MaterialParsingHandler implements PCLObjectParsingHandler {
+	color: number[];
+	ambiant: number;
+	diffuse: number;
+	specular: number;
+	glossy: number;
+
+	constructor() {
+	}
+
+	ProcessParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'color':
+				this.color = [
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				];
+				return true;
+			case 'ambiant':
+				this.ambiant = parser.reader.GetNextFloat32();
+				return true;
+			case 'diffuse':
+				this.diffuse = parser.reader.GetNextFloat32();
+				return true;
+			case 'specular':
+				this.specular = parser.reader.GetNextFloat32();
+				return true;
+			case 'glossy':
+				this.glossy = parser.reader.GetNextFloat32();
+				return true;
+		}
+		return false;
+	}
+
+	Finalize(): PCLSerializable {
+		return new Material(this.color, this.diffuse, this.ambiant, this.specular, this.glossy);
 	}
 }

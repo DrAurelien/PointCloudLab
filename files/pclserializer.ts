@@ -6,6 +6,7 @@
 interface PCLSerializable {
 	GetSerializationID(): string;
 	Serialize(s: PCLSerializer);
+	GetParsingHandler(): PCLObjectParsingHandler;
 }
 
 interface PCLSerializationHandler {
@@ -14,29 +15,47 @@ interface PCLSerializationHandler {
 
 class PCLSerializer {
 	writer: BinaryWriter;
+
+	static SectionPrefix = '>>> ';
+	static StartObjectPrefix = 'New ';
+	static EndObjectPrefix = 'End ';
+	static ParameterPefix = '- ';
+	static HeaderSection = 'HEADER';
+	static ContentsSection = 'CONTENTS';
+	static VersionParam = 'version';
+	static BigEndian = 'bigendian';
+	static LittleEndian = 'littleendian';
+
 	constructor(buffersize) {
 		this.writer = new BinaryWriter(buffersize);
 
-		this.writer.PushString('>>>HEADER\n');
-		this.PushParameter(this.writer.endianness == Endianness.BigEndian ? 'bigendian' : 'littleendian');
+		this.PushSection('HEADER');
+		this.PushParameter(this.writer.endianness == Endianness.BigEndian ?
+			PCLSerializer.BigEndian : PCLSerializer.LittleEndian);
 		this.PushParameter('version', (s) => s.PushUInt8(1));
-		this.writer.PushString('>>>CONTENTS\n');
+		this.PushSection('CONTENTS');
+	}
+
+	PushSection(name: string) {
+		this.writer.PushString(PCLSerializer.SectionPrefix + name + '\n');
 	}
 
 	PushParameter(name: string, handler: PCLSerializationHandler = null) {
-		this.writer.PushString('-' + name + '\n');
+		this.writer.PushString(PCLSerializer.ParameterPefix + name + '\n');
 		if (handler) {
 			handler(this.writer);
-			this.writer.PushString('\n');
+			if (this.writer.lastvalue !== '\n') {
+				this.writer.PushString('\n');
+			}
 		}
 	}
 
 	Start(s: PCLSerializable) {
-		this.writer.PushString('New ' + s.GetSerializationID() + '\n');
+		this.writer.PushString(PCLSerializer.StartObjectPrefix + s.GetSerializationID() + '\n');
 	}
 
 	End(s: PCLSerializable) {
-		this.writer.PushString('End ' + s.GetSerializationID() + '\n');
+		this.writer.PushString(PCLSerializer.EndObjectPrefix + s.GetSerializationID() + '\n');
 	}
 
 	GetBuffer(): ArrayBuffer {
@@ -48,29 +67,145 @@ class PCLSerializer {
 	}
 }
 
-interface PCLParsingHandler {
-	(param: string, r: BinaryReader);
+
+
+enum PCLTokenType {
+	SectionEntry,
+	StartObject,
+	EndObject,
+	Parameter
+}
+
+class PCLToken {
+	constructor(public type: PCLTokenType, public value: string) { }
+}
+
+interface PCLObjectParsingHandler {
+	ProcessParam(paramname: string, parser: PCLParser): boolean;
+	Finalize(): PCLSerializable;
+}
+
+interface PCLObjectParsingFactory {
+	GetHandler(objecttype: string): PCLObjectParsingHandler;
 }
 
 class PCLParser {
 	reader: BinaryReader;
-	line: number;
+	line: string;
+	version: number;
+	endianness: Endianness;
 
-	constructor(buffer: ArrayBuffer) {
+	static tokenmap: Object = null;
+
+	constructor(buffer: ArrayBuffer, private factory: PCLObjectParsingFactory) {
 		this.reader = new BinaryReader(buffer);
-		this.line = 0;
+		this.line ='';
 	}
 
-	GetParameter(name: string, handler: PCLParsingHandler) {
-		let param = this.reader.GetAsciiUntil(['\n']);
-		this.line++;
-		handler(param, this.reader);
-		if (this.reader.Ignore(['\n']) == 0) {
-			Error('expected line feed not found')
+	private TryGetTokenValue(line: string, prefix: string): string {
+		if (line.substr(0, prefix.length) === prefix) {
+			return line.substr(prefix.length);
 		}
+		return null;
+	}
+
+	GetStringValue(): string {
+		return this.reader.GetAsciiUntil(['\n']);
+	}
+
+	private static GetTokenMap() {
+		if (!PCLParser.tokenmap) {
+			PCLParser.tokenmap = {};
+			PCLParser.tokenmap[PCLSerializer.SectionPrefix] = PCLTokenType.SectionEntry;
+			PCLParser.tokenmap[PCLSerializer.StartObjectPrefix] = PCLTokenType.StartObject;
+			PCLParser.tokenmap[PCLSerializer.EndObjectPrefix] = PCLTokenType.EndObject;
+			PCLParser.tokenmap[PCLSerializer.ParameterPefix] = PCLTokenType.Parameter;
+		}
+		return PCLParser.tokenmap;
+	}
+
+	protected GetNextToken(): PCLToken {
+		if (this.reader.Eof()) {
+			this.Error('unexpected end of file');
+		} 
+
+		this.reader.Ignore(['\n']);
+
+		this.line = this.reader.GetAsciiUntil(['\n']);
+
+		let tokenmap = PCLParser.GetTokenMap();
+
+		let value: string;
+		for (let tokenprfix in tokenmap) {
+			if (value = this.TryGetTokenValue(this.line, tokenprfix)) {
+				return new PCLToken(tokenmap[tokenprfix], value);
+			}
+		}
+
+		this.Error('unable to parse token');
+		return null;
+	}
+
+	Done(): boolean {
+		this.reader.Ignore(['\n']);
+		return this.reader.Eof();
+	}
+
+	ProcessHeader() {
+		let token = this.GetNextToken();
+		if (token.type !== PCLTokenType.SectionEntry || token.value !== PCLSerializer.HeaderSection) {
+			this.Error('header section was extected');
+		}
+
+		while ((token = this.GetNextToken()) && (token.type === PCLTokenType.Parameter)) {
+			switch (token.value) {
+				case PCLSerializer.VersionParam:
+					this.version = this.reader.GetNextUInt8();
+					break;
+				case PCLSerializer.BigEndian:
+					this.endianness = Endianness.BigEndian;
+					break;
+				case PCLSerializer.LittleEndian:
+					this.endianness = Endianness.LittleEndian;
+					break;
+				default:
+					this.Error('unexpected parameter "' + token.value + '" in header section');
+			}
+		}
+		if (!(token.type === PCLTokenType.SectionEntry && token.value === PCLSerializer.ContentsSection)) {
+			this.Error('contents section was expected');
+		}
+	};
+
+	ProcessNextObject(): PCLSerializable {
+		let token: PCLToken;
+
+		token = this.GetNextToken();
+		if (token.type !== PCLTokenType.StartObject) {
+			this.Error('object declaration was expected');
+		}
+
+		let objecttype = token.value;
+		let handler = this.factory.GetHandler(objecttype);
+
+		if (!handler) {
+			this.Error('unsupported object type "' + objecttype + '"');
+		}
+
+		while ((token = this.GetNextToken()) && (token.type === PCLTokenType.Parameter)) {
+			if (!handler.ProcessParam(token.value, this)) {
+				this.Error('unexpected parameter "' + token.value + '"');
+			}
+		}
+
+		if (token.type !== PCLTokenType.EndObject || token.value !== objecttype) {
+			this.Error('end of object "' + objecttype + '" was expected');
+		}
+
+		return handler.Finalize();
 	}
 
 	Error(message: string) {
-		throw 'PCL Parsing error (line ' + this.line + ') : ' + message;
+		throw 'PCL Parsing error : ' + message + '\n"' + this.line + '"';
 	}
 }

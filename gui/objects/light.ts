@@ -66,8 +66,9 @@ class Light extends PCLNode implements LightingPosition {
 		this.position = p;
 	}
 
+	static SerializationID = 'LIGHT';
 	GetSerializationID(): string {
-		return 'LIGHT';
+		return Light.SerializationID;
 	}
 
 	SerializeNode(serializer: PCLSerializer) {
@@ -82,5 +83,44 @@ class Light extends PCLNode implements LightingPosition {
 			s.PushFloat32(self.color[1]);
 			s.PushFloat32(self.color[2]);
 		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new LightParsingHandler();
+	}
+}
+
+class LightParsingHandler extends PCLNodeParsingHandler {
+	position: Vector;
+	color: number[];
+
+	constructor() {
+		super();
+	}
+
+	ProcessNodeParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'position':
+				this.position = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'color':
+				this.color = [
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				];
+				return true;
+		}
+		return false;
+	}
+
+	FinalizeNode(): PCLNode {
+		let light = new Light(this.position);
+		light.color = this.color;
+		return light;
 	}
 }

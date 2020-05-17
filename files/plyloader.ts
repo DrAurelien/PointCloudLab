@@ -188,110 +188,115 @@ class PlyLoader extends FileLoader {
 		this.elements = new PlyElements();
 	}
 
-	Load(onloaded: Function) {
+	Load(onloaded: FileLoaderResultHandler, onerror: FileLoaderErrorHandler) {
 		function Error(message) {
 			throw 'PLY ERROR : ' + message;
 		}
 
-		//Firt line shoul be 'PLY'
-		if (this.reader.Eof() || this.reader.GetAsciiLine().toLowerCase() != 'ply') {
-			Error('this is not a valid PLY file (line 1)');
-		}
+		try {
+			//Firt line shoul be 'PLY'
+			if (this.reader.Eof() || this.reader.GetAsciiLine().toLowerCase() != 'ply') {
+				Error('this is not a valid PLY file (line 1)');
+			}
 
-		//Second line indicates the PLY format
-		let format: PLYFormat;
-		if (!this.reader.Eof()) {
-			let parts = this.reader.GetAsciiLine().split(' ');
-			if (parts.length == 3 || parts[0].toLowerCase() != 'format') {
-				let formatstr = parts[1].toLowerCase();
-				if (formatstr === 'binary_big_endian') {
-					format = PLYFormat.Binary;
-					this.reader.endianness = Endianness.BigEndian;
-				}
-				else if (formatstr === 'binary_little_endian') {
-					format = PLYFormat.Binary;
-					this.reader.endianness = Endianness.LittleEndian;
-				}
-				else if (formatstr === 'ascii') {
-					format = PLYFormat.Ascii;
+			//Second line indicates the PLY format
+			let format: PLYFormat;
+			if (!this.reader.Eof()) {
+				let parts = this.reader.GetAsciiLine().split(' ');
+				if (parts.length == 3 || parts[0].toLowerCase() != 'format') {
+					let formatstr = parts[1].toLowerCase();
+					if (formatstr === 'binary_big_endian') {
+						format = PLYFormat.Binary;
+						this.reader.endianness = Endianness.BigEndian;
+					}
+					else if (formatstr === 'binary_little_endian') {
+						format = PLYFormat.Binary;
+						this.reader.endianness = Endianness.LittleEndian;
+					}
+					else if (formatstr === 'ascii') {
+						format = PLYFormat.Ascii;
+					}
+					else {
+						Error('unsuported PLY format "' + formatstr + '" (line 2)');
+					}
 				}
 				else {
-					Error('unsuported PLY format "' + formatstr + '" (line 2)');
+					Error('invalid ply format specification (line 2)');
 				}
 			}
 			else {
-				Error('invalid ply format specification (line 2)');
+				Error('this is not a valid PLY file (line 2)');
 			}
-		}
-		else {
-			Error('this is not a valid PLY file (line 2)');
-		}
 
-		//Then should be the header
-		let inHeader = true;
-		do {
-			if (this.reader.Eof()) {
-				Error('unexpected end of file while parsing header');
-			}
-			let currentLine = this.reader.GetAsciiLine().split(' ');
-			switch (currentLine[0].toLowerCase()) {
-				case 'element':
-					if (currentLine.length == 3) {
-						this.elements.PushElement(
-							currentLine[1].toLowerCase(), //name
-							parseInt(currentLine[2]) //count
-						);
-					}
-					else {
-						Error("element definition format error");
-					}
-					break;
-				case 'property':
-					try {
-						let currentElement = this.elements.GetCurrent();
-						if (currentLine) {
-							if (currentLine.length > 2) {
-								currentElement.PushDefinitionProperty(
-									currentLine[currentLine.length - 1].toLowerCase(), //name
-									currentLine[1].toLowerCase(), //type
-									(currentLine.length > 3) ? currentLine.slice(2, -1) : null
-								);
-							}
-							else {
-								Error("property definition format error");
-							}
+			//Then should be the header
+			let inHeader = true;
+			do {
+				if (this.reader.Eof()) {
+					Error('unexpected end of file while parsing header');
+				}
+				let currentLine = this.reader.GetAsciiLine().split(' ');
+				switch (currentLine[0].toLowerCase()) {
+					case 'element':
+						if (currentLine.length == 3) {
+							this.elements.PushElement(
+								currentLine[1].toLowerCase(), //name
+								parseInt(currentLine[2]) //count
+							);
 						}
 						else {
-							Error('unexpected property, while no element has been introduced');
+							Error("element definition format error");
 						}
-					}
-					catch (exception) { Error(exception); }
-					break;
-				case 'comment':
-				case 'obj_info':
-					//ignore
-					break;
-				case 'end_header':
-					inHeader = false;
-					break;
-				default:
-					Error('unexpected header line');
+						break;
+					case 'property':
+						try {
+							let currentElement = this.elements.GetCurrent();
+							if (currentLine) {
+								if (currentLine.length > 2) {
+									currentElement.PushDefinitionProperty(
+										currentLine[currentLine.length - 1].toLowerCase(), //name
+										currentLine[1].toLowerCase(), //type
+										(currentLine.length > 3) ? currentLine.slice(2, -1) : null
+									);
+								}
+								else {
+									Error("property definition format error");
+								}
+							}
+							else {
+								Error('unexpected property, while no element has been introduced');
+							}
+						}
+						catch (exception) { Error(exception); }
+						break;
+					case 'comment':
+					case 'obj_info':
+						//ignore
+						break;
+					case 'end_header':
+						inHeader = false;
+						break;
+					default:
+						Error('unexpected header line');
+				}
+			} while (inHeader);
+
+			if (this.elements.NbElements() == 0) {
+				Error('no element definition has been found in file header');
 			}
-		} while (inHeader);
-
-		if (this.elements.NbElements() == 0) {
-			Error('no element definition has been found in file header');
+		
+			//Read PLY body content
+			this.elements.ResetCurrent();
+			let loader = new ItemsLoader(this.reader, this.elements, format);
+			loader
+				.SetNext(new CloudBuilder(this.elements))
+				.SetNext(new MeshBuilder(this.elements))
+				.SetNext(new Finalizer())
+				.SetNext((f: Finalizer) => onloaded(f.result));
+				loader.Start();
 		}
-
-		//Read PLY body content
-		this.elements.ResetCurrent();
-		let loader = new ItemsLoader(this.reader, this.elements, format);
-		loader
-			.SetNext(new CloudBuilder(this.elements))
-			.SetNext(new MeshBuilder(this.elements))
-			.SetNext(new Finalizer(this))
-			.SetNext((f: Finalizer) => onloaded(f.result));
-		loader.Start();
+		catch (error) {
+			onerror(error);
+		}
 	}
 }
 
@@ -380,7 +385,7 @@ class MeshBuilder extends IterativeLongProcess {
 class Finalizer extends Process {
 	public result: PCLMesh | PCLPointCloud;
 
-	constructor(private loader: PlyLoader) {
+	constructor() {
 		super();
 	}
 
@@ -394,7 +399,6 @@ class Finalizer extends Process {
 	}
 
 	Run(ondone: Function) {
-		this.loader.result = this.result;
 		if (this.result instanceof PCLMesh) {
 			let mesh = (this.result as PCLMesh).mesh;
 			mesh.ComputeNormals((m: Mesh) => {

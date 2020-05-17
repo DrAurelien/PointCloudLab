@@ -28,8 +28,9 @@ class PCLCone extends PCLShape {
 		return geometry;
 	}
 
+	static SerializationID = 'CONE';
 	GetSerializationID(): string {
-		return 'CONE';
+		return PCLCone.SerializationID;
 	}
 
 	SerializePrimitive(serializer: PCLSerializer) {
@@ -50,5 +51,51 @@ class PCLCone extends PCLShape {
 		serializer.PushParameter('height', (s) => {
 			s.PushFloat32(cone.height);
 		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLConeParsingHandler();
+	}
+}
+
+class PCLConeParsingHandler extends PCLPrimitiveParsingHandler {
+	apex: Vector;
+	axis: Vector;
+	height: number;
+	angle: number
+
+	constructor() {
+		super();
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'apex':
+				this.apex = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'axis':
+				this.axis = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'angle':
+				this.angle = parser.reader.GetNextFloat32();
+				return true;
+			case 'height':
+				this.height = parser.reader.GetNextFloat32();
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let cone = new Cone(this.apex, this.axis, this.angle, this.height);
+		return new PCLCone(cone);
 	}
 }

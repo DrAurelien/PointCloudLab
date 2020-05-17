@@ -133,6 +133,9 @@
   <ItemGroup>
     <Content Include="files\pclserializer.ts" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="files\pclloader.ts" />
+  </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
   </Target>

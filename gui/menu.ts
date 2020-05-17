@@ -18,13 +18,17 @@ class Menu extends HideablePannel {
 		this.container.AddControl(this.toolbar);
 
 		let dataHandler = ownerView.dataHandler;
-		let scene = dataHandler.scene;
 
 		this.toolbar.AddControl(new FileOpener('[Icon:file-o]', function (createdObject: PCLNode) {
 			if (createdObject != null) {
-				let owner = dataHandler.GetNewItemOwner();
-				owner.Add(createdObject);
-				createdObject.NotifyChange(createdObject, ChangeType.Creation);
+				if (createdObject instanceof Scene) {
+					dataHandler.ReplaceScene(createdObject);
+				}
+				else {
+					let owner = dataHandler.GetNewItemOwner();
+					owner.Add(createdObject);
+					createdObject.NotifyChange(createdObject, ChangeType.Creation);
+				}
 
 			}
 		}, 'Load data from a file'));
@@ -32,10 +36,10 @@ class Menu extends HideablePannel {
 		this.toolbar.AddControl(new Button('[Icon:save]', () => {
 			//Dry run (to get the buffer size)
 			let serializer = new PCLSerializer(null);
-			scene.Serialize(serializer);
+			dataHandler.scene.Serialize(serializer);
 			//Actual serialization
 			serializer = new PCLSerializer(serializer.GetBufferSize());
-			scene.Serialize(serializer);
+			dataHandler.scene.Serialize(serializer);
 			FileExporter.ExportFile('Scene.pcld', serializer.GetBuffer(), 'model');
 		}, 'Save the scene data to a file'));
 

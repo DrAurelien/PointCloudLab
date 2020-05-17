@@ -16,12 +16,15 @@ class PointCloud {
 	tree: KDTree = null;
 	boundingbox: BoundingBox;
 
-	constructor() {
-		this.points = new Float32Array([]);
-		this.pointssize = 0;
-		this.normals = new Float32Array([]);
-		this.normalssize = 0;
+	constructor(points?: Float32Array, normals?: Float32Array) {
+		this.points = points || new Float32Array([]);
+		this.pointssize = this.points.length;
+		this.normals = normals || new Float32Array([]);
+		this.normalssize = this.normals.length;
 		this.boundingbox = new BoundingBox();
+		for (let index = 0; index < this.Size(); index++) {
+			this.boundingbox.Add(this.GetPoint(index));
+		}
 	}
 
 	PushPoint(p: Vector): void {

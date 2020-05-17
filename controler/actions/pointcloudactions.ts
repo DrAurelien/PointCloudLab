@@ -365,7 +365,7 @@ class NoiseComputer extends IterativeLongProcess {
 //===================================================
 class ExportPointCloudFileAction extends PCLCloudAction {
 	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Export file');
+		super(cloud, 'Export CSV file');
 	}
 
 	Enabled(): boolean {

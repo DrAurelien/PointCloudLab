@@ -27,8 +27,9 @@ class PCLPlane extends PCLShape {
 		return geometry;
 	}
 
+	static SerializationID = 'PLANE';
 	GetSerializationID(): string {
-		return 'PLANE';
+		return PCLPlane.SerializationID;
 	}
 
 	SerializePrimitive(serializer: PCLSerializer) {
@@ -46,5 +47,47 @@ class PCLPlane extends PCLShape {
 		serializer.PushParameter('radius', (s) => {
 			s.PushFloat32(plane.patchRadius);
 		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLPlaneParsingHandler();
+	}
+}
+
+class PCLPlaneParsingHandler extends PCLPrimitiveParsingHandler {
+	center: Vector;
+	axis: Vector;
+	radius: number
+
+	constructor() {
+		super();
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'center':
+				this.center = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'axis':
+				this.axis = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'radius':
+				this.radius = parser.reader.GetNextFloat32();
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let plane = new Plane(this.center, this.axis, this.radius);
+		return new PCLPlane(plane);
 	}
 }

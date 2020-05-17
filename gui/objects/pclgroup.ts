@@ -206,9 +206,9 @@ class PCLGroup extends PCLNode {
 		return 'fa-folder' + (this.folded ? '' : '-open');
 	}
 
-
+	static SerializationID = 'GROUP';
 	GetSerializationID(): string {
-		return 'GROUP';
+		return PCLGroup.SerializationID;
 	}
 
 	SerializeNode(serializer: PCLSerializer) {
@@ -216,11 +216,55 @@ class PCLGroup extends PCLNode {
 		if (!this.supportsPrimitivesCreation) {
 			serializer.PushParameter('noprimitives');
 		}
-		serializer.PushParameter('nbchildren', (s) => s.PushInt32(self.children.length));
-		serializer.PushParameter('children');
 		for (let index = 0; index < this.children.length; index++) {
-			this.children[index].Serialize(serializer);
+			serializer.PushParameter('child', () => {
+				self.children[index].Serialize(serializer);
+			});
 		}
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLGroupParsingHandler();
+	}
+}
+
+class PCLGroupParsingHandler extends PCLNodeParsingHandler {
+	noprimitives: boolean;
+	children: PCLNode[];
+
+	constructor() {
+		super();
+		this.children = [];
+	}
+
+	ProcessNodeParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'noprimitives':
+				this.noprimitives = true;
+				return true;
+			case 'child':
+				let child = parser.ProcessNextObject();
+				if (!(child instanceof PCLNode)) {
+					throw 'group children are expected to be valid nodes';
+				}
+				if (child) {
+					this.children.push(child as PCLNode);
+				}
+				return true;
+		}
+		return false;
+	}
+
+	GetObject() {
+		return new PCLGroup(this.name, !this.noprimitives);
+	}
+
+	FinalizeNode(): PCLNode {
+		let group = this.GetObject();
+		for (let index = 0; index < this.children.length; index++) {
+			group.Add(this.children[index]);
+		}
+		return group;
 	}
 }
 

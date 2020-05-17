@@ -9,7 +9,7 @@
 
 
 abstract class PCLPrimitive extends PCLNode implements Transformable {
-	private material: Material;
+	public material: Material;
 	public lighting: boolean;
 	private transform: Transform;
 
@@ -101,4 +101,33 @@ abstract class PCLPrimitive extends PCLNode implements Transformable {
 		this.SerializePrimitive(serializer);
 	}
 	abstract SerializePrimitive(serializer: PCLSerializer);
+}
+
+
+abstract class PCLPrimitiveParsingHandler extends PCLNodeParsingHandler {
+	material: Material;
+
+	constructor() {
+		super();
+	}
+
+	ProcessNodeParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'material':
+				this.material = parser.ProcessNextObject() as Material;
+				return true;
+		}
+		return this.ProcessPrimitiveParam(paramname, parser);
+	}
+
+	FinalizeNode(): PCLNode {
+		let primitve = this.FinalizePrimitive();
+		if (primitve) {
+			primitve.material = this.material;
+		}
+		return primitve;
+	}
+
+	abstract ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean;
+	abstract FinalizePrimitive(): PCLPrimitive;
 }

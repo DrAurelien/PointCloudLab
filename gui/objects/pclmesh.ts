@@ -62,8 +62,9 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 		}
 	}
 
+	static SerializationID = 'MESH';
 	GetSerializationID(): string {
-		return 'POINTCLOUD';
+		return PCLMesh.SerializationID;
 	}
 
 	SerializePrimitive(serializer: PCLSerializer) {
@@ -81,6 +82,46 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 				s.PushInt32(mesh.faces[index]);
 			}
 		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLMeshParsingHandler();
+	}
+}
+
+class PCLMeshParsingHandler extends PCLPrimitiveParsingHandler {
+	points: Float32Array;
+	faces: Array<number>;
+
+	constructor() {
+		super();
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'points':
+				let nbpoints = parser.reader.GetNextInt32();
+				this.points = new Float32Array(nbpoints);
+				for (let index = 0; index < nbpoints; index++) {
+					this.points[index] = parser.reader.GetNextFloat32();
+				}
+				return true;
+			case 'faces':
+				let nbfaces = parser.reader.GetNextInt32();
+				this.faces = new Array<number>(nbfaces);
+				for (let index = 0; index < nbfaces; index++) {
+					this.faces[index] = parser.reader.GetNextInt32();
+				}
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let cloud = new PointCloud(this.points);
+		let mesh = new Mesh(cloud, this.faces);
+		mesh.ComputeNormals(() => mesh.ComputeOctree());
+		return new PCLMesh(mesh);
 	}
 }
 

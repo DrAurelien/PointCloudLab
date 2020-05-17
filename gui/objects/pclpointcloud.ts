@@ -36,12 +36,18 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		}
 	}
 
-	AddScalarField(name: string) {
-		let field = new ScalarField(name);
-		field.Reserve(this.cloud.Size());
-		this.fields.push(field);
+	AddScalarField(field: string | ScalarField): ScalarField {
+		let scalarfield;
+		if (field instanceof ScalarField) {
+			scalarfield = field;
+		}
+		else {
+			scalarfield = new ScalarField(field as string);
+			scalarfield.Reserve(this.cloud.Size());
+		}
+		this.fields.push(scalarfield);
 		this.AddScaralFieldProperty(this.fields.length - 1);
-		return field;
+		return scalarfield;
 	}
 
 	GetScalarField(name: string): ScalarField {
@@ -207,8 +213,9 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return result;
 	}
 
+	static SerializationID = 'POINTCLOUD';
 	GetSerializationID(): string {
-		return 'POINTCLOUD';
+		return PCLPointCloud.SerializationID;
 	}
 
 	SerializePrimitive(serializer: PCLSerializer) {
@@ -237,6 +244,59 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 				}
 			});
 		}
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLPointCloudParsingHandler();
+	}
+}
+
+class PCLPointCloudParsingHandler extends PCLPrimitiveParsingHandler {
+	points: Float32Array;
+	normals: Float32Array;
+	fields: ScalarField[];
+
+	constructor() {
+		super();
+		this.fields = [];
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'points':
+				let nbpoints = parser.reader.GetNextInt32();
+				this.points = new Float32Array(nbpoints);
+				for (let index = 0; index < nbpoints; index++) {
+					this.points[index] = parser.reader.GetNextFloat32();
+				}
+				return true;
+			case 'normals':
+				let nbnormals = parser.reader.GetNextInt32();
+				this.normals = new Float32Array(nbnormals);
+				for (let index = 0; index < nbnormals; index++) {
+					this.normals[index] = parser.reader.GetNextFloat32();
+				}
+				return true;
+			case 'scalarfield':
+				let name = parser.reader.GetNextUILenghedString();
+				let size = parser.reader.GetNextInt32();
+				let field = new ScalarField(name);
+				field.Reserve(size);
+				for (let index = 0; index < size; index++) {
+					field.PushValue(parser.reader.GetNextFloat32());
+				}
+				this.fields.push(field);
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let cloud = new PCLPointCloud(new PointCloud(this.points, this.normals));
+		for (let index = 0; index < this.fields.length; index++) {
+			cloud.AddScalarField(this.fields[index]);
+		}
+		return cloud;
 	}
 }
 

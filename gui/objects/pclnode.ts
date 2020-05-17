@@ -11,13 +11,13 @@
 
 
 enum ChangeType {
-	Selection	= 0x000001,
-	Creation	= 0x000002,
-	Properties	= 0x000004,
-	Display		= 0x000008,
-	Folding		= 0x000010,
-	Children	= 0x000020,
-	ColorScale	= 0x000040
+	Selection = 0x000001,
+	Creation = 0x000002,
+	Properties = 0x000004,
+	Display = 0x000008,
+	Folding = 0x000010,
+	Children = 0x000020,
+	ColorScale = 0x000040
 }
 
 interface Notifiable {
@@ -66,19 +66,6 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 
 	// https://fontawesome.com/cheatsheet
 	abstract GetDisplayIcon(): string;
-
-	abstract GetSerializationID(): string;
-	Serialize(serializer: PCLSerializer) {
-		let self = this;
-		serializer.Start(this);
-		serializer.PushParameter('name', (s) => s.PushString(self.name));
-		if (!this.deletable) {
-			serializer.PushParameter('nodelete');
-		}
-		this.SerializeNode(serializer);
-		serializer.End(this);
-	}
-	protected abstract SerializeNode(serializer: PCLSerializer);
 
 	GetProperties(): Properties {
 		let self = this;
@@ -148,6 +135,20 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 			delete this.properties;
 		}
 	}
+
+	abstract GetSerializationID(): string;
+	Serialize(serializer: PCLSerializer) {
+		let self = this;
+		serializer.Start(this);
+		serializer.PushParameter('name', (s) => s.PushString(self.name));
+		if (!this.deletable) {
+			serializer.PushParameter('nodelete');
+		}
+		this.SerializeNode(serializer);
+		serializer.End(this);
+	}
+	protected abstract SerializeNode(serializer: PCLSerializer);
+	abstract GetParsingHandler();
 }
 
 interface PCLNodeHandler {
@@ -225,4 +226,37 @@ class BoundingBoxDrawing {
 
 class GLBufferElement {
 	constructor(public from: number, public count: number, public type: number) { }
+}
+
+
+abstract class PCLNodeParsingHandler implements PCLObjectParsingHandler {
+	name: string;
+	nodelete: boolean;
+
+	constructor() { }
+
+	ProcessParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'name':
+				this.name = parser.GetStringValue();
+				return true;
+			case 'nodelete':
+				this.nodelete = true;
+				return true;
+		}
+		return this.ProcessNodeParam(paramname, parser);
+	}
+
+	Finalize(): PCLSerializable {
+		let node = this.FinalizeNode();
+		if (node) {
+			node.name = this.name;
+			if (this.nodelete)
+				node.deletable = false;
+			return node;
+		}
+	}
+
+	abstract ProcessNodeParam(paramname: string, parser: PCLParser): boolean;
+	abstract FinalizeNode(): PCLNode;
 }

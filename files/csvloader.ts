@@ -11,14 +11,16 @@ class CsvLoader extends FileLoader {
 	constructor(content: ArrayBuffer) {
 		super();
 		this.parser = new CSVParser(content);
-		this.result = null;
 	}
 
-	Load(ondone: Function) {
-		let self = this;
+	Load(ondone: FileLoaderResultHandler, onerror: FileLoaderErrorHandler) {
 		this.parser.SetNext((p: CSVParser) => {
-			self.result = p.pclcloud;
-			ondone();
+			if (p.error) {
+				onerror(p.error);
+			}
+			else {
+				ondone(p.pclcloud);
+			}
 		});
 		this.parser.Start();
 	}
@@ -32,6 +34,7 @@ class CSVParser extends IterativeLongProcess {
 	done: boolean;
 	public separator: string;
 	public pclcloud: PCLPointCloud;
+	error: string;
 
 	static PointCoordinates = ['x', 'y', 'z'];
 	static NormalCoordinates = ['nx', 'ny', 'nz'];
@@ -40,6 +43,7 @@ class CSVParser extends IterativeLongProcess {
 		super(0, 'Parsing CSV file content');
 		this.separator = ';';
 		this.reader = new BinaryReader(content);
+		this.error = null;
 	}
 
 	Initialize(caller: Process) {
@@ -82,7 +86,7 @@ class CSVParser extends IterativeLongProcess {
 		}
 	}
 
-	get Done() { return this.done; }
+	get Done(): boolean { return this.done || !!this.error; }
 
 	SetHeader(line: string[]) {
 		this.header = {};
@@ -94,7 +98,7 @@ class CSVParser extends IterativeLongProcess {
 					key = this.headermapping[key];
 				}
 				else {
-					console.warn('Cannot map "' + key + '" to a valid data, given the specified CSV mapping');
+					this.error = 'Cannot map "' + key + '" to a valid data, given the specified CSV mapping';
 					key = null;
 				}
 			}

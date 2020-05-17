@@ -28,8 +28,9 @@ class PCLTorus extends PCLShape {
 		return geometry;
 	}
 
+	static SerializationID = 'TORUS';
 	GetSerializationID(): string {
-		return 'TORUS';
+		return PCLTorus.SerializationID;
 	}
 
 	SerializePrimitive(serializer: PCLSerializer) {
@@ -50,5 +51,51 @@ class PCLTorus extends PCLShape {
 		serializer.PushParameter('greatradius', (s) => {
 			s.PushFloat32(torus.greatRadius);
 		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLTorusParsingHandler();
+	}
+}
+
+class PCLTorusParsingHandler extends PCLPrimitiveParsingHandler {
+	center: Vector;
+	axis: Vector;
+	smallradius: number;
+	greatradius: number
+
+	constructor() {
+		super();
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'center':
+				this.center = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'axis':
+				this.axis = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'greatradius':
+				this.greatradius = parser.reader.GetNextFloat32();
+				return true;
+			case 'smallradius':
+				this.smallradius = parser.reader.GetNextFloat32();
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let torus = new Torus(this.center, this.axis, this.greatradius, this.smallradius);
+		return new PCLTorus(torus);
 	}
 }

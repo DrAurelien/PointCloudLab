@@ -26,8 +26,9 @@ class PCLSphere extends PCLShape {
 		return geometry;
 	};
 
+	static SerializationID = 'SPHERE';
 	GetSerializationID(): string {
-		return 'SPHERE';
+		return PCLSphere.SerializationID;
 	}
 
 	SerializePrimitive(serializer: PCLSerializer) {
@@ -40,5 +41,39 @@ class PCLSphere extends PCLShape {
 		serializer.PushParameter('radius', (s) => {
 			s.PushFloat32(sphere.radius);
 		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLSphereParsingHandler();
+	}
+}
+
+class PCLSphereParsingHandler extends PCLPrimitiveParsingHandler {
+	center: Vector;
+	radius: number
+
+	constructor() {
+		super();
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'center':
+				this.center = new Vector([
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32(),
+					parser.reader.GetNextFloat32()
+				]);
+				return true;
+			case 'radius':
+				this.radius = parser.reader.GetNextFloat32();
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let sphere = new Sphere(this.center,this.radius);
+		return new PCLSphere(sphere);
 	}
 }
