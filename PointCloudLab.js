@@ -1062,7 +1062,6 @@ var DrawingContext = /** @class */ (function () {
         this.renderingArea = renderingArea;
         this.sampling = 30;
         this.rendering = new RenderingType();
-        console.log('Initializing gl context');
         this.gl = (this.renderingArea.getContext("webgl", { preserveDrawingBuffer: true }) ||
             this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -1072,7 +1071,6 @@ var DrawingContext = /** @class */ (function () {
         this.useuint = this.gl.getExtension('OES_element_index_uint') ||
             this.gl.getExtension('MOZ_OES_element_index_uint') ||
             this.gl.getExtension('WEBKIT_OES_element_index_uint');
-        console.log('Inititalizing gl sharders');
         var fragmentShader = this.GetShader("FragmentShader");
         var vertexShader = this.GetShader("VertexShader");
         this.shaders = this.gl.createProgram();
@@ -1083,18 +1081,14 @@ var DrawingContext = /** @class */ (function () {
             throw 'Unable to initialize the shader program';
         }
         this.gl.useProgram(this.shaders);
-        console.log('   Inititalizing vertex positions attribute');
         this.vertices = this.gl.getAttribLocation(this.shaders, "VertexPosition");
         this.gl.enableVertexAttribArray(this.vertices);
-        console.log('   Inititalizing normals attribute');
         this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
         this.EnableNormals(true);
-        console.log('   Inititalizing scalar value attribute');
         this.scalarvalue = this.gl.getAttribLocation(this.shaders, "ScalarValue");
         this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
         this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
         this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
-        console.log('   Inititalizing matrices');
         this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
         this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
         this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
@@ -1427,6 +1421,327 @@ var BooleanProperty = /** @class */ (function (_super) {
     };
     return BooleanProperty;
 }(PropertyWithValue));
+var Endianness;
+(function (Endianness) {
+    Endianness[Endianness["BigEndian"] = 0] = "BigEndian";
+    Endianness[Endianness["LittleEndian"] = 1] = "LittleEndian";
+})(Endianness || (Endianness = {}));
+var BinaryStream = /** @class */ (function () {
+    function BinaryStream(buffer) {
+        this.buffer = buffer;
+        this.cursor = 0;
+        this.stream = buffer ? new DataView(buffer) : null;
+        var tmp = new ArrayBuffer(2);
+        new DataView(tmp).setInt16(0, 256, true);
+        this.endianness = (new Int16Array(tmp)[0] === 256 ? Endianness.LittleEndian : Endianness.BigEndian);
+    }
+    BinaryStream.prototype.Reset = function () {
+        this.cursor = 0;
+    };
+    BinaryStream.prototype.Eof = function () {
+        return (this.cursor >= this.stream.byteLength) || (this.stream[this.cursor] == 3);
+    };
+    return BinaryStream;
+}());
+/// <reference path="binarystream.ts" />
+var BinaryReader = /** @class */ (function (_super) {
+    __extends(BinaryReader, _super);
+    function BinaryReader(buffer) {
+        return _super.call(this, buffer) || this;
+    }
+    BinaryReader.prototype.CountAsciiOccurences = function (asciichar) {
+        var count = 0;
+        this.Reset();
+        while (!this.Eof()) {
+            if (this.GetNextAsciiStr(asciichar.length, false) == asciichar)
+                count++;
+            this.cursor++;
+        }
+        return count;
+    };
+    BinaryReader.prototype.GetAsciiLine = function () {
+        return this.GetAsciiUntil(['\r\n', '\n']);
+    };
+    BinaryReader.prototype.GetAsciiWord = function (onSameLine) {
+        var stops = [' '];
+        if (onSameLine === false) {
+            stops.push('\n');
+            stops.push('\r\n');
+        }
+        return this.GetAsciiUntil(stops);
+    };
+    BinaryReader.prototype.GetAsciiUntil = function (stops) {
+        var result = '';
+        while (!this.Eof() && this.Ignore(stops) == 0) {
+            result += this.GetNextAsciiChar();
+        }
+        return result;
+    };
+    BinaryReader.prototype.Ignore = function (words) {
+        var count = 0;
+        var match = null;
+        do {
+            match = this.GetNextMatchingAsciiStr(words, true);
+            if (match)
+                count++;
+        } while (match);
+        return count;
+    };
+    BinaryReader.prototype.GetNextAsciiStr = function (length, move) {
+        if (length === void 0) { length = 1; }
+        if (move === void 0) { move = true; }
+        var result = '';
+        var cursor = this.cursor;
+        for (var index = 0; result.length < length && !this.Eof(); index++) {
+            result += this.GetNextAsciiChar(true);
+        }
+        if (!move)
+            this.cursor = cursor;
+        return result;
+    };
+    BinaryReader.prototype.GetNextMatchingAsciiStr = function (words, move) {
+        if (move === void 0) { move = true; }
+        for (var index = 0; index < words.length; index++) {
+            var word = words[index];
+            var next = this.GetNextAsciiStr(word.length, false);
+            if (next.toLowerCase() == word.toLowerCase()) {
+                if (move)
+                    this.cursor += next.length;
+                return next;
+            }
+        }
+        return null;
+    };
+    BinaryReader.prototype.GetNextAsciiChar = function (move) {
+        if (move === void 0) { move = true; }
+        var result = String.fromCharCode(this.stream.getUint8(this.cursor));
+        if (move)
+            this.cursor++;
+        return result;
+    };
+    BinaryReader.prototype.GetNextString = function (length, move) {
+        if (move === void 0) { move = true; }
+        var cursor = this.cursor;
+        var result = '';
+        for (var index = 0; index < length && !this.Eof(); index++) {
+            result += this.GetNextAsciiChar(true);
+        }
+        if (!move) {
+            this.cursor = cursor;
+        }
+        return result;
+    };
+    BinaryReader.prototype.GetNextUInt8 = function (move) {
+        if (move === void 0) { move = true; }
+        var result = this.stream.getInt8(this.cursor);
+        if (move)
+            this.cursor++;
+        return result;
+    };
+    BinaryReader.prototype.GetNextInt32 = function (move) {
+        if (move === void 0) { move = true; }
+        var result = this.stream.getInt32(this.cursor, this.endianness == Endianness.LittleEndian);
+        if (move)
+            this.cursor += 4;
+        return result;
+    };
+    BinaryReader.prototype.GetNextFloat32 = function (move) {
+        if (move === void 0) { move = true; }
+        var result = this.stream.getFloat32(this.cursor, this.endianness == Endianness.LittleEndian);
+        if (move)
+            this.cursor += 4;
+        return result;
+    };
+    BinaryReader.prototype.GetNextUILenghedString = function (move) {
+        if (move === void 0) { move = true; }
+        var cursor = this.cursor;
+        var length = this.GetNextUInt8(true);
+        var result = this.GetNextString(length, true);
+        if (!move) {
+            this.cursor = cursor;
+        }
+        return result;
+    };
+    return BinaryReader;
+}(BinaryStream));
+/// <reference path="../maths/vector.ts" />
+/// <reference path="binaryreader.ts" />
+/// <reference path="binaryreader.ts" />
+var PCLSerializer = /** @class */ (function () {
+    function PCLSerializer(buffersize) {
+        this.writer = new BinaryWriter(buffersize);
+        this.PushSection('HEADER');
+        this.PushParameter(this.writer.endianness == Endianness.BigEndian ?
+            PCLSerializer.BigEndian : PCLSerializer.LittleEndian);
+        this.PushParameter('version', function (s) { return s.PushUInt8(1); });
+        this.PushSection('CONTENTS');
+    }
+    PCLSerializer.prototype.PushSection = function (name) {
+        this.writer.PushString(PCLSerializer.SectionPrefix + name + '\n');
+    };
+    PCLSerializer.prototype.PushParameter = function (name, handler) {
+        if (handler === void 0) { handler = null; }
+        this.writer.PushString(PCLSerializer.ParameterPefix + name + '\n');
+        if (handler) {
+            handler(this.writer);
+            if (this.writer.lastvalue !== '\n') {
+                this.writer.PushString('\n');
+            }
+        }
+    };
+    PCLSerializer.prototype.Start = function (s) {
+        this.writer.PushString(PCLSerializer.StartObjectPrefix + s.GetSerializationID() + '\n');
+    };
+    PCLSerializer.prototype.End = function (s) {
+        this.writer.PushString(PCLSerializer.EndObjectPrefix + s.GetSerializationID() + '\n');
+    };
+    PCLSerializer.prototype.GetBuffer = function () {
+        return this.writer.buffer;
+    };
+    PCLSerializer.prototype.GetBufferAsString = function () {
+        var stream = this.writer.stream;
+        var result = '';
+        for (var index = 0; index < stream.byteLength; index++) {
+            result += String.fromCharCode(stream.getUint8(index));
+        }
+        return result;
+    };
+    PCLSerializer.prototype.GetBufferSize = function () {
+        return this.writer.cursor;
+    };
+    PCLSerializer.SectionPrefix = '>>> ';
+    PCLSerializer.StartObjectPrefix = 'New ';
+    PCLSerializer.EndObjectPrefix = 'End ';
+    PCLSerializer.ParameterPefix = '- ';
+    PCLSerializer.HeaderSection = 'HEADER';
+    PCLSerializer.ContentsSection = 'CONTENTS';
+    PCLSerializer.VersionParam = 'version';
+    PCLSerializer.BigEndian = 'bigendian';
+    PCLSerializer.LittleEndian = 'littleendian';
+    return PCLSerializer;
+}());
+var PCLTokenType;
+(function (PCLTokenType) {
+    PCLTokenType[PCLTokenType["SectionEntry"] = 0] = "SectionEntry";
+    PCLTokenType[PCLTokenType["StartObject"] = 1] = "StartObject";
+    PCLTokenType[PCLTokenType["EndObject"] = 2] = "EndObject";
+    PCLTokenType[PCLTokenType["Parameter"] = 3] = "Parameter";
+})(PCLTokenType || (PCLTokenType = {}));
+var PCLToken = /** @class */ (function () {
+    function PCLToken(type, value) {
+        this.type = type;
+        this.value = value;
+    }
+    return PCLToken;
+}());
+var PCLParser = /** @class */ (function () {
+    function PCLParser(buffer, factory) {
+        this.factory = factory;
+        if (buffer instanceof ArrayBuffer) {
+            this.reader = new BinaryReader(buffer);
+        }
+        else {
+            var strbuffer = buffer;
+            var arraybuffer = new ArrayBuffer(strbuffer.length);
+            var stream = new DataView(arraybuffer);
+            for (var index = 0; index < strbuffer.length; index++) {
+                stream.setUint8(index, strbuffer.charCodeAt(index));
+            }
+            this.reader = new BinaryReader(arraybuffer);
+        }
+        this.line = '';
+    }
+    PCLParser.prototype.TryGetTokenValue = function (line, prefix) {
+        if (line.substr(0, prefix.length) === prefix) {
+            return line.substr(prefix.length);
+        }
+        return null;
+    };
+    PCLParser.prototype.GetStringValue = function () {
+        return this.reader.GetAsciiUntil(['\n']);
+    };
+    PCLParser.GetTokenMap = function () {
+        if (!PCLParser.tokenmap) {
+            PCLParser.tokenmap = {};
+            PCLParser.tokenmap[PCLSerializer.SectionPrefix] = PCLTokenType.SectionEntry;
+            PCLParser.tokenmap[PCLSerializer.StartObjectPrefix] = PCLTokenType.StartObject;
+            PCLParser.tokenmap[PCLSerializer.EndObjectPrefix] = PCLTokenType.EndObject;
+            PCLParser.tokenmap[PCLSerializer.ParameterPefix] = PCLTokenType.Parameter;
+        }
+        return PCLParser.tokenmap;
+    };
+    PCLParser.prototype.GetNextToken = function () {
+        if (this.reader.Eof()) {
+            this.Error('unexpected end of file');
+        }
+        this.reader.Ignore(['\n']);
+        this.line = this.reader.GetAsciiUntil(['\n']);
+        var tokenmap = PCLParser.GetTokenMap();
+        var value;
+        for (var tokenprfix in tokenmap) {
+            if (value = this.TryGetTokenValue(this.line, tokenprfix)) {
+                return new PCLToken(tokenmap[tokenprfix], value);
+            }
+        }
+        this.Error('unable to parse token');
+        return null;
+    };
+    PCLParser.prototype.Done = function () {
+        this.reader.Ignore(['\n']);
+        return this.reader.Eof();
+    };
+    PCLParser.prototype.ProcessHeader = function () {
+        var token = this.GetNextToken();
+        if (token.type !== PCLTokenType.SectionEntry || token.value !== PCLSerializer.HeaderSection) {
+            this.Error('header section was extected');
+        }
+        while ((token = this.GetNextToken()) && (token.type === PCLTokenType.Parameter)) {
+            switch (token.value) {
+                case PCLSerializer.VersionParam:
+                    this.version = this.reader.GetNextUInt8();
+                    break;
+                case PCLSerializer.BigEndian:
+                    this.endianness = Endianness.BigEndian;
+                    break;
+                case PCLSerializer.LittleEndian:
+                    this.endianness = Endianness.LittleEndian;
+                    break;
+                default:
+                    this.Error('unexpected parameter "' + token.value + '" in header section');
+            }
+        }
+        if (!(token.type === PCLTokenType.SectionEntry && token.value === PCLSerializer.ContentsSection)) {
+            this.Error('contents section was expected');
+        }
+    };
+    ;
+    PCLParser.prototype.ProcessNextObject = function () {
+        var token;
+        token = this.GetNextToken();
+        if (token.type !== PCLTokenType.StartObject) {
+            this.Error('object declaration was expected');
+        }
+        var objecttype = token.value;
+        var handler = this.factory.GetHandler(objecttype);
+        if (!handler) {
+            this.Error('unsupported object type "' + objecttype + '"');
+        }
+        while ((token = this.GetNextToken()) && (token.type === PCLTokenType.Parameter)) {
+            if (!handler.ProcessParam(token.value, this)) {
+                this.Error('unexpected parameter "' + token.value + '"');
+            }
+        }
+        if (token.type !== PCLTokenType.EndObject || token.value !== objecttype) {
+            this.Error('end of object "' + objecttype + '" was expected');
+        }
+        return handler.Finalize();
+    };
+    PCLParser.prototype.Error = function (message) {
+        throw 'PCL Parsing error : ' + message + '\n"' + this.line + '"';
+    };
+    PCLParser.tokenmap = null;
+    return PCLParser;
+}());
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../../model/boundingbox.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
@@ -1435,6 +1750,7 @@ var BooleanProperty = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/stringproperty.ts" />
 /// <reference path="../controls/properties/booleanproperty.ts" />
 /// <reference path="../../controler/actions/delegate.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var ChangeType;
 (function (ChangeType) {
     ChangeType[ChangeType["Selection"] = 1] = "Selection";
@@ -1466,7 +1782,7 @@ var PCLNode = /** @class */ (function () {
         var self = this;
         if (!this.properties) {
             this.properties = new Properties();
-            this.properties.Push(new StringProperty('Name', function () { return self.name; }, function (newName) { return self.name = newName; }));
+            this.properties.Push(new StringProperty('Name', function () { return self.name; }, function (newName) { return self.name = newName.replace(/\//g, ' '); }));
             this.properties.Push(new BooleanProperty('Visible', function () { return self.visible; }, function (newVilibility) { return self.visible = newVilibility; }));
             this.FillProperties();
             this.properties.onChange = function () { return self.NotifyChange(self, ChangeType.Properties | ChangeType.Display); };
@@ -1500,6 +1816,16 @@ var PCLNode = /** @class */ (function () {
         else {
             result.push(new SimpleAction('Show', function () { self.visible = true; self.NotifyChange(self, ChangeType.Display | ChangeType.Properties); }));
         }
+        result.push(null);
+        result.push(new SimpleAction('Save to file', function () {
+            //Dry run (to get the buffer size)
+            var serializer = new PCLSerializer(null);
+            self.Serialize(serializer);
+            //Actual serialization
+            serializer = new PCLSerializer(serializer.GetBufferSize());
+            self.Serialize(serializer);
+            FileExporter.ExportFile(self.name + '.pcld', serializer.GetBuffer(), 'model');
+        }));
         return result;
     };
     PCLNode.prototype.GetChildren = function () {
@@ -1520,6 +1846,16 @@ var PCLNode = /** @class */ (function () {
         if (this.properties) {
             delete this.properties;
         }
+    };
+    PCLNode.prototype.Serialize = function (serializer) {
+        var self = this;
+        serializer.Start(this);
+        serializer.PushParameter('name', function (s) { return s.PushString(self.name); });
+        if (!this.deletable) {
+            serializer.PushParameter('nodelete');
+        }
+        this.SerializeNode(serializer);
+        serializer.End(this);
     };
     return PCLNode;
 }());
@@ -1589,6 +1925,31 @@ var GLBufferElement = /** @class */ (function () {
         this.type = type;
     }
     return GLBufferElement;
+}());
+var PCLNodeParsingHandler = /** @class */ (function () {
+    function PCLNodeParsingHandler() {
+    }
+    PCLNodeParsingHandler.prototype.ProcessParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'name':
+                this.name = parser.GetStringValue();
+                return true;
+            case 'nodelete':
+                this.nodelete = true;
+                return true;
+        }
+        return this.ProcessNodeParam(paramname, parser);
+    };
+    PCLNodeParsingHandler.prototype.Finalize = function () {
+        var node = this.FinalizeNode();
+        if (node) {
+            node.name = this.name;
+            if (this.nodelete)
+                node.deletable = false;
+            return node;
+        }
+    };
+    return PCLNodeParsingHandler;
 }());
 var StringUtils = /** @class */ (function () {
     function StringUtils() {
@@ -1667,6 +2028,7 @@ var NumberInRangeProperty = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/colorproperty.ts" />
 /// <reference path="../controls/properties/numberinrangeproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var Material = /** @class */ (function () {
     function Material(baseColor, diffuse, ambiant, specular, glossy) {
         if (diffuse === void 0) { diffuse = 0.7; }
@@ -1696,7 +2058,61 @@ var Material = /** @class */ (function () {
         properties.Push(new NumberInRangeProperty('Glossy', function () { return self.glossy; }, 0, 100, 1, function (value) { return self.glossy = value; }));
         return properties;
     };
+    Material.prototype.GetSerializationID = function () {
+        return Material.SerializationID;
+    };
+    Material.prototype.Serialize = function (serializer) {
+        //public baseColor: number[], public diffuse: number = 0.7, public ambiant: number = 0.05, public specular: number = 0.4, public glossy: number = 10.0
+        var self = this;
+        serializer.Start(this);
+        serializer.PushParameter('color', function (s) {
+            s.PushFloat32(self.baseColor[0]);
+            s.PushFloat32(self.baseColor[1]);
+            s.PushFloat32(self.baseColor[2]);
+        });
+        serializer.PushParameter('ambiant', function (s) { return s.PushFloat32(self.ambiant); });
+        serializer.PushParameter('diffuse', function (s) { return s.PushFloat32(self.diffuse); });
+        serializer.PushParameter('specular', function (s) { return s.PushFloat32(self.specular); });
+        serializer.PushParameter('glossy', function (s) { return s.PushFloat32(self.glossy); });
+        serializer.End(this);
+    };
+    Material.prototype.GetParsingHandler = function () {
+        return new MaterialParsingHandler();
+    };
+    Material.SerializationID = 'MATERIAL';
     return Material;
+}());
+var MaterialParsingHandler = /** @class */ (function () {
+    function MaterialParsingHandler() {
+    }
+    MaterialParsingHandler.prototype.ProcessParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'color':
+                this.color = [
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ];
+                return true;
+            case 'ambiant':
+                this.ambiant = parser.reader.GetNextFloat32();
+                return true;
+            case 'diffuse':
+                this.diffuse = parser.reader.GetNextFloat32();
+                return true;
+            case 'specular':
+                this.specular = parser.reader.GetNextFloat32();
+                return true;
+            case 'glossy':
+                this.glossy = parser.reader.GetNextFloat32();
+                return true;
+        }
+        return false;
+    };
+    MaterialParsingHandler.prototype.Finalize = function () {
+        return new Material(this.color, this.diffuse, this.ambiant, this.specular, this.glossy);
+    };
+    return MaterialParsingHandler;
 }());
 /// <reference path="../maths/matrix.ts" />
 /// <reference path="../maths/vector.ts" />
@@ -1750,6 +2166,7 @@ var Transform = /** @class */ (function () {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../../tools/transform.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var PCLPrimitive = /** @class */ (function (_super) {
     __extends(PCLPrimitive, _super);
     function PCLPrimitive(name) {
@@ -1796,9 +2213,11 @@ var PCLPrimitive = /** @class */ (function (_super) {
         this.transform.Translate(translation);
     };
     PCLPrimitive.prototype.ApplyTransform = function () {
-        this.TransformPrivitive(this.transform);
-        this.transform = null;
-        this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+        if (this.transform) {
+            this.TransformPrivitive(this.transform);
+            this.transform = null;
+            this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+        }
     };
     PCLPrimitive.prototype.GetBoundingBox = function () {
         if (this.transform) {
@@ -1814,9 +2233,37 @@ var PCLPrimitive = /** @class */ (function (_super) {
     PCLPrimitive.prototype.GetDisplayIcon = function () {
         return 'fa-cube';
     };
+    PCLPrimitive.prototype.SerializeNode = function (serializer) {
+        var self = this;
+        this.ApplyTransform();
+        serializer.PushParameter('material', function () { return self.material.Serialize(serializer); });
+        this.SerializePrimitive(serializer);
+    };
     PCLPrimitive.defaultShapeTransform = Matrix.Identity(4).values;
     return PCLPrimitive;
 }(PCLNode));
+var PCLPrimitiveParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLPrimitiveParsingHandler, _super);
+    function PCLPrimitiveParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLPrimitiveParsingHandler.prototype.ProcessNodeParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'material':
+                this.material = parser.ProcessNextObject();
+                return true;
+        }
+        return this.ProcessPrimitiveParam(paramname, parser);
+    };
+    PCLPrimitiveParsingHandler.prototype.FinalizeNode = function () {
+        var primitve = this.FinalizePrimitive();
+        if (primitve) {
+            primitve.material = this.material;
+        }
+        return primitve;
+    };
+    return PCLPrimitiveParsingHandler;
+}(PCLNodeParsingHandler));
 var Process = /** @class */ (function () {
     function Process() {
     }
@@ -2509,7 +2956,7 @@ var EigenDecomposition = /** @class */ (function () {
 /// <reference path="../maths/eigendecomposition.ts" />
 /// <reference path="../tools/transform.ts" />
 var PointCloud = /** @class */ (function () {
-    function PointCloud() {
+    function PointCloud(points, normals) {
         this.tree = null;
         this.KNearestNeighbours = function (queryPoint, k) {
             if (!this.tree) {
@@ -2519,11 +2966,14 @@ var PointCloud = /** @class */ (function () {
             this.tree.FindNearestNeighbours(queryPoint, knn);
             return knn.Neighbours();
         };
-        this.points = new Float32Array([]);
-        this.pointssize = 0;
-        this.normals = new Float32Array([]);
-        this.normalssize = 0;
+        this.points = points || new Float32Array([]);
+        this.pointssize = this.points.length;
+        this.normals = normals || new Float32Array([]);
+        this.normalssize = this.normals.length;
         this.boundingbox = new BoundingBox();
+        for (var index = 0; index < this.Size(); index++) {
+            this.boundingbox.Add(this.GetPoint(index));
+        }
     }
     PointCloud.prototype.PushPoint = function (p) {
         if (this.pointssize + p.Dimension() > this.points.length) {
@@ -2663,10 +3113,10 @@ var PointCloud = /** @class */ (function () {
 /// <reference path="../tools/picking.ts" />
 /// <reference path="../tools/longprocess.ts" />
 var Mesh = /** @class */ (function () {
-    function Mesh(pointcloud) {
+    function Mesh(pointcloud, faces) {
         this.pointcloud = pointcloud;
-        this.faces = [];
-        this.size = 0;
+        this.faces = faces || [];
+        this.size = this.faces.length;
     }
     Mesh.prototype.PushFace = function (f) {
         if (f.length != 3) {
@@ -2704,6 +3154,7 @@ var Mesh = /** @class */ (function () {
         return this.size / 3;
     };
     Mesh.prototype.ComputeOctree = function (onDone) {
+        if (onDone === void 0) { onDone = null; }
         if (!this.octree) {
             var self_2 = this;
             self_2.octree = new Octree(this);
@@ -2816,6 +3267,7 @@ var NumberProperty = /** @class */ (function (_super) {
 /// <reference path="../opengl/buffer.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 //=================================================
 // The PCLMesh provides an interface to interact with a simplicial mesh
 // - Show the mesh
@@ -2860,8 +3312,63 @@ var PCLMesh = /** @class */ (function (_super) {
             this.properties.Push(faces);
         }
     };
+    PCLMesh.prototype.GetSerializationID = function () {
+        return PCLMesh.SerializationID;
+    };
+    PCLMesh.prototype.SerializePrimitive = function (serializer) {
+        var cloud = this.mesh.pointcloud;
+        serializer.PushParameter('points', function (s) {
+            s.PushInt32(cloud.pointssize);
+            for (var index = 0; index < cloud.pointssize; index++) {
+                s.PushFloat32(cloud.points[index]);
+            }
+        });
+        var mesh = this.mesh;
+        serializer.PushParameter('faces', function (s) {
+            s.PushInt32(mesh.size);
+            for (var index = 0; index < mesh.size; index++) {
+                s.PushInt32(mesh.faces[index]);
+            }
+        });
+    };
+    PCLMesh.prototype.GetParsingHandler = function () {
+        return new PCLMeshParsingHandler();
+    };
+    PCLMesh.SerializationID = 'MESH';
     return PCLMesh;
 }(PCLPrimitive));
+var PCLMeshParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLMeshParsingHandler, _super);
+    function PCLMeshParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLMeshParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'points':
+                var nbpoints = parser.reader.GetNextInt32();
+                this.points = new Float32Array(nbpoints);
+                for (var index = 0; index < nbpoints; index++) {
+                    this.points[index] = parser.reader.GetNextFloat32();
+                }
+                return true;
+            case 'faces':
+                var nbfaces = parser.reader.GetNextInt32();
+                this.faces = new Array(nbfaces);
+                for (var index = 0; index < nbfaces; index++) {
+                    this.faces[index] = parser.reader.GetNextInt32();
+                }
+                return true;
+        }
+        return false;
+    };
+    PCLMeshParsingHandler.prototype.FinalizePrimitive = function () {
+        var cloud = new PointCloud(this.points);
+        var mesh = new Mesh(cloud, this.faces);
+        mesh.ComputeNormals(function () { return mesh.ComputeOctree(); });
+        return new PCLMesh(mesh);
+    };
+    return PCLMeshParsingHandler;
+}(PCLPrimitiveParsingHandler));
 var MeshDrawing = /** @class */ (function () {
     function MeshDrawing() {
         this.pcdrawing = new PointCloudDrawing();
@@ -3374,6 +3881,7 @@ var VectorProperty = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var PCLPlane = /** @class */ (function (_super) {
     __extends(PCLPlane, _super);
     function PCLPlane(plane) {
@@ -3392,8 +3900,64 @@ var PCLPlane = /** @class */ (function (_super) {
         geometry.Push(new NumberProperty('Patch Radius', function () { return self.plane.patchRadius; }, this.GeometryChangeHandler(function (value) { return self.plane.patchRadius = value; })));
         return geometry;
     };
+    PCLPlane.prototype.GetSerializationID = function () {
+        return PCLPlane.SerializationID;
+    };
+    PCLPlane.prototype.SerializePrimitive = function (serializer) {
+        var plane = this.plane;
+        serializer.PushParameter('center', function (s) {
+            s.PushFloat32(plane.center.Get(0));
+            s.PushFloat32(plane.center.Get(1));
+            s.PushFloat32(plane.center.Get(2));
+        });
+        serializer.PushParameter('normal', function (s) {
+            s.PushFloat32(plane.normal.Get(0));
+            s.PushFloat32(plane.normal.Get(1));
+            s.PushFloat32(plane.normal.Get(2));
+        });
+        serializer.PushParameter('radius', function (s) {
+            s.PushFloat32(plane.patchRadius);
+        });
+    };
+    PCLPlane.prototype.GetParsingHandler = function () {
+        return new PCLPlaneParsingHandler();
+    };
+    PCLPlane.SerializationID = 'PLANE';
     return PCLPlane;
 }(PCLShape));
+var PCLPlaneParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLPlaneParsingHandler, _super);
+    function PCLPlaneParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLPlaneParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'center':
+                this.center = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'normal':
+                this.normal = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'radius':
+                this.radius = parser.reader.GetNextFloat32();
+                return true;
+        }
+        return false;
+    };
+    PCLPlaneParsingHandler.prototype.FinalizePrimitive = function () {
+        var plane = new Plane(this.center, this.normal, this.radius);
+        return new PCLPlane(plane);
+    };
+    return PCLPlaneParsingHandler;
+}(PCLPrimitiveParsingHandler));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../tools/transform.ts" />
@@ -3526,6 +4090,7 @@ var Sphere = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var PCLSphere = /** @class */ (function (_super) {
     __extends(PCLSphere, _super);
     function PCLSphere(sphere) {
@@ -3544,8 +4109,52 @@ var PCLSphere = /** @class */ (function (_super) {
         return geometry;
     };
     ;
+    PCLSphere.prototype.GetSerializationID = function () {
+        return PCLSphere.SerializationID;
+    };
+    PCLSphere.prototype.SerializePrimitive = function (serializer) {
+        var sphere = this.sphere;
+        serializer.PushParameter('center', function (s) {
+            s.PushFloat32(sphere.center.Get(0));
+            s.PushFloat32(sphere.center.Get(1));
+            s.PushFloat32(sphere.center.Get(2));
+        });
+        serializer.PushParameter('radius', function (s) {
+            s.PushFloat32(sphere.radius);
+        });
+    };
+    PCLSphere.prototype.GetParsingHandler = function () {
+        return new PCLSphereParsingHandler();
+    };
+    PCLSphere.SerializationID = 'SPHERE';
     return PCLSphere;
 }(PCLShape));
+var PCLSphereParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLSphereParsingHandler, _super);
+    function PCLSphereParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLSphereParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'center':
+                this.center = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'radius':
+                this.radius = parser.reader.GetNextFloat32();
+                return true;
+        }
+        return false;
+    };
+    PCLSphereParsingHandler.prototype.FinalizePrimitive = function () {
+        var sphere = new Sphere(this.center, this.radius);
+        return new PCLSphere(sphere);
+    };
+    return PCLSphereParsingHandler;
+}(PCLPrimitiveParsingHandler));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../tools/transform.ts" />
@@ -3758,8 +4367,70 @@ var PCLCylinder = /** @class */ (function (_super) {
         geometry.Push(new NumberProperty('Height', function () { return self.cylinder.height; }, self.GeometryChangeHandler(function (value) { return self.cylinder.height = value; })));
         return geometry;
     };
+    PCLCylinder.prototype.GetSerializationID = function () {
+        return PCLCylinder.SerializationID;
+    };
+    PCLCylinder.prototype.SerializePrimitive = function (serializer) {
+        var cylinder = this.cylinder;
+        serializer.PushParameter('center', function (s) {
+            s.PushFloat32(cylinder.center.Get(0));
+            s.PushFloat32(cylinder.center.Get(1));
+            s.PushFloat32(cylinder.center.Get(2));
+        });
+        serializer.PushParameter('axis', function (s) {
+            s.PushFloat32(cylinder.axis.Get(0));
+            s.PushFloat32(cylinder.axis.Get(1));
+            s.PushFloat32(cylinder.axis.Get(2));
+        });
+        serializer.PushParameter('radius', function (s) {
+            s.PushFloat32(cylinder.radius);
+        });
+        serializer.PushParameter('height', function (s) {
+            s.PushFloat32(cylinder.height);
+        });
+    };
+    PCLCylinder.prototype.GetParsingHandler = function () {
+        return new PCLCylinderParsingHandler();
+    };
+    PCLCylinder.SerializationID = 'CYLINDER';
     return PCLCylinder;
 }(PCLShape));
+var PCLCylinderParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLCylinderParsingHandler, _super);
+    function PCLCylinderParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLCylinderParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'center':
+                this.center = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'axis':
+                this.axis = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'radius':
+                this.radius = parser.reader.GetNextFloat32();
+                return true;
+            case 'height':
+                this.height = parser.reader.GetNextFloat32();
+                return true;
+        }
+        return false;
+    };
+    PCLCylinderParsingHandler.prototype.FinalizePrimitive = function () {
+        var cylinder = new Cylinder(this.center, this.axis, this.radius, this.height);
+        return new PCLCylinder(cylinder);
+    };
+    return PCLCylinderParsingHandler;
+}(PCLPrimitiveParsingHandler));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../tools/transform.ts" />
@@ -3922,6 +4593,7 @@ var Cone = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var PCLCone = /** @class */ (function (_super) {
     __extends(PCLCone, _super);
     function PCLCone(cone) {
@@ -3941,8 +4613,70 @@ var PCLCone = /** @class */ (function (_super) {
         geometry.Push(new NumberProperty('Height', function () { return self.cone.height; }, self.GeometryChangeHandler(function (value) { return self.cone.height = value; })));
         return geometry;
     };
+    PCLCone.prototype.GetSerializationID = function () {
+        return PCLCone.SerializationID;
+    };
+    PCLCone.prototype.SerializePrimitive = function (serializer) {
+        var cone = this.cone;
+        serializer.PushParameter('apex', function (s) {
+            s.PushFloat32(cone.apex.Get(0));
+            s.PushFloat32(cone.apex.Get(1));
+            s.PushFloat32(cone.apex.Get(2));
+        });
+        serializer.PushParameter('axis', function (s) {
+            s.PushFloat32(cone.axis.Get(0));
+            s.PushFloat32(cone.axis.Get(1));
+            s.PushFloat32(cone.axis.Get(2));
+        });
+        serializer.PushParameter('angle', function (s) {
+            s.PushFloat32(cone.angle);
+        });
+        serializer.PushParameter('height', function (s) {
+            s.PushFloat32(cone.height);
+        });
+    };
+    PCLCone.prototype.GetParsingHandler = function () {
+        return new PCLConeParsingHandler();
+    };
+    PCLCone.SerializationID = 'CONE';
     return PCLCone;
 }(PCLShape));
+var PCLConeParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLConeParsingHandler, _super);
+    function PCLConeParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLConeParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'apex':
+                this.apex = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'axis':
+                this.axis = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'angle':
+                this.angle = parser.reader.GetNextFloat32();
+                return true;
+            case 'height':
+                this.height = parser.reader.GetNextFloat32();
+                return true;
+        }
+        return false;
+    };
+    PCLConeParsingHandler.prototype.FinalizePrimitive = function () {
+        var cone = new Cone(this.apex, this.axis, this.angle, this.height);
+        return new PCLCone(cone);
+    };
+    return PCLConeParsingHandler;
+}(PCLPrimitiveParsingHandler));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../tools/transform.ts" />
@@ -4077,6 +4811,7 @@ var Torus = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var PCLTorus = /** @class */ (function (_super) {
     __extends(PCLTorus, _super);
     function PCLTorus(torus) {
@@ -4096,8 +4831,70 @@ var PCLTorus = /** @class */ (function (_super) {
         geometry.Push(new NumberProperty('Small Radius', function () { return self.torus.smallRadius; }, this.GeometryChangeHandler(function (value) { return self.torus.smallRadius = value; })));
         return geometry;
     };
+    PCLTorus.prototype.GetSerializationID = function () {
+        return PCLTorus.SerializationID;
+    };
+    PCLTorus.prototype.SerializePrimitive = function (serializer) {
+        var torus = this.torus;
+        serializer.PushParameter('center', function (s) {
+            s.PushFloat32(torus.center.Get(0));
+            s.PushFloat32(torus.center.Get(1));
+            s.PushFloat32(torus.center.Get(2));
+        });
+        serializer.PushParameter('axis', function (s) {
+            s.PushFloat32(torus.axis.Get(0));
+            s.PushFloat32(torus.axis.Get(1));
+            s.PushFloat32(torus.axis.Get(2));
+        });
+        serializer.PushParameter('smallradius', function (s) {
+            s.PushFloat32(torus.smallRadius);
+        });
+        serializer.PushParameter('greatradius', function (s) {
+            s.PushFloat32(torus.greatRadius);
+        });
+    };
+    PCLTorus.prototype.GetParsingHandler = function () {
+        return new PCLTorusParsingHandler();
+    };
+    PCLTorus.SerializationID = 'TORUS';
     return PCLTorus;
 }(PCLShape));
+var PCLTorusParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLTorusParsingHandler, _super);
+    function PCLTorusParsingHandler() {
+        return _super.call(this) || this;
+    }
+    PCLTorusParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'center':
+                this.center = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'axis':
+                this.axis = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'greatradius':
+                this.greatradius = parser.reader.GetNextFloat32();
+                return true;
+            case 'smallradius':
+                this.smallradius = parser.reader.GetNextFloat32();
+                return true;
+        }
+        return false;
+    };
+    PCLTorusParsingHandler.prototype.FinalizePrimitive = function () {
+        var torus = new Torus(this.center, this.axis, this.greatradius, this.smallradius);
+        return new PCLTorus(torus);
+    };
+    return PCLTorusParsingHandler;
+}(PCLPrimitiveParsingHandler));
 /// <reference path="delegate.ts" />
 /// <reference path="../../gui/objects/pclnode.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
@@ -4153,14 +4950,15 @@ var ScanFromCurrentViewPointAction = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var PCLGroup = /** @class */ (function (_super) {
     __extends(PCLGroup, _super);
-    function PCLGroup(name, supportPrimitives) {
-        if (supportPrimitives === void 0) { supportPrimitives = true; }
+    function PCLGroup(name, supportsPrimitivesCreation) {
+        if (supportsPrimitivesCreation === void 0) { supportsPrimitivesCreation = true; }
         var _this = _super.call(this, name) || this;
+        _this.supportsPrimitivesCreation = supportsPrimitivesCreation;
         _this.children = [];
         _this.folded = false;
-        _this.supportsPrimitivesCreation = supportPrimitives;
         return _this;
     }
     PCLGroup.prototype.ToggleFolding = function () {
@@ -4317,8 +5115,65 @@ var PCLGroup = /** @class */ (function (_super) {
     PCLGroup.prototype.GetDisplayIcon = function () {
         return 'fa-folder' + (this.folded ? '' : '-open');
     };
+    PCLGroup.prototype.GetSerializationID = function () {
+        return PCLGroup.SerializationID;
+    };
+    PCLGroup.prototype.SerializeNode = function (serializer) {
+        var self = this;
+        if (!this.supportsPrimitivesCreation) {
+            serializer.PushParameter('noprimitives');
+        }
+        var _loop_1 = function (index) {
+            serializer.PushParameter('child', function () {
+                self.children[index].Serialize(serializer);
+            });
+        };
+        for (var index = 0; index < this.children.length; index++) {
+            _loop_1(index);
+        }
+    };
+    PCLGroup.prototype.GetParsingHandler = function () {
+        return new PCLGroupParsingHandler();
+    };
+    PCLGroup.SerializationID = 'GROUP';
     return PCLGroup;
 }(PCLNode));
+var PCLGroupParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLGroupParsingHandler, _super);
+    function PCLGroupParsingHandler() {
+        var _this = _super.call(this) || this;
+        _this.children = [];
+        return _this;
+    }
+    PCLGroupParsingHandler.prototype.ProcessNodeParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'noprimitives':
+                this.noprimitives = true;
+                return true;
+            case 'child':
+                var child = parser.ProcessNextObject();
+                if (!(child instanceof PCLNode)) {
+                    throw 'group children are expected to be valid nodes';
+                }
+                if (child) {
+                    this.children.push(child);
+                }
+                return true;
+        }
+        return false;
+    };
+    PCLGroupParsingHandler.prototype.GetObject = function () {
+        return new PCLGroup(this.name, !this.noprimitives);
+    };
+    PCLGroupParsingHandler.prototype.FinalizeNode = function () {
+        var group = this.GetObject();
+        for (var index = 0; index < this.children.length; index++) {
+            group.Add(this.children[index]);
+        }
+        return group;
+    };
+    return PCLGroupParsingHandler;
+}(PCLNodeParsingHandler));
 /// <reference path="../../gui/objects/pclgroup.ts" />
 var ScalarField = /** @class */ (function () {
     function ScalarField(name) {
@@ -4586,6 +5441,7 @@ var RansacStepProcessor = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../opengl/buffer.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 //=================================================
 // The PCLPointcloud provides an interface to interact with a point cloud
 // - Show the point cloud
@@ -4606,12 +5462,18 @@ var PCLPointCloud = /** @class */ (function (_super) {
         }
         return _this;
     }
-    PCLPointCloud.prototype.AddScalarField = function (name) {
-        var field = new ScalarField(name);
-        field.Reserve(this.cloud.Size());
-        this.fields.push(field);
+    PCLPointCloud.prototype.AddScalarField = function (field) {
+        var scalarfield;
+        if (field instanceof ScalarField) {
+            scalarfield = field;
+        }
+        else {
+            scalarfield = new ScalarField(field);
+            scalarfield.Reserve(this.cloud.Size());
+        }
+        this.fields.push(scalarfield);
         this.AddScaralFieldProperty(this.fields.length - 1);
-        return field;
+        return scalarfield;
     };
     PCLPointCloud.prototype.GetScalarField = function (name) {
         for (var index = 0; index < this.fields.length; index++) {
@@ -4752,11 +5614,94 @@ var PCLPointCloud = /** @class */ (function (_super) {
         }
         return result;
     };
+    PCLPointCloud.prototype.GetSerializationID = function () {
+        return PCLPointCloud.SerializationID;
+    };
+    PCLPointCloud.prototype.SerializePrimitive = function (serializer) {
+        var self = this;
+        serializer.PushParameter('points', function (s) {
+            s.PushInt32(self.cloud.pointssize);
+            for (var index = 0; index < self.cloud.pointssize; index++) {
+                s.PushFloat32(self.cloud.points[index]);
+            }
+        });
+        if (this.cloud.HasNormals()) {
+            serializer.PushParameter('normals', function (s) {
+                s.PushInt32(self.cloud.normalssize);
+                for (var index = 0; index < self.cloud.normalssize; index++) {
+                    s.PushFloat32(self.cloud.normals[index]);
+                }
+            });
+        }
+        var _loop_2 = function (index) {
+            var field = this_1.fields[index];
+            serializer.PushParameter('scalarfield', function (s) {
+                s.PushUILenghedString(field.name);
+                s.PushInt32(field.Size());
+                for (var ii = 0; ii < field.Size(); ii++) {
+                    s.PushFloat32(field.GetValue(ii));
+                }
+            });
+        };
+        var this_1 = this;
+        for (var index = 0; index < this.fields.length; index++) {
+            _loop_2(index);
+        }
+    };
+    PCLPointCloud.prototype.GetParsingHandler = function () {
+        return new PCLPointCloudParsingHandler();
+    };
     PCLPointCloud.ScalarFieldPropertyName = 'Scalar fields';
     PCLPointCloud.DensityFieldName = 'Density';
     PCLPointCloud.NoiseFieldName = 'Noise	';
+    PCLPointCloud.SerializationID = 'POINTCLOUD';
     return PCLPointCloud;
 }(PCLPrimitive));
+var PCLPointCloudParsingHandler = /** @class */ (function (_super) {
+    __extends(PCLPointCloudParsingHandler, _super);
+    function PCLPointCloudParsingHandler() {
+        var _this = _super.call(this) || this;
+        _this.fields = [];
+        return _this;
+    }
+    PCLPointCloudParsingHandler.prototype.ProcessPrimitiveParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'points':
+                var nbpoints = parser.reader.GetNextInt32();
+                this.points = new Float32Array(nbpoints);
+                for (var index = 0; index < nbpoints; index++) {
+                    this.points[index] = parser.reader.GetNextFloat32();
+                }
+                return true;
+            case 'normals':
+                var nbnormals = parser.reader.GetNextInt32();
+                this.normals = new Float32Array(nbnormals);
+                for (var index = 0; index < nbnormals; index++) {
+                    this.normals[index] = parser.reader.GetNextFloat32();
+                }
+                return true;
+            case 'scalarfield':
+                var name_1 = parser.reader.GetNextUILenghedString();
+                var size = parser.reader.GetNextInt32();
+                var field = new ScalarField(name_1);
+                field.Reserve(size);
+                for (var index = 0; index < size; index++) {
+                    field.PushValue(parser.reader.GetNextFloat32());
+                }
+                this.fields.push(field);
+                return true;
+        }
+        return false;
+    };
+    PCLPointCloudParsingHandler.prototype.FinalizePrimitive = function () {
+        var cloud = new PCLPointCloud(new PointCloud(this.points, this.normals));
+        for (var index = 0; index < this.fields.length; index++) {
+            cloud.AddScalarField(this.fields[index]);
+        }
+        return cloud;
+    };
+    return PCLPointCloudParsingHandler;
+}(PCLPrimitiveParsingHandler));
 var PointCloudDrawing = /** @class */ (function () {
     function PointCloudDrawing() {
         this.glNormalsBuffer = null;
@@ -5225,7 +6170,7 @@ var NoiseComputer = /** @class */ (function (_super) {
 var ExportPointCloudFileAction = /** @class */ (function (_super) {
     __extends(ExportPointCloudFileAction, _super);
     function ExportPointCloudFileAction(cloud) {
-        return _super.call(this, cloud, 'Export file') || this;
+        return _super.call(this, cloud, 'Export CSV file') || this;
     }
     ExportPointCloudFileAction.prototype.Enabled = function () {
         return true;
@@ -5235,122 +6180,50 @@ var ExportPointCloudFileAction = /** @class */ (function (_super) {
     };
     return ExportPointCloudFileAction;
 }(PCLCloudAction));
-var Endianness;
-(function (Endianness) {
-    Endianness[Endianness["BigEndian"] = 0] = "BigEndian";
-    Endianness[Endianness["LittleEndian"] = 1] = "LittleEndian";
-})(Endianness || (Endianness = {}));
-var BinaryReader = /** @class */ (function () {
-    function BinaryReader(buffer) {
-        this.cursor = 0;
-        this.stream = new DataView(buffer);
-        this.endianness = Endianness.BigEndian;
-        var tmp = new ArrayBuffer(2);
-        new DataView(tmp).setInt16(0, 256, true);
-        this.innerendianness = (new Int16Array(tmp)[0] === 256 ? Endianness.LittleEndian : Endianness.BigEndian);
+/// <reference path="binarystream.ts" />
+var BinaryWriter = /** @class */ (function (_super) {
+    __extends(BinaryWriter, _super);
+    function BinaryWriter(size) {
+        return _super.call(this, size ? new ArrayBuffer(size) : null) || this;
     }
-    BinaryReader.prototype.Reset = function () {
-        this.cursor = 0;
-    };
-    BinaryReader.prototype.Eof = function () {
-        return (this.cursor >= this.stream.byteLength) || (this.stream[this.cursor] == 3);
-    };
-    BinaryReader.prototype.CountAsciiOccurences = function (asciichar) {
-        var count = 0;
-        this.Reset();
-        while (!this.Eof()) {
-            if (this.GetNextAsciiStr(asciichar.length, false) == asciichar)
-                count++;
-            this.cursor++;
+    BinaryWriter.prototype.PushUInt8 = function (value) {
+        if (this.stream) {
+            this.stream.setUint8(this.cursor, value);
         }
-        return count;
+        this.cursor++;
+        this.lastvalue = value;
     };
-    BinaryReader.prototype.GetAsciiLine = function () {
-        return this.GetAsciiUntil(['\r\n', '\n']);
-    };
-    BinaryReader.prototype.GetAsciiWord = function (onSameLine) {
-        var stops = [' '];
-        if (onSameLine === false) {
-            stops.push('\n');
-            stops.push('\r\n');
+    BinaryWriter.prototype.PushInt32 = function (value) {
+        if (this.stream) {
+            this.stream.setInt32(this.cursor, value, this.endianness == Endianness.LittleEndian);
         }
-        return this.GetAsciiUntil(stops);
+        this.cursor += 4;
+        this.lastvalue = value;
     };
-    BinaryReader.prototype.GetAsciiUntil = function (stops) {
-        var result = '';
-        while (!this.Eof() && this.Ignore(stops) == 0) {
-            result += this.GetNextAsciiChar();
+    BinaryWriter.prototype.PushFloat32 = function (value) {
+        if (this.stream) {
+            this.stream.setFloat32(this.cursor, value, this.endianness == Endianness.LittleEndian);
         }
-        return result;
+        this.cursor += 4;
+        this.lastvalue = value;
     };
-    BinaryReader.prototype.Ignore = function (words) {
-        var count = 0;
-        var match = null;
-        do {
-            match = this.GetNextMatchingAsciiStr(words, true);
-            if (match)
-                count++;
-        } while (match);
-        return count;
-    };
-    BinaryReader.prototype.GetNextAsciiStr = function (length, move) {
-        if (length === void 0) { length = 1; }
-        if (move === void 0) { move = true; }
-        var result = '';
-        var cursor = this.cursor;
-        for (var index = 0; result.length < length && !this.Eof(); index++) {
-            result += this.GetNextAsciiChar(true);
-        }
-        if (!move)
-            this.cursor = cursor;
-        return result;
-    };
-    BinaryReader.prototype.GetNextMatchingAsciiStr = function (words, move) {
-        if (move === void 0) { move = true; }
-        for (var index = 0; index < words.length; index++) {
-            var word = words[index];
-            var next = this.GetNextAsciiStr(word.length, false);
-            if (next.toLowerCase() == word.toLowerCase()) {
-                if (move)
-                    this.cursor += next.length;
-                return next;
+    BinaryWriter.prototype.PushString = function (value) {
+        for (var index = 0; index < value.length; index++) {
+            if (this.stream) {
+                this.stream.setUint8(this.cursor, value.charCodeAt(index));
             }
+            this.cursor++;
+            this.lastvalue = value[index];
         }
-        return null;
     };
-    BinaryReader.prototype.GetNextAsciiChar = function (move) {
-        if (move === void 0) { move = true; }
-        var result = String.fromCharCode(this.stream.getUint8(this.cursor));
-        if (move)
-            this.cursor++;
-        return result;
+    BinaryWriter.prototype.PushUILenghedString = function (value) {
+        this.PushUInt8(value.length);
+        this.PushString(value);
     };
-    BinaryReader.prototype.GetNextUInt8 = function (move) {
-        if (move === void 0) { move = true; }
-        var result = this.stream.getInt8(this.cursor);
-        if (move)
-            this.cursor++;
-        return result;
-    };
-    BinaryReader.prototype.GetNextInt32 = function (move) {
-        if (move === void 0) { move = true; }
-        var result = this.stream.getInt32(this.cursor, this.endianness == Endianness.LittleEndian);
-        if (move)
-            this.cursor += 4;
-        return result;
-    };
-    BinaryReader.prototype.GetNextFloat32 = function (move) {
-        if (move === void 0) { move = true; }
-        var result = this.stream.getFloat32(this.cursor, this.endianness == Endianness.LittleEndian);
-        if (move)
-            this.cursor += 4;
-        return result;
-    };
-    return BinaryReader;
-}());
+    return BinaryWriter;
+}(BinaryStream));
 var FileLoader = /** @class */ (function () {
     function FileLoader() {
-        this.result = null;
     }
     return FileLoader;
 }());
@@ -5364,14 +6237,16 @@ var CsvLoader = /** @class */ (function (_super) {
     function CsvLoader(content) {
         var _this = _super.call(this) || this;
         _this.parser = new CSVParser(content);
-        _this.result = null;
         return _this;
     }
-    CsvLoader.prototype.Load = function (ondone) {
-        var self = this;
+    CsvLoader.prototype.Load = function (ondone, onerror) {
         this.parser.SetNext(function (p) {
-            self.result = p.pclcloud;
-            ondone();
+            if (p.error) {
+                onerror(p.error);
+            }
+            else {
+                ondone(p.pclcloud);
+            }
         });
         this.parser.Start();
     };
@@ -5383,6 +6258,7 @@ var CSVParser = /** @class */ (function (_super) {
         var _this = _super.call(this, 0, 'Parsing CSV file content') || this;
         _this.separator = ';';
         _this.reader = new BinaryReader(content);
+        _this.error = null;
         return _this;
     }
     CSVParser.prototype.Initialize = function (caller) {
@@ -5423,7 +6299,7 @@ var CSVParser = /** @class */ (function (_super) {
         }
     };
     Object.defineProperty(CSVParser.prototype, "Done", {
-        get: function () { return this.done; },
+        get: function () { return this.done || !!this.error; },
         enumerable: true,
         configurable: true
     });
@@ -5437,7 +6313,7 @@ var CSVParser = /** @class */ (function (_super) {
                     key = this.headermapping[key];
                 }
                 else {
-                    console.warn('Cannot map "' + key + '" to a valid data, given the specified CSV mapping');
+                    this.error = 'Cannot map "' + key + '" to a valid data, given the specified CSV mapping';
                     key = null;
                 }
             }
@@ -5498,6 +6374,86 @@ var CSVParser = /** @class */ (function (_super) {
     CSVParser.NormalCoordinates = ['nx', 'ny', 'nz'];
     return CSVParser;
 }(IterativeLongProcess));
+/// <reference path="fileloader.ts" />
+/// <reference path="pclserializer.ts" />
+/// <reference path="binaryreader.ts" />
+/// <reference path="../tools/longprocess.ts" />
+/// <reference path="../gui/objects/pclnode.ts" />
+/// <reference path="../gui/objects/pclgroup.ts" />
+/// <reference path="../gui/objects/pclpointcloud.ts" />
+/// <reference path="../gui/objects/pclmesh.ts" />
+/// <reference path="../gui/objects/pclplane.ts" />
+/// <reference path="../gui/objects/pclsphere.ts" />
+/// <reference path="../gui/objects/pclcylinder.ts" />
+/// <reference path="../gui/objects/pclcone.ts" />
+/// <reference path="../gui/objects/pcltorus.ts" />
+/// <reference path="../gui/opengl/materials.ts" />
+var PCLLoader = /** @class */ (function (_super) {
+    __extends(PCLLoader, _super);
+    function PCLLoader(content) {
+        var _this = _super.call(this) || this;
+        _this.parser = new PCLParser(content, _this);
+        return _this;
+    }
+    PCLLoader.prototype.Load = function (ondone, onError) {
+        try {
+            this.parser.ProcessHeader();
+            var result = this.parser.ProcessNextObject();
+            if (!(result instanceof PCLNode)) {
+                onError('The file content is not a valid node object.');
+            }
+            else if (!this.parser.Done()) {
+                onError('The file does not contain a single root node.');
+            }
+            else {
+                ondone(result);
+            }
+        }
+        catch (error) {
+            onError(error);
+        }
+    };
+    PCLLoader.prototype.GetHandler = function (objecttype) {
+        if (Scene.SerializationID === objecttype) {
+            return new SceneParsingHandler();
+        }
+        if (PCLGroup.SerializationID === objecttype) {
+            return new PCLGroupParsingHandler();
+        }
+        if (Light.SerializationID === objecttype) {
+            return new LightParsingHandler();
+        }
+        if (LightsContainer.SerializationID === objecttype) {
+            return new LightsContainerParsingHandler();
+        }
+        if (PCLPointCloud.SerializationID === objecttype) {
+            return new PCLPointCloudParsingHandler();
+        }
+        if (PCLMesh.SerializationID === objecttype) {
+            return new PCLMeshParsingHandler();
+        }
+        if (PCLPlane.SerializationID === objecttype) {
+            return new PCLPlaneParsingHandler();
+        }
+        if (PCLSphere.SerializationID === objecttype) {
+            return new PCLSphereParsingHandler();
+        }
+        if (PCLCylinder.SerializationID === objecttype) {
+            return new PCLCylinderParsingHandler();
+        }
+        if (PCLCone.SerializationID === objecttype) {
+            return new PCLConeParsingHandler();
+        }
+        if (PCLTorus.SerializationID === objecttype) {
+            return new PCLTorusParsingHandler();
+        }
+        if (Material.SerializationID === objecttype) {
+            return new MaterialParsingHandler();
+        }
+        return null;
+    };
+    return PCLLoader;
+}(FileLoader));
 /// <reference path="fileloader.ts" />
 /// <reference path="binaryreader.ts" />
 /// <reference path="../model/pointcloud.ts" />
@@ -5665,104 +6621,109 @@ var PlyLoader = /** @class */ (function (_super) {
         _this.elements = new PlyElements();
         return _this;
     }
-    PlyLoader.prototype.Load = function (onloaded) {
+    PlyLoader.prototype.Load = function (onloaded, onerror) {
         function Error(message) {
             throw 'PLY ERROR : ' + message;
         }
-        //Firt line shoul be 'PLY'
-        if (this.reader.Eof() || this.reader.GetAsciiLine().toLowerCase() != 'ply') {
-            Error('this is not a valid PLY file (line 1)');
-        }
-        //Second line indicates the PLY format
-        var format;
-        if (!this.reader.Eof()) {
-            var parts = this.reader.GetAsciiLine().split(' ');
-            if (parts.length == 3 || parts[0].toLowerCase() != 'format') {
-                var formatstr = parts[1].toLowerCase();
-                if (formatstr === 'binary_big_endian') {
-                    format = PLYFormat.Binary;
-                    this.reader.endianness = Endianness.BigEndian;
-                }
-                else if (formatstr === 'binary_little_endian') {
-                    format = PLYFormat.Binary;
-                    this.reader.endianness = Endianness.LittleEndian;
-                }
-                else if (formatstr === 'ascii') {
-                    format = PLYFormat.Ascii;
+        try {
+            //Firt line shoul be 'PLY'
+            if (this.reader.Eof() || this.reader.GetAsciiLine().toLowerCase() != 'ply') {
+                Error('this is not a valid PLY file (line 1)');
+            }
+            //Second line indicates the PLY format
+            var format = void 0;
+            if (!this.reader.Eof()) {
+                var parts = this.reader.GetAsciiLine().split(' ');
+                if (parts.length == 3 || parts[0].toLowerCase() != 'format') {
+                    var formatstr = parts[1].toLowerCase();
+                    if (formatstr === 'binary_big_endian') {
+                        format = PLYFormat.Binary;
+                        this.reader.endianness = Endianness.BigEndian;
+                    }
+                    else if (formatstr === 'binary_little_endian') {
+                        format = PLYFormat.Binary;
+                        this.reader.endianness = Endianness.LittleEndian;
+                    }
+                    else if (formatstr === 'ascii') {
+                        format = PLYFormat.Ascii;
+                    }
+                    else {
+                        Error('unsuported PLY format "' + formatstr + '" (line 2)');
+                    }
                 }
                 else {
-                    Error('unsuported PLY format "' + formatstr + '" (line 2)');
+                    Error('invalid ply format specification (line 2)');
                 }
             }
             else {
-                Error('invalid ply format specification (line 2)');
+                Error('this is not a valid PLY file (line 2)');
             }
-        }
-        else {
-            Error('this is not a valid PLY file (line 2)');
-        }
-        //Then should be the header
-        var inHeader = true;
-        do {
-            if (this.reader.Eof()) {
-                Error('unexpected end of file while parsing header');
-            }
-            var currentLine = this.reader.GetAsciiLine().split(' ');
-            switch (currentLine[0].toLowerCase()) {
-                case 'element':
-                    if (currentLine.length == 3) {
-                        this.elements.PushElement(currentLine[1].toLowerCase(), //name
-                        parseInt(currentLine[2]) //count
-                        );
-                    }
-                    else {
-                        Error("element definition format error");
-                    }
-                    break;
-                case 'property':
-                    try {
-                        var currentElement = this.elements.GetCurrent();
-                        if (currentLine) {
-                            if (currentLine.length > 2) {
-                                currentElement.PushDefinitionProperty(currentLine[currentLine.length - 1].toLowerCase(), //name
-                                currentLine[1].toLowerCase(), //type
-                                (currentLine.length > 3) ? currentLine.slice(2, -1) : null);
-                            }
-                            else {
-                                Error("property definition format error");
-                            }
+            //Then should be the header
+            var inHeader = true;
+            do {
+                if (this.reader.Eof()) {
+                    Error('unexpected end of file while parsing header');
+                }
+                var currentLine = this.reader.GetAsciiLine().split(' ');
+                switch (currentLine[0].toLowerCase()) {
+                    case 'element':
+                        if (currentLine.length == 3) {
+                            this.elements.PushElement(currentLine[1].toLowerCase(), //name
+                            parseInt(currentLine[2]) //count
+                            );
                         }
                         else {
-                            Error('unexpected property, while no element has been introduced');
+                            Error("element definition format error");
                         }
-                    }
-                    catch (exception) {
-                        Error(exception);
-                    }
-                    break;
-                case 'comment':
-                case 'obj_info':
-                    //ignore
-                    break;
-                case 'end_header':
-                    inHeader = false;
-                    break;
-                default:
-                    Error('unexpected header line');
+                        break;
+                    case 'property':
+                        try {
+                            var currentElement = this.elements.GetCurrent();
+                            if (currentLine) {
+                                if (currentLine.length > 2) {
+                                    currentElement.PushDefinitionProperty(currentLine[currentLine.length - 1].toLowerCase(), //name
+                                    currentLine[1].toLowerCase(), //type
+                                    (currentLine.length > 3) ? currentLine.slice(2, -1) : null);
+                                }
+                                else {
+                                    Error("property definition format error");
+                                }
+                            }
+                            else {
+                                Error('unexpected property, while no element has been introduced');
+                            }
+                        }
+                        catch (exception) {
+                            Error(exception);
+                        }
+                        break;
+                    case 'comment':
+                    case 'obj_info':
+                        //ignore
+                        break;
+                    case 'end_header':
+                        inHeader = false;
+                        break;
+                    default:
+                        Error('unexpected header line');
+                }
+            } while (inHeader);
+            if (this.elements.NbElements() == 0) {
+                Error('no element definition has been found in file header');
             }
-        } while (inHeader);
-        if (this.elements.NbElements() == 0) {
-            Error('no element definition has been found in file header');
+            //Read PLY body content
+            this.elements.ResetCurrent();
+            var loader = new ItemsLoader(this.reader, this.elements, format);
+            loader
+                .SetNext(new CloudBuilder(this.elements))
+                .SetNext(new MeshBuilder(this.elements))
+                .SetNext(new Finalizer())
+                .SetNext(function (f) { return onloaded(f.result); });
+            loader.Start();
         }
-        //Read PLY body content
-        this.elements.ResetCurrent();
-        var loader = new ItemsLoader(this.reader, this.elements, format);
-        loader
-            .SetNext(new CloudBuilder(this.elements))
-            .SetNext(new MeshBuilder(this.elements))
-            .SetNext(new Finalizer(this))
-            .SetNext(function (f) { return onloaded(f.result); });
-        loader.Start();
+        catch (error) {
+            onerror(error);
+        }
     };
     return PlyLoader;
 }(FileLoader));
@@ -5862,10 +6823,8 @@ var MeshBuilder = /** @class */ (function (_super) {
 //////////////////////////////////////////
 var Finalizer = /** @class */ (function (_super) {
     __extends(Finalizer, _super);
-    function Finalizer(loader) {
-        var _this = _super.call(this) || this;
-        _this.loader = loader;
-        return _this;
+    function Finalizer() {
+        return _super.call(this) || this;
     }
     Finalizer.prototype.Initialize = function (caller) {
         if (caller.result instanceof Mesh) {
@@ -5876,7 +6835,6 @@ var Finalizer = /** @class */ (function (_super) {
         }
     };
     Finalizer.prototype.Run = function (ondone) {
-        this.loader.result = this.result;
         if (this.result instanceof PCLMesh) {
             var mesh = this.result.mesh;
             mesh.ComputeNormals(function (m) {
@@ -6082,6 +7040,7 @@ var Camera = /** @class */ (function () {
 /// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var LightsContainer = /** @class */ (function (_super) {
     __extends(LightsContainer, _super);
     function LightsContainer(name) {
@@ -6093,8 +7052,25 @@ var LightsContainer = /** @class */ (function (_super) {
         result.push(new NewLightAction(this));
         return result;
     };
+    LightsContainer.prototype.GetSerializationID = function () {
+        return LightsContainer.SerializationID;
+    };
+    LightsContainer.prototype.GetParsingHandler = function () {
+        return new LightsContainerParsingHandler();
+    };
+    LightsContainer.SerializationID = 'LIGHTSSET';
     return LightsContainer;
 }(PCLGroup));
+var LightsContainerParsingHandler = /** @class */ (function (_super) {
+    __extends(LightsContainerParsingHandler, _super);
+    function LightsContainerParsingHandler() {
+        return _super.call(this) || this;
+    }
+    LightsContainerParsingHandler.prototype.GetObject = function () {
+        return new LightsContainer(this.name);
+    };
+    return LightsContainerParsingHandler;
+}(PCLGroupParsingHandler));
 var NewLightAction = /** @class */ (function (_super) {
     __extends(NewLightAction, _super);
     function NewLightAction(container) {
@@ -6124,6 +7100,7 @@ var NewLightAction = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/vectorproperty.ts" />
 /// <reference path="../controls/properties/colorproperty.ts" />
 /// <reference path="../../controler/controler.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 var Light = /** @class */ (function (_super) {
     __extends(Light, _super);
     function Light(position) {
@@ -6166,8 +7143,59 @@ var Light = /** @class */ (function (_super) {
     Light.prototype.SetPositon = function (p) {
         this.position = p;
     };
+    Light.prototype.GetSerializationID = function () {
+        return Light.SerializationID;
+    };
+    Light.prototype.SerializeNode = function (serializer) {
+        var self = this;
+        serializer.PushParameter('position', function (s) {
+            s.PushFloat32(self.position.Get(0));
+            s.PushFloat32(self.position.Get(1));
+            s.PushFloat32(self.position.Get(2));
+        });
+        serializer.PushParameter('color', function (s) {
+            s.PushFloat32(self.color[0]);
+            s.PushFloat32(self.color[1]);
+            s.PushFloat32(self.color[2]);
+        });
+    };
+    Light.prototype.GetParsingHandler = function () {
+        return new LightParsingHandler();
+    };
+    Light.SerializationID = 'LIGHT';
     return Light;
 }(PCLNode));
+var LightParsingHandler = /** @class */ (function (_super) {
+    __extends(LightParsingHandler, _super);
+    function LightParsingHandler() {
+        return _super.call(this) || this;
+    }
+    LightParsingHandler.prototype.ProcessNodeParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'position':
+                this.position = new Vector([
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ]);
+                return true;
+            case 'color':
+                this.color = [
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ];
+                return true;
+        }
+        return false;
+    };
+    LightParsingHandler.prototype.FinalizeNode = function () {
+        var light = new Light(this.position);
+        light.color = this.color;
+        return light;
+    };
+    return LightParsingHandler;
+}(PCLNodeParsingHandler));
 /// <reference path="pclnode.ts" />
 /// <reference path="pclgroup.ts" />
 /// <reference path="light.ts" />
@@ -6176,19 +7204,22 @@ var Light = /** @class */ (function (_super) {
 /// <reference path="../../model/boundingbox.ts" />
 var Scene = /** @class */ (function (_super) {
     __extends(Scene, _super);
-    function Scene() {
+    function Scene(initialize) {
+        if (initialize === void 0) { initialize = true; }
         var _this = _super.call(this, "Scene") || this;
         _this.deletable = false;
-        _this.children = [null, null];
-        _this.Contents = new PCLGroup("Objects");
-        _this.Contents.deletable = false;
-        _this.Lights = new LightsContainer("Lights");
-        _this.Lights.deletable = false;
-        _this.Lights.visible = false;
-        _this.Lights.folded = true;
-        var defaultLight = new Light(new Vector([10.0, 10.0, 10.0]));
-        _this.Lights.Add(defaultLight);
-        defaultLight.deletable = false;
+        if (initialize) {
+            _this.children = [null, null];
+            _this.Contents = new PCLGroup("Objects");
+            _this.Contents.deletable = false;
+            _this.Lights = new LightsContainer("Lights");
+            _this.Lights.deletable = false;
+            _this.Lights.visible = false;
+            _this.Lights.folded = true;
+            var defaultLight = new Light(new Vector([10.0, 10.0, 10.0]));
+            _this.Lights.Add(defaultLight);
+            defaultLight.deletable = false;
+        }
         return _this;
     }
     Object.defineProperty(Scene.prototype, "Contents", {
@@ -6236,8 +7267,25 @@ var Scene = /** @class */ (function (_super) {
     Scene.prototype.GetDisplayIcon = function () {
         return 'fa-desktop';
     };
+    Scene.prototype.GetSerializationID = function () {
+        return Scene.SerializationID;
+    };
+    Scene.prototype.GetParsingHandler = function () {
+        return new SceneParsingHandler();
+    };
+    Scene.SerializationID = 'SCENE';
     return Scene;
 }(PCLGroup));
+var SceneParsingHandler = /** @class */ (function (_super) {
+    __extends(SceneParsingHandler, _super);
+    function SceneParsingHandler() {
+        return _super.call(this) || this;
+    }
+    SceneParsingHandler.prototype.GetObject = function () {
+        return new Scene(false);
+    };
+    return SceneParsingHandler;
+}(PCLGroupParsingHandler));
 /// <reference path="../controls/control.ts" />
 /// <reference path="drawingcontext.ts" />
 /// <reference path="camera.ts" />
@@ -6957,6 +8005,7 @@ var DataItem = /** @class */ (function () {
     }
     // Hierarchy management
     DataItem.prototype.AddSon = function (item, index) {
+        if (index === void 0) { index = null; }
         var son = new DataItem(item, this.dataHandler);
         if (index === null) {
             this.sons.push(son);
@@ -7137,6 +8186,14 @@ var DataHandler = /** @class */ (function (_super) {
         _this.AddControl(_this.propertiesArea);
         return _this;
     }
+    DataHandler.prototype.ReplaceScene = function (scene) {
+        this.scene = scene;
+        this.propertiesArea.Clear();
+        this.currentItem = null;
+        this.dataArea.Clear();
+        this.dataArea.AddControl(new DataItem(scene, this));
+        this.AskRendering();
+    };
     DataHandler.prototype.Resize = function (width, height) {
         var pannel = this.GetElement();
         pannel.style.height = (height - 2 * pannel.offsetTop) + 'px';
@@ -7301,12 +8358,29 @@ var ProgressBar = /** @class */ (function () {
 /// <reference path="../../controler/actions/action.ts" />
 /// <reference path="../../files/csvloader.ts" />
 /// <reference path="../../files/plyloader.ts" />
-var FileOpener = /** @class */ (function () {
+/// <reference path="../../files/pclloader.ts" />
+var FileOpener = /** @class */ (function (_super) {
+    __extends(FileOpener, _super);
     function FileOpener(label, filehandler, hintMessage) {
-        this.label = label;
-        this.filehandler = filehandler;
-        this.hintMessage = hintMessage;
+        var _this = _super.call(this, label, function () { return _this.UploadFile(); }, hintMessage) || this;
+        _this.label = label;
+        _this.filehandler = filehandler;
+        _this.hintMessage = hintMessage;
+        var self = _this;
+        _this.input = document.createElement('input');
+        _this.input.type = 'File';
+        _this.input.className = 'FileOpener';
+        _this.input.multiple = false;
+        _this.input.onchange = function () {
+            self.LoadFile(self.input.files[0]);
+        };
+        return _this;
     }
+    FileOpener.prototype.UploadFile = function () {
+        this.input.value = null;
+        this.input.accept = '.ply,.csv,.pcld';
+        this.input.click();
+    };
     FileOpener.prototype.LoadFile = function (file) {
         if (file) {
             var self_10 = this;
@@ -7334,60 +8408,31 @@ var FileOpener = /** @class */ (function () {
         }
     };
     FileOpener.prototype.LoadFromContent = function (fileName, fileContent) {
-        var extension = fileName.split('.').pop();
-        var loader = null;
-        switch (extension) {
-            case 'ply':
-                if (fileContent) {
+        if (fileContent) {
+            var extension = fileName.split('.').pop().toLocaleLowerCase();
+            var loader = null;
+            switch (extension) {
+                case 'ply':
                     loader = new PlyLoader(fileContent);
-                }
-                break;
-            case 'csv':
-                if (fileContent) {
+                    break;
+                case 'csv':
                     loader = new CsvLoader(fileContent);
-                }
-                break;
-            default:
-                alert('The file extension \"' + extension + '\" is not handled.');
-                break;
+                    break;
+                case 'pcld':
+                    loader = new PCLLoader(fileContent);
+                    break;
+                default:
+                    alert('The file extension \"' + extension + '\" is not handled.');
+                    break;
+            }
+            if (loader) {
+                var self_11 = this;
+                loader.Load(function (result) { self_11.filehandler(result); }, function (error) { alert(error); });
+            }
         }
-        if (loader) {
-            var self_11 = this;
-            loader.Load(function () {
-                self_11.filehandler(loader.result);
-            });
-        }
-    };
-    FileOpener.prototype.GetElement = function () {
-        if (!this.combo) {
-            var self = this;
-            this.input = document.createElement('input');
-            this.input.type = 'File';
-            this.input.className = 'FileOpener';
-            this.input.multiple = false;
-            this.input.onchange = function () {
-                self.LoadFile(self.input.files[0]);
-            };
-            this.combo = new ComboBox(this.label, [
-                new SimpleAction('PLY Mesh', function () {
-                    self.input.value = null;
-                    self.input.accept = '.ply';
-                    self.input.click();
-                }, 'Load a mesh object from a PLY file. Find more about the ply file format on http://paulbourke.net/dataformats/ply/'),
-                new SimpleAction('CSV Point cloud', function () {
-                    self.input.value = null;
-                    self.input.accept = '.csv';
-                    self.input.click();
-                }, 'Load a point cloud from a CSV file (a semi-colon-separated line for each point). The CSV header is mandatory : "x", "y" and "z" specify the points coordinates, while "nx", "ny" and "nz" specify the normals coordinates.')
-            ], this.hintMessage);
-            var button = this.combo.GetElement();
-            button.appendChild(this.input);
-            return button;
-        }
-        return this.combo.GetElement();
     };
     return FileOpener;
-}());
+}(Button));
 /// <reference path="control.ts" />
 var SelectDrop = /** @class */ (function () {
     function SelectDrop(label, options, selected, hintMessage) {
@@ -7444,23 +8489,30 @@ var Menu = /** @class */ (function (_super) {
         _this.toolbar = new Toolbar();
         _this.container.AddControl(_this.toolbar);
         var dataHandler = ownerView.dataHandler;
-        var scene = dataHandler.scene;
-        _this.toolbar.AddControl(new FileOpener('[Icon:file-o] Open', function (createdObject) {
+        _this.toolbar.AddControl(new FileOpener('[Icon:file-o]', function (createdObject) {
             if (createdObject != null) {
-                var owner = dataHandler.GetNewItemOwner();
-                owner.Add(createdObject);
-                createdObject.NotifyChange(createdObject, ChangeType.Creation);
+                if (createdObject instanceof Scene) {
+                    dataHandler.ReplaceScene(createdObject);
+                }
+                else {
+                    var owner = dataHandler.GetNewItemOwner();
+                    owner.Add(createdObject);
+                    createdObject.NotifyChange(createdObject, ChangeType.Creation);
+                }
             }
         }, 'Load data from a file'));
-        _this.toolbar.AddControl(new Button('[Icon:video-camera] Center', function () {
+        _this.toolbar.AddControl(new Button('[Icon:save]', function () {
+            ownerView.SaveCurrentScene();
+        }, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
+        _this.toolbar.AddControl(new Button('[Icon:search]', function () {
             ownerView.FocusOnCurrentItem();
-        }, 'Foxus current viewpoint on the selected item'));
+        }, 'Focus current viewpoint on the selected item'));
         _this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
             new CameraModeAction(ownerView),
             new TransformModeAction(ownerView),
             new LightModeAction(ownerView)
         ], 0, 'Change the current working mode (changes the mouse input '));
-        _this.toolbar.AddControl(new Button('[Icon:question-circle] Help', function () {
+        _this.toolbar.AddControl(new Button('[Icon:question-circle]', function () {
             window.open('help.html', '_blank');
         }));
         return _this;
@@ -7597,14 +8649,37 @@ var CoordinatesSystem = /** @class */ (function () {
 /// <reference path="../controler/actions/delegate.ts" />
 /// <reference path="../controler/mousecontroler.ts" />
 /// <reference path="../controler/cameracontroler.ts" />
+/// <reference path="../files/pclserializer.ts" />
+/// <reference path="../files/pclloader.ts" />
 //===========================================
 // Entry point for the point cloud application
 // Invoke PCLApp.Run() to start the whole thing
 //===========================================
 var PCLApp = /** @class */ (function () {
     function PCLApp() {
+        var scenebuffer = window.localStorage.getItem(PCLApp.sceneStorageKey);
+        if (scenebuffer) {
+            console.info('Loading locally stored data');
+            var loader = new PCLLoader(scenebuffer);
+            var self_12 = this;
+            loader.Load(function (scene) { return self_12.Initialize(scene); }, function (error) {
+                console.error('Failed to initialize scene from storage : ' + error);
+                console.warn('Start from an empty scene, instead');
+                self_12.Initialize(new Scene());
+            });
+        }
+        else {
+            console.info('Initializing a brand new scene');
+            this.Initialize(new Scene());
+        }
+    }
+    PCLApp.Run = function () {
+        if (!PCLApp.instance) {
+            PCLApp.instance = new PCLApp();
+        }
+    };
+    PCLApp.prototype.Initialize = function (scene) {
         var self = this;
-        var scene = new Scene();
         this.InitializeLongProcess();
         this.InitializeDataHandler(scene);
         this.InitializeRenderers(scene);
@@ -7614,11 +8689,6 @@ var PCLApp = /** @class */ (function () {
             self.Resize();
         };
         this.RefreshRendering();
-    }
-    PCLApp.Run = function () {
-        if (!PCLApp.instance) {
-            PCLApp.instance = new PCLApp();
-        }
     };
     PCLApp.prototype.InitializeLongProcess = function () {
         LongProcess.progresFactory = function () { return new ProgressBar(); };
@@ -7671,6 +8741,16 @@ var PCLApp = /** @class */ (function () {
         if (this.coordinatesSystem) {
             this.coordinatesSystem.Refresh();
         }
+    };
+    PCLApp.prototype.SaveCurrentScene = function () {
+        //Dry run (to get the buffer size)
+        var serializer = new PCLSerializer(null);
+        this.dataHandler.scene.Serialize(serializer);
+        //Actual serialization
+        serializer = new PCLSerializer(serializer.GetBufferSize());
+        this.dataHandler.scene.Serialize(serializer);
+        window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
+        console.info('Scene data have been sucessfully saved to local storage.');
     };
     //=========================================
     // Implement Controlable interface
@@ -7769,6 +8849,7 @@ var PCLApp = /** @class */ (function () {
     PCLApp.prototype.NotifyChange = function (source) {
         this.RenderScene();
     };
+    PCLApp.sceneStorageKey = 'PointCloudLab-Scene';
     return PCLApp;
 }());
 var IterativeRootFinder = /** @class */ (function () {
