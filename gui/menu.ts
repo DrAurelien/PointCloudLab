@@ -34,14 +34,8 @@ class Menu extends HideablePannel {
 		}, 'Load data from a file'));
 
 		this.toolbar.AddControl(new Button('[Icon:save]', () => {
-			//Dry run (to get the buffer size)
-			let serializer = new PCLSerializer(null);
-			dataHandler.scene.Serialize(serializer);
-			//Actual serialization
-			serializer = new PCLSerializer(serializer.GetBufferSize());
-			dataHandler.scene.Serialize(serializer);
-			FileExporter.ExportFile('Scene.pcld', serializer.GetBuffer(), 'model');
-		}, 'Save the scene data to a file'));
+			ownerView.SaveCurrentScene();
+		}, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
 
 		this.toolbar.AddControl(new Button('[Icon:search]', () => {
 			ownerView.FocusOnCurrentItem();

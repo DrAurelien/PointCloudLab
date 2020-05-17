@@ -109,6 +109,17 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		else {
 			result.push(new SimpleAction('Show', () => { self.visible = true; self.NotifyChange(self, ChangeType.Display | ChangeType.Properties); }));
 		}
+
+		result.push(null);
+		result.push(new SimpleAction('Save to file', () => {
+			//Dry run (to get the buffer size)
+			let serializer = new PCLSerializer(null);
+			self.Serialize(serializer);
+			//Actual serialization
+			serializer = new PCLSerializer(serializer.GetBufferSize());
+			self.Serialize(serializer);
+			FileExporter.ExportFile(self.name + '.pcld', serializer.GetBuffer(), 'model');
+		}))
 		return result;
 	}
 

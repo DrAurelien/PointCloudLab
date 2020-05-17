@@ -56,7 +56,7 @@ class PCLPlane extends PCLShape {
 
 class PCLPlaneParsingHandler extends PCLPrimitiveParsingHandler {
 	center: Vector;
-	axis: Vector;
+	normal: Vector;
 	radius: number
 
 	constructor() {
@@ -72,8 +72,8 @@ class PCLPlaneParsingHandler extends PCLPrimitiveParsingHandler {
 					parser.reader.GetNextFloat32()
 				]);
 				return true;
-			case 'axis':
-				this.axis = new Vector([
+			case 'normal':
+				this.normal = new Vector([
 					parser.reader.GetNextFloat32(),
 					parser.reader.GetNextFloat32(),
 					parser.reader.GetNextFloat32()
@@ -87,7 +87,7 @@ class PCLPlaneParsingHandler extends PCLPrimitiveParsingHandler {
 	}
 
 	FinalizePrimitive(): PCLPrimitive {
-		let plane = new Plane(this.center, this.axis, this.radius);
+		let plane = new Plane(this.center, this.normal, this.radius);
 		return new PCLPlane(plane);
 	}
 }

@@ -17,7 +17,7 @@
 class PCLLoader extends FileLoader implements PCLObjectParsingFactory {
 	parser: PCLParser;
 
-	constructor(content: ArrayBuffer) {
+	constructor(content: ArrayBuffer | string) {
 		super();
 		this.parser = new PCLParser(content, this);
 	}

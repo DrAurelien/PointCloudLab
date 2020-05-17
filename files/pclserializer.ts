@@ -62,6 +62,15 @@ class PCLSerializer {
 		return this.writer.buffer;
 	}
 
+	GetBufferAsString(): string {
+		let stream = this.writer.stream;
+		let result = '';
+		for (let index = 0; index < stream.byteLength; index++) {
+			result += String.fromCharCode(stream.getUint8(index));
+		}
+		return result;
+	}
+
 	GetBufferSize(): number {
 		return this.writer.cursor;
 	}
@@ -97,8 +106,19 @@ class PCLParser {
 
 	static tokenmap: Object = null;
 
-	constructor(buffer: ArrayBuffer, private factory: PCLObjectParsingFactory) {
-		this.reader = new BinaryReader(buffer);
+	constructor(buffer: ArrayBuffer | string, private factory: PCLObjectParsingFactory) {
+		if (buffer instanceof ArrayBuffer) {
+			this.reader = new BinaryReader(buffer as ArrayBuffer);
+		}
+		else {
+			let strbuffer = buffer as string;
+			let arraybuffer = new ArrayBuffer(strbuffer.length);
+			let stream = new DataView(arraybuffer);
+			for (let index = 0; index < strbuffer.length; index++) {
+				stream.setUint8(index, strbuffer.charCodeAt(index));
+			}
+			this.reader = new BinaryReader(arraybuffer);
+		}
 		this.line ='';
 	}
 
