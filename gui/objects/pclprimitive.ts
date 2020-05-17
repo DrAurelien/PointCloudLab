@@ -5,10 +5,11 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../../tools/transform.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 abstract class PCLPrimitive extends PCLNode implements Transformable {
-	private material: Material;
+	public material: Material;
 	public lighting: boolean;
 	private transform: Transform;
 
@@ -66,9 +67,11 @@ abstract class PCLPrimitive extends PCLNode implements Transformable {
 	}
 
 	ApplyTransform() {
-		this.TransformPrivitive(this.transform);
-		this.transform = null;
-		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		if (this.transform) {
+			this.TransformPrivitive(this.transform);
+			this.transform = null;
+			this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		}
 	}
 
 	abstract TransformPrivitive(transform: Transform);
@@ -90,4 +93,41 @@ abstract class PCLPrimitive extends PCLNode implements Transformable {
 	GetDisplayIcon(): string {
 		return 'fa-cube';
 	}
+
+	SerializeNode(serializer: PCLSerializer) {
+		let self = this;
+		this.ApplyTransform();
+		serializer.PushParameter('material', () => self.material.Serialize(serializer));
+		this.SerializePrimitive(serializer);
+	}
+	abstract SerializePrimitive(serializer: PCLSerializer);
+}
+
+
+abstract class PCLPrimitiveParsingHandler extends PCLNodeParsingHandler {
+	material: Material;
+
+	constructor() {
+		super();
+	}
+
+	ProcessNodeParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'material':
+				this.material = parser.ProcessNextObject() as Material;
+				return true;
+		}
+		return this.ProcessPrimitiveParam(paramname, parser);
+	}
+
+	FinalizeNode(): PCLNode {
+		let primitve = this.FinalizePrimitive();
+		if (primitve) {
+			primitve.material = this.material;
+		}
+		return primitve;
+	}
+
+	abstract ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean;
+	abstract FinalizePrimitive(): PCLPrimitive;
 }

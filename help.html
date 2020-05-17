@@ -7,63 +7,95 @@
 	
 	<body>
 		<div style="margin:auto; width:800px;">
-		<p><i>Beacause of my laziness (not my fault ...), this "documentation" is only available in french. I'll take some time, later on, to translate this whole thing in english. Do not hesitate to contact me if needed.<br/>My apologies to non french speakers.<br/>Aurélien</i></p>
+			<p><i>Because of my laziness (not my fault ...), this "documentation" is only available in french. I'll take some time, later on, to translate this whole thing in english. Do not hesitate to contact me if needed.<br />My apologies to non french speakers.<br />Aurélien</i></p>
 
-		<h1>Contenu de la fenêtre</h1>
-		<p>La fenêtre se divise en deux parties :
-			<ul>
-				<li>Le panneau de commandes, à gauche de l'écran. Ce panneau peut être masqué en cliquant sur la "poignée", à sa droite.</li>
-				<li>La partie de visualisation de la scène, occupant la totalité de la fenêtre (fond noire)</li>
-			</ul>
-		</p>
-		
-		<h1>Fenêtre de visualisation</h1>
-		<p>Vous avez la possibilité de déplacer la "caméra" permettant de visualiser la scène, en utilisant les commandes suivantes :
-		<ul>
-			<li>Maintenir le bouton gauche de la souris : tourner autour du centre de visualisation.</li>
-			<li>Maintenir le bouton droit de la souris : déplacer la caméra en translation latérale ou verticale.</li>
-			<li>Rouler la molette de la souris : (dé)zoomer</li>
-			<li>Cliquer gauche : sélectionner l'objet situé sour le curseur</li>
-			<li>Cliquer molette : recentrer la caméra sur les objets sélectionnés</li>
-		</ul>
-		</p>
-		
-		<h1>Fonctionnement</h1>
-		<p>Ce prototype permet de :
-			<ul>
-				<li>Créer des primitives géométriques : plan, sphère, cylindre, tore. Pour ajouter une nouvelle forme à la scène, cliquez avec le bouton droit sur un groupement (ayant pour icone un dossier) dans le panneau de commandes, et choisissez l'objet souhaité dans la liste déroulante.</li>
-				<li>Importer des maillages ou des nuages de points. Pour importer un objet, cliquez sur "Open", puis sélectionnez le menu approprié dans la liste déroulante. Iniduqez ensuite l'emplacement du fichier sur votre disque, puis validez la sélection. L'import de fichiers peut prendre du temps.</li>
-				<li>Modifier les paramètres des primitives (géométrie, couleur). Pour ce faire, cliquez sur la primitive dans la partie visualisation (ne fonctionne pas pour les nuages de points) ou dans la fenêtre de commandes. Les propriétés de l'objet sélectionné apparaissent alors dans la partie inférieure du panneau de commande. Modifiez les paramètres comme vous le souhaitez (les modifications seront appliquées dès lors que vous quittez le champ, en appuyant sur entrée par exemple)</li>
-				<li>"Scanner" virtuellement la scnène. Le "scan" permet d'échantillonner la scène sous forme de nuage de points, depuis le point de vue courant, tout comme le ferait un scanner laser. Les nuages de points et le mallages ne peuvent pas être scannés. Le scan peut prendre un certain temps (une barre de progression indique l'avancement du processus). A l'issu du scan, le nuage de points résultant est ajouté à la scène.</li>
-				<li>Effectuer quelques opérations avanncées sur les nuages de points.</li>
-			</ul>
-		</p>
-		<p>
-		<a href="SampleShapesCloud.csv">Cliqiuez ici</a> pour télécharger un exemple de nuage de points importable (fichier CSV). Cet exemple permet par ailleurs d'experimenter rapidement la détection de formes dans un nuage de points.
-		<p/>
-		
-		<h1>Opérations sur les nuages de points</h1>
-		<p>En effectuant un click droit sur un nuage de points dans le panneau de commandes, une liste déroulante donne accès à un certain nombre d'opérations avancées sur les nuages de points :
-			<ul>
-				<li>Calcul des vecteur normaux à la surface échantillonnée.</li>
-				<li>Export du nuage sous forme de fichier CSV.</li>
-				<li>Détection de formes (plans, sphères et cylindres) dans le nuage de points, via l'algorithm RANSAC. Chaque appel à cette commande permet la détection d'une nouvelle forme dans le nuage (jusqu'à ce que tous les points du nuage soient associés à une forme).</li>
-			</ul>
-		</p>
-		
-		<h1>Formats de fichiers importables</h1>
-		<p>Les maillages doivent être stockés dans des fichiers <a href="https://fr.wikipedia.org/wiki/Format_de_fichier_de_polygones">PLY</a>. Des exemples de fichiers PLY (en particulier le <a href="http://graphics.stanford.edu/pub/3Dscanrep/bunny.tar.gz">fameux bunny</a>) peuvent être téléchargés depuis le <a href="http://graphics.stanford.edu/data/3Dscanrep/">site de Standford</a>.</p>
-		<p>Les nuages de points, quant à eux, doivent être stockés dans des fichier <a href="https://fr.wikipedia.org/wiki/Comma-separated_values">CSV</a>, formattés comme suit :
-			<ul>
-				<li>Chaque ligne du fichier décrit un point du nuage, ainsi que le vecteur normal qui lui est associé si il y en a</li>
-				<li>Les éléments de chaque ligne sont séparés par des point-virgules.</li>
-				<li>La première ligne du fichier constitue l'en-tête. Son contenu décrit les libellés des colonnes. Les colonnes attendues sont les suivantes : 'x', 'y' et 'z' (obligatoires) décrivent les coordonnées des points, tandis que 'nx', 'ny' et 'nz' (facultatives) décrivent les coordonnées de vecteurs normaux à la surface.</li>
-			</ul>
-		</p>
+			<p style="color:orangered; font-weight: bold;"><u>Disclaimer</u><br/>This project is just a sample applcation to play a bit with basic geometry concepts. It is an experimental project. There is absolutely no warantee about the application stabilty, and the consequences on your web browser. You are hereby warned that the application might cause system slowness and resource overage, especially depending on the provided data size. The developper shall not be held responsible for the issues you might face due to the application usage.</p>
 
-		<h1>Un mot au sujet de l'implémentation</h1>
-		<p>Ce projet est codé en <i>Typescript</i>, transpilé en <i>Javascript</i>. Le sources sont visibles dans le mode debug de votre navigateur préféré (essayez de presser F12).</p>
-		<p>Pour mon propre plaisir et à des fins pédagogiques, j'ai pris le parti de n'utiliser aucune librairie (à l'exception de WebGL éveidemment), et de tout coder par moi même. Ce code ne prétend pas rivaliser avec les performences et la stabilité des codes existants. Néanmoins, si pour une raison quelconque, vous étiez amené à avoir besoin d'une portion du code, vous pouvez vous servir à votre guise. Ce code est à votre disposition ! J'accorde, par la même, l'autorisation d'usage et de copie de tout ou partie du code hébergé dans le dossier CADLab.</p>
+			<h1>Contenu de la fenêtre</h1>
+			<p>
+				La fenêtre se divise en plusieurs parties :
+				<ul>
+					<li>Le panneau de données, à gauche de l'écran. Ce panneau peut être masqué/réaffiché en cliquant sur la "poignée", à sa droite.</li>
+					<li>Le menu, offrant des racourcis aux fonctions principales de l'application. De la même manière, ce panneau peut être masqué/réaffiché en cliquant sur la "poignée" située dans sa partie inférieure</li>
+					<li>La partie de visualisation de la scène, occupant la totalité de la fenêtre (fond noire).</li>
+					<li>Un répère permettant de visualiser l'orientation de la scène, ou d'aligner la caméra sur un des 3 axes canoniques (X, Y, Z).</li>
+				</ul>
+			</p>
+
+			<h1>Fenêtre de visualisation</h1>
+			<p>L'interaction avec la fénêtre principale dépendra du contrôleur actuellement sélectionné ("Caméra", "Edition", ou "Lumière")</p>
+
+			<h2>Mode "Caméra"</h2>
+			<p>
+				Vous avez la possibilité de déplacer la caméra permettant de visualiser la scène, en utilisant les commandes suivantes :
+				<ul>
+					<li>Maintenir le bouton gauche de la souris : tourner autour du centre de visualisation.</li>
+					<li>Maintenir le bouton droit de la souris : déplacer la caméra en translation latérale ou verticale (pan).</li>
+					<li>Rouler la molette de la souris : (dé)zoomer</li>
+					<li>Cliquer gauche : sélectionner l'objet situé sour le curseur</li>
+					<li>Cliquer molette : recentrer la caméra sur l'objet actuellement sélectionné</li>
+				</ul>
+			</p>
+
+			<h2>Mode "Edition"</h2>
+			<p>
+				Dans ce mode, la souris permet de contrôler les modifications que vous appliquez à l'objet actuellement sélectionné :
+				<ul>
+					<li>Maintenir le bouton gauche de la souris : tourner la sélection autour de son centre</li>
+					<li>Maintenir le bouton droit de la souris : déplacer la sélection en translation simple</li>
+					<li>Rouler la molette de la souris : appliquer un facteur d'échel à la sélection (la "grossir")</li>
+					<li>Cliquer gauche : sélectionner l'objet situé sour le curseur</li>
+					<li>Cliquer molette : recentrer la caméra sur l'objet actuellement sélectionné</li>
+				</ul>
+			</p>
+
+			<h2>Mode "Lumière"</h2>
+			<p>
+				Ce mode permet de modifier la position des lumières participant à l'éclairage de la scène, en positionnant la caméra à la place de la lumière à modifier.<br/>
+				Les contrôles de ce mode sont le même que ceux du mode "Caméra".
+			</p>
+
+			<h1>Fonctionnement</h1>
+			<p>
+				Ce prototype permet de :
+				<ul>
+					<li>Créer des primitives géométriques : plan, sphère, cylindre, tore. Pour ajouter une nouvelle forme à la scène, cliquez avec le bouton droit sur un groupement (ayant pour icone un dossier) dans le panneau de commandes, et choisissez l'objet souhaité dans la liste déroulante.</li>
+					<li>Importer des maillages ou des nuages de points. Pour importer un objet, cliquez sur l'icône de chargement dans la barre de menu, puis sélectionnez le menu approprié dans la liste déroulante. Iniduqez ensuite l'emplacement du fichier sur votre disque, puis validez la sélection. L'import de fichiers peut prendre du temps.</li>
+					<li>Modifier les paramètres des primitives (géométrie, couleur). Pour ce faire, cliquez sur la primitive dans la partie visualisation (ne fonctionne pas pour les nuages de points) ou dans la fenêtre de commandes. Les propriétés de l'objet sélectionné apparaissent alors dans la partie inférieure du panneau de commande. Modifiez les paramètres comme vous le souhaitez (les modifications seront appliquées dès lors que vous quittez le champ, en appuyant sur entrée par exemple)</li>
+					<li>"Scanner" virtuellement la scnène. Le "scan" permet d'échantillonner la scène sous forme de nuage de points, depuis le point de vue courant, tout comme le ferait un scanner laser. Les nuages de points et le mallages ne peuvent pas être scannés. Le scan peut prendre un certain temps (une barre de progression indique l'avancement du processus). A l'issu du scan, le nuage de points résultant est ajouté à la scène.</li>
+					<li>Effectuer quelques opérations avancées sur les nuages de points (calcul de normales, estimation du bruit, décomposition en composantes connexes, détection de formes, ...).</li>
+				</ul>
+			</p>
+			<p>
+				<a href="SampleShapesCloud.csv">Cliqiuez ici</a> pour télécharger un exemple de nuage de points importable (fichier CSV). Cet exemple permet par ailleurs d'experimenter rapidement la détection de formes dans un nuage de points.
+			<p />
+
+			<h1>Opérations sur les nuages de points</h1>
+			<p>
+				En effectuant un click droit sur un nuage de points dans le panneau de commandes, une liste déroulante donne accès à un certain nombre d'opérations avancées sur les nuages de points :
+				<ul>
+					<li>Calcul des vecteur normaux à la surface échantillonnée.</li>
+					<li>Export du nuage sous forme de fichier CSV.</li>
+					<li>Détection de formes (plans, sphères et cylindres) dans le nuage de points, via l'algorithm RANSAC. Chaque appel à cette commande permet la détection d'une nouvelle forme dans le nuage (jusqu'à ce que tous les points du nuage soient associés à une forme).</li>
+				</ul>
+			</p>
+
+			<h1>Formats de fichiers importables</h1>
+			<p>Les maillages doivent être stockés dans des fichiers <a href="https://fr.wikipedia.org/wiki/Format_de_fichier_de_polygones">PLY</a>. Des exemples de fichiers PLY (en particulier le <a href="http://graphics.stanford.edu/pub/3Dscanrep/bunny.tar.gz">fameux bunny</a>) peuvent être téléchargés depuis le <a href="http://graphics.stanford.edu/data/3Dscanrep/">site de Standford</a>.</p>
+			<p>
+				Les nuages de points, quant à eux, doivent être stockés dans des fichier <a href="https://fr.wikipedia.org/wiki/Comma-separated_values">CSV</a>, formattés comme suit :
+				<ul>
+					<li>Chaque ligne du fichier décrit un point du nuage, ainsi que le vecteur normal qui lui est associé si il y en a</li>
+					<li>Les éléments de chaque ligne sont séparés par des point-virgules.</li>
+					<li>La première ligne du fichier constitue l'en-tête. Son contenu décrit les libellés des colonnes. Les colonnes attendues sont les suivantes : 'x', 'y' et 'z' (obligatoires) décrivent les coordonnées des points, tandis que 'nx', 'ny' et 'nz' (facultatives) décrivent les coordonnées de vecteurs normaux à la surface.</li>
+				</ul>
+			</p>
+			<p>Par ailleurs, l'application utilise un format de fichier interne ("pcld") permettant d'exporter les données partiellement ou entièrement, pour un import ultérieur
+			</p>
+
+			<h1>Un mot au sujet de l'implémentation</h1>
+			<p>Ce projet est codé en <i>Typescript</i>, transpilé en <i>Javascript</i>. Le sources sont visibles dans le mode debug de votre navigateur préféré (essayez de presser F12).</p>
+			<p>Pour mon propre plaisir et à des fins pédagogiques, j'ai pris le parti de n'utiliser aucune librairie (à l'exception de WebGL éveidemment), et de tout coder par moi même. Ce code ne prétend pas rivaliser avec les performences et la stabilité des codes existants. Néanmoins, si pour une raison quelconque, vous étiez amené à avoir besoin d'une portion du code, vous pouvez vous servir à votre guise. Ce code est à votre disposition ! J'accorde, par la même, l'autorisation d'usage et de copie de tout ou partie du code de cette application.</p>
 
 		</div>
 	</body>

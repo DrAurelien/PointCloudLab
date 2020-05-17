@@ -27,6 +27,15 @@ class DataHandler extends HideablePannel {
 		this.AddControl(this.propertiesArea);
 	}
 
+	ReplaceScene(scene: Scene) {
+		this.scene = scene;
+		this.propertiesArea.Clear();
+		this.currentItem = null;
+		this.dataArea.Clear();
+		this.dataArea.AddControl(new DataItem(scene, this));
+		this.AskRendering();
+	}
+
 	Resize(width: number, height: number): void {
 		let pannel = this.GetElement();
 		pannel.style.height = (height - 2 * pannel.offsetTop) + 'px';

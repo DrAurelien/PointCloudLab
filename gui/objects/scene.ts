@@ -7,23 +7,25 @@
 
 
 class Scene extends PCLGroup {
-	constructor() {
+	constructor(initialize:boolean = true) {
 		super("Scene");
 		this.deletable = false;
 
-		this.children = [null, null];
+		if (initialize) {
+			this.children = [null, null];
 
-		this.Contents = new PCLGroup("Objects");
-		this.Contents.deletable = false;
+			this.Contents = new PCLGroup("Objects");
+			this.Contents.deletable = false;
 
-		this.Lights = new LightsContainer("Lights");
-		this.Lights.deletable = false;
-		this.Lights.visible = false;
-		this.Lights.folded = true;
+			this.Lights = new LightsContainer("Lights");
+			this.Lights.deletable = false;
+			this.Lights.visible = false;
+			this.Lights.folded = true;
 
-		let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]));
-		this.Lights.Add(defaultLight);
-		defaultLight.deletable = false;
+			let defaultLight = new Light(new Vector([10.0, 10.0, 10.0]));
+			this.Lights.Add(defaultLight);
+			defaultLight.deletable = false;
+		}
 	}
 
 	get Contents(): PCLGroup {
@@ -66,5 +68,24 @@ class Scene extends PCLGroup {
 
 	GetDisplayIcon(): string {
 		return 'fa-desktop';
+	}
+
+	static SerializationID = 'SCENE';
+	GetSerializationID(): string {
+		return Scene.SerializationID;
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new SceneParsingHandler();
+	}
+}
+
+class SceneParsingHandler extends PCLGroupParsingHandler {
+	constructor() {
+		super();
+	}
+
+	GetObject() {
+		return new Scene(false);
 	}
 }

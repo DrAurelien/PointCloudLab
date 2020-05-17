@@ -82,7 +82,7 @@ class DataItem implements Control {
 	}
 
 	// Hierarchy management
-	AddSon(item: PCLNode, index?: number) {
+	AddSon(item: PCLNode, index: number=null) {
 		let son = new DataItem(item, this.dataHandler);
 		if (index === null) {
 			this.sons.push(son);

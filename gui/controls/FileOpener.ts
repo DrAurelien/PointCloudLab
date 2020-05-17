@@ -4,13 +4,29 @@
 /// <reference path="../../controler/actions/action.ts" />
 /// <reference path="../../files/csvloader.ts" />
 /// <reference path="../../files/plyloader.ts" />
+/// <reference path="../../files/pclloader.ts" />
 
 
-class FileOpener implements Control {
-	combo: ComboBox;
+class FileOpener extends Button {
 	input: HTMLInputElement;
 
 	constructor(public label: string, public filehandler: Function, private hintMessage?: string) {
+		super(label, () => this.UploadFile(), hintMessage);
+
+		let self = this;
+		this.input = document.createElement('input');
+		this.input.type = 'File';
+		this.input.className = 'FileOpener';
+		this.input.multiple = false;
+		this.input.onchange = function () {
+			self.LoadFile(self.input.files[0]);
+		}
+	}
+
+	private UploadFile() {
+		this.input.value = null;
+		this.input.accept = '.ply,.csv,.pcld';
+		this.input.click();
 	}
 
 	LoadFile(file: File) {
@@ -29,7 +45,7 @@ class FileOpener implements Control {
 			reader.onabort = function (event) {
 				console.warn('File loading aborted');
 			}
-			reader.onloadstart = function(event) {
+			reader.onloadstart = function (event) {
 				console.log('Start loading file');
 			}
 			reader.onerror = function (event) {
@@ -43,60 +59,25 @@ class FileOpener implements Control {
 	}
 
 	LoadFromContent(fileName: string, fileContent: ArrayBuffer) {
-		let extension = fileName.split('.').pop();
-		let loader: FileLoader = null;
-		switch (extension) {
-			case 'ply':
-				if (fileContent) {
-					loader = new PlyLoader(fileContent);
-				}
-				break;
-			case 'csv':
-				if (fileContent) {
-					loader = new CsvLoader(fileContent);
-				}
-				break;
-			default:
-				alert('The file extension \"' + extension + '\" is not handled.');
-				break;
-		}
-
-		if (loader) {
-			let self = this;
-			loader.Load(() => {
-				self.filehandler(loader.result);
-			});
-		}
-	}
-
-	GetElement(): HTMLElement {
-		if (!this.combo) {
-			var self = this;
-			this.input = document.createElement('input');
-			this.input.type = 'File';
-			this.input.className = 'FileOpener';
-			this.input.multiple = false;
-			this.input.onchange = function () {
-				self.LoadFile(self.input.files[0]);
+		if (fileContent) {
+			let extension = fileName.split('.').pop().toLocaleLowerCase();
+			let loader: FileLoader = null;
+			switch (extension) {
+				case 'ply': loader = new PlyLoader(fileContent); break;
+				case 'csv': loader = new CsvLoader(fileContent); break;
+				case 'pcld': loader = new PCLLoader(fileContent); break;
+				default:
+					alert('The file extension \"' + extension + '\" is not handled.');
+					break;
 			}
 
-			this.combo = new ComboBox(this.label, [
-				new SimpleAction('PLY Mesh', function () {
-					self.input.value = null;
-					self.input.accept = '.ply';
-					self.input.click();
-				}, 'Load a mesh object from a PLY file. Find more about the ply file format on http://paulbourke.net/dataformats/ply/'),
-				new SimpleAction('CSV Point cloud', function () {
-					self.input.value = null;
-					self.input.accept = '.csv';
-					self.input.click();
-				}, 'Load a point cloud from a CSV file (a semi-colon-separated line for each point). The CSV header is mandatory : "x", "y" and "z" specify the points coordinates, while "nx", "ny" and "nz" specify the normals coordinates.')
-			], this.hintMessage);
-
-			let button = this.combo.GetElement();
-			button.appendChild(this.input);
-			return button;
+			if (loader) {
+				let self = this;
+				loader.Load(
+					(result: PCLNode) => { self.filehandler(result); },
+					(error: string) => { alert(error); }
+				);
+			}
 		}
-		return this.combo.GetElement();
 	}
 }

@@ -14,18 +14,17 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 class PCLGroup extends PCLNode {
 	children: PCLNode[];
 	folded: boolean;
-	supportsPrimitivesCreation: boolean;
 
-	constructor(name: string, supportPrimitives: boolean = true) {
+	constructor(name: string, public supportsPrimitivesCreation: boolean = true) {
 		super(name);
 		this.children = [];
 		this.folded = false;
-		this.supportsPrimitivesCreation = supportPrimitives;
 	}
 
 	ToggleFolding() {
@@ -205,6 +204,67 @@ class PCLGroup extends PCLNode {
 
 	GetDisplayIcon(): string {
 		return 'fa-folder' + (this.folded ? '' : '-open');
+	}
+
+	static SerializationID = 'GROUP';
+	GetSerializationID(): string {
+		return PCLGroup.SerializationID;
+	}
+
+	SerializeNode(serializer: PCLSerializer) {
+		let self = this;
+		if (!this.supportsPrimitivesCreation) {
+			serializer.PushParameter('noprimitives');
+		}
+		for (let index = 0; index < this.children.length; index++) {
+			serializer.PushParameter('child', () => {
+				self.children[index].Serialize(serializer);
+			});
+		}
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLGroupParsingHandler();
+	}
+}
+
+class PCLGroupParsingHandler extends PCLNodeParsingHandler {
+	noprimitives: boolean;
+	children: PCLNode[];
+
+	constructor() {
+		super();
+		this.children = [];
+	}
+
+	ProcessNodeParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'noprimitives':
+				this.noprimitives = true;
+				return true;
+			case 'child':
+				let child = parser.ProcessNextObject();
+				if (!(child instanceof PCLNode)) {
+					throw 'group children are expected to be valid nodes';
+				}
+				if (child) {
+					this.children.push(child as PCLNode);
+				}
+				return true;
+		}
+		return false;
+	}
+
+	GetObject() {
+		return new PCLGroup(this.name, !this.noprimitives);
+	}
+
+	FinalizeNode(): PCLNode {
+		let group = this.GetObject();
+		for (let index = 0; index < this.children.length; index++) {
+			group.Add(this.children[index]);
+		}
+		return group;
 	}
 }
 

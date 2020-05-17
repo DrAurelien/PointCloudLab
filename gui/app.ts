@@ -11,6 +11,8 @@
 /// <reference path="../controler/actions/delegate.ts" />
 /// <reference path="../controler/mousecontroler.ts" />
 /// <reference path="../controler/cameracontroler.ts" />
+/// <reference path="../files/pclserializer.ts" />
+/// <reference path="../files/pclloader.ts" />
 
 
 //===========================================
@@ -25,10 +27,36 @@ class PCLApp implements Controlable, ActionDelegate {
 	currentControler: Controler;
 	coordinatesSystem: CoordinatesSystem;
 
-	constructor() {
-		let self: PCLApp = this;
+	static sceneStorageKey = 'PointCloudLab-Scene';
 
-		let scene = new Scene();
+	constructor() {
+		let scenebuffer: string = window.localStorage.getItem(PCLApp.sceneStorageKey);
+		if (scenebuffer) {
+			console.info('Loading locally stored data');
+			let loader = new PCLLoader(scenebuffer);
+			let self = this;
+			loader.Load(
+				(scene: PCLNode) => self.Initialize(scene as Scene),
+				(error: string) => {
+					console.error('Failed to initialize scene from storage : ' + error);
+					console.warn('Start from an empty scene, instead');
+					self.Initialize(new Scene());
+				}
+			);
+		} else {
+			console.info('Initializing a brand new scene');
+			this.Initialize(new Scene());
+		}
+	}
+
+	static Run() {
+		if (!PCLApp.instance) {
+			PCLApp.instance = new PCLApp();
+		}
+	}
+
+	private Initialize(scene: Scene) {
+		let self = this;
 		this.InitializeLongProcess();
 		this.InitializeDataHandler(scene);
 		this.InitializeRenderers(scene);
@@ -39,12 +67,6 @@ class PCLApp implements Controlable, ActionDelegate {
 			self.Resize();
 		}
 		this.RefreshRendering();
-	}
-
-	static Run() {
-		if (!PCLApp.instance) {
-			PCLApp.instance = new PCLApp();
-		}
 	}
 
 	private InitializeLongProcess() {
@@ -109,6 +131,17 @@ class PCLApp implements Controlable, ActionDelegate {
 		if (this.coordinatesSystem) {
 			this.coordinatesSystem.Refresh();
 		}
+	}
+
+	SaveCurrentScene() {
+		//Dry run (to get the buffer size)
+		let serializer = new PCLSerializer(null);
+		this.dataHandler.scene.Serialize(serializer);
+		//Actual serialization
+		serializer = new PCLSerializer(serializer.GetBufferSize());
+		this.dataHandler.scene.Serialize(serializer);
+		window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
+		console.info('Scene data have been sucessfully saved to local storage.')
 	}
 
 	//=========================================

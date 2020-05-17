@@ -7,6 +7,7 @@
 /// <reference path="../opengl/buffer.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
+/// <reference path="../../files/pclserializer.ts" />
 
 
 //=================================================
@@ -59,6 +60,68 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 			this.properties.Push(points);
 			this.properties.Push(faces);
 		}
+	}
+
+	static SerializationID = 'MESH';
+	GetSerializationID(): string {
+		return PCLMesh.SerializationID;
+	}
+
+	SerializePrimitive(serializer: PCLSerializer) {
+		let cloud = this.mesh.pointcloud;
+		serializer.PushParameter('points', (s) => {
+			s.PushInt32(cloud.pointssize);
+			for (let index = 0; index < cloud.pointssize; index++) {
+				s.PushFloat32(cloud.points[index]);
+			}
+		});
+		let mesh = this.mesh;
+		serializer.PushParameter('faces', (s) => {
+			s.PushInt32(mesh.size);
+			for (let index = 0; index < mesh.size; index++) {
+				s.PushInt32(mesh.faces[index]);
+			}
+		});
+	}
+
+	GetParsingHandler(): PCLObjectParsingHandler {
+		return new PCLMeshParsingHandler();
+	}
+}
+
+class PCLMeshParsingHandler extends PCLPrimitiveParsingHandler {
+	points: Float32Array;
+	faces: Array<number>;
+
+	constructor() {
+		super();
+	}
+
+	ProcessPrimitiveParam(paramname: string, parser: PCLParser): boolean {
+		switch (paramname) {
+			case 'points':
+				let nbpoints = parser.reader.GetNextInt32();
+				this.points = new Float32Array(nbpoints);
+				for (let index = 0; index < nbpoints; index++) {
+					this.points[index] = parser.reader.GetNextFloat32();
+				}
+				return true;
+			case 'faces':
+				let nbfaces = parser.reader.GetNextInt32();
+				this.faces = new Array<number>(nbfaces);
+				for (let index = 0; index < nbfaces; index++) {
+					this.faces[index] = parser.reader.GetNextInt32();
+				}
+				return true;
+		}
+		return false;
+	}
+
+	FinalizePrimitive(): PCLPrimitive {
+		let cloud = new PointCloud(this.points);
+		let mesh = new Mesh(cloud, this.faces);
+		mesh.ComputeNormals(() => mesh.ComputeOctree());
+		return new PCLMesh(mesh);
 	}
 }
 

@@ -1,5 +1,5 @@
 ﻿class FileExporter {
-	static ExportFile(filename: string, filecontent: string, filetype: string) {
+	static ExportFile(filename: string, filecontent: string | ArrayBuffer, filetype: string) {
 		let link: HTMLAnchorElement = document.createElement('a');
 
 		link.onclick = function () {

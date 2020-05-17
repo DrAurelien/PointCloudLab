@@ -34,7 +34,6 @@ class DrawingContext {
 	constructor(public renderingArea: HTMLCanvasElement) {
 		this.rendering = new RenderingType();
 
-		console.log('Initializing gl context');
 		this.gl = <WebGLRenderingContext>(this.renderingArea.getContext("webgl", { preserveDrawingBuffer: true }) ||
 			this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
 		this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -46,7 +45,6 @@ class DrawingContext {
 			this.gl.getExtension('MOZ_OES_element_index_uint') ||
 			this.gl.getExtension('WEBKIT_OES_element_index_uint');
 
-		console.log('Inititalizing gl sharders');
 		var fragmentShader = this.GetShader("FragmentShader");
 		var vertexShader = this.GetShader("VertexShader");
 		this.shaders = this.gl.createProgram();
@@ -58,19 +56,17 @@ class DrawingContext {
 		}
 		this.gl.useProgram(this.shaders);
 
-		console.log('   Inititalizing vertex positions attribute');
 		this.vertices = this.gl.getAttribLocation(this.shaders, "VertexPosition");
 		this.gl.enableVertexAttribArray(this.vertices);
-		console.log('   Inititalizing normals attribute');
+
 		this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
 		this.EnableNormals(true);
-		console.log('   Inititalizing scalar value attribute');
+
 		this.scalarvalue = this.gl.getAttribLocation(this.shaders, "ScalarValue");
 		this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
 		this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
 		this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
 
-		console.log('   Inititalizing matrices');
 		this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
 		this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
 		this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");

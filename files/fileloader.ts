@@ -1,9 +1,14 @@
-﻿abstract class FileLoader {
-	public result: PCLNode;
+﻿interface FileLoaderResultHandler {
+	(node: PCLNode);
+}
 
+interface FileLoaderErrorHandler {
+	(error: string);
+}
+
+abstract class FileLoader {
 	constructor() {
-		this.result = null;
 	}
 
-	abstract Load(onDone: Function): void;
+	abstract Load(onDone: FileLoaderResultHandler, onError: FileLoaderErrorHandler): void;
 }
