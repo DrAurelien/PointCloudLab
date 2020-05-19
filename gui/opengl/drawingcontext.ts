@@ -28,6 +28,8 @@ class DrawingContext {
 	usescalars: WebGLUniformLocation;
 	minscalarvalue: WebGLUniformLocation;
 	maxscalarvalue: WebGLUniformLocation;
+	minscalarcolor: WebGLUniformLocation;
+	maxscalarcolor: WebGLUniformLocation;
 	//Extensions
 	useuint: boolean;
 
@@ -66,6 +68,8 @@ class DrawingContext {
 		this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
 		this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
 		this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
+		this.minscalarcolor = this.gl.getUniformLocation(this.shaders, "MinScalarColor");
+		this.maxscalarcolor = this.gl.getUniformLocation(this.shaders, "MaxScalarColor");
 
 		this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
 		this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");

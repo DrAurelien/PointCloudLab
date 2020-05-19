@@ -18,12 +18,12 @@
 		varying highp float Scalar;
 
 		void main(void) {
-		gl_PointSize = 5.0;
-		gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
-		Position = VertexPosition;
+			gl_PointSize = 5.0;
+			gl_Position = Projection * ModelView * ShapeTransform * vec4(VertexPosition, 1.0);
+			Position = VertexPosition;
 
-		Normal = vec3((ShapeTransform * vec4(NormalVector, 0.0)).xyz);
-		Scalar = ScalarValue;
+			Normal = vec3((ShapeTransform * vec4(NormalVector, 0.0)).xyz);
+			Scalar = ScalarValue;
 		}
 	</script>
 	<script id="FragmentShader" type="x-shader/x-fragment">
@@ -41,54 +41,63 @@
 		uniform lowp int UseScalars;
 		uniform highp float MinScalarValue;
 		uniform highp float MaxScalarValue;
+		uniform  highp vec3 MinScalarColor;
+		uniform  highp vec3 MaxScalarColor;
 
 		varying highp vec3 Position;
 		varying highp vec3 Normal;
 		varying highp float Scalar;
 
 		void main(void) {
-		highp float ambiant;
-		highp float diffuse;
-		highp float specular;
-		highp vec3 color = Color;
+			highp float ambiant;
+			highp float diffuse;
+			highp float specular;
+			highp vec3 color = Color;
 
-		if(UseScalars == 1 && MinScalarValue < MaxScalarValue) {
-		highp float value = (Scalar - MinScalarValue) / (MaxScalarValue-MinScalarValue);
-		color = vec3(value, 0.0, 1.0 - value);
-		}
+			if(UseScalars == 1 && MinScalarValue < MaxScalarValue)
+			{
+				highp float value = (Scalar - MinScalarValue) / (MaxScalarValue-MinScalarValue);
+				if(value >= 0.0 && value <= 1.0)
+				{
+					color = (1.0-value)*MinScalarColor + value*MaxScalarColor;
+				}
+				else {
+					color = vec3(0, 0, 0);
+				}
+			}
 
-		if(UseNormals == 0)
-		{
-		gl_FragColor = vec4(color, 1);
-		}
-		else
-		{
-		//Phong lighting
-		highp vec3 result = vec3(0.0);
-		for(int index = 0; index <= 8; index++)
-		{
-		if(index < NbLights)
-		{
-		highp vec3 LightPosition = LightPositions[index];
-		highp vec3 LightColor = LightColors[index];
+			if(UseNormals == 0)
+			{
+				gl_FragColor = vec4(color, 1);
+			}
+			else
+			{
+				//Phong lighting
+				highp vec3 result = vec3(0.0);
+				for(int index = 0; index <= 8; index++)
+				{
+					if(index < NbLights)
+					{
+						highp vec3 LightPosition = LightPositions[index];
+						highp vec3 LightColor = LightColors[index];
 
-		highp vec3 eyeVect = EyePosition - Position;
-		eyeVect /= length(eyeVect);
-		highp vec3 lightVect = LightPosition - Position;
-		lightVect /= length(lightVect);
-		highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
-		reflVec /= length(reflVec);
+						highp vec3 eyeVect = EyePosition - Position;
+						eyeVect /= length(eyeVect);
+						highp vec3 lightVect = LightPosition - Position;
+						lightVect /= length(lightVect);
+						highp vec3 reflVec = (2.0 * dot(Normal, lightVect) * Normal)-lightVect;
+						reflVec /= length(reflVec);
 
-		ambiant = AmbiantCoef;
-		diffuse = max(DiffuseCoef * dot(Normal, lightVect), 0.0);
-		specular = SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
+						ambiant = AmbiantCoef;
+						diffuse = max(DiffuseCoef * dot(Normal, lightVect), 0.0);
+						specular = SpecularCoef * pow(max(dot(eyeVect, reflVec), 0.0), GlossyPow);
 
-		result += (LightColor * ambiant) + (color * diffuse) + (LightColor * specular);
-		}
-		}
+						result += (LightColor * ambiant) + (color * diffuse) + (LightColor * specular);
+					}
+				}
 
-		gl_FragColor = vec4(result, 1);
-		}
+				gl_FragColor = vec4(result, 1);
+			}
 		}
 	</script>
 	<script type="text/javascript" src="PointCloudLab.js"></script>

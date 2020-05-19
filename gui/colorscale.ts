@@ -2,23 +2,23 @@
 /// <reference path="controls/control.ts" />
 /// <reference path="controls/histogramviewer.ts" />
 /// <reference path="controls/pannel.ts" />
-/// <reference path="../model/scalarfield.ts" />
+/// <reference path="objects/pclscalarfield.ts" />
 /// <reference path="../tools/stringutils.ts" />
 
 
 class ColorScale extends Pannel {
 	renderer: ColorScaleRenderer;
-	caption: ColorScaleCaption;
+	caption: ColorScaleBoundsContainer;
 	histo: HistogramViewer;
 
 	private static instance: ColorScale;
 	private static showHisto: boolean = true;
 
-	constructor(private field: ScalarField) {
+	constructor(private field: PCLScalarField) {
 		super('ColorScale');
 
 		this.renderer = new ColorScaleRenderer();
-		this.caption = new ColorScaleCaption();
+		this.caption = new ColorScaleBoundsContainer();
 		this.histo = new HistogramViewer(this.field, (v) => self.GetColor(v));
 		this.AddControl(this.caption);
 		this.AddControl(this.renderer);
@@ -38,7 +38,7 @@ class ColorScale extends Pannel {
 		return this.renderer.GetColor(ratio);
 	}
 
-	static Show(field: ScalarField): ColorScale {
+	static Show(field: PCLScalarField): ColorScale {
 		if (this.instance && this.instance.field !== field) {
 			this.Hide();
 		}
@@ -61,23 +61,20 @@ class ColorScale extends Pannel {
 	}
 
 	Refresh() {
-		let min = this.field.Min();
-		let max = this.field.Max();
-
-		this.renderer.Refresh(min, max);
-		this.caption.Refresh(min, max);
+		this.renderer.Refresh(this.field);
+		this.caption.Refresh(this.field);
 		this.histo.Refresh();
 	}
 }
 
-class ColorScaleCaption implements Control {
+class ColorScaleBoundsContainer implements Control {
 	container: HTMLDivElement;
 	min: Text;
 	max: Text;
 
 	constructor() {
 		this.container = document.createElement('div');
-		this.container.className = 'ColorScaleCaption';
+		this.container.className = 'ColorScaleBoundsContainer';
 
 		let minContainer = document.createElement('div');
 		minContainer.className = 'ColorScaleMin';
@@ -96,9 +93,9 @@ class ColorScaleCaption implements Control {
 		return this.container;
 	}
 
-	Refresh(min: number, max: number) {
-		this.min.data = Number(min).toFixed(2);
-		this.max.data = Number(max).toFixed(2);
+	Refresh(field: PCLScalarField) {
+		this.min.data = Number(field.GetDisplayMin()).toFixed(2);
+		this.max.data = Number(field.GetDisplayMax()).toFixed(2);
 	}
 }
 
@@ -134,12 +131,17 @@ class ColorScaleRenderer implements Control {
 		this.drawingcontext.EnableScalars(true);
 	}
 
-	Refresh(min: number, max: number) {
+	Refresh(field: PCLScalarField) {
 		this.drawingcontext.gl.viewport(0, 0, this.scaleRenderingArea.width, this.scaleRenderingArea.height);
 		this.drawingcontext.gl.clear(this.drawingcontext.gl.COLOR_BUFFER_BIT | this.drawingcontext.gl.DEPTH_BUFFER_BIT);
 
+		let min = field.GetDisplayMin();
+		let max = field.GetDisplayMax();
+
 		this.drawingcontext.gl.uniform1f(this.drawingcontext.minscalarvalue, min);
 		this.drawingcontext.gl.uniform1f(this.drawingcontext.maxscalarvalue, max);
+		this.drawingcontext.gl.uniform3fv(this.drawingcontext.minscalarcolor, field.colormin);
+		this.drawingcontext.gl.uniform3fv(this.drawingcontext.maxscalarcolor, field.colormax);
 
 		let scalars = new FloatArrayBuffer(new Float32Array([min, min, max, max]), this.drawingcontext, 1);
 		this.points.BindAttribute(this.drawingcontext.vertices);

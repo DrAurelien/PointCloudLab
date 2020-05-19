@@ -352,18 +352,19 @@ div.ColorScale {
 		cursor: pointer;
 	}
 
-	div.ColorScale .ColorScaleCaption {
+	div.ColorScale .ColorScaleBoundsContainer {
 	}
 
-		div.ColorScale .ColorScaleCaption .ColorScaleMin {
+		div.ColorScale .ColorScaleBoundsContainer .ColorScaleMin {
 			position: absolute;
 			margin-bottom: 0px;
 			bottom: 0px;
 			right: 5px;
 			height: unset;
+			cursor: pointer;
 		}
 
-		div.ColorScale .ColorScaleCaption .ColorScaleMax {
+		div.ColorScale .ColorScaleBoundsContainer .ColorScaleMax {
 			position: absolute;
 			margin-top: 0px;
 			top: 0px;
@@ -376,9 +377,11 @@ div.ColorScale {
 		cursor: pointer;
 		width: 100px;
 		height: 200px;
+		border-left: 1px solid white;
 	}
 
 		div.ColorScale .HistogramViewer.Collapsed {
 			width: 0px;
 			height: 200px;
+			border-left: unset;
 		}

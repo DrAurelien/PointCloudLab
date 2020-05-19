@@ -1,4 +1,5 @@
 ﻿/// <reference path="control.ts" />
+/// <reference path="../objects/pclscalarfield.ts" />
 /// <reference path="../../model/histogram.ts" />
 
 
@@ -8,7 +9,7 @@ class HistogramViewer implements Control {
 
 	private static CollapsedClassName = 'Collapsed';
 
-	constructor(private values: ScalarField, private color: ColorProvider = null) {
+	constructor(private scalarfield: PCLScalarField, private color: ColorProvider = null) {
 		this.canvas = document.createElement('canvas');
 		this.canvas.className = 'HistogramViewer';
 		this.nbrequestedchunks = 30;
@@ -25,7 +26,7 @@ class HistogramViewer implements Control {
 	}
 
 	Refresh() {
-		let histogram = new Histogram(this.values, this.nbrequestedchunks);
+		let histogram = new Histogram(this.scalarfield, this.nbrequestedchunks);
 		let ctx = this.canvas.getContext('2d');
 		let width = this.canvas.width;
 		let height = this.canvas.height;
