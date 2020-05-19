@@ -23,7 +23,7 @@
 		]);
 	}
 
-	static StrToRGB(str: string): number[] {
+	static StrToRGBf(str: string): number[] {
 		let red = str.substr(1, 2);
 		let green = str.substr(3, 2);
 		let blue = str.substr(5, 2);

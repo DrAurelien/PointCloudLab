@@ -8,7 +8,7 @@
 
 class ColorScale extends Pannel {
 	renderer: ColorScaleRenderer;
-	caption: ColorScaleBoundsContainer;
+	bounds: ColorScaleBoundsContainer;
 	histo: HistogramViewer;
 
 	private static instance: ColorScale;
@@ -18,9 +18,9 @@ class ColorScale extends Pannel {
 		super('ColorScale');
 
 		this.renderer = new ColorScaleRenderer();
-		this.caption = new ColorScaleBoundsContainer();
+		this.bounds = new ColorScaleBoundsContainer(this.field);
 		this.histo = new HistogramViewer(this.field, (v) => self.GetColor(v));
-		this.AddControl(this.caption);
+		this.AddControl(this.bounds);
 		this.AddControl(this.renderer);
 		this.AddControl(this.histo);
 
@@ -62,31 +62,25 @@ class ColorScale extends Pannel {
 
 	Refresh() {
 		this.renderer.Refresh(this.field);
-		this.caption.Refresh(this.field);
+		this.bounds.Refresh(this.field);
 		this.histo.Refresh();
 	}
 }
 
 class ColorScaleBoundsContainer implements Control {
 	container: HTMLDivElement;
-	min: Text;
-	max: Text;
+	min: ColorScaleBound;
+	max: ColorScaleBound;
 
-	constructor() {
+	constructor(field: PCLScalarField) {
 		this.container = document.createElement('div');
 		this.container.className = 'ColorScaleBoundsContainer';
 
-		let minContainer = document.createElement('div');
-		minContainer.className = 'ColorScaleMin';
-		this.min = document.createTextNode('');
-		minContainer.appendChild(this.min);
-		this.container.appendChild(minContainer);
+		this.min = new ColorScaleBound('Min', (c) => field.SetColorMin(c));
+		this.max = new ColorScaleBound('Max', (c) => field.SetColorMax(c));
 
-		let maxContainer = document.createElement('div');
-		maxContainer.className = 'ColorScaleMax';
-		this.max = document.createTextNode('');
-		maxContainer.appendChild(this.max);
-		this.container.appendChild(maxContainer);
+		this.container.appendChild(this.min.GetElement());
+		this.container.appendChild(this.max.GetElement());
 	}
 
 	GetElement() {
@@ -94,8 +88,58 @@ class ColorScaleBoundsContainer implements Control {
 	}
 
 	Refresh(field: PCLScalarField) {
-		this.min.data = Number(field.GetDisplayMin()).toFixed(2);
-		this.max.data = Number(field.GetDisplayMax()).toFixed(2);
+		this.min.Value = field.GetDisplayMin();
+		this.min.Color = field.colormin;
+		this.max.Value = field.GetDisplayMax();
+		this.max.Color = field.colormax;
+	}
+}
+
+interface ColorChangeHanlder {
+	(c: number[]);
+}
+
+class ColorScaleBound implements Control {
+	container: HTMLDivElement;
+	value: Text;
+	color: HTMLInputElement;
+
+	constructor(classname: string, onColorChange: ColorChangeHanlder) {
+		this.container = document.createElement('div');
+		this.container.className = 'ColorScaleBound';
+		this.container.classList.add(classname);
+		this.value = document.createTextNode('');
+		this.container.appendChild(this.value);
+
+		this.color = document.createElement('input');
+		this.color.type = 'color';
+		this.color.style.display = 'None';
+		this.container.appendChild(this.color);
+
+		let self = this;
+		this.color.onchange = () => {
+			self.UpdateColor();
+			onColorChange(StringUtils.StrToRGBf(self.color.value));
+		}
+		this.container.onclick = () => self.color.click();
+	}
+
+	GetElement() {
+		return this.container;
+	}
+
+	set Value(v: number) {
+		this.value.data = Number(v).toFixed(2);
+	}
+
+	set Color(color: number[]) {
+		let colorStr = StringUtils.RGBfToStr(color);
+		this.color.value = colorStr;
+		this.UpdateColor();
+	}
+
+	private UpdateColor() {
+		this.container.style.color = this.color.value;
 	}
 }
 
@@ -143,6 +187,8 @@ class ColorScaleRenderer implements Control {
 		this.drawingcontext.gl.uniform3fv(this.drawingcontext.minscalarcolor, field.colormin);
 		this.drawingcontext.gl.uniform3fv(this.drawingcontext.maxscalarcolor, field.colormax);
 
+		min = field.Min();
+		max = field.Max();
 		let scalars = new FloatArrayBuffer(new Float32Array([min, min, max, max]), this.drawingcontext, 1);
 		this.points.BindAttribute(this.drawingcontext.vertices);
 		scalars.BindAttribute(this.drawingcontext.scalarvalue);

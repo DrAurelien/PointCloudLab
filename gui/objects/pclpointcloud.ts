@@ -35,6 +35,12 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		}
 	}
 
+	PushScalarField(field: PCLScalarField) {
+		let self = this;
+		this.fields.push(field);
+		field.onChange = () => self.NotifyChange(this, ChangeType.Display | ChangeType.ColorScale);
+	}
+
 	AddScalarField(name: string, values: Float32Array=null): PCLScalarField {
 		let field = new PCLScalarField(name, values);
 		if (field.Size() == 0) {
@@ -43,7 +49,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		else if (field.Size() !== this.cloud.Size()) {
 			throw 'Cannot bind a scalar field whose size does not match (got: ' + field.Size() + ', expected: ' + this.cloud.Size();
 		}
-		this.fields.push(field);
+		this.PushScalarField(field);
 		this.AddScaralFieldProperty(this.fields.length - 1);
 		return field;
 	}
@@ -284,7 +290,7 @@ class PCLPointCloudParsingHandler extends PCLPrimitiveParsingHandler {
 	FinalizePrimitive(): PCLPrimitive {
 		let cloud = new PCLPointCloud(new PointCloud(this.points, this.normals));
 		for (let index = 0; index < this.fields.length; index++) {
-			cloud.fields.push(this.fields[index]);
+			cloud.PushScalarField(this.fields[index]);
 		}
 		return cloud;
 	}

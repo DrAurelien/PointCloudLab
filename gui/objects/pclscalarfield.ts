@@ -14,6 +14,7 @@ class PCLScalarField extends ScalarField implements PCLSerializable {
 	displaymax: number;
 	colormin: number[];
 	colormax: number[];
+	onChange: Function;
 
 	static DensityFieldName = 'Density';
 	static NoiseFieldName = 'Noise	';
@@ -26,17 +27,43 @@ class PCLScalarField extends ScalarField implements PCLSerializable {
 		this.displaymax = null;
 	}
 
+	NotifyChange() {
+		if (this.onChange) {
+			this.onChange();
+		}
+	}
+
 	GetDisplayMin(): number {
 		return this.displaymin === null ? this.Min() : this.displaymin;
+	}
+
+	SetDisplayMin(v: number) {
+		this.displaymin = v;
+		this.NotifyChange();
 	}
 
 	GetDisplayMax(): number {
 		return this.displaymax === null ? this.Max() : this.displaymax;
 	}
 
+	SetDisplayMax(v: number) {
+		this.displaymax = v;
+		this.NotifyChange();
+	}
+
 	static SerializationID = 'SCALARFIELD';
 	GetSerializationID(): string {
 		return PCLScalarField.SerializationID;
+	}
+
+	SetColorMin(c: number[]) {
+		this.colormin = c;
+		this.NotifyChange();
+	}
+
+	SetColorMax(c: number[]) {
+		this.colormax = c;
+		this.NotifyChange();
 	}
 
 	Serialize(serializer: PCLSerializer) {
