@@ -6,6 +6,7 @@
 /// <reference path="../../model/regiongrowth.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
 /// <reference path="../../gui/objects/pclpointcloud.ts" />
+/// <reference path="../../gui/objects/pclscalarfield.ts" />
 /// <reference path="../../gui/objects/pclshapewrapper.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
 /// <reference path="../../files/fileexporter.ts" />
@@ -276,7 +277,7 @@ class ComputeDensityAction extends PCLCloudAction {
 	}
 
 	Enabled(): boolean {
-		return !this.GetPCLCloud().GetScalarField(PCLPointCloud.DensityFieldName);
+		return !this.GetPCLCloud().GetScalarField(PCLScalarField.DensityFieldName);
 	}
 
 	Run() {
@@ -288,18 +289,18 @@ class ComputeDensityAction extends PCLCloudAction {
 
 
 class DensityComputer extends IterativeLongProcess {
-	scalarfield: ScalarField;
+	scalarfield: PCLScalarField;
 
 	constructor(private cloud: PCLPointCloud, private k: number) {
 		super(cloud.cloud.Size(), 'Computing points density');
 	}
 
 	Initialize() {
-		this.scalarfield = this.cloud.AddScalarField(PCLPointCloud.DensityFieldName);
+		this.scalarfield = this.cloud.AddScalarField(PCLScalarField.DensityFieldName);
 	}
 
 	Finalize() {
-		this.cloud.SetCurrentField(PCLPointCloud.DensityFieldName);
+		this.cloud.SetCurrentField(PCLScalarField.DensityFieldName);
 	}
 
 	Iterate(step: number) {
@@ -321,7 +322,7 @@ class ComputeNoiseAction extends PCLCloudAction {
 	Enabled(): boolean {
 		if (!this.GetCloud().HasNormals())
 			return false;
-		return !this.GetPCLCloud().GetScalarField(PCLPointCloud.NoiseFieldName);
+		return !this.GetPCLCloud().GetScalarField(PCLScalarField.NoiseFieldName);
 	}
 
 	Run() {
@@ -333,18 +334,18 @@ class ComputeNoiseAction extends PCLCloudAction {
 
 
 class NoiseComputer extends IterativeLongProcess {
-	scalarfield: ScalarField;
+	scalarfield: PCLScalarField;
 
 	constructor(private cloud: PCLPointCloud, private k: number) {
 		super(cloud.cloud.Size(), 'Computing points noise');
 	}
 
 	Initialize() {
-		this.scalarfield = this.cloud.AddScalarField(PCLPointCloud.NoiseFieldName);
+		this.scalarfield = this.cloud.AddScalarField(PCLScalarField.NoiseFieldName);
 	}
 
 	Finalize() {
-		this.cloud.SetCurrentField(PCLPointCloud.NoiseFieldName);
+		this.cloud.SetCurrentField(PCLScalarField.NoiseFieldName);
 	}
 
 	Iterate(step: number) {

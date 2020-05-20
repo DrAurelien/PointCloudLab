@@ -11,6 +11,7 @@
 /// <reference path="../gui/objects/pclcylinder.ts" />
 /// <reference path="../gui/objects/pclcone.ts" />
 /// <reference path="../gui/objects/pcltorus.ts" />
+/// <reference path="../gui/objects/pclscalarfield.ts" />
 /// <reference path="../gui/opengl/materials.ts" />
 
 
@@ -77,6 +78,9 @@ class PCLLoader extends FileLoader implements PCLObjectParsingFactory {
 		}
 		if (Material.SerializationID === objecttype) {
 			return new MaterialParsingHandler();
+		}
+		if (PCLScalarField.SerializationID === objecttype) {
+			return new PCLScalarFieldParsingHandler();
 		}
 		return null;
 	}

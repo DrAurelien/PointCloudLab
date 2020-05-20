@@ -7,6 +7,7 @@
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../opengl/buffer.ts" />
+/// <reference path="pclscalarfield.ts" />
 /// <reference path="../../files/pclserializer.ts" />
 
 
@@ -18,13 +19,11 @@
 //=================================================
 class PCLPointCloud extends PCLPrimitive implements Pickable {
 	ransac: Ransac;
-	fields: ScalarField[];
+	fields: PCLScalarField[];
 	currentfield: number;
 	drawing: PointCloudDrawing;
 
 	private static ScalarFieldPropertyName: string = 'Scalar fields';
-	static DensityFieldName = 'Density';
-	static NoiseFieldName = 'Noise	';
 
 	constructor(public cloud: PointCloud = null) {
 		super(NameProvider.GetName('PointCloud'));
@@ -36,21 +35,26 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		}
 	}
 
-	AddScalarField(field: string | ScalarField): ScalarField {
-		let scalarfield;
-		if (field instanceof ScalarField) {
-			scalarfield = field;
-		}
-		else {
-			scalarfield = new ScalarField(field as string);
-			scalarfield.Reserve(this.cloud.Size());
-		}
-		this.fields.push(scalarfield);
-		this.AddScaralFieldProperty(this.fields.length - 1);
-		return scalarfield;
+	PushScalarField(field: PCLScalarField) {
+		let self = this;
+		this.fields.push(field);
+		field.onChange = () => self.NotifyChange(this, ChangeType.Display | ChangeType.ColorScale);
 	}
 
-	GetScalarField(name: string): ScalarField {
+	AddScalarField(name: string, values: Float32Array=null): PCLScalarField {
+		let field = new PCLScalarField(name, values);
+		if (field.Size() == 0) {
+			field.Reserve(this.cloud.Size());
+		}
+		else if (field.Size() !== this.cloud.Size()) {
+			throw 'Cannot bind a scalar field whose size does not match (got: ' + field.Size() + ', expected: ' + this.cloud.Size();
+		}
+		this.PushScalarField(field);
+		this.AddScaralFieldProperty(this.fields.length - 1);
+		return field;
+	}
+
+	GetScalarField(name: string): PCLScalarField {
 		for (let index = 0; index < this.fields.length; index++) {
 			if (this.fields[index].name === name) {
 				return this.fields[index];
@@ -74,7 +78,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return false;
 	}
 
-	GetCurrentField(): ScalarField {
+	GetCurrentField(): PCLScalarField {
 		if (this.currentfield !== null) {
 			return this.fields[this.currentfield];
 		}
@@ -235,13 +239,8 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 			});
 		}
 		for (let index = 0; index < this.fields.length; index++) {
-			let field = this.fields[index];
 			serializer.PushParameter('scalarfield', (s) => {
-				s.PushUILenghedString(field.name);
-				s.PushInt32(field.Size());
-				for (let ii = 0; ii < field.Size(); ii++) {
-					s.PushFloat32(field.GetValue(ii));
-				}
+				self.fields[index].Serialize(serializer);
 			});
 		}
 	}
@@ -254,7 +253,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 class PCLPointCloudParsingHandler extends PCLPrimitiveParsingHandler {
 	points: Float32Array;
 	normals: Float32Array;
-	fields: ScalarField[];
+	fields: PCLScalarField[];
 
 	constructor() {
 		super();
@@ -278,12 +277,9 @@ class PCLPointCloudParsingHandler extends PCLPrimitiveParsingHandler {
 				}
 				return true;
 			case 'scalarfield':
-				let name = parser.reader.GetNextUILenghedString();
-				let size = parser.reader.GetNextInt32();
-				let field = new ScalarField(name);
-				field.Reserve(size);
-				for (let index = 0; index < size; index++) {
-					field.PushValue(parser.reader.GetNextFloat32());
+				let field = parser.ProcessNextObject();
+				if (!(field instanceof PCLScalarField)) {
+					return false;
 				}
 				this.fields.push(field);
 				return true;
@@ -294,7 +290,7 @@ class PCLPointCloudParsingHandler extends PCLPrimitiveParsingHandler {
 	FinalizePrimitive(): PCLPrimitive {
 		let cloud = new PCLPointCloud(new PointCloud(this.points, this.normals));
 		for (let index = 0; index < this.fields.length; index++) {
-			cloud.AddScalarField(this.fields[index]);
+			cloud.PushScalarField(this.fields[index]);
 		}
 		return cloud;
 	}
@@ -304,7 +300,7 @@ class PointCloudDrawing {
 	glPointsBuffer: FloatArrayBuffer;
 	glNormalsBuffer: FloatArrayBuffer;
 	glScalarBuffer: FloatArrayBuffer;
-	bufferedScalarField: ScalarField;
+	bufferedScalarField: PCLScalarField;
 	cloudsize: number;
 
 	constructor() {
@@ -312,7 +308,7 @@ class PointCloudDrawing {
 		this.glPointsBuffer = null;
 	}
 
-	FillBuffers(cloud: PointCloud, field: ScalarField, ctx: DrawingContext) {
+	FillBuffers(cloud: PointCloud, field: PCLScalarField, ctx: DrawingContext) {
 		this.cloudsize = cloud.Size();
 
 		if (!this.glPointsBuffer) {
@@ -322,11 +318,15 @@ class PointCloudDrawing {
 		if (cloud.HasNormals() && !this.glNormalsBuffer) {
 			this.glNormalsBuffer = new FloatArrayBuffer(cloud.normals, ctx, 3);
 		}
-		if (field && (!this.glScalarBuffer || this.bufferedScalarField !== field)) {
-			this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
-			this.bufferedScalarField = field;
-			ctx.gl.uniform1f(ctx.minscalarvalue, field.Min());
-			ctx.gl.uniform1f(ctx.maxscalarvalue, field.Max());
+		if (field) {
+			if (!this.glScalarBuffer || this.bufferedScalarField !== field) {
+				this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
+				this.bufferedScalarField = field;
+			}
+			ctx.gl.uniform1f(ctx.minscalarvalue, field.GetDisplayMin());
+			ctx.gl.uniform1f(ctx.maxscalarvalue, field.GetDisplayMax());
+			ctx.gl.uniform3fv(ctx.minscalarcolor, field.colormin);
+			ctx.gl.uniform3fv(ctx.maxscalarcolor, field.colormax);
 		}
 	}
 

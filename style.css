@@ -352,33 +352,28 @@ div.ColorScale {
 		cursor: pointer;
 	}
 
-	div.ColorScale .ColorScaleCaption {
+	div.ColorScale .ColorScaleBound {
+		position: absolute;
+		margin: 0px;
+		right: 5px;
+		height: unset;
+		cursor: pointer;
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
 	}
-
-		div.ColorScale .ColorScaleCaption .ColorScaleMin {
-			position: absolute;
-			margin-bottom: 0px;
-			bottom: 0px;
-			right: 5px;
-			height: unset;
-		}
-
-		div.ColorScale .ColorScaleCaption .ColorScaleMax {
-			position: absolute;
-			margin-top: 0px;
-			top: 0px;
-			right: 5px;
-			height: unset;
-		}
 
 	div.ColorScale .HistogramViewer {
 		position: relative;
 		cursor: pointer;
 		width: 100px;
 		height: 200px;
+		border-left: 1px solid white;
 	}
 
 		div.ColorScale .HistogramViewer.Collapsed {
 			width: 0px;
 			height: 200px;
+			border-left: unset;
 		}

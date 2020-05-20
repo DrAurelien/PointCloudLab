@@ -4,9 +4,9 @@
 	private min: number;
 	private max: number;
 
-	constructor(public name: string) {
-		this.values = new Float32Array([]);
-		this.nbvalues = 0;
+	constructor(values: Float32Array) {
+		this.values = values || new Float32Array([]);
+		this.nbvalues = this.values.length;
 		this.min = null;
 		this.max = null;
 	}
@@ -45,10 +45,24 @@
 	}
 
 	Min(): number {
+		if (this.min === null) {
+			for (let index = 0; index < this.nbvalues; index++) {
+				if (this.min === null || this.values[index] < this.min) {
+					this.min = this.values[index];
+				}
+			}
+		}
 		return this.min;
 	}
 
 	Max(): number {
+		if (this.max === null) {
+			for (let index = 0; index < this.nbvalues; index++) {
+				if (this.max === null || this.values[index] > this.max) {
+					this.max = this.values[index];
+				}
+			}
+		}
 		return this.max;
 	}
 }

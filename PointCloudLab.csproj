@@ -116,13 +116,13 @@
     <Content Include="tools\transform.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="gui\colorscale.ts" />
+    <Content Include="gui\controls\colorscale\colorscale.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="model\histogram.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="gui\controls\histogramviewer.ts" />
+    <Content Include="gui\controls\colorscale\histogramviewer.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="files\binarywriter.ts" />
@@ -135,6 +135,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="files\pclloader.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\objects\pclscalarfield.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="gui\controls\draggable.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="gui\controls\colorscale\scalebounds.ts" />
+    <TypeScriptCompile Include="gui\controls\colorscale\scalerenderer.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />
