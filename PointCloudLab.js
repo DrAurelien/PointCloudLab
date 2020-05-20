@@ -1089,6 +1089,8 @@ var DrawingContext = /** @class */ (function () {
         this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
         this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
         this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
+        this.minscalarcolor = this.gl.getUniformLocation(this.shaders, "MinScalarColor");
+        this.maxscalarcolor = this.gl.getUniformLocation(this.shaders, "MaxScalarColor");
         this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
         this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
         this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
@@ -1975,7 +1977,7 @@ var StringUtils = /** @class */ (function () {
             Math.round(255 * rgb[2])
         ]);
     };
-    StringUtils.StrToRGB = function (str) {
+    StringUtils.StrToRGBf = function (str) {
         var red = str.substr(1, 2);
         var green = str.substr(3, 2);
         var blue = str.substr(5, 2);
@@ -1994,12 +1996,10 @@ var StringUtils = /** @class */ (function () {
 var ColorProperty = /** @class */ (function (_super) {
     __extends(ColorProperty, _super);
     function ColorProperty(name, colorvalue, handler) {
-        var _this = _super.call(this, name, 'color', function () { return StringUtils.RGBfToStr(colorvalue()); }, handler) || this;
-        _this.colorvalue = colorvalue;
-        return _this;
+        return _super.call(this, name, 'color', function () { return StringUtils.RGBfToStr(colorvalue()); }, handler) || this;
     }
     ColorProperty.prototype.GetValue = function () {
-        return StringUtils.StrToRGB(this.input.value);
+        return StringUtils.StrToRGBf(this.input.value);
     };
     return ColorProperty;
 }(PropertyWithValue));
@@ -5176,10 +5176,9 @@ var PCLGroupParsingHandler = /** @class */ (function (_super) {
 }(PCLNodeParsingHandler));
 /// <reference path="../../gui/objects/pclgroup.ts" />
 var ScalarField = /** @class */ (function () {
-    function ScalarField(name) {
-        this.name = name;
-        this.values = new Float32Array([]);
-        this.nbvalues = 0;
+    function ScalarField(values) {
+        this.values = values || new Float32Array([]);
+        this.nbvalues = this.values.length;
         this.min = null;
         this.max = null;
     }
@@ -5212,9 +5211,23 @@ var ScalarField = /** @class */ (function () {
         return this.nbvalues;
     };
     ScalarField.prototype.Min = function () {
+        if (this.min === null) {
+            for (var index = 0; index < this.nbvalues; index++) {
+                if (this.min === null || this.values[index] < this.min) {
+                    this.min = this.values[index];
+                }
+            }
+        }
         return this.min;
     };
     ScalarField.prototype.Max = function () {
+        if (this.max === null) {
+            for (var index = 0; index < this.nbvalues; index++) {
+                if (this.max === null || this.values[index] > this.max) {
+                    this.max = this.values[index];
+                }
+            }
+        }
         return this.max;
     };
     return ScalarField;
@@ -5432,6 +5445,151 @@ var RansacStepProcessor = /** @class */ (function (_super) {
     };
     return RansacStepProcessor;
 }(LongProcess));
+/// <reference path="../../controler/actions/delegate.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../../files/pclserializer.ts" />
+//=================================================
+// The PCLScalar field extends the scalar field by providing
+// - a name
+// - color settings for display prupose (color scale)
+// - a range to be displayed
+//=================================================
+var PCLScalarField = /** @class */ (function (_super) {
+    __extends(PCLScalarField, _super);
+    function PCLScalarField(name, values) {
+        var _this = _super.call(this, values) || this;
+        _this.name = name;
+        _this.colormin = [0, 0, 1];
+        _this.colormax = [1, 0, 0];
+        _this.displaymin = null;
+        _this.displaymax = null;
+        return _this;
+    }
+    PCLScalarField.prototype.NotifyChange = function () {
+        if (this.onChange) {
+            this.onChange();
+        }
+    };
+    PCLScalarField.prototype.GetDisplayMin = function () {
+        return this.displaymin === null ? this.Min() : this.displaymin;
+    };
+    PCLScalarField.prototype.SetDisplayMin = function (v) {
+        this.displaymin = v;
+        this.NotifyChange();
+    };
+    PCLScalarField.prototype.GetDisplayMax = function () {
+        return this.displaymax === null ? this.Max() : this.displaymax;
+    };
+    PCLScalarField.prototype.SetDisplayMax = function (v) {
+        this.displaymax = v;
+        this.NotifyChange();
+    };
+    PCLScalarField.prototype.GetSerializationID = function () {
+        return PCLScalarField.SerializationID;
+    };
+    PCLScalarField.prototype.SetColorMin = function (c) {
+        this.colormin = c;
+        this.NotifyChange();
+    };
+    PCLScalarField.prototype.SetColorMax = function (c) {
+        this.colormax = c;
+        this.NotifyChange();
+    };
+    PCLScalarField.prototype.Serialize = function (serializer) {
+        var _this = this;
+        serializer.Start(this);
+        var self = this;
+        serializer.PushParameter('name', function (s) {
+            s.PushString(self.name);
+        });
+        if (this.displaymin) {
+            serializer.PushParameter('displaymin', function (s) {
+                s.PushFloat32(_this.displaymin);
+            });
+        }
+        if (this.displaymax) {
+            serializer.PushParameter('displaymax', function (s) {
+                s.PushFloat32(_this.displaymax);
+            });
+        }
+        serializer.PushParameter('colormin', function (s) {
+            s.PushFloat32(_this.colormin[0]);
+            s.PushFloat32(_this.colormin[1]);
+            s.PushFloat32(_this.colormin[2]);
+        });
+        serializer.PushParameter('colormax', function (s) {
+            s.PushFloat32(_this.colormax[0]);
+            s.PushFloat32(_this.colormax[1]);
+            s.PushFloat32(_this.colormax[2]);
+        });
+        serializer.PushParameter('values', function (s) {
+            s.PushInt32(self.Size());
+            for (var index = 0; index < self.Size(); index++) {
+                s.PushFloat32(self.GetValue(index));
+            }
+        });
+        serializer.End(this);
+    };
+    PCLScalarField.prototype.GetParsingHandler = function () {
+        return new PCLScalarFieldParsingHandler();
+    };
+    PCLScalarField.DensityFieldName = 'Density';
+    PCLScalarField.NoiseFieldName = 'Noise	';
+    PCLScalarField.SerializationID = 'SCALARFIELD';
+    return PCLScalarField;
+}(ScalarField));
+var PCLScalarFieldParsingHandler = /** @class */ (function () {
+    function PCLScalarFieldParsingHandler() {
+    }
+    PCLScalarFieldParsingHandler.prototype.ProcessParam = function (paramname, parser) {
+        switch (paramname) {
+            case 'name':
+                this.name = parser.GetStringValue();
+                return true;
+            case 'displaymin':
+                this.displaymin = parser.reader.GetNextFloat32();
+                return true;
+            case 'displaymax':
+                this.displaymax = parser.reader.GetNextFloat32();
+                return true;
+            case 'colormin':
+                this.colormin = [
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ];
+                return true;
+            case 'colormax':
+                this.colormax = [
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ];
+                return true;
+            case 'values':
+                var nbvalues = parser.reader.GetNextInt32();
+                this.values = new Float32Array(nbvalues);
+                for (var index = 0; index < nbvalues; index++) {
+                    this.values[index] = parser.reader.GetNextFloat32();
+                }
+                return true;
+        }
+        return false;
+    };
+    PCLScalarFieldParsingHandler.prototype.Finalize = function () {
+        var scalarfield = new PCLScalarField(this.name, this.values);
+        scalarfield.colormin = this.colormin;
+        scalarfield.colormax = this.colormax;
+        if (this.displaymin) {
+            scalarfield.displaymin = this.displaymin;
+        }
+        if (this.displaymax) {
+            scalarfield.displaymax = this.displaymax;
+        }
+        return scalarfield;
+    };
+    return PCLScalarFieldParsingHandler;
+}());
 /// <reference path="../../model/pointcloud.ts" />
 /// <reference path="../../controler/actions/pointcloudactions.ts" />
 /// <reference path="../../controler/actions/delegate.ts" />
@@ -5441,6 +5599,7 @@ var RansacStepProcessor = /** @class */ (function (_super) {
 /// <reference path="../controls/properties/propertygroup.ts" />
 /// <reference path="../opengl/drawingcontext.ts" />
 /// <reference path="../opengl/buffer.ts" />
+/// <reference path="pclscalarfield.ts" />
 /// <reference path="../../files/pclserializer.ts" />
 //=================================================
 // The PCLPointcloud provides an interface to interact with a point cloud
@@ -5462,18 +5621,24 @@ var PCLPointCloud = /** @class */ (function (_super) {
         }
         return _this;
     }
-    PCLPointCloud.prototype.AddScalarField = function (field) {
-        var scalarfield;
-        if (field instanceof ScalarField) {
-            scalarfield = field;
+    PCLPointCloud.prototype.PushScalarField = function (field) {
+        var _this = this;
+        var self = this;
+        this.fields.push(field);
+        field.onChange = function () { return self.NotifyChange(_this, ChangeType.Display | ChangeType.ColorScale); };
+    };
+    PCLPointCloud.prototype.AddScalarField = function (name, values) {
+        if (values === void 0) { values = null; }
+        var field = new PCLScalarField(name, values);
+        if (field.Size() == 0) {
+            field.Reserve(this.cloud.Size());
         }
-        else {
-            scalarfield = new ScalarField(field);
-            scalarfield.Reserve(this.cloud.Size());
+        else if (field.Size() !== this.cloud.Size()) {
+            throw 'Cannot bind a scalar field whose size does not match (got: ' + field.Size() + ', expected: ' + this.cloud.Size();
         }
-        this.fields.push(scalarfield);
+        this.PushScalarField(field);
         this.AddScaralFieldProperty(this.fields.length - 1);
-        return scalarfield;
+        return field;
     };
     PCLPointCloud.prototype.GetScalarField = function (name) {
         for (var index = 0; index < this.fields.length; index++) {
@@ -5634,16 +5799,10 @@ var PCLPointCloud = /** @class */ (function (_super) {
             });
         }
         var _loop_2 = function (index) {
-            var field = this_1.fields[index];
             serializer.PushParameter('scalarfield', function (s) {
-                s.PushUILenghedString(field.name);
-                s.PushInt32(field.Size());
-                for (var ii = 0; ii < field.Size(); ii++) {
-                    s.PushFloat32(field.GetValue(ii));
-                }
+                self.fields[index].Serialize(serializer);
             });
         };
-        var this_1 = this;
         for (var index = 0; index < this.fields.length; index++) {
             _loop_2(index);
         }
@@ -5652,8 +5811,6 @@ var PCLPointCloud = /** @class */ (function (_super) {
         return new PCLPointCloudParsingHandler();
     };
     PCLPointCloud.ScalarFieldPropertyName = 'Scalar fields';
-    PCLPointCloud.DensityFieldName = 'Density';
-    PCLPointCloud.NoiseFieldName = 'Noise	';
     PCLPointCloud.SerializationID = 'POINTCLOUD';
     return PCLPointCloud;
 }(PCLPrimitive));
@@ -5681,12 +5838,9 @@ var PCLPointCloudParsingHandler = /** @class */ (function (_super) {
                 }
                 return true;
             case 'scalarfield':
-                var name_1 = parser.reader.GetNextUILenghedString();
-                var size = parser.reader.GetNextInt32();
-                var field = new ScalarField(name_1);
-                field.Reserve(size);
-                for (var index = 0; index < size; index++) {
-                    field.PushValue(parser.reader.GetNextFloat32());
+                var field = parser.ProcessNextObject();
+                if (!(field instanceof PCLScalarField)) {
+                    return false;
                 }
                 this.fields.push(field);
                 return true;
@@ -5696,7 +5850,7 @@ var PCLPointCloudParsingHandler = /** @class */ (function (_super) {
     PCLPointCloudParsingHandler.prototype.FinalizePrimitive = function () {
         var cloud = new PCLPointCloud(new PointCloud(this.points, this.normals));
         for (var index = 0; index < this.fields.length; index++) {
-            cloud.AddScalarField(this.fields[index]);
+            cloud.PushScalarField(this.fields[index]);
         }
         return cloud;
     };
@@ -5715,11 +5869,15 @@ var PointCloudDrawing = /** @class */ (function () {
         if (cloud.HasNormals() && !this.glNormalsBuffer) {
             this.glNormalsBuffer = new FloatArrayBuffer(cloud.normals, ctx, 3);
         }
-        if (field && (!this.glScalarBuffer || this.bufferedScalarField !== field)) {
-            this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
-            this.bufferedScalarField = field;
-            ctx.gl.uniform1f(ctx.minscalarvalue, field.Min());
-            ctx.gl.uniform1f(ctx.maxscalarvalue, field.Max());
+        if (field) {
+            if (!this.glScalarBuffer || this.bufferedScalarField !== field) {
+                this.glScalarBuffer = new FloatArrayBuffer(field.values, ctx, 1);
+                this.bufferedScalarField = field;
+            }
+            ctx.gl.uniform1f(ctx.minscalarvalue, field.GetDisplayMin());
+            ctx.gl.uniform1f(ctx.maxscalarvalue, field.GetDisplayMax());
+            ctx.gl.uniform3fv(ctx.minscalarcolor, field.colormin);
+            ctx.gl.uniform3fv(ctx.maxscalarcolor, field.colormax);
         }
     };
     PointCloudDrawing.prototype.BindBuffers = function (uselighting, usescalars, ctx) {
@@ -5825,6 +5983,7 @@ var FileExporter = /** @class */ (function () {
 /// <reference path="../../model/regiongrowth.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
 /// <reference path="../../gui/objects/pclpointcloud.ts" />
+/// <reference path="../../gui/objects/pclscalarfield.ts" />
 /// <reference path="../../gui/objects/pclshapewrapper.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
 /// <reference path="../../files/fileexporter.ts" />
@@ -6086,7 +6245,7 @@ var ComputeDensityAction = /** @class */ (function (_super) {
         return _super.call(this, cloud, 'Compute density', 'Estimate the points density at each point of the cloud, and assign the corresponding scalar field') || this;
     }
     ComputeDensityAction.prototype.Enabled = function () {
-        return !this.GetPCLCloud().GetScalarField(PCLPointCloud.DensityFieldName);
+        return !this.GetPCLCloud().GetScalarField(PCLScalarField.DensityFieldName);
     };
     ComputeDensityAction.prototype.Run = function () {
         var k = 30;
@@ -6104,10 +6263,10 @@ var DensityComputer = /** @class */ (function (_super) {
         return _this;
     }
     DensityComputer.prototype.Initialize = function () {
-        this.scalarfield = this.cloud.AddScalarField(PCLPointCloud.DensityFieldName);
+        this.scalarfield = this.cloud.AddScalarField(PCLScalarField.DensityFieldName);
     };
     DensityComputer.prototype.Finalize = function () {
-        this.cloud.SetCurrentField(PCLPointCloud.DensityFieldName);
+        this.cloud.SetCurrentField(PCLScalarField.DensityFieldName);
     };
     DensityComputer.prototype.Iterate = function (step) {
         var cloud = this.cloud.cloud;
@@ -6128,7 +6287,7 @@ var ComputeNoiseAction = /** @class */ (function (_super) {
     ComputeNoiseAction.prototype.Enabled = function () {
         if (!this.GetCloud().HasNormals())
             return false;
-        return !this.GetPCLCloud().GetScalarField(PCLPointCloud.NoiseFieldName);
+        return !this.GetPCLCloud().GetScalarField(PCLScalarField.NoiseFieldName);
     };
     ComputeNoiseAction.prototype.Run = function () {
         var k = 10;
@@ -6146,10 +6305,10 @@ var NoiseComputer = /** @class */ (function (_super) {
         return _this;
     }
     NoiseComputer.prototype.Initialize = function () {
-        this.scalarfield = this.cloud.AddScalarField(PCLPointCloud.NoiseFieldName);
+        this.scalarfield = this.cloud.AddScalarField(PCLScalarField.NoiseFieldName);
     };
     NoiseComputer.prototype.Finalize = function () {
-        this.cloud.SetCurrentField(PCLPointCloud.NoiseFieldName);
+        this.cloud.SetCurrentField(PCLScalarField.NoiseFieldName);
     };
     NoiseComputer.prototype.Iterate = function (step) {
         var cloud = this.cloud.cloud;
@@ -6387,6 +6546,7 @@ var CSVParser = /** @class */ (function (_super) {
 /// <reference path="../gui/objects/pclcylinder.ts" />
 /// <reference path="../gui/objects/pclcone.ts" />
 /// <reference path="../gui/objects/pcltorus.ts" />
+/// <reference path="../gui/objects/pclscalarfield.ts" />
 /// <reference path="../gui/opengl/materials.ts" />
 var PCLLoader = /** @class */ (function (_super) {
     __extends(PCLLoader, _super);
@@ -6449,6 +6609,9 @@ var PCLLoader = /** @class */ (function (_super) {
         }
         if (Material.SerializationID === objecttype) {
             return new MaterialParsingHandler();
+        }
+        if (PCLScalarField.SerializationID === objecttype) {
+            return new PCLScalarFieldParsingHandler();
         }
         return null;
     };
@@ -7680,6 +7843,274 @@ var Popup = /** @class */ (function () {
     };
     return Popup;
 }());
+var DraggingType;
+(function (DraggingType) {
+    DraggingType[DraggingType["Vertical"] = 1] = "Vertical";
+    DraggingType[DraggingType["Horizontal"] = 2] = "Horizontal";
+    DraggingType[DraggingType["Both"] = 3] = "Both";
+})(DraggingType || (DraggingType = {}));
+var Draggable = /** @class */ (function () {
+    function Draggable(draggingtype) {
+        if (draggingtype === void 0) { draggingtype = DraggingType.Both; }
+        this.draggingtype = draggingtype;
+    }
+    Draggable.prototype.MakeDraggable = function () {
+        var element = this.GetElement();
+        var self = this;
+        element.onmousedown = function (event) {
+            self.InitializeDragging(event);
+        };
+    };
+    Draggable.prototype.InitializeDragging = function (event) {
+        event = event || window.event;
+        this.tracker = new MouseTracker(event);
+        this.dragged = false;
+        var self = this;
+        this.mousemovebackup = document.onmousemove;
+        document.onmousemove = function (event) {
+            self.UpdateDragging(event);
+        };
+        this.mouseupbackup = document.onmouseup;
+        document.onmouseup = function (event) {
+            self.Finalize(event);
+        };
+    };
+    Draggable.prototype.UpdateDragging = function (event) {
+        var element = this.GetElement();
+        var delta = this.tracker.UpdatePosition(event);
+        var dx = this.draggingtype & DraggingType.Horizontal ? delta.dx : 0;
+        var dy = this.draggingtype & DraggingType.Vertical ? delta.dy : 0;
+        if (this.Authorized(dx, dy)) {
+            if (dx) {
+                if (element.style.left) {
+                    element.style.left = this.GetModifiedPosition(element.style.left, dx);
+                }
+                else if (element.style.right) {
+                    element.style.right = this.GetModifiedPosition(element.style.right, -dx);
+                }
+                else {
+                    throw 'Dragging only applies to positioned elements';
+                }
+                this.dragged = true;
+            }
+            if (dy) {
+                if (element.style.top) {
+                    element.style.top = this.GetModifiedPosition(element.style.top, dy);
+                }
+                else if (element.style.bottom) {
+                    element.style.bottom = this.GetModifiedPosition(element.style.bottom, -dy);
+                }
+                else {
+                    throw 'Dragging only applies to positioned elements';
+                }
+                this.dragged = true;
+                this.OnMove();
+            }
+        }
+    };
+    Draggable.prototype.GetModifiedPosition = function (pos, delta) {
+        var value = parseInt(pos, 10);
+        var suffix = pos.replace(value.toString(), '');
+        var result = (value + delta) + suffix;
+        return result;
+    };
+    Draggable.prototype.Finalize = function (event) {
+        document.onmousemove = this.mousemovebackup;
+        document.onmouseup = this.mouseupbackup;
+        if (this.dragged) {
+            this.OnDrop(event);
+        }
+        else {
+            this.OnClick();
+        }
+    };
+    Draggable.prototype.OnClick = function () {
+    };
+    Draggable.prototype.OnMove = function () {
+    };
+    Draggable.prototype.Authorized = function (dx, dy) {
+        return true;
+    };
+    return Draggable;
+}());
+/// <reference path="../control.ts" />
+/// <reference path="../draggable.ts" />
+/// <reference path="../../objects/pclscalarfield.ts" />
+/// <reference path="../../../tools/stringutils.ts" />
+var ColorScaleBoundsContainer = /** @class */ (function () {
+    function ColorScaleBoundsContainer(field) {
+        this.field = field;
+        this.container = document.createElement('div');
+        this.container.className = 'ColorScaleBoundsContainer';
+        this.lower = new ColorScaleLowerBound(this, function (c) { return field.SetColorMin(c); });
+        this.upper = new ColorScaleUpperBound(this, function (c) { return field.SetColorMax(c); });
+        this.container.appendChild(this.lower.GetElement());
+        this.container.appendChild(this.upper.GetElement());
+    }
+    ColorScaleBoundsContainer.prototype.GetElement = function () {
+        return this.container;
+    };
+    ColorScaleBoundsContainer.prototype.Refresh = function () {
+        this.lower.SetValue(this.field.GetDisplayMin());
+        this.lower.SetColor(this.field.colormin);
+        this.upper.SetValue(this.field.GetDisplayMax());
+        this.upper.SetColor(this.field.colormax);
+    };
+    ColorScaleBoundsContainer.prototype.GetHeight = function () {
+        return this.container.getBoundingClientRect().height;
+    };
+    return ColorScaleBoundsContainer;
+}());
+var ColorScaleBound = /** @class */ (function (_super) {
+    __extends(ColorScaleBound, _super);
+    function ColorScaleBound(owner, onColorChange) {
+        var _this = _super.call(this, DraggingType.Vertical) || this;
+        _this.owner = owner;
+        _this.container = document.createElement('div');
+        _this.container.className = 'ColorScaleBound';
+        _this.value = document.createTextNode('');
+        _this.container.appendChild(_this.value);
+        _this.color = document.createElement('input');
+        _this.color.type = 'color';
+        _this.color.style.display = 'None';
+        _this.container.appendChild(_this.color);
+        var self = _this;
+        _this.color.onchange = function () {
+            self.UpdateColor();
+            onColorChange(StringUtils.StrToRGBf(self.color.value));
+        };
+        _this.MakeDraggable();
+        return _this;
+    }
+    ColorScaleBound.prototype.OnClick = function () {
+        this.color.click();
+    };
+    ColorScaleBound.prototype.GetElement = function () {
+        return this.container;
+    };
+    ColorScaleBound.prototype.OnDrop = function () {
+    };
+    ColorScaleBound.prototype.SetValue = function (v, updatepos) {
+        if (updatepos === void 0) { updatepos = true; }
+        this.value.data = Number(v).toFixed(2);
+        var min = this.owner.field.Min();
+        var max = this.owner.field.Max();
+        var ratio = (v - min) / (max - min);
+        this.UpdatePosition(ratio);
+    };
+    ColorScaleBound.prototype.SetColor = function (color) {
+        var colorStr = StringUtils.RGBfToStr(color);
+        this.color.value = colorStr;
+        this.UpdateColor();
+    };
+    ColorScaleBound.prototype.UpdateColor = function () {
+        this.container.style.color = this.color.value;
+    };
+    return ColorScaleBound;
+}(Draggable));
+var ColorScaleLowerBound = /** @class */ (function (_super) {
+    __extends(ColorScaleLowerBound, _super);
+    function ColorScaleLowerBound(owner, onColorChange) {
+        var _this = _super.call(this, owner, onColorChange) || this;
+        _this.container.classList.add('Lower');
+        return _this;
+    }
+    ColorScaleLowerBound.prototype.Authorized = function (dx, dy) {
+        var top = parseInt(this.container.style.top, 10) + dy;
+        var min = this.owner.GetHeight() - parseInt(this.owner.upper.container.style.bottom, 10);
+        return min <= top && top <= this.owner.GetHeight();
+    };
+    ColorScaleLowerBound.prototype.UpdatePosition = function (ratio) {
+        this.container.style.top = ((1.0 - ratio) * this.owner.GetHeight()) + 'px';
+    };
+    ColorScaleLowerBound.prototype.OnMove = function () {
+        var ratio = parseInt(this.container.style.top) / this.owner.GetHeight();
+        var min = this.owner.field.Min();
+        var max = this.owner.field.Max();
+        var value = min + ((1.0 - ratio) * (max - min));
+        this.value.data = Number(value).toFixed(2);
+        this.owner.field.SetDisplayMin(value);
+    };
+    return ColorScaleLowerBound;
+}(ColorScaleBound));
+var ColorScaleUpperBound = /** @class */ (function (_super) {
+    __extends(ColorScaleUpperBound, _super);
+    function ColorScaleUpperBound(owner, onColorChange) {
+        var _this = _super.call(this, owner, onColorChange) || this;
+        _this.container.classList.add('Upper');
+        return _this;
+    }
+    ColorScaleUpperBound.prototype.Authorized = function (dx, dy) {
+        var bottom = parseInt(this.container.style.bottom, 10) - dy;
+        var min = this.owner.GetHeight() - parseInt(this.owner.lower.container.style.top, 10);
+        return min <= bottom && bottom <= this.owner.GetHeight();
+    };
+    ColorScaleUpperBound.prototype.UpdatePosition = function (ratio) {
+        this.container.style.bottom = (ratio * this.owner.GetHeight()) + 'px';
+    };
+    ColorScaleUpperBound.prototype.OnMove = function () {
+        var ratio = parseInt(this.container.style.bottom) / this.owner.GetHeight();
+        var min = this.owner.field.Min();
+        var max = this.owner.field.Max();
+        var value = min + (ratio * (max - min));
+        this.value.data = Number(value).toFixed(2);
+        this.owner.field.SetDisplayMax(value);
+    };
+    return ColorScaleUpperBound;
+}(ColorScaleBound));
+/// <reference path="../../opengl/drawingcontext.ts" />
+/// <reference path="../control.ts" />
+/// <reference path="../../objects/pclscalarfield.ts" />
+var ColorScaleRenderer = /** @class */ (function () {
+    function ColorScaleRenderer() {
+        this.scaleRenderingArea = document.createElement('canvas');
+        this.scaleRenderingArea.className = 'ColorRenderer';
+        this.drawingcontext = new DrawingContext(this.scaleRenderingArea);
+        this.points = new FloatArrayBuffer(new Float32Array([
+            1.0, -1.0, 0.0,
+            -1.0, -1.0, 0.0,
+            -1.0, 1.0, 0.0,
+            1.0, 1.0, 0.0
+        ]), this.drawingcontext, 3);
+        this.indices = new ElementArrayBuffer([
+            0, 1, 2,
+            2, 3, 0
+        ], this.drawingcontext, true);
+        var indentity = Matrix.Identity(4);
+        this.drawingcontext.gl.uniformMatrix4fv(this.drawingcontext.modelview, false, indentity.values);
+        this.drawingcontext.gl.uniformMatrix4fv(this.drawingcontext.projection, false, indentity.values);
+        this.drawingcontext.gl.uniformMatrix4fv(this.drawingcontext.shapetransform, false, indentity.values);
+        this.drawingcontext.EnableNormals(false);
+        this.drawingcontext.EnableScalars(true);
+    }
+    ColorScaleRenderer.prototype.Refresh = function (field) {
+        this.drawingcontext.gl.viewport(0, 0, this.scaleRenderingArea.width, this.scaleRenderingArea.height);
+        this.drawingcontext.gl.clear(this.drawingcontext.gl.COLOR_BUFFER_BIT | this.drawingcontext.gl.DEPTH_BUFFER_BIT);
+        var min = field.GetDisplayMin();
+        var max = field.GetDisplayMax();
+        this.drawingcontext.gl.uniform1f(this.drawingcontext.minscalarvalue, min);
+        this.drawingcontext.gl.uniform1f(this.drawingcontext.maxscalarvalue, max);
+        this.drawingcontext.gl.uniform3fv(this.drawingcontext.minscalarcolor, field.colormin);
+        this.drawingcontext.gl.uniform3fv(this.drawingcontext.maxscalarcolor, field.colormax);
+        min = field.Min();
+        max = field.Max();
+        var scalars = new FloatArrayBuffer(new Float32Array([min, min, max, max]), this.drawingcontext, 1);
+        this.points.BindAttribute(this.drawingcontext.vertices);
+        scalars.BindAttribute(this.drawingcontext.scalarvalue);
+        this.indices.Bind();
+        this.drawingcontext.gl.drawElements(this.drawingcontext.gl.TRIANGLES, 6, this.drawingcontext.GetIntType(true), 0);
+    };
+    ColorScaleRenderer.prototype.GetElement = function () {
+        return this.scaleRenderingArea;
+    };
+    ColorScaleRenderer.prototype.GetColor = function (v) {
+        var gl = this.drawingcontext.gl;
+        var pixel = new Uint8Array(4);
+        gl.readPixels(0, Math.round(v * gl.drawingBufferHeight), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        return StringUtils.RGBiToStr(pixel);
+    };
+    return ColorScaleRenderer;
+}());
 /// <reference path="scalarfield.ts" />
 var Histogram = /** @class */ (function () {
     function Histogram(values, nbchunks) {
@@ -7756,12 +8187,13 @@ var HistogramChunk = /** @class */ (function () {
     };
     return HistogramChunk;
 }());
-/// <reference path="control.ts" />
-/// <reference path="../../model/histogram.ts" />
+/// <reference path="../control.ts" />
+/// <reference path="../../objects/pclscalarfield.ts" />
+/// <reference path="../../../model/histogram.ts" />
 var HistogramViewer = /** @class */ (function () {
-    function HistogramViewer(values, color) {
+    function HistogramViewer(scalarfield, color) {
         if (color === void 0) { color = null; }
-        this.values = values;
+        this.scalarfield = scalarfield;
         this.color = color;
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'HistogramViewer';
@@ -7777,7 +8209,7 @@ var HistogramViewer = /** @class */ (function () {
         };
     }
     HistogramViewer.prototype.Refresh = function () {
-        var histogram = new Histogram(this.values, this.nbrequestedchunks);
+        var histogram = new Histogram(this.scalarfield, this.nbrequestedchunks);
         var ctx = this.canvas.getContext('2d');
         var width = this.canvas.width;
         var height = this.canvas.height;
@@ -7811,21 +8243,20 @@ var HistogramViewer = /** @class */ (function () {
     HistogramViewer.CollapsedClassName = 'Collapsed';
     return HistogramViewer;
 }());
-/// <reference path="opengl/drawingcontext.ts" />
-/// <reference path="controls/control.ts" />
-/// <reference path="controls/histogramviewer.ts" />
-/// <reference path="controls/pannel.ts" />
-/// <reference path="../model/scalarfield.ts" />
-/// <reference path="../tools/stringutils.ts" />
+/// <reference path="scalebounds.ts" />
+/// <reference path="scalerenderer.ts" />
+/// <reference path="histogramviewer.ts" />
+/// <reference path="../pannel.ts" />
+/// <reference path="../../objects/pclscalarfield.ts" />
 var ColorScale = /** @class */ (function (_super) {
     __extends(ColorScale, _super);
     function ColorScale(field) {
         var _this = _super.call(this, 'ColorScale') || this;
         _this.field = field;
         _this.renderer = new ColorScaleRenderer();
-        _this.caption = new ColorScaleCaption();
+        _this.bounds = new ColorScaleBoundsContainer(_this.field);
         _this.histo = new HistogramViewer(_this.field, function (v) { return self.GetColor(v); });
-        _this.AddControl(_this.caption);
+        _this.AddControl(_this.bounds);
         _this.AddControl(_this.renderer);
         _this.AddControl(_this.histo);
         var self = _this;
@@ -7862,89 +8293,19 @@ var ColorScale = /** @class */ (function (_super) {
         }
     };
     ColorScale.prototype.Refresh = function () {
-        var min = this.field.Min();
-        var max = this.field.Max();
-        this.renderer.Refresh(min, max);
-        this.caption.Refresh(min, max);
+        this.renderer.Refresh(this.field);
+        this.bounds.Refresh();
         this.histo.Refresh();
     };
     ColorScale.showHisto = true;
     return ColorScale;
 }(Pannel));
-var ColorScaleCaption = /** @class */ (function () {
-    function ColorScaleCaption() {
-        this.container = document.createElement('div');
-        this.container.className = 'ColorScaleCaption';
-        var minContainer = document.createElement('div');
-        minContainer.className = 'ColorScaleMin';
-        this.min = document.createTextNode('');
-        minContainer.appendChild(this.min);
-        this.container.appendChild(minContainer);
-        var maxContainer = document.createElement('div');
-        maxContainer.className = 'ColorScaleMax';
-        this.max = document.createTextNode('');
-        maxContainer.appendChild(this.max);
-        this.container.appendChild(maxContainer);
-    }
-    ColorScaleCaption.prototype.GetElement = function () {
-        return this.container;
-    };
-    ColorScaleCaption.prototype.Refresh = function (min, max) {
-        this.min.data = Number(min).toFixed(2);
-        this.max.data = Number(max).toFixed(2);
-    };
-    return ColorScaleCaption;
-}());
-var ColorScaleRenderer = /** @class */ (function () {
-    function ColorScaleRenderer() {
-        this.scaleRenderingArea = document.createElement('canvas');
-        this.scaleRenderingArea.className = 'ColorRenderer';
-        this.drawingcontext = new DrawingContext(this.scaleRenderingArea);
-        this.points = new FloatArrayBuffer(new Float32Array([
-            1.0, -1.0, 0.0,
-            -1.0, -1.0, 0.0,
-            -1.0, 1.0, 0.0,
-            1.0, 1.0, 0.0
-        ]), this.drawingcontext, 3);
-        this.indices = new ElementArrayBuffer([
-            0, 1, 2,
-            2, 3, 0
-        ], this.drawingcontext, true);
-        var indentity = Matrix.Identity(4);
-        this.drawingcontext.gl.uniformMatrix4fv(this.drawingcontext.modelview, false, indentity.values);
-        this.drawingcontext.gl.uniformMatrix4fv(this.drawingcontext.projection, false, indentity.values);
-        this.drawingcontext.gl.uniformMatrix4fv(this.drawingcontext.shapetransform, false, indentity.values);
-        this.drawingcontext.EnableNormals(false);
-        this.drawingcontext.EnableScalars(true);
-    }
-    ColorScaleRenderer.prototype.Refresh = function (min, max) {
-        this.drawingcontext.gl.viewport(0, 0, this.scaleRenderingArea.width, this.scaleRenderingArea.height);
-        this.drawingcontext.gl.clear(this.drawingcontext.gl.COLOR_BUFFER_BIT | this.drawingcontext.gl.DEPTH_BUFFER_BIT);
-        this.drawingcontext.gl.uniform1f(this.drawingcontext.minscalarvalue, min);
-        this.drawingcontext.gl.uniform1f(this.drawingcontext.maxscalarvalue, max);
-        var scalars = new FloatArrayBuffer(new Float32Array([min, min, max, max]), this.drawingcontext, 1);
-        this.points.BindAttribute(this.drawingcontext.vertices);
-        scalars.BindAttribute(this.drawingcontext.scalarvalue);
-        this.indices.Bind();
-        this.drawingcontext.gl.drawElements(this.drawingcontext.gl.TRIANGLES, 6, this.drawingcontext.GetIntType(true), 0);
-    };
-    ColorScaleRenderer.prototype.GetElement = function () {
-        return this.scaleRenderingArea;
-    };
-    ColorScaleRenderer.prototype.GetColor = function (v) {
-        var gl = this.drawingcontext.gl;
-        var pixel = new Uint8Array(4);
-        gl.readPixels(0, Math.round(v * gl.drawingBufferHeight), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
-        return StringUtils.RGBiToStr(pixel);
-    };
-    return ColorScaleRenderer;
-}());
 /// <reference path="control.ts" />
 /// <reference path="popup.ts" />
 /// <reference path="../objects/pclnode.ts" />
 /// <reference path="../objects/pclgroup.ts" />
 /// <reference path="../datahandler.ts" />
-/// <reference path="../colorscale.ts" />
+/// <reference path="./colorscale/colorscale.ts" />
 var DataItem = /** @class */ (function () {
     function DataItem(item, dataHandler) {
         this.item = item;
