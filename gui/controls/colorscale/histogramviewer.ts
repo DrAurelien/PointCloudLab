@@ -1,6 +1,6 @@
-﻿/// <reference path="control.ts" />
-/// <reference path="../objects/pclscalarfield.ts" />
-/// <reference path="../../model/histogram.ts" />
+﻿/// <reference path="../control.ts" />
+/// <reference path="../../objects/pclscalarfield.ts" />
+/// <reference path="../../../model/histogram.ts" />
 
 
 class HistogramViewer implements Control {

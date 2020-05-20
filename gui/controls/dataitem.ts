@@ -3,7 +3,7 @@
 /// <reference path="../objects/pclnode.ts" />
 /// <reference path="../objects/pclgroup.ts" />
 /// <reference path="../datahandler.ts" />
-/// <reference path="../colorscale.ts" />
+/// <reference path="./colorscale/colorscale.ts" />
 
 
 class DataItem implements Control {

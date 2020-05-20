@@ -358,15 +358,11 @@ div.ColorScale {
 		right: 5px;
 		height: unset;
 		cursor: pointer;
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
 	}
-
-		div.ColorScale .ColorScaleBound.Min {
-			bottom: 0px;
-		}
-
-		div.ColorScale .ColorScaleBound.Max {
-			top: 0px;
-		}
 
 	div.ColorScale .HistogramViewer {
 		position: relative;
