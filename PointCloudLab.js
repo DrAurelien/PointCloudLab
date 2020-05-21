@@ -3019,9 +3019,12 @@ var PointCloud = /** @class */ (function () {
         return this.pointssize / 3;
     };
     PointCloud.prototype.PushNormal = function (n) {
-        if (this.normalssize + n.Dimension() > this.normals.length) {
-            //Not optimal (Reserve should be called before callin PushPoint)
-            this.Reserve(this.normals.length + n.Dimension());
+        if (this.normals.length < this.points.length) {
+            var normals = new Float32Array(this.points.length);
+            for (var index = 0; index < this.normalssize; index++) {
+                normals[index] = this.normals[index];
+            }
+            this.normals = normals;
         }
         for (var index = 0; index < n.Dimension(); index++) {
             this.normals[this.normalssize++] = n.Get(index);
@@ -3364,8 +3367,10 @@ var PCLMeshParsingHandler = /** @class */ (function (_super) {
     PCLMeshParsingHandler.prototype.FinalizePrimitive = function () {
         var cloud = new PointCloud(this.points);
         var mesh = new Mesh(cloud, this.faces);
-        mesh.ComputeNormals(function () { return mesh.ComputeOctree(); });
-        return new PCLMesh(mesh);
+        var result = new PCLMesh(mesh);
+        mesh.ComputeNormals(function () { return result.NotifyChange(result, ChangeType.Display); });
+        mesh.ComputeOctree();
+        return result;
     };
     return PCLMeshParsingHandler;
 }(PCLPrimitiveParsingHandler));
@@ -9107,10 +9112,16 @@ var PCLApp = /** @class */ (function () {
         //Dry run (to get the buffer size)
         var serializer = new PCLSerializer(null);
         this.dataHandler.scene.Serialize(serializer);
+        var bufferSize = serializer.GetBufferSize();
         //Actual serialization
-        serializer = new PCLSerializer(serializer.GetBufferSize());
+        serializer = new PCLSerializer(bufferSize);
         this.dataHandler.scene.Serialize(serializer);
         window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
+        var data = window.localStorage.getItem(PCLApp.sceneStorageKey);
+        if (data.length != serializer.GetBufferSize()) {
+            console.info('Integrity check failure. Cannot save data to the local storage.');
+            window.localStorage.setItem(PCLApp.sceneStorageKey, '');
+        }
         console.info('Scene data have been sucessfully saved to local storage.');
     };
     //=========================================
