@@ -137,11 +137,18 @@ class PCLApp implements Controlable, ActionDelegate {
 		//Dry run (to get the buffer size)
 		let serializer = new PCLSerializer(null);
 		this.dataHandler.scene.Serialize(serializer);
+		let bufferSize = serializer.GetBufferSize();
 		//Actual serialization
-		serializer = new PCLSerializer(serializer.GetBufferSize());
+		serializer = new PCLSerializer(bufferSize);
 		this.dataHandler.scene.Serialize(serializer);
 		window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
-		console.info('Scene data have been sucessfully saved to local storage.')
+
+		let data = window.localStorage.getItem(PCLApp.sceneStorageKey);
+		if (data.length != serializer.GetBufferSize()) {
+			console.info('Integrity check failure. Cannot save data to the local storage.');
+			window.localStorage.setItem(PCLApp.sceneStorageKey, '');
+		}
+		console.info('Scene data have been sucessfully saved to local storage.');
 	}
 
 	//=========================================
