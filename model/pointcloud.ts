@@ -78,9 +78,12 @@ class PointCloud {
 	}
 
 	PushNormal(n: Vector): void {
-		if (this.normalssize + n.Dimension() > this.normals.length) {
-			//Not optimal (Reserve should be called before callin PushPoint)
-			this.Reserve(this.normals.length + n.Dimension());
+		if (this.normals.length < this.points.length) {
+			let normals = new Float32Array(this.points.length);
+			for (let index = 0; index < this.normalssize; index++) {
+				normals[index] = this.normals[index];
+			}
+			this.normals = normals;
 		}
 
 		for (let index = 0; index < n.Dimension(); index++) {

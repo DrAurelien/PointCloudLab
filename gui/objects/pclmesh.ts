@@ -108,7 +108,7 @@ class PCLMeshParsingHandler extends PCLPrimitiveParsingHandler {
 				return true;
 			case 'faces':
 				let nbfaces = parser.reader.GetNextInt32();
-				this.faces = new Array<number>(nbfaces);
+				this.faces = new Array(nbfaces);
 				for (let index = 0; index < nbfaces; index++) {
 					this.faces[index] = parser.reader.GetNextInt32();
 				}
@@ -120,8 +120,10 @@ class PCLMeshParsingHandler extends PCLPrimitiveParsingHandler {
 	FinalizePrimitive(): PCLPrimitive {
 		let cloud = new PointCloud(this.points);
 		let mesh = new Mesh(cloud, this.faces);
-		mesh.ComputeNormals(() => mesh.ComputeOctree());
-		return new PCLMesh(mesh);
+		let result = new PCLMesh(mesh);
+		mesh.ComputeNormals(() => result.NotifyChange(result, ChangeType.Display));
+		mesh.ComputeOctree();
+		return result;
 	}
 }
 
