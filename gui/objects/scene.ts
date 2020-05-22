@@ -44,28 +44,6 @@ class Scene extends PCLGroup {
 		l.owner = this;
 	}
 
-	GetSelected(): PCLNode[] {
-		let selected: PCLNode[] = [];
-		this.Contents.Apply(p => {
-			if (p.selected) {
-				selected.push(p);
-			}
-			return true;
-		});
-		return selected;
-	}
-
-	GetSelectionBoundingBox(): BoundingBox {
-		let result = new BoundingBox();
-		this.Contents.Apply(p => {
-			if (p.selected) {
-				result.AddBoundingBox(p.GetBoundingBox());
-			}
-			return true;
-		});
-		return result;
-	}
-
 	GetDisplayIcon(): string {
 		return 'fa-desktop';
 	}

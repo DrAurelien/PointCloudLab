@@ -21,6 +21,10 @@ abstract class PropertyWithValue<T> extends Property {
 		this.input.value = value().toString();
 		this.input.onchange = (ev) => self.NotifyChange();
 		this.container.appendChild(this.input);
+
+		if (!changeHandler) {
+			this.SetReadonly();
+		}
 	}
 
 	Refresh() {
