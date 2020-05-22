@@ -66,6 +66,10 @@ class Light extends PCLNode implements LightingPosition {
 		this.position = p;
 	}
 
+	GetDistance(p: Vector): number {
+		return p.Minus(this.position).Norm();
+	}
+
 	static SerializationID = 'LIGHT';
 	GetSerializationID(): string {
 		return Light.SerializationID;

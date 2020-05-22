@@ -27,7 +27,20 @@ class Geometry {
 	static DegreeToRadian(a: number): number {
 		return Math.PI * a / 180.0;
 	}
+
 	static RadianToDegree(a: number): number {
 		return a / Math.PI * 180;
+	}
+
+	static DistanceToSegment(point: Vector, a: Vector, b: Vector) {
+		let ab = b.Minus(a);
+		let ap = point.Minus(a)
+		if (ap.Dot(ab) <= 0)
+			return ap.Norm();
+		let bp = point.Minus(b);
+		if (bp.Dot(ab) >= 0)
+			return bp.Norm();
+		ab.Normalize();
+		return ap.Cross(ab).Norm();
 	}
 }

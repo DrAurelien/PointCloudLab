@@ -43,6 +43,10 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 		return this.mesh.RayIntersection(ray, this);
 	}
 
+	GetDistance(p: Vector): number {
+		return this.mesh.Distance(p);
+	}
+
 	TransformPrivitive(transform: Transform) {
 		this.mesh.ApplyTransform(transform);
 		this.InvalidateDrawing();

@@ -90,7 +90,7 @@ class DataHandler extends HideablePannel {
 				this.propertiesArea.AddControl(properties);
 			}
 		}
-		else if(properties) {
+		if(properties) {
 			properties.Refresh();
 		}
 		this.HandlePropertiesWindowVisibility();

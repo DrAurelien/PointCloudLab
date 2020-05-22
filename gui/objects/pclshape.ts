@@ -42,6 +42,10 @@ abstract class PCLShape extends PCLPrimitive implements Pickable {
 		return this.GetShape().RayIntersection(ray, this);
 	}
 
+	GetDistance(p: Vector): number {
+		return this.GetShape().Distance(p);
+	}
+
 	PrepareForDrawing(drawingContext: DrawingContext): boolean {
 		if (this.meshsampling !== drawingContext.sampling) {
 			//Asynchroneous computation of the mesh to be rendered

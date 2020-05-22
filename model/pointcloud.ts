@@ -113,6 +113,11 @@ class PointCloud {
 		this.normalssize = 0;
 	}
 
+	Distance(p: Vector): number {
+		let nearest = this.KNearestNeighbours(p, 1);
+		return Math.sqrt(nearest[0].sqrdistance);
+	}
+
 	KNearestNeighbours = function (queryPoint: Vector, k: number) {
 		if (!this.tree) {
 			this.tree = new KDTree(this);

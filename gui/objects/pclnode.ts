@@ -61,6 +61,7 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 	abstract DrawNode(drawingContext: DrawingContext): void;
 	abstract RayIntersection(ray: Ray): Picking;
 	abstract GetBoundingBox(): BoundingBox;
+	abstract GetDistance(p: Vector): number;
 
 	// https://fontawesome.com/cheatsheet
 	abstract GetDisplayIcon(): string;

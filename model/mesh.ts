@@ -99,6 +99,22 @@ class Mesh {
 		return result;
 	}
 
+	Distance(p: Vector): number {
+		if (this.octree) {
+			return this.octree.Distance(p);
+		}
+
+		//We should never get here !!! but just in case ...
+		let dist = null;
+		for (let ii = 0; ii < this.Size(); ii++) {
+			let dd = this.GetFace(ii).Distance(p);
+			if (dist == null || dd < dist) {
+				dist = dd;
+			}
+		}
+		return dist;
+	}
+
 	ApplyTransform(transform: Transform) {
 		this.pointcloud.ApplyTransform(transform);
 	}

@@ -306,7 +306,7 @@ class DensityComputer extends IterativeLongProcess {
 	Iterate(step: number) {
 		let cloud = this.cloud.cloud;
 		let nbh = cloud.KNearestNeighbours(cloud.GetPoint(step), this.k + 1);
-		let ballSqrRadius = nbh.pop().distance;
+		let ballSqrRadius = nbh.pop().sqrdistance;
 		this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
 	}
 }
@@ -355,11 +355,55 @@ class NoiseComputer extends IterativeLongProcess {
 		let nbh = cloud.KNearestNeighbours(point, this.k + 1);
 		let noise = 0;
 		for (let index = 0; index < nbh.length; index++) {
-			noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].distance);
+			noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].sqrdistance);
 		}
 		this.scalarfield.PushValue(noise);
 	}
 }
+
+//===================================================
+// Noise
+//===================================================
+class ComputeDistancesAction extends PCLCloudAction {
+	constructor(cloud: PCLPointCloud, private target: PCLNode) {
+		super(cloud, 'Compute distances', 'Compute distances from a point cloud to another object');
+	}
+
+	GetFieldName(): string {
+		return 'Distance to "' + this.target.name + '"';
+	}
+
+	Enabled(): boolean {
+		return !this.GetPCLCloud().GetScalarField(this.GetFieldName());
+	}
+
+	Run() {
+		let noise = new DistancesComputer(this.GetPCLCloud(), this.target, this.GetFieldName());
+		noise.Start();
+	}
+}
+
+class DistancesComputer extends IterativeLongProcess {
+	scalarfield: PCLScalarField;
+
+	constructor(private cloud: PCLPointCloud, private target:PCLNode, private fieldName) {
+		super(cloud.cloud.Size(), 'Computing distances');
+	}
+	
+	Initialize() {
+		this.scalarfield = this.cloud.AddScalarField(this.fieldName);
+	}
+
+	Finalize() {
+		this.cloud.SetCurrentField(this.fieldName);
+	}
+
+	Iterate(step: number) {
+		let cloud = this.cloud.cloud;
+		this.scalarfield.PushValue(this.target.GetDistance(cloud.GetPoint(step)));
+	}
+}
+
 
 //===================================================
 // File export

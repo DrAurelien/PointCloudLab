@@ -22,15 +22,21 @@ class MeshFace {
 		let tt = (dd - line.from.Dot(this.Normal)) / nn;
 
 		let point = line.from.Plus(line.dir.Times(tt));
+		if (!this.Inside(point)) {
+			return null;
+		}
 
-		//Check the point is inside the triangle
+		return tt;
+	}
+
+	Inside(point: Vector): boolean {
 		for (let ii = 0; ii < 3; ii++) {
 			let test = point.Minus(this.points[ii]).Cross(this.points[(ii + 1) % 3].Minus(this.points[ii]));
 			if (test.Dot(this.Normal) > 0) {
-				return null;
+				return false;;
 			}
 		}
-		return tt;
+		return true;
 	}
 
 	get Normal(): Vector {
@@ -59,5 +65,19 @@ class MeshFace {
 		//Todo : Normal cross edges ?
 
 		return !box.TestAxisSeparation(this.points[0], this.Normal);
+	}
+
+	Distance(point: Vector): number {
+		if (this.Inside(point)) {
+			return Math.abs(this.Normal.Dot(point.Minus(this.points[0])));
+		}
+		let dist = null;
+		for (let ii = 0; ii < 3; ii++) {
+			let dd = Geometry.DistanceToSegment(point, this.points[ii], this.points[(ii + 1) % 3]);
+			if (dist == null || dd < dist) {
+				dist = dd;
+			}
+		}
+		return dist;
 	}
 }

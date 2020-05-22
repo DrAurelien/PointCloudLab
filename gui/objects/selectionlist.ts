@@ -71,13 +71,17 @@ class SelectionList implements Notifiable {
 	}
 
 	GetActions(delegate: ActionDelegate): Action[] {
+		let actions: Action[] = null
 		if (this.Size() == 1) {
-			return this.items[0].GetActions(delegate);
+			actions = this.items[0].GetActions(delegate);
 		}
 		else {
-
+			if (this.Size() == 2 && this.items[0] instanceof PCLPointCloud) {
+				actions = actions || [];
+				actions.push(new ComputeDistancesAction(this.items[0] as PCLPointCloud, this.items[1]));
+			}
 		}
-		return null;
+		return actions;
 	}
 
 	GetSingleSelection(): PCLNode {

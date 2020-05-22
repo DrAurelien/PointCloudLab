@@ -95,4 +95,20 @@ class BoundingBox {
 		}
 		return result;
 	}
+
+	SqrDistance(p: Vector): number {
+		if (!this.IsValid()) {
+			return null;
+		}
+		let delta = new Vector([0.0, 0.0, 0.0]);
+		for (let index = 0; index < 3; index++) {
+			if (p.Get(index) < this.min.Get(index)) {
+				delta.Set(index, this.min.Get(index) - p.Get(index))
+			}
+			else if (p.Get(index) > this.max.Get(index)) {
+				delta.Set(index, p.Get(index) - this.max.Get(index));
+			}
+		}
+		return delta.SqrNorm();
+	}
 }

@@ -125,8 +125,10 @@ class Torus extends Shape {
 	}
 
 	Distance(point: Vector): number {
-		//TODO
-		return 0;
+		let d = point.Minus(this.center);
+		let aa = this.greatRadius - this.axis.Cross(d).Norm();
+		let bb = this.axis.Dot(d);
+		return Math.abs(Math.sqrt(aa * aa + bb * bb) - this.smallRadius);
 	}
 
 	ApplyTransform(transform: Transform) {
