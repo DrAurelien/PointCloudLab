@@ -203,7 +203,7 @@ class DataItem implements Control, Notifiable {
 	//When right - clicking an item
 	ItemMenu(ev: MouseEvent): boolean {
 		let event: MouseEvent = ev || (window.event as MouseEvent);
-		this.ItemClicked(event);
+		this.item.Select(true);
 		let actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
 		if (actions) {
 			Popup.CreatePopup(this, actions);

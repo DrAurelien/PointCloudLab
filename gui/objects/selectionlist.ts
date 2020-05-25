@@ -71,7 +71,15 @@ class SelectionList implements Notifiable {
 	}
 
 	GetActions(delegate: ActionDelegate): Action[] {
-		let actions: Action[] = null
+		let actions: Action[] = []
+
+		let self = this;
+		if (this.Size() > 1) {
+			actions.push(new SimpleAction('Hide all', () => this.ShowAll(false), 'Hide all the selected items'));
+			actions.push(new SimpleAction('Show all', () => this.ShowAll(true), 'Show all the selected items'));
+			actions.push(null);
+		}
+
 		if (this.Size() == 1) {
 			actions = this.items[0].GetActions(delegate);
 		}
@@ -81,7 +89,14 @@ class SelectionList implements Notifiable {
 				actions.push(new ComputeDistancesAction(this.items[0] as PCLPointCloud, this.items[1]));
 			}
 		}
+
 		return actions;
+	}
+
+	ShowAll(b: boolean) {
+		for (let index = 0; index < this.Size(); index++) {
+			this.items[index].SetVisibility(b);
+		}
 	}
 
 	GetSingleSelection(): PCLNode {

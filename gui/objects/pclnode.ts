@@ -92,9 +92,16 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		this.Select(!this.selected);
 	}
 
+	SetVisibility(b: boolean) {
+		let notify: boolean = b !== this.visible;
+		this.visible = b;
+		if (notify) {
+			this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		}
+	}
+
 	ToggleVisibility() {
-		this.visible = !this.visible;
-		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		this.SetVisibility(!this.visible);
 	}
 
 	GetActions(delegate: ActionDelegate): Action[] {

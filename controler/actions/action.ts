@@ -6,6 +6,14 @@
 	abstract Enabled(): boolean;
 
 	abstract Run();
+
+	static IsActionProvider(x: any): x is ActionsProvider {
+		return x && x.GetActions && x.GetActions instanceof Function;
+	}
+}
+
+interface ActionsProvider {
+	GetActions(): Action[];
 }
 
 class SimpleAction extends Action {
