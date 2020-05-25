@@ -74,6 +74,11 @@ class DataItem implements Control, Notifiable {
 		}
 		this.container.appendChild(this.itemChildContainer);
 
+		let children = item.GetChildren();
+		for (let index = 0; index < children.length; index++) {
+			this.AddSon(children[index]);
+		}
+
 		//Bind HTML content to match the actual state of the item
 		item.AddChangeListener(this);
 		item.AddChangeListener(this.dataHandler.selection);
