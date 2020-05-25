@@ -17,6 +17,7 @@ var MouseTracker = /** @class */ (function () {
         this.y = event.clientY;
         this.button = event.which;
         this.date = new Date();
+        this.ctrlKey = event.ctrlKey;
     }
     MouseTracker.prototype.IsQuickEvent = function () {
         var now = new Date();
@@ -637,7 +638,7 @@ var CameraControler = /** @class */ (function (_super) {
     CameraControler.prototype.HandleClick = function (tracker) {
         switch (tracker.button) {
             case 1: //Left mouse
-                this.target.PickItem(tracker.x, tracker.y);
+                this.target.PickItem(tracker.x, tracker.y, !tracker.ctrlKey);
                 break;
             case 2: //Middle mouse
                 this.target.FocusOnCurrentItem();
@@ -784,9 +785,11 @@ var TransformControler = /** @class */ (function (_super) {
     TransformControler.prototype.HandleClick = function (tracker) {
         switch (tracker.button) {
             case 1: //Left mouse
-                this.target.PickItem(tracker.x, tracker.y);
+                this.target.PickItem(tracker.x, tracker.y, !tracker.ctrlKey);
+                break;
             case 2: //Middle mouse
                 this.target.FocusOnCurrentItem();
+                break;
             default:
                 return true;
         }
@@ -808,6 +811,9 @@ var Action = /** @class */ (function () {
         this.label = label;
         this.hintMessage = hintMessage;
     }
+    Action.IsActionProvider = function (x) {
+        return x && x.GetActions && x.GetActions instanceof Function;
+    };
     return Action;
 }());
 var SimpleAction = /** @class */ (function (_super) {
@@ -1028,6 +1034,21 @@ var BoundingBox = /** @class */ (function () {
             }
         }
         return result;
+    };
+    BoundingBox.prototype.SqrDistance = function (p) {
+        if (!this.IsValid()) {
+            return null;
+        }
+        var delta = new Vector([0.0, 0.0, 0.0]);
+        for (var index = 0; index < 3; index++) {
+            if (p.Get(index) < this.min.Get(index)) {
+                delta.Set(index, this.min.Get(index) - p.Get(index));
+            }
+            else if (p.Get(index) > this.max.Get(index)) {
+                delta.Set(index, p.Get(index) - this.max.Get(index));
+            }
+        }
+        return delta.SqrNorm();
     };
     return BoundingBox;
 }());
@@ -1379,6 +1400,9 @@ var PropertyWithValue = /** @class */ (function (_super) {
         _this.input.value = value().toString();
         _this.input.onchange = function (ev) { return self.NotifyChange(); };
         _this.container.appendChild(_this.input);
+        if (!changeHandler) {
+            _this.SetReadonly();
+        }
         return _this;
     }
     PropertyWithValue.prototype.Refresh = function () {
@@ -1771,6 +1795,7 @@ var PCLNode = /** @class */ (function () {
         this.deletable = true;
         this.owner = null;
         this.changeListeners = [];
+        this.pendingChanges = null;
     }
     PCLNode.prototype.Draw = function (drawingContext) {
         if (this.visible) {
@@ -1798,9 +1823,18 @@ var PCLNode = /** @class */ (function () {
             this.NotifyChange(this, ChangeType.Selection);
         }
     };
+    PCLNode.prototype.ToggleSelection = function () {
+        this.Select(!this.selected);
+    };
+    PCLNode.prototype.SetVisibility = function (b) {
+        var notify = b !== this.visible;
+        this.visible = b;
+        if (notify) {
+            this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+        }
+    };
     PCLNode.prototype.ToggleVisibility = function () {
-        this.visible = !this.visible;
-        this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+        this.SetVisibility(!this.visible);
     };
     PCLNode.prototype.GetActions = function (delegate) {
         var self = this;
@@ -1837,12 +1871,18 @@ var PCLNode = /** @class */ (function () {
         return proc(this);
     };
     PCLNode.prototype.NotifyChange = function (source, type) {
+        source.pendingChanges = source.pendingChanges ? (source.pendingChanges | type) : type;
         for (var index = 0; index < this.changeListeners.length; index++) {
-            this.changeListeners[index](source, type);
+            this.changeListeners[index].NotifyChange(source, type);
         }
     };
-    PCLNode.prototype.AddChangeListener = function (onchange) {
-        this.changeListeners.push(onchange);
+    PCLNode.prototype.AddChangeListener = function (listener) {
+        if (this.changeListeners.indexOf(listener) < 0) {
+            this.changeListeners.push(listener);
+            if (this.pendingChanges != null) {
+                listener.NotifyChange(this, this.pendingChanges);
+            }
+        }
     };
     PCLNode.prototype.ClearProperties = function () {
         if (this.properties) {
@@ -2394,14 +2434,20 @@ var MeshFace = /** @class */ (function () {
         }
         var tt = (dd - line.from.Dot(this.Normal)) / nn;
         var point = line.from.Plus(line.dir.Times(tt));
-        //Check the point is inside the triangle
+        if (!this.Inside(point)) {
+            return null;
+        }
+        return tt;
+    };
+    MeshFace.prototype.Inside = function (point) {
         for (var ii = 0; ii < 3; ii++) {
             var test = point.Minus(this.points[ii]).Cross(this.points[(ii + 1) % 3].Minus(this.points[ii]));
             if (test.Dot(this.Normal) > 0) {
-                return null;
+                return false;
+                ;
             }
         }
-        return tt;
+        return true;
     };
     Object.defineProperty(MeshFace.prototype, "Normal", {
         get: function () {
@@ -2434,6 +2480,19 @@ var MeshFace = /** @class */ (function () {
         //Todo : Normal cross edges ?
         return !box.TestAxisSeparation(this.points[0], this.Normal);
     };
+    MeshFace.prototype.Distance = function (point) {
+        if (this.Inside(point)) {
+            return Math.abs(this.Normal.Dot(point.Minus(this.points[0])));
+        }
+        var dist = null;
+        for (var ii = 0; ii < 3; ii++) {
+            var dd = Geometry.DistanceToSegment(point, this.points[ii], this.points[(ii + 1) % 3]);
+            if (dist == null || dd < dist) {
+                dist = dd;
+            }
+        }
+        return dist;
+    };
     return MeshFace;
 }());
 /// <reference path="../maths/vector.ts" />
@@ -2462,6 +2521,12 @@ var Octree = /** @class */ (function () {
             this.root.RayIntersection(ray, result);
         }
         return result;
+    };
+    Octree.prototype.Distance = function (p) {
+        if (this.root) {
+            return this.root.Distance(p);
+        }
+        return null;
     };
     Octree.prototype.GetFace = function (index) {
         return this.facescache[index];
@@ -2548,7 +2613,54 @@ var OctreeCell = /** @class */ (function () {
             }
         }
     };
+    OctreeCell.prototype.Distance = function (p) {
+        var nbsons = this.sons.length;
+        if (nbsons > 0) {
+            var celldistances = [];
+            for (var index = 0; index < nbsons; index++) {
+                celldistances.push(new OctreeCellWithDistance(this.sons[index], p));
+            }
+            celldistances = celldistances.sort(function (a, b) { return a.CompareWith(b); });
+            var dist = null;
+            for (var index = 0; index < celldistances.length; index++) {
+                var bd = celldistances[index].sqrDistToBox;
+                if (dist !== null && (dist * dist) < bd) {
+                    return dist;
+                }
+                var dd = celldistances[index].ActualDistance();
+                if (dist == null || dd < dist) {
+                    dist = dd;
+                }
+            }
+            return dist;
+        }
+        else {
+            var dist = null;
+            for (var index = 0; index < this.faces.length; index++) {
+                var face = this.octree.GetFace(this.faces[index]);
+                var dd = face.Distance(p);
+                if (dist == null || dd < dist) {
+                    dist = dd;
+                }
+            }
+            return dist;
+        }
+    };
     return OctreeCell;
+}());
+var OctreeCellWithDistance = /** @class */ (function () {
+    function OctreeCellWithDistance(cell, p) {
+        this.cell = cell;
+        this.p = p;
+        this.sqrDistToBox = cell.boundingbox.SqrDistance(p);
+    }
+    OctreeCellWithDistance.prototype.CompareWith = function (cell) {
+        return this.sqrDistToBox - cell.sqrDistToBox;
+    };
+    OctreeCellWithDistance.prototype.ActualDistance = function () {
+        return this.cell.Distance(this.p);
+    };
+    return OctreeCellWithDistance;
 }());
 /// <reference path="../maths/vector.ts" />
 /// <reference path="pointcloud.ts" />
@@ -2561,8 +2673,8 @@ var Neighbourhood = /** @class */ (function () {
         this.neighbours = [];
     };
     Neighbourhood.prototype.GetPointData = function (pointIndex) {
-        var distance = this.queryPoint.Minus(this.cloud.GetPoint(pointIndex)).SqrNorm();
-        return new Neighbour(distance, pointIndex);
+        var sqrdist = this.queryPoint.Minus(this.cloud.GetPoint(pointIndex)).SqrNorm();
+        return new Neighbour(sqrdist, pointIndex);
     };
     Neighbourhood.prototype.Accept = function (distance) {
         var sqrdist = distance * distance;
@@ -2581,8 +2693,8 @@ var Neighbourhood = /** @class */ (function () {
 // Neighbor
 //==================================
 var Neighbour = /** @class */ (function () {
-    function Neighbour(distance, index) {
-        this.distance = distance;
+    function Neighbour(sqrdistance, index) {
+        this.sqrdistance = sqrdistance;
         this.index = index;
     }
     return Neighbour;
@@ -2605,7 +2717,7 @@ var KNearestNeighbours = /** @class */ (function (_super) {
             this.neighbours.push(data);
         }
         //Locate the cursor to the data whose distance is smaller than the current data distance
-        while (cursor > 0 && data.distance < this.neighbours[cursor - 1].distance) {
+        while (cursor > 0 && data.sqrdistance < this.neighbours[cursor - 1].sqrdistance) {
             if (cursor < this.k) {
                 this.neighbours[cursor] = this.neighbours[cursor - 1];
             }
@@ -2621,7 +2733,7 @@ var KNearestNeighbours = /** @class */ (function (_super) {
         if (this.neighbours.length < this.k) {
             return null;
         }
-        return this.neighbours[this.neighbours.length - 1].distance;
+        return this.neighbours[this.neighbours.length - 1].sqrdistance;
     };
     return KNearestNeighbours;
 }(Neighbourhood));
@@ -3049,6 +3161,10 @@ var PointCloud = /** @class */ (function () {
     PointCloud.prototype.ClearNormals = function () {
         this.normalssize = 0;
     };
+    PointCloud.prototype.Distance = function (p) {
+        var nearest = this.KNearestNeighbours(p, 1);
+        return Math.sqrt(nearest[0].sqrdistance);
+    };
     PointCloud.prototype.RayIntersection = function (ray) {
         return new Picking(this);
     };
@@ -3195,6 +3311,20 @@ var Mesh = /** @class */ (function () {
         }
         return result;
     };
+    Mesh.prototype.Distance = function (p) {
+        if (this.octree) {
+            return this.octree.Distance(p);
+        }
+        //We should never get here !!! but just in case ...
+        var dist = null;
+        for (var ii = 0; ii < this.Size(); ii++) {
+            var dd = this.GetFace(ii).Distance(p);
+            if (dist == null || dd < dist) {
+                dist = dd;
+            }
+        }
+        return dist;
+    };
     Mesh.prototype.ApplyTransform = function (transform) {
         this.pointcloud.ApplyTransform(transform);
     };
@@ -3298,6 +3428,9 @@ var PCLMesh = /** @class */ (function (_super) {
     };
     PCLMesh.prototype.RayIntersection = function (ray) {
         return this.mesh.RayIntersection(ray, this);
+    };
+    PCLMesh.prototype.GetDistance = function (p) {
+        return this.mesh.Distance(p);
     };
     PCLMesh.prototype.TransformPrivitive = function (transform) {
         this.mesh.ApplyTransform(transform);
@@ -3470,26 +3603,48 @@ var Hint = /** @class */ (function () {
         this.container = document.createElement('div');
         this.container.className = 'Hint';
         this.container.appendChild(document.createTextNode(message));
-        var element = this.owner.GetElement();
-        var self = this;
-        element.onmouseenter = function (ev) { self.Show(); };
-        element.onmouseleave = function (ev) { self.Hide(); };
+        if (owner) {
+            var element = this.owner.GetElement();
+            var self_4 = this;
+            element.onmouseenter = function (ev) { self_4.Show(); };
+            element.onmouseleave = function (ev) { self_4.Hide(); };
+        }
     }
     Hint.prototype.Show = function () {
+        if (Hint.current) {
+            Hint.current.Hide();
+        }
         if (!this.container.parentElement) {
             document.body.appendChild(this.container);
         }
+        Hint.current = this;
     };
     Hint.prototype.Hide = function () {
         if (this.container.parentElement) {
             this.container.parentElement.removeChild(this.container);
         }
+        if (Hint.current == this) {
+            Hint.current = null;
+        }
     };
     Hint.prototype.GetElement = function () {
         return this.container;
     };
+    Hint.current = null;
     return Hint;
 }());
+var TemporaryHint = /** @class */ (function (_super) {
+    __extends(TemporaryHint, _super);
+    function TemporaryHint(message) {
+        var _this = _super.call(this, null, message) || this;
+        var self = _this;
+        _this.Show();
+        setTimeout(function () { return self.Hide(); }, TemporaryHint.DisplayDuration);
+        return _this;
+    }
+    TemporaryHint.DisplayDuration = 4000;
+    return TemporaryHint;
+}(Hint));
 /// <reference path="control.ts" />
 /// <reference path="hint.ts" />
 var Button = /** @class */ (function () {
@@ -3691,15 +3846,18 @@ var PCLShape = /** @class */ (function (_super) {
     PCLShape.prototype.RayIntersection = function (ray) {
         return this.GetShape().RayIntersection(ray, this);
     };
+    PCLShape.prototype.GetDistance = function (p) {
+        return this.GetShape().Distance(p);
+    };
     PCLShape.prototype.PrepareForDrawing = function (drawingContext) {
         if (this.meshsampling !== drawingContext.sampling) {
             //Asynchroneous computation of the mesh to be rendered
-            var self_4 = this;
+            var self_5 = this;
             this.GetShape().ComputeMesh(drawingContext.sampling, function (mesh) {
-                if (self_4.meshsampling != drawingContext.sampling) {
-                    self_4.meshsampling = drawingContext.sampling;
-                    self_4.drawing.FillBuffers(mesh, drawingContext);
-                    self_4.NotifyChange(self_4, ChangeType.Display);
+                if (self_5.meshsampling != drawingContext.sampling) {
+                    self_5.meshsampling = drawingContext.sampling;
+                    self_5.drawing.FillBuffers(mesh, drawingContext);
+                    self_5.NotifyChange(self_5, ChangeType.Display);
                 }
             });
             //Not ready yet. Wait for NotifyChange to be handled 
@@ -4797,8 +4955,10 @@ var Torus = /** @class */ (function (_super) {
         return result;
     };
     Torus.prototype.Distance = function (point) {
-        //TODO
-        return 0;
+        var d = point.Minus(this.center);
+        var aa = this.greatRadius - this.axis.Cross(d).Norm();
+        var bb = this.axis.Dot(d);
+        return Math.abs(Math.sqrt(aa * aa + bb * bb) - this.smallRadius);
     };
     Torus.prototype.ApplyTransform = function (transform) {
         this.axis = transform.TransformVector(this.axis).Normalized();
@@ -4989,6 +5149,16 @@ var PCLGroup = /** @class */ (function (_super) {
         }
         return picked;
     };
+    PCLGroup.prototype.GetDistance = function (p) {
+        var dist = null;
+        for (var index = 0; index < this.children.length; index++) {
+            var d = this.children[index].GetDistance(p);
+            if (dist == null || d < dist) {
+                dist = d;
+            }
+        }
+        return dist;
+    };
     PCLGroup.prototype.Add = function (son) {
         if (son.owner) {
             son.owner.Remove(son);
@@ -5065,8 +5235,8 @@ var PCLGroup = /** @class */ (function (_super) {
     };
     PCLGroup.prototype.FillProperties = function () {
         if (this.properties) {
-            var self_5 = this;
-            var children = new NumberProperty('Children', function () { return self_5.children.length; }, null);
+            var self_6 = this;
+            var children = new NumberProperty('Children', function () { return self_6.children.length; }, null);
             children.SetReadonly();
             this.properties.Push(children);
         }
@@ -5263,6 +5433,17 @@ var Geometry = /** @class */ (function () {
     };
     Geometry.RadianToDegree = function (a) {
         return a / Math.PI * 180;
+    };
+    Geometry.DistanceToSegment = function (point, a, b) {
+        var ab = b.Minus(a);
+        var ap = point.Minus(a);
+        if (ap.Dot(ab) <= 0)
+            return ap.Norm();
+        var bp = point.Minus(b);
+        if (bp.Dot(ab) >= 0)
+            return bp.Norm();
+        ab.Normalize();
+        return ap.Cross(ab).Norm();
     };
     return Geometry;
 }());
@@ -5539,7 +5720,7 @@ var PCLScalarField = /** @class */ (function (_super) {
         return new PCLScalarFieldParsingHandler();
     };
     PCLScalarField.DensityFieldName = 'Density';
-    PCLScalarField.NoiseFieldName = 'Noise	';
+    PCLScalarField.NoiseFieldName = 'Noise';
     PCLScalarField.SerializationID = 'SCALARFIELD';
     return PCLScalarField;
 }(ScalarField));
@@ -5677,6 +5858,9 @@ var PCLPointCloud = /** @class */ (function (_super) {
     PCLPointCloud.prototype.RayIntersection = function (ray) {
         return new Picking(this);
     };
+    PCLPointCloud.prototype.GetDistance = function (p) {
+        return this.cloud.Distance(p);
+    };
     PCLPointCloud.prototype.GetPrimitiveBoundingBox = function () {
         return this.cloud.boundingbox;
     };
@@ -5717,8 +5901,8 @@ var PCLPointCloud = /** @class */ (function (_super) {
     PCLPointCloud.prototype.FillProperties = function () {
         _super.prototype.FillProperties.call(this);
         if (this.properties) {
-            var self_6 = this;
-            var points = new NumberProperty('Points', function () { return self_6.cloud.Size(); }, null);
+            var self_7 = this;
+            var points = new NumberProperty('Points', function () { return self_7.cloud.Size(); }, null);
             points.SetReadonly();
             this.properties.Push(points);
             if (this.fields.length) {
@@ -6053,9 +6237,9 @@ var RansacDetectionAction = /** @class */ (function (_super) {
     RansacDetectionAction.prototype.Run = function () {
         var cloud = this.GetPCLCloud();
         if (!cloud.ransac) {
-            var self_7 = this;
+            var self_8 = this;
             cloud.ransac = new Ransac(this.GetCloud());
-            var dialog = new Dialog(function (d) { return self_7.InitializeAndLauchRansac(d); }, function () {
+            var dialog = new Dialog(function (d) { return self_8.InitializeAndLauchRansac(d); }, function () {
                 cloud.ransac = null;
                 return true;
             });
@@ -6067,8 +6251,8 @@ var RansacDetectionAction = /** @class */ (function (_super) {
             dialog.InsertCheckBox('Cylinders', true);
         }
         else {
-            var self_8 = this;
-            cloud.ransac.FindBestFittingShape(function (s) { return self_8.HandleResult(s); });
+            var self_9 = this;
+            cloud.ransac.FindBestFittingShape(function (s) { return self_9.HandleResult(s); });
         }
     };
     RansacDetectionAction.prototype.InitializeAndLauchRansac = function (properties) {
@@ -6276,7 +6460,7 @@ var DensityComputer = /** @class */ (function (_super) {
     DensityComputer.prototype.Iterate = function (step) {
         var cloud = this.cloud.cloud;
         var nbh = cloud.KNearestNeighbours(cloud.GetPoint(step), this.k + 1);
-        var ballSqrRadius = nbh.pop().distance;
+        var ballSqrRadius = nbh.pop().sqrdistance;
         this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
     };
     return DensityComputer;
@@ -6322,11 +6506,54 @@ var NoiseComputer = /** @class */ (function (_super) {
         var nbh = cloud.KNearestNeighbours(point, this.k + 1);
         var noise = 0;
         for (var index = 0; index < nbh.length; index++) {
-            noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].distance);
+            noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].sqrdistance);
         }
         this.scalarfield.PushValue(noise);
     };
     return NoiseComputer;
+}(IterativeLongProcess));
+//===================================================
+// Noise
+//===================================================
+var ComputeDistancesAction = /** @class */ (function (_super) {
+    __extends(ComputeDistancesAction, _super);
+    function ComputeDistancesAction(cloud, target) {
+        var _this = _super.call(this, cloud, 'Compute distances', 'Compute distances from a point cloud to another object') || this;
+        _this.target = target;
+        return _this;
+    }
+    ComputeDistancesAction.prototype.GetFieldName = function () {
+        return 'Distance to "' + this.target.name + '"';
+    };
+    ComputeDistancesAction.prototype.Enabled = function () {
+        return !this.GetPCLCloud().GetScalarField(this.GetFieldName());
+    };
+    ComputeDistancesAction.prototype.Run = function () {
+        var noise = new DistancesComputer(this.GetPCLCloud(), this.target, this.GetFieldName());
+        noise.Start();
+    };
+    return ComputeDistancesAction;
+}(PCLCloudAction));
+var DistancesComputer = /** @class */ (function (_super) {
+    __extends(DistancesComputer, _super);
+    function DistancesComputer(cloud, target, fieldName) {
+        var _this = _super.call(this, cloud.cloud.Size(), 'Computing distances') || this;
+        _this.cloud = cloud;
+        _this.target = target;
+        _this.fieldName = fieldName;
+        return _this;
+    }
+    DistancesComputer.prototype.Initialize = function () {
+        this.scalarfield = this.cloud.AddScalarField(this.fieldName);
+    };
+    DistancesComputer.prototype.Finalize = function () {
+        this.cloud.SetCurrentField(this.fieldName);
+    };
+    DistancesComputer.prototype.Iterate = function (step) {
+        var cloud = this.cloud.cloud;
+        this.scalarfield.PushValue(this.target.GetDistance(cloud.GetPoint(step)));
+    };
+    return DistancesComputer;
 }(IterativeLongProcess));
 //===================================================
 // File export
@@ -7284,6 +7511,9 @@ var Light = /** @class */ (function (_super) {
             this.glPointsBuffer = new FloatArrayBuffer(new Float32Array(this.position.Flatten()), drawingContext, 3);
         }
         this.glPointsBuffer.BindAttribute(drawingContext.vertices);
+        drawingContext.gl.uniform3fv(drawingContext.color, new Float32Array(this.color));
+        drawingContext.EnableNormals(false);
+        drawingContext.EnableScalars(false);
     };
     Light.prototype.DrawNode = function (drawingContext) {
         this.PrepareRendering(drawingContext);
@@ -7297,9 +7527,9 @@ var Light = /** @class */ (function (_super) {
     };
     Light.prototype.FillProperties = function () {
         if (this.properties) {
-            var self_9 = this;
-            this.properties.Push(new VectorProperty('Position', function () { return self_9.position; }, false, function () { }));
-            this.properties.Push(new ColorProperty('Color', function () { return self_9.color; }, function (newColor) { return self_9.color = newColor; }));
+            var self_10 = this;
+            this.properties.Push(new VectorProperty('Position', function () { return self_10.position; }, false, function () { }));
+            this.properties.Push(new ColorProperty('Color', function () { return self_10.color; }, function (newColor) { return self_10.color = newColor; }));
         }
     };
     Light.prototype.GetDisplayIcon = function () {
@@ -7310,6 +7540,9 @@ var Light = /** @class */ (function (_super) {
     };
     Light.prototype.SetPositon = function (p) {
         this.position = p;
+    };
+    Light.prototype.GetDistance = function (p) {
+        return p.Minus(this.position).Norm();
     };
     Light.prototype.GetSerializationID = function () {
         return Light.SerializationID;
@@ -7412,26 +7645,6 @@ var Scene = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Scene.prototype.GetSelected = function () {
-        var selected = [];
-        this.Contents.Apply(function (p) {
-            if (p.selected) {
-                selected.push(p);
-            }
-            return true;
-        });
-        return selected;
-    };
-    Scene.prototype.GetSelectionBoundingBox = function () {
-        var result = new BoundingBox();
-        this.Contents.Apply(function (p) {
-            if (p.selected) {
-                result.AddBoundingBox(p.GetBoundingBox());
-            }
-            return true;
-        });
-        return result;
-    };
     Scene.prototype.GetDisplayIcon = function () {
         return 'fa-desktop';
     };
@@ -7811,12 +8024,16 @@ var PopupItem = /** @class */ (function () {
 /// <reference path="../../controler/actions/action.ts" />
 var Popup = /** @class */ (function () {
     function Popup(owner, actions) {
-        this.owner = owner;
         this.actions = actions;
         this.popupContainer = document.createElement('div');
         this.popupContainer.className = 'Popup';
         this.popupContainer.id = 'Popup';
-        var rect = owner.GetElement().getBoundingClientRect();
+        var element;
+        if (owner instanceof HTMLElement)
+            element = owner;
+        else
+            element = owner.GetElement();
+        var rect = element.getBoundingClientRect();
         this.popupContainer.style.top = rect.bottom + 'px';
         this.popupContainer.style.left = rect.left + 'px';
         this.popupContainer.onmouseleave = function () {
@@ -8313,6 +8530,7 @@ var ColorScale = /** @class */ (function (_super) {
 /// <reference path="./colorscale/colorscale.ts" />
 var DataItem = /** @class */ (function () {
     function DataItem(item, dataHandler) {
+        var _this = this;
         this.item = item;
         this.dataHandler = dataHandler;
         this.sons = [];
@@ -8329,21 +8547,22 @@ var DataItem = /** @class */ (function () {
             this.itemIcon.onclick = this.ItemFolded();
             this.itemContentContainer.ondblclick = this.ItemFolded();
         }
+        var self = this;
         //Quick actions (visibility, menu, deletion)
         this.visibilityIcon = document.createElement('i');
         this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
         this.itemContentContainer.appendChild(this.visibilityIcon);
-        this.visibilityIcon.onclick = this.ViewClicked();
+        this.visibilityIcon.onclick = function (ev) { return self.ViewClicked(); };
         var menuIcon = document.createElement('i');
         menuIcon.className = 'ItemAction fa fa-ellipsis-h';
         this.itemContentContainer.appendChild(menuIcon);
-        menuIcon.onclick = this.ItemMenu();
+        menuIcon.onclick = function (ev) { return _this.ItemMenu(ev); };
         var deletionIcon = null;
         if (this.item.deletable) {
             deletionIcon = document.createElement('i');
             deletionIcon.className = 'ItemAction fa fa-trash';
             this.itemContentContainer.appendChild(deletionIcon);
-            deletionIcon.onclick = this.DeletionClicked();
+            deletionIcon.onclick = function (ev) { return self.DeletionClicked(ev); };
         }
         //The item name by itself
         var itemNameContainer = document.createElement('span');
@@ -8352,8 +8571,8 @@ var DataItem = /** @class */ (function () {
         itemNameContainer.appendChild(this.itemName);
         this.itemContentContainer.appendChild(itemNameContainer);
         //Handle left/right click on the item title
-        this.itemContentContainer.onclick = this.ItemClicked();
-        this.itemContentContainer.oncontextmenu = this.ItemMenu();
+        this.itemContentContainer.onclick = function (ev) { return self.ItemClicked(ev); };
+        this.itemContentContainer.oncontextmenu = function (ev) { return _this.ItemMenu(ev); };
         //Populate children
         this.itemChildContainer = document.createElement('div');
         this.itemChildContainer.className = 'ItemChildContainer';
@@ -8361,13 +8580,9 @@ var DataItem = /** @class */ (function () {
             this.UpdateGroupFolding(item);
         }
         this.container.appendChild(this.itemChildContainer);
-        var children = this.item.GetChildren();
-        for (var index = 0; index < children.length; index++) {
-            this.AddSon(children[index]);
-        }
         //Bind HTML content to match the actual state of the item
-        var self = this;
-        item.AddChangeListener(function (source, change) { return self.OnItemChange(source, change); });
+        item.AddChangeListener(this);
+        item.AddChangeListener(this.dataHandler.selection);
     }
     // Hierarchy management
     DataItem.prototype.AddSon = function (item, index) {
@@ -8430,23 +8645,14 @@ var DataItem = /** @class */ (function () {
         }
     };
     //Whenever the data changes, handle it
-    DataItem.prototype.OnItemChange = function (source, change) {
+    DataItem.prototype.NotifyChange = function (source, change) {
         this.Refresh();
-        if (change & ChangeType.Selection) {
-            var currentItem = this.dataHandler.GetCurrentItem();
-            if (source.selected && currentItem !== source) {
-                this.dataHandler.SetCurrentItem(source);
-            }
-            else if (!source.selected && currentItem === source) {
-                this.dataHandler.SetCurrentItem(null);
-            }
-        }
         if (change & ChangeType.Creation) {
             if (!source.owner) {
                 var owner = this.dataHandler.GetNewItemOwner();
                 owner.Add(source);
             }
-            this.dataHandler.SetCurrentItem(source, true);
+            this.dataHandler.DeclareNewItem(source);
         }
         if (change & ChangeType.Children) {
             this.RefreshChildsList();
@@ -8455,12 +8661,10 @@ var DataItem = /** @class */ (function () {
             this.dataHandler.AskRendering();
         }
         if (change & ChangeType.ColorScale) {
-            this.dataHandler.RefreshColorScale(source);
+            this.dataHandler.RefreshColorScale();
         }
         if (change & ChangeType.Properties) {
-            if (this.dataHandler.GetCurrentItem() == source) {
-                source.GetProperties().Refresh();
-            }
+            this.dataHandler.UpdateProperties();
         }
     };
     //Group folding management - When clicking a group icon
@@ -8475,42 +8679,44 @@ var DataItem = /** @class */ (function () {
         this.itemChildContainer.style.display = item.folded ? 'none' : 'block';
     };
     //When left - clicking an item
-    DataItem.prototype.ItemClicked = function () {
-        var self = this;
-        return function (event) {
-            self.dataHandler.SetCurrentItem(self.item);
-            self.CancelBubbling(event);
-        };
+    DataItem.prototype.ItemClicked = function (ev) {
+        var event = ev || window.event;
+        if (event.ctrlKey) {
+            this.item.ToggleSelection();
+        }
+        else {
+            this.dataHandler.selection.Clear();
+            this.item.Select(true);
+            new TemporaryHint('You can select multiple items by pressing the CTRL key when clicking an element');
+        }
+        this.CancelBubbling(event);
     };
     //When right - clicking an item
-    DataItem.prototype.ItemMenu = function () {
-        var self = this;
-        return function (event) {
-            var actions = self.item.GetActions(self.dataHandler.GetActionsDelegate());
-            self.dataHandler.SetCurrentItem(self.item);
-            Popup.CreatePopup(self, actions);
-            self.CancelBubbling(event);
-            return false;
-        };
+    DataItem.prototype.ItemMenu = function (ev) {
+        var event = ev || window.event;
+        if (!event.ctrlKey) {
+            this.dataHandler.selection.Clear();
+        }
+        this.item.Select(true);
+        var actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
+        if (actions) {
+            Popup.CreatePopup(this.itemContentContainer, actions);
+        }
+        this.CancelBubbling(event);
+        return false;
     };
     //When clicking the visibility icon next to an item
     DataItem.prototype.ViewClicked = function () {
-        var self = this;
-        return function (event) {
-            self.item.ToggleVisibility();
-        };
+        this.item.ToggleVisibility();
     };
     //When clicking the deletion icon next to an item
-    DataItem.prototype.DeletionClicked = function () {
-        var self = this;
-        return function (event) {
-            event = event || window.event;
-            if (confirm('Are you sure you want to delete "' + self.item.name + '" ?')) {
-                self.item.owner.Remove(self.item);
-                self.dataHandler.SetCurrentItem(null);
-                self.CancelBubbling(event);
-            }
-        };
+    DataItem.prototype.DeletionClicked = function (ev) {
+        var event = ev || window.event;
+        if (confirm('Are you sure you want to delete "' + this.item.name + '" ?')) {
+            this.item.Select(false);
+            this.item.owner.Remove(this.item);
+            this.CancelBubbling(event);
+        }
     };
     DataItem.prototype.CancelBubbling = function (event) {
         if (event.stopPropagation) {
@@ -8528,11 +8734,108 @@ var DataItem = /** @class */ (function () {
     };
     return DataItem;
 }());
+/// <reference path="pclnode.ts" />
+/// <reference path="../controls/properties/properties.ts" />
+/// <reference path="../../controler/actions/action.ts" />
+/// <reference path="../../model/boundingbox.ts" />
+var SelectionList = /** @class */ (function () {
+    function SelectionList(changeHandler) {
+        this.changeHandler = changeHandler;
+        this.items = [];
+    }
+    SelectionList.prototype.RegisterListenableItem = function (item) {
+        item.AddChangeListener(this);
+        this.UpdateSelectionList(item);
+    };
+    SelectionList.prototype.NotifyChange = function (node, type) {
+        if (type === ChangeType.Selection) {
+            this.UpdateSelectionList(node);
+        }
+    };
+    SelectionList.prototype.UpdateSelectionList = function (item) {
+        var itemIndex = this.items.indexOf(item);
+        if (item.selected && itemIndex < 0) {
+            this.items.push(item);
+            if (this.changeHandler) {
+                this.changeHandler.OnSelectionChange(this);
+            }
+        }
+        else if (!item.selected && itemIndex >= 0) {
+            this.items.splice(itemIndex, 1);
+            if (this.changeHandler) {
+                this.changeHandler.OnSelectionChange(this);
+            }
+        }
+    };
+    SelectionList.prototype.GetBoundingBox = function () {
+        var box = new BoundingBox();
+        for (var index = 0; index < this.items.length; index++) {
+            box.AddBoundingBox(this.items[index].GetBoundingBox());
+        }
+        return box;
+    };
+    SelectionList.prototype.Size = function () {
+        return this.items.length;
+    };
+    SelectionList.prototype.GetProperties = function () {
+        if (this.Size() == 1) {
+            return this.items[0].GetProperties();
+        }
+        else if (this.Size() > 1) {
+            if (!this.ownProperties) {
+                var self_11 = this;
+                this.ownProperties = new Properties();
+                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_11.Size(); }, null));
+            }
+            return this.ownProperties;
+        }
+        return null;
+    };
+    SelectionList.prototype.GetActions = function (delegate) {
+        var _this = this;
+        var actions = [];
+        var self = this;
+        if (this.Size() > 1) {
+            actions.push(new SimpleAction('Hide all', function () { return _this.ShowAll(false); }, 'Hide all the selected items'));
+            actions.push(new SimpleAction('Show all', function () { return _this.ShowAll(true); }, 'Show all the selected items'));
+            actions.push(null);
+        }
+        if (this.Size() == 1) {
+            actions = this.items[0].GetActions(delegate);
+        }
+        else {
+            if (this.Size() == 2 && this.items[0] instanceof PCLPointCloud) {
+                actions = actions || [];
+                actions.push(new ComputeDistancesAction(this.items[0], this.items[1]));
+            }
+        }
+        return actions;
+    };
+    SelectionList.prototype.ShowAll = function (b) {
+        for (var index = 0; index < this.Size(); index++) {
+            this.items[index].SetVisibility(b);
+        }
+    };
+    SelectionList.prototype.GetSingleSelection = function () {
+        return this.items.length == 1 ? this.items[0] : null;
+    };
+    SelectionList.prototype.Clear = function () {
+        while (this.items.length) {
+            var length_2 = this.items.length;
+            this.items[length_2 - 1].Select(false);
+            if (this.items.length == length_2) {
+                this.items.pop();
+            }
+        }
+    };
+    return SelectionList;
+}());
 /// <reference path="controls/hideablepannel.ts" />
 /// <reference path="controls/pannel.ts" />
 /// <reference path="controls/dataitem.ts" />
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="objects/pclgroup.ts" />
+/// <reference path="objects/selectionlist.ts" />
 /// <reference path="objects/scene.ts" />
 /// <reference path="app.ts" />
 /// <reference path="opengl/renderer.ts" />
@@ -8543,19 +8846,17 @@ var DataHandler = /** @class */ (function (_super) {
         var _this = _super.call(this, 'DataWindow', HandlePosition.Right) || this;
         _this.scene = scene;
         _this.ownerView = ownerView;
-        //Data visualization
+        _this.selection = new SelectionList(_this);
         _this.dataArea = new Pannel('DataArea');
-        _this.AddControl(_this.dataArea);
-        _this.dataArea.AddControl(new DataItem(_this.scene, _this));
-        //Properties visualization
         _this.propertiesArea = new Pannel('PropertiesArea');
+        _this.AddControl(_this.dataArea);
+        _this.dataArea.AddControl(new DataItem(scene, _this));
         _this.AddControl(_this.propertiesArea);
         return _this;
     }
     DataHandler.prototype.ReplaceScene = function (scene) {
         this.scene = scene;
         this.propertiesArea.Clear();
-        this.currentItem = null;
         this.dataArea.Clear();
         this.dataArea.AddControl(new DataItem(scene, this));
         this.AskRendering();
@@ -8570,7 +8871,7 @@ var DataHandler = /** @class */ (function (_super) {
         var pannel = this.GetElement();
         var dataArea = this.dataArea.GetElement();
         var propertiesArea = this.propertiesArea.GetElement();
-        if (this.currentItem != null) {
+        if (this.selection.GetProperties()) {
             var height = pannel.clientHeight / 2;
             dataArea.style.height = height + 'px';
             var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
@@ -8591,32 +8892,30 @@ var DataHandler = /** @class */ (function (_super) {
             propertiesArea.style.borderTop = '';
         }
     };
-    DataHandler.prototype.SetCurrentItem = function (item, focus) {
-        if (focus === void 0) { focus = false; }
-        this.HandlePropertiesWindowVisibility();
-        if (item != this.currentItem) {
-            if (this.currentItem) {
-                this.propertiesArea.Clear();
-                this.currentItem.ClearProperties();
-                this.currentItem.Select(false);
-            }
-            this.currentItem = item;
-            if (this.currentItem != null) {
-                this.currentItem.Select(true);
-                var currentProperties = this.currentItem.GetProperties();
-                this.propertiesArea.AddControl(currentProperties);
-            }
-            this.HandlePropertiesWindowVisibility();
-            if (focus) {
-                this.ownerView.FocusOnCurrentItem();
-            }
-            else {
-                this.ownerView.RefreshRendering();
-            }
-            this.RefreshColorScale(this.currentItem);
-        }
+    DataHandler.prototype.DeclareNewItem = function (item) {
+        this.selection.RegisterListenableItem(item);
     };
-    DataHandler.prototype.RefreshColorScale = function (item) {
+    DataHandler.prototype.OnSelectionChange = function (selection) {
+        this.UpdateProperties();
+        this.ownerView.RefreshRendering();
+        this.RefreshColorScale();
+    };
+    DataHandler.prototype.UpdateProperties = function () {
+        var properties = this.selection.GetProperties();
+        if (this.currentProperties !== properties) {
+            this.currentProperties = properties;
+            this.propertiesArea.Clear();
+            if (properties) {
+                this.propertiesArea.AddControl(properties);
+            }
+        }
+        if (properties) {
+            properties.Refresh();
+        }
+        this.HandlePropertiesWindowVisibility();
+    };
+    DataHandler.prototype.RefreshColorScale = function () {
+        var item = this.selection.GetSingleSelection();
         if (item && (item instanceof PCLPointCloud)) {
             var cloud = item;
             var field = cloud.GetCurrentField();
@@ -8628,12 +8927,10 @@ var DataHandler = /** @class */ (function (_super) {
         else
             ColorScale.Hide();
     };
-    DataHandler.prototype.GetCurrentItem = function () {
-        return this.currentItem;
-    };
     DataHandler.prototype.GetNewItemOwner = function () {
-        var owner = (this.currentItem && this.currentItem.owner && !(this.currentItem instanceof LightsContainer)) ?
-            this.currentItem :
+        var item = this.selection.GetSingleSelection();
+        var owner = (item && item.owner && !(item instanceof LightsContainer)) ?
+            item :
             this.scene.Contents;
         if (owner instanceof PCLGroup)
             return owner;
@@ -8653,10 +8950,19 @@ var DataHandler = /** @class */ (function (_super) {
 /// <reference path="control.ts" />
 /// <reference path="button.ts" />
 var ComboBox = /** @class */ (function () {
-    function ComboBox(label, options, hintMessage) {
+    function ComboBox(label, actions, hintMessage) {
         var self = this;
         this.button = new Button(label, function () {
-            Popup.CreatePopup(self.button, options);
+            var options;
+            if (Action.IsActionProvider(actions)) {
+                options = actions.GetActions();
+            }
+            else {
+                options = actions;
+            }
+            if (options && options.length) {
+                Popup.CreatePopup(self.button, options);
+            }
         }, hintMessage);
     }
     ComboBox.prototype.GetElement = function () {
@@ -8749,12 +9055,12 @@ var FileOpener = /** @class */ (function (_super) {
     };
     FileOpener.prototype.LoadFile = function (file) {
         if (file) {
-            var self_10 = this;
+            var self_12 = this;
             var progress_1 = new ProgressBar();
             var reader = new FileReader();
             reader.onloadend = function () {
                 progress_1.Delete();
-                self_10.LoadFromContent(file.name, this.result);
+                self_12.LoadFromContent(file.name, this.result);
             };
             reader.onprogress = function (event) {
                 progress_1.Update(event.loaded, event.total);
@@ -8792,8 +9098,8 @@ var FileOpener = /** @class */ (function (_super) {
                     break;
             }
             if (loader) {
-                var self_11 = this;
-                loader.Load(function (result) { self_11.filehandler(result); }, function (error) { alert(error); });
+                var self_13 = this;
+                loader.Load(function (result) { self_13.filehandler(result); }, function (error) { alert(error); });
             }
         }
     };
@@ -8870,6 +9176,7 @@ var Menu = /** @class */ (function (_super) {
         _this.toolbar.AddControl(new Button('[Icon:save]', function () {
             ownerView.SaveCurrentScene();
         }, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
+        _this.toolbar.AddControl(new ComboBox('[Icon:bars]', _this, 'Contextual menu : list of actions available for the current selection.'));
         _this.toolbar.AddControl(new Button('[Icon:search]', function () {
             ownerView.FocusOnCurrentItem();
         }, 'Focus current viewpoint on the selected item'));
@@ -8885,6 +9192,9 @@ var Menu = /** @class */ (function (_super) {
     }
     Menu.prototype.Clear = function () {
         this.toolbar.Clear();
+    };
+    Menu.prototype.GetActions = function () {
+        return this.ownerView.dataHandler.selection.GetActions(this.ownerView);
     };
     return Menu;
 }(HideablePannel));
@@ -8951,7 +9261,7 @@ var CoordinatesSystem = /** @class */ (function () {
         for (var index_4 = 0; index_4 < axes.length; index_4++) {
             axes[index_4].SetBaseColor(axes[index_4].cylinder.axis.Flatten());
             this.coordssystem.Contents.Add(axes[index_4]);
-            axes[index_4].AddChangeListener(function () { return self.renderer.Draw(self.coordssystem); });
+            axes[index_4].AddChangeListener(this);
         }
         //Refine lighting
         var light = this.coordssystem.Lights.children[0];
@@ -8998,6 +9308,7 @@ var CoordinatesSystem = /** @class */ (function () {
         configurable: true
     });
     CoordinatesSystem.prototype.NotifyChange = function (node) {
+        this.renderer.Draw(this.coordssystem);
         this.view.RefreshRendering();
     };
     return CoordinatesSystem;
@@ -9027,11 +9338,11 @@ var PCLApp = /** @class */ (function () {
         if (scenebuffer) {
             console.info('Loading locally stored data');
             var loader = new PCLLoader(scenebuffer);
-            var self_12 = this;
-            loader.Load(function (scene) { return self_12.Initialize(scene); }, function (error) {
+            var self_14 = this;
+            loader.Load(function (scene) { return self_14.Initialize(scene); }, function (error) {
                 console.error('Failed to initialize scene from storage : ' + error);
                 console.warn('Start from an empty scene, instead');
-                self_12.Initialize(new Scene());
+                self_14.Initialize(new Scene());
             });
         }
         else {
@@ -9080,10 +9391,6 @@ var PCLApp = /** @class */ (function () {
         this.currentControler = new CameraControler(this);
         this.sceneRenderer.Draw(scene);
         this.coordinatesSystem.Refresh();
-    };
-    PCLApp.prototype.UpdateSelectedElement = function (selectedItem) {
-        this.dataHandler.SetCurrentItem(selectedItem);
-        this.RefreshRendering();
     };
     PCLApp.prototype.Resize = function () {
         if (this.sceneRenderer) {
@@ -9134,14 +9441,14 @@ var PCLApp = /** @class */ (function () {
         var scene = this.dataHandler.scene;
         if (scene.Lights.children.length == 1)
             return scene.Lights.children[0];
-        var item = this.dataHandler.GetCurrentItem();
+        var item = this.dataHandler.selection.GetSingleSelection();
         if (item && item instanceof Light) {
             return item;
         }
     };
     PCLApp.prototype.GetCurrentTransformable = function () {
-        var item = this.dataHandler.GetCurrentItem();
-        if (item instanceof PCLPrimitive)
+        var item = this.dataHandler.selection.GetSingleSelection();
+        if (item && item instanceof PCLPrimitive)
             return item;
         return null;
     };
@@ -9175,20 +9482,25 @@ var PCLApp = /** @class */ (function () {
     PCLApp.prototype.GetCurrentControler = function () {
         return this.currentControler;
     };
-    PCLApp.prototype.PickItem = function (x, y) {
+    PCLApp.prototype.PickItem = function (x, y, exclusive) {
         var scene = this.dataHandler.scene;
         var selected = this.sceneRenderer.PickObject(x, y, scene);
-        this.UpdateSelectedElement(selected);
+        if (exclusive) {
+            this.dataHandler.selection.Clear();
+        }
+        if (selected && (selected instanceof PCLNode)) {
+            selected.Select(true);
+        }
     };
     PCLApp.prototype.FocusOnCurrentItem = function () {
-        var scene = this.dataHandler.scene;
-        var selectionbb = scene.GetSelectionBoundingBox();
+        var selection = this.dataHandler.selection;
+        var selectionbb = selection.GetBoundingBox();
         if (selectionbb && this.sceneRenderer.camera.CenterOnBox(selectionbb)) {
-            this.sceneRenderer.Draw(scene);
+            this.sceneRenderer.Draw(this.dataHandler.scene);
         }
     };
     PCLApp.prototype.CanFocus = function () {
-        var selectionbb = this.dataHandler.scene.GetSelectionBoundingBox();
+        var selectionbb = this.dataHandler.selection.GetBoundingBox();
         return (selectionbb && selectionbb.IsValid());
     };
     PCLApp.prototype.ToggleRendering = function (mode) {
