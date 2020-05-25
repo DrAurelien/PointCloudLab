@@ -8580,6 +8580,10 @@ var DataItem = /** @class */ (function () {
             this.UpdateGroupFolding(item);
         }
         this.container.appendChild(this.itemChildContainer);
+        var children = item.GetChildren();
+        for (var index = 0; index < children.length; index++) {
+            this.AddSon(children[index]);
+        }
         //Bind HTML content to match the actual state of the item
         item.AddChangeListener(this);
         item.AddChangeListener(this.dataHandler.selection);
