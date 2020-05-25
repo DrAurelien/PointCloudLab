@@ -17,7 +17,7 @@ class PCLScalarField extends ScalarField implements PCLSerializable {
 	onChange: Function;
 
 	static DensityFieldName = 'Density';
-	static NoiseFieldName = 'Noise	';
+	static NoiseFieldName = 'Noise';
 
 	constructor(public name: string, values?: Float32Array) {
 		super(values);

@@ -6,7 +6,7 @@
 /// <reference path="./colorscale/colorscale.ts" />
 
 
-class DataItem implements Control {
+class DataItem implements Control, Notifiable {
 	container: HTMLDivElement;
 	itemContentContainer: HTMLDivElement;
 	itemChildContainer: HTMLDivElement;
@@ -34,23 +34,25 @@ class DataItem implements Control {
 			this.itemContentContainer.ondblclick = this.ItemFolded();
 		}
 
+		let self = this;
+
 		//Quick actions (visibility, menu, deletion)
 		this.visibilityIcon = document.createElement('i');
 		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
 		this.itemContentContainer.appendChild(this.visibilityIcon);
-		this.visibilityIcon.onclick = this.ViewClicked();
+		this.visibilityIcon.onclick = (ev) => self.ViewClicked();
 
 		let menuIcon = document.createElement('i');
 		menuIcon.className = 'ItemAction fa fa-ellipsis-h';
 		this.itemContentContainer.appendChild(menuIcon);
-		menuIcon.onclick = this.ItemMenu();
+		menuIcon.onclick = (ev: MouseEvent) => this.ItemMenu(ev);
 
 		let deletionIcon = null;
 		if (this.item.deletable) {
 			deletionIcon = document.createElement('i');
 			deletionIcon.className = 'ItemAction fa fa-trash';
 			this.itemContentContainer.appendChild(deletionIcon);
-			deletionIcon.onclick = this.DeletionClicked();
+			deletionIcon.onclick = (ev) => self.DeletionClicked(ev);
 		}
 
 		//The item name by itself
@@ -61,8 +63,8 @@ class DataItem implements Control {
 		this.itemContentContainer.appendChild(itemNameContainer);
 
 		//Handle left/right click on the item title
-		this.itemContentContainer.onclick = this.ItemClicked();
-		this.itemContentContainer.oncontextmenu = this.ItemMenu();
+		this.itemContentContainer.onclick = (ev) => self.ItemClicked(ev);
+		this.itemContentContainer.oncontextmenu = (ev) => this.ItemMenu(ev);
 
 		//Populate children
 		this.itemChildContainer = document.createElement('div');
@@ -71,14 +73,10 @@ class DataItem implements Control {
 			this.UpdateGroupFolding(item);
 		}
 		this.container.appendChild(this.itemChildContainer);
-		let children = this.item.GetChildren();
-		for (let index = 0; index < children.length; index++) {
-			this.AddSon(children[index]);
-		}
 
 		//Bind HTML content to match the actual state of the item
-		let self = this;
-		item.AddChangeListener((source: PCLNode, change: ChangeType) => self.OnItemChange(source, change));
+		item.AddChangeListener(this);
+		item.AddChangeListener(this.dataHandler.selection);
 	}
 
 	// Hierarchy management
@@ -148,25 +146,15 @@ class DataItem implements Control {
 	}
 
 	//Whenever the data changes, handle it
-	OnItemChange(source: PCLNode, change: ChangeType) {
+	NotifyChange(source: PCLNode, change: ChangeType) {
 		this.Refresh();
-
-		if (change & ChangeType.Selection) {
-			let currentItem = this.dataHandler.GetCurrentItem();
-			if (source.selected && currentItem !== source) {
-				this.dataHandler.SetCurrentItem(source);
-			}
-			else if (!source.selected && currentItem === source) {
-				this.dataHandler.SetCurrentItem(null);
-			}
-		}
 
 		if (change & ChangeType.Creation) {
 			if (!source.owner) {
 				let owner = this.dataHandler.GetNewItemOwner();
 				owner.Add(source);
 			}
-			this.dataHandler.SetCurrentItem(source, true);
+			this.dataHandler.DeclareNewItem(source);
 		}
 
 		if (change & ChangeType.Children) {
@@ -178,13 +166,11 @@ class DataItem implements Control {
 		}
 
 		if (change & ChangeType.ColorScale) {
-			this.dataHandler.RefreshColorScale(source);
+			this.dataHandler.RefreshColorScale();
 		}
 
 		if (change & ChangeType.Properties) {
-			if (this.dataHandler.GetCurrentItem() == source) {
-				source.GetProperties().Refresh();
-			}
+			this.dataHandler.UpdateProperties();
 		}
 	}
 
@@ -196,52 +182,53 @@ class DataItem implements Control {
 			self.CancelBubbling(event);
 		}
 	}
+
 	UpdateGroupFolding(item: PCLGroup) {
 		this.itemChildContainer.style.display = item.folded ? 'none' : 'block';
 	}
 
 	//When left - clicking an item
-	ItemClicked(): (ev: MouseEvent) => any {
-		let self = this;
-		return function (event: MouseEvent) {
-			self.dataHandler.SetCurrentItem(self.item);
-			self.CancelBubbling(event);
+	ItemClicked(ev: MouseEvent) {
+		let event : MouseEvent = ev || (window.event as MouseEvent);
+		if (event.ctrlKey) {
+			this.item.ToggleSelection();
 		}
+		else {
+			this.dataHandler.selection.Clear();
+			this.item.Select(true);
+			new TemporaryHint('You can select multiple items by pressing the CTRL key when clicking an element');
+		}
+		this.CancelBubbling(event);
 	}
 
 	//When right - clicking an item
-	ItemMenu(): (ev: PointerEvent) => any {
-		let self = this;
-		return function (event: PointerEvent) {
-			let actions = self.item.GetActions(
-				self.dataHandler.GetActionsDelegate()
-			);
-			self.dataHandler.SetCurrentItem(self.item);
-			Popup.CreatePopup(self, actions);
-			self.CancelBubbling(event);
-			return false;
+	ItemMenu(ev: MouseEvent): boolean {
+		let event: MouseEvent = ev || (window.event as MouseEvent);
+		if (!event.ctrlKey) {
+			this.dataHandler.selection.Clear();
 		}
+		this.item.Select(true);
+		let actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
+		if (actions) {
+			Popup.CreatePopup(this.itemContentContainer, actions);
+		}
+		this.CancelBubbling(event);
+		return false;
 	}
 
 	//When clicking the visibility icon next to an item
-	ViewClicked(): (ev: MouseEvent) => any {
-		let self = this;
-		return function (event: MouseEvent) {
-			self.item.ToggleVisibility();
-		}
+	ViewClicked() {
+		this.item.ToggleVisibility();
 	}
 
 	//When clicking the deletion icon next to an item
-	DeletionClicked(): (ev: MouseEvent) => any {
-		let self = this;
-		return function (event: MouseEvent) {
-			event = event || <MouseEvent>window.event;
+	DeletionClicked(ev: MouseEvent) {
+		let event = ev || window.event as MouseEvent;
 
-			if (confirm('Are you sure you want to delete "' + self.item.name + '" ?')) {
-				self.item.owner.Remove(self.item);
-				self.dataHandler.SetCurrentItem(null);
-				self.CancelBubbling(event);
-			}
+		if (confirm('Are you sure you want to delete "' + this.item.name + '" ?')) {
+			this.item.Select(false);
+			this.item.owner.Remove(this.item);
+			this.CancelBubbling(event);
 		}
 	}
 

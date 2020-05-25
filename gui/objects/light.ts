@@ -31,6 +31,11 @@ class Light extends PCLNode implements LightingPosition {
 			this.glPointsBuffer = new FloatArrayBuffer(new Float32Array(this.position.Flatten()), drawingContext, 3);
 		}
 		this.glPointsBuffer.BindAttribute(drawingContext.vertices);
+
+		drawingContext.gl.uniform3fv(drawingContext.color, new Float32Array(this.color));
+
+		drawingContext.EnableNormals(false);
+		drawingContext.EnableScalars(false);
 	}
 
 	DrawNode(drawingContext: DrawingContext): void {
@@ -64,6 +69,10 @@ class Light extends PCLNode implements LightingPosition {
 
 	SetPositon(p: Vector) {
 		this.position = p;
+	}
+
+	GetDistance(p: Vector): number {
+		return p.Minus(this.position).Norm();
 	}
 
 	static SerializationID = 'LIGHT';

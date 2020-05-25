@@ -14,8 +14,8 @@ abstract class Neighbourhood {
 	}
 
 	GetPointData(pointIndex: number): Neighbour {
-		var distance = this.queryPoint.Minus(this.cloud.GetPoint(pointIndex)).SqrNorm();
-		return new Neighbour(distance, pointIndex);
+		var sqrdist = this.queryPoint.Minus(this.cloud.GetPoint(pointIndex)).SqrNorm();
+		return new Neighbour(sqrdist, pointIndex);
 	}
 
 	Accept(distance: number): boolean {
@@ -39,7 +39,7 @@ abstract class Neighbourhood {
 // Neighbor
 //==================================
 class Neighbour {
-	constructor(public distance: number, public index: number) {
+	constructor(public sqrdistance: number, public index: number) {
 	}
 }
 
@@ -61,7 +61,7 @@ class KNearestNeighbours extends Neighbourhood {
 		}
 
 		//Locate the cursor to the data whose distance is smaller than the current data distance
-		while (cursor > 0 && data.distance < this.neighbours[cursor - 1].distance) {
+		while (cursor > 0 && data.sqrdistance < this.neighbours[cursor - 1].sqrdistance) {
 			if (cursor < this.k) {
 				this.neighbours[cursor] = this.neighbours[cursor - 1];
 			}
@@ -79,6 +79,6 @@ class KNearestNeighbours extends Neighbourhood {
 		if (this.neighbours.length < this.k) {
 			return null;
 		}
-		return this.neighbours[this.neighbours.length - 1].distance;
+		return this.neighbours[this.neighbours.length - 1].sqrdistance;
 	}
 }

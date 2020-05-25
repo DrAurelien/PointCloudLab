@@ -28,6 +28,13 @@ class Octree {
 		return result;
 	}
 
+	Distance(p: Vector): number {
+		if (this.root) {
+			return this.root.Distance(p);
+		}
+		return null;
+	}
+
 	GetFace(index: number): MeshFace {
 		return this.facescache[index];
 	}
@@ -117,5 +124,57 @@ class OctreeCell {
 				}
 			}
 		}
+	}
+
+	Distance(p: Vector): number {
+		let nbsons = this.sons.length;
+		if (nbsons > 0) {
+			let celldistances: OctreeCellWithDistance[] = [];
+			for (let index = 0; index < nbsons; index++) {
+				celldistances.push(new OctreeCellWithDistance(this.sons[index], p));
+			}
+			celldistances = celldistances.sort((a, b) => a.CompareWith(b));
+
+			let dist = null;
+			for (let index = 0; index < celldistances.length; index++) {
+				let bd = celldistances[index].sqrDistToBox;
+				if (dist !== null && (dist * dist) < bd) {
+					return dist;
+				}
+				let dd = celldistances[index].ActualDistance();
+				if (dist == null || dd < dist) {
+					dist = dd;
+				}
+			}
+			return dist;
+		}
+		else {
+			let dist = null;
+			for (let index = 0; index < this.faces.length; index++) {
+				let face = this.octree.GetFace(this.faces[index]);
+				let dd = face.Distance(p);
+				if (dist == null || dd < dist) {
+					dist = dd;
+				}
+			}
+			return dist;
+		}
+	}
+}
+
+
+class OctreeCellWithDistance {
+	sqrDistToBox: number;
+
+	constructor(public cell: OctreeCell, private p: Vector) {
+		this.sqrDistToBox = cell.boundingbox.SqrDistance(p);
+	}
+
+	CompareWith(cell: OctreeCellWithDistance): number {
+		return this.sqrDistToBox - cell.sqrDistToBox;
+	}
+
+	ActualDistance(): number {
+		return this.cell.Distance(this.p);
 	}
 }

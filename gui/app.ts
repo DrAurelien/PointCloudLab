@@ -101,12 +101,6 @@ class PCLApp implements Controlable, ActionDelegate {
 		this.coordinatesSystem.Refresh();
 	}
 
-	UpdateSelectedElement(selectedItem: Pickable) {
-		this.dataHandler.SetCurrentItem(selectedItem as PCLNode);
-		this.RefreshRendering();
-	}
-
-
 	Resize() {
 		if (this.sceneRenderer) {
 			this.sceneRenderer.Resize(window.innerWidth, window.innerHeight);
@@ -163,15 +157,15 @@ class PCLApp implements Controlable, ActionDelegate {
 		if (scene.Lights.children.length == 1)
 			return scene.Lights.children[0] as Light;
 
-		let item = this.dataHandler.GetCurrentItem();
+		let item = this.dataHandler.selection.GetSingleSelection();
 		if (item && item instanceof Light) {
 			return item as Light;
 		}
 	}
 
 	GetCurrentTransformable(): Transformable {
-		let item = this.dataHandler.GetCurrentItem();
-		if (item instanceof PCLPrimitive)
+		let item = this.dataHandler.selection.GetSingleSelection();
+		if (item && item instanceof PCLPrimitive)
 			return item;
 		return null;
 	}
@@ -214,22 +208,27 @@ class PCLApp implements Controlable, ActionDelegate {
 		return this.currentControler;
 	}
 
-	PickItem(x: number, y: number) {
+	PickItem(x: number, y: number, exclusive: boolean) {
 		let scene = this.dataHandler.scene;
 		let selected = this.sceneRenderer.PickObject(x, y, scene);
-		this.UpdateSelectedElement(selected);
+		if (exclusive) {
+			this.dataHandler.selection.Clear();
+		}
+		if (selected && (selected instanceof PCLNode)) {
+			(selected as PCLNode).Select(true);
+		}
 	}
 
 	FocusOnCurrentItem() {
-		let scene = this.dataHandler.scene;
-		let selectionbb = scene.GetSelectionBoundingBox();
+		let selection = this.dataHandler.selection;
+		let selectionbb = selection.GetBoundingBox();
 		if (selectionbb && this.sceneRenderer.camera.CenterOnBox(selectionbb)) {
-			this.sceneRenderer.Draw(scene);
+			this.sceneRenderer.Draw(this.dataHandler.scene);
 		}
 	}
 
 	CanFocus(): boolean {
-		let selectionbb = this.dataHandler.scene.GetSelectionBoundingBox();
+		let selectionbb = this.dataHandler.selection.GetBoundingBox();
 		return (selectionbb && selectionbb.IsValid());
 	}
 

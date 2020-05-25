@@ -24,10 +24,6 @@ interface Notifiable {
 	NotifyChange(source: PCLNode, type: ChangeType);
 }
 
-interface ChangeHandler {
-	(source: PCLNode, type: ChangeType): void;
-}
-
 interface PCLContainer {
 	Add(child: PCLNode);
 	Remove(child: PCLNode);
@@ -39,8 +35,9 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 	visible: boolean;
 	selected: boolean;
 	deletable: boolean;
-	private changeListeners: ChangeHandler[];
+	private changeListeners: Notifiable[];
 	protected properties: Properties;
+	private pendingChanges: ChangeType;
 
 	constructor(public name: string) {
 		this.visible = true;
@@ -48,6 +45,7 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		this.deletable = true;
 		this.owner = null;
 		this.changeListeners = [];
+		this.pendingChanges = null;
 	}
 
 	Draw(drawingContext: DrawingContext): void {
@@ -63,6 +61,7 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 	abstract DrawNode(drawingContext: DrawingContext): void;
 	abstract RayIntersection(ray: Ray): Picking;
 	abstract GetBoundingBox(): BoundingBox;
+	abstract GetDistance(p: Vector): number;
 
 	// https://fontawesome.com/cheatsheet
 	abstract GetDisplayIcon(): string;
@@ -79,7 +78,9 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		}
 		return this.properties;
 	}
+
 	protected abstract FillProperties();
+
 	Select(b: boolean) {
 		let change = (b !== this.selected);
 		this.selected = b;
@@ -87,10 +88,20 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 			this.NotifyChange(this, ChangeType.Selection);
 		}
 	}
+	ToggleSelection() {
+		this.Select(!this.selected);
+	}
+
+	SetVisibility(b: boolean) {
+		let notify: boolean = b !== this.visible;
+		this.visible = b;
+		if (notify) {
+			this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		}
+	}
 
 	ToggleVisibility() {
-		this.visible = !this.visible;
-		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+		this.SetVisibility(!this.visible);
 	}
 
 	GetActions(delegate: ActionDelegate): Action[] {
@@ -132,13 +143,19 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 	}
 
 	NotifyChange(source: PCLNode, type: ChangeType) {
+		source.pendingChanges = source.pendingChanges ? (source.pendingChanges | type) : type;
 		for (let index = 0; index < this.changeListeners.length; index++) {
-			this.changeListeners[index](source, type);
+			this.changeListeners[index].NotifyChange(source, type);
 		}
 	}
 
-	AddChangeListener(onchange: ChangeHandler) {
-		this.changeListeners.push(onchange);
+	AddChangeListener(listener: Notifiable) {
+		if (this.changeListeners.indexOf(listener) < 0) {
+			this.changeListeners.push(listener);
+			if (this.pendingChanges != null) {
+				listener.NotifyChange(this, this.pendingChanges);
+			}
+		}
 	}
 
 	ClearProperties() {

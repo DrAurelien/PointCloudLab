@@ -89,6 +89,10 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return new Picking(this);
 	}
 
+	GetDistance(p: Vector): number {
+		return this.cloud.Distance(p);
+	}
+
 	GetPrimitiveBoundingBox(): BoundingBox {
 		return this.cloud.boundingbox;
 	}

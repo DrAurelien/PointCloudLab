@@ -28,7 +28,7 @@ class CoordinatesSystem implements Control, Notifiable {
 		for (let index = 0; index < axes.length; index++) {
 			axes[index].SetBaseColor(axes[index].cylinder.axis.Flatten());
 			this.coordssystem.Contents.Add(axes[index]);
-			axes[index].AddChangeListener(() => self.renderer.Draw(self.coordssystem));
+			axes[index].AddChangeListener(this);
 		}
 
 		//Refine lighting
@@ -80,6 +80,7 @@ class CoordinatesSystem implements Control, Notifiable {
 	}
 
 	NotifyChange(node: PCLNode) {
+		this.renderer.Draw(this.coordssystem);
 		this.view.RefreshRendering();
 	}
 }

@@ -8,13 +8,18 @@ class Popup implements Control {
 	items: any[];
 	static current: Popup;
 
-	constructor(public owner: Control, private actions: any) {
+	constructor(owner: Control | HTMLElement, private actions: any) {
 
 		this.popupContainer = document.createElement('div');
 		this.popupContainer.className = 'Popup';
 		this.popupContainer.id = 'Popup';
 
-		let rect = owner.GetElement().getBoundingClientRect();
+		let element;
+		if (owner instanceof HTMLElement)
+			element = owner as HTMLElement;
+		else
+			element = (owner as Control).GetElement();
+		let rect = element.getBoundingClientRect();
 		this.popupContainer.style.top = rect.bottom + 'px';
 		this.popupContainer.style.left = rect.left + 'px';
 		this.popupContainer.onmouseleave = function () {
@@ -40,7 +45,7 @@ class Popup implements Control {
 		this.current = null;
 	}
 
-	static CreatePopup(owner: Control, actions: Action[]): Popup {
+	static CreatePopup(owner: Control | HTMLElement, actions: Action[]): Popup {
 		Popup.DestroyCurrent();
 		this.current = new Popup(owner, actions);
 		return this.current;

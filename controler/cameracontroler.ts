@@ -46,7 +46,7 @@ class CameraControler extends MouseControler {
 	protected HandleClick(tracker: MouseTracker): boolean {
 		switch (tracker.button) {
 			case 1: //Left mouse
-				this.target.PickItem(tracker.x, tracker.y);
+				this.target.PickItem(tracker.x, tracker.y, !tracker.ctrlKey);
 				break;
 			case 2: //Middle mouse
 				this.target.FocusOnCurrentItem();

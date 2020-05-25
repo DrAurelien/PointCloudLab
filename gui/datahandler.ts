@@ -3,6 +3,7 @@
 /// <reference path="controls/dataitem.ts" />
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="objects/pclgroup.ts" />
+/// <reference path="objects/selectionlist.ts" />
 /// <reference path="objects/scene.ts" />
 /// <reference path="app.ts" />
 /// <reference path="opengl/renderer.ts" />
@@ -12,25 +13,25 @@
 class DataHandler extends HideablePannel {
 	dataArea: Pannel;
 	propertiesArea: Pannel;
-	private currentItem: PCLNode;
+	selection: SelectionList;
+	currentProperties: Properties;
 
 	constructor(public scene: Scene, private ownerView: PCLApp) {
 		super('DataWindow', HandlePosition.Right);
 
-		//Data visualization
+		this.selection = new SelectionList(this);
 		this.dataArea = new Pannel('DataArea');
-		this.AddControl(this.dataArea);
-		this.dataArea.AddControl(new DataItem(this.scene, this));
-
-		//Properties visualization
 		this.propertiesArea = new Pannel('PropertiesArea');
+
+		this.AddControl(this.dataArea);
+		this.dataArea.AddControl(new DataItem(scene, this));
+
 		this.AddControl(this.propertiesArea);
 	}
 
 	ReplaceScene(scene: Scene) {
 		this.scene = scene;
 		this.propertiesArea.Clear();
-		this.currentItem = null;
 		this.dataArea.Clear();
 		this.dataArea.AddControl(new DataItem(scene, this));
 		this.AskRendering();
@@ -48,7 +49,7 @@ class DataHandler extends HideablePannel {
 		let pannel = this.GetElement();
 		let dataArea = this.dataArea.GetElement();
 		let propertiesArea = this.propertiesArea.GetElement();
-		if (this.currentItem != null) {
+		if (this.selection.GetProperties()) {
 			let height: number = pannel.clientHeight / 2;
 			dataArea.style.height = height + 'px';
 			var delta = dataArea.getBoundingClientRect().height - height; //because of margins and padding
@@ -70,33 +71,33 @@ class DataHandler extends HideablePannel {
 		}
 	}
 
-	SetCurrentItem(item: PCLNode, focus: boolean = false) {
-		this.HandlePropertiesWindowVisibility();
-		if (item != this.currentItem) {
-			if (this.currentItem) {
-				this.propertiesArea.Clear();
-				this.currentItem.ClearProperties();
-				this.currentItem.Select(false);
-			}
-
-			this.currentItem = item;
-			if (this.currentItem != null) {
-				this.currentItem.Select(true);
-				let currentProperties = this.currentItem.GetProperties();
-				this.propertiesArea.AddControl(currentProperties);
-			}
-			this.HandlePropertiesWindowVisibility();
-			if (focus) {
-				this.ownerView.FocusOnCurrentItem();
-			}
-			else {
-				this.ownerView.RefreshRendering();
-			}
-			this.RefreshColorScale(this.currentItem);
-		}
+	DeclareNewItem(item: PCLNode) {
+		this.selection.RegisterListenableItem(item);
 	}
 
-	RefreshColorScale(item: PCLNode) {
+	OnSelectionChange(selection: SelectionList) {
+		this.UpdateProperties();
+		this.ownerView.RefreshRendering();
+		this.RefreshColorScale();
+	}
+
+	UpdateProperties() {
+		let properties = this.selection.GetProperties();
+		if (this.currentProperties !== properties) {
+			this.currentProperties = properties;
+			this.propertiesArea.Clear();
+			if (properties) {
+				this.propertiesArea.AddControl(properties);
+			}
+		}
+		if(properties) {
+			properties.Refresh();
+		}
+		this.HandlePropertiesWindowVisibility();
+	}
+
+	RefreshColorScale() {
+		let item = this.selection.GetSingleSelection();
 		if (item && (item instanceof PCLPointCloud)) {
 			let cloud = item as PCLPointCloud;
 			let field = cloud.GetCurrentField();
@@ -109,13 +110,10 @@ class DataHandler extends HideablePannel {
 			ColorScale.Hide();
 	}
 
-	GetCurrentItem(): PCLNode {
-		return this.currentItem;
-	}
-
 	GetNewItemOwner(): PCLContainer {
-		let owner = (this.currentItem && this.currentItem.owner && !(this.currentItem instanceof LightsContainer)) ?
-			this.currentItem :
+		let item = this.selection.GetSingleSelection();
+		let owner = (item && item.owner && !(item instanceof LightsContainer)) ?
+			item :
 			this.scene.Contents;
 		if (owner instanceof PCLGroup)
 			return owner as PCLGroup;

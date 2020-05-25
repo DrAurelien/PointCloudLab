@@ -8,7 +8,7 @@
 /// <reference path="../controler/actions/controlerchoice.ts" />
 
 
-class Menu extends HideablePannel {
+class Menu extends HideablePannel implements ActionsProvider {
 	toolbar: Toolbar;
 
 	constructor(private ownerView: PCLApp) {
@@ -37,6 +37,8 @@ class Menu extends HideablePannel {
 			ownerView.SaveCurrentScene();
 		}, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
 
+		this.toolbar.AddControl(new ComboBox('[Icon:bars]', this, 'Contextual menu : list of actions available for the current selection.'));
+
 		this.toolbar.AddControl(new Button('[Icon:search]', () => {
 			ownerView.FocusOnCurrentItem();
 		},
@@ -58,5 +60,9 @@ class Menu extends HideablePannel {
 
 	Clear() {
 		this.toolbar.Clear();
+	}
+
+	GetActions(): Action[] {
+		return this.ownerView.dataHandler.selection.GetActions(this.ownerView);
 	}
 }

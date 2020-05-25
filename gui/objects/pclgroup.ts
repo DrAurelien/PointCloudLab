@@ -53,6 +53,17 @@ class PCLGroup extends PCLNode {
 		return picked;
 	}
 
+	GetDistance(p: Vector): number {
+		let dist = null;
+		for (let index = 0; index < this.children.length; index++) {
+			let d = this.children[index].GetDistance(p);
+			if (dist == null || d < dist) {
+				dist = d;
+			}
+		}
+		return dist;
+	}
+
 	Add(son: PCLNode): void {
 		if (son.owner) {
 			son.owner.Remove(son);

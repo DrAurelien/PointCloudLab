@@ -3,6 +3,7 @@
 	y: number;
 	public button: number;
 	date: Date;
+	ctrlKey: boolean;
 	private static quickeventdelay: number = 200;
 
 	constructor(event: MouseEvent) {
@@ -10,6 +11,7 @@
 		this.y = event.clientY;
 		this.button = event.which;
 		this.date = new Date();
+		this.ctrlKey = event.ctrlKey;
 	}
 
 	IsQuickEvent(): boolean {
