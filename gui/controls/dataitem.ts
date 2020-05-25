@@ -196,6 +196,7 @@ class DataItem implements Control, Notifiable {
 		else {
 			this.dataHandler.selection.Clear();
 			this.item.Select(true);
+			new TemporaryHint('You can select multiple items by pressing the CTRL key when clicking an element');
 		}
 		this.CancelBubbling(event);
 	}
