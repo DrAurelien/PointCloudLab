@@ -105,7 +105,11 @@ class SelectionList implements Notifiable {
 
 	Clear() {
 		while (this.items.length) {
-			this.items.pop().Select(false);
+			let length = this.items.length;
+			this.items[length - 1].Select(false);
+			if (this.items.length == length) {
+				this.items.pop();
+			}
 		}
 	}
 }

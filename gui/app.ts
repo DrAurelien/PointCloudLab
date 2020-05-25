@@ -208,11 +208,13 @@ class PCLApp implements Controlable, ActionDelegate {
 		return this.currentControler;
 	}
 
-	PickItem(x: number, y: number) {
+	PickItem(x: number, y: number, exclusive: boolean) {
 		let scene = this.dataHandler.scene;
 		let selected = this.sceneRenderer.PickObject(x, y, scene);
-		if (selected && (selected instanceof PCLNode)) {
+		if (exclusive) {
 			this.dataHandler.selection.Clear();
+		}
+		if (selected && (selected instanceof PCLNode)) {
 			(selected as PCLNode).Select(true);
 		}
 	}

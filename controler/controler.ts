@@ -54,7 +54,7 @@ interface Controlable {
 	GetRengeringArea(): HTMLElement;
 	SetCurrentControler(controler: Controler);
 	GetCurrentControler(): Controler;
-	PickItem(x: number, y: number);
+	PickItem(x: number, y: number, exlusive: boolean);
 	FocusOnCurrentItem();
 	CanFocus(): boolean;
 	ToggleRendering(mode: RenderingMode);
