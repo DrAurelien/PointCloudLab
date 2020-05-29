@@ -135,12 +135,9 @@ class Sphere extends Shape {
 		this.radius *= transform.scalefactor;
 	}
 
-	Update(center: Vector, radius: number) {
-		this.center = center;
-		this.radius = radius;
-		this.NotifyChange();
+	GetLogStr(): string {
+		return "Sphere : radius = " + this.radius + ", center = [" + this.center.coordinates.join(', ') + "]";
 	}
-
 
 	static InitialGuessForFitting(cloud: PointCloud): Sphere {
 		let center = new Vector([0, 0, 0]);
@@ -166,6 +163,7 @@ class Sphere extends Shape {
 		let lsFitting = new LeastSquaresFitting(cloud);
 		lsFitting.Initialize(SphereFitting.Parameters(this.center, this.radius));
 		lsFitting.Solve(evaluable);
+		this.NotifyChange();
 	}
 }
 
@@ -200,9 +198,7 @@ class SphereFitting implements LeastSquaresEvaluable<Vector> {
 	}
 
 	NotifyNewSolution(params: number[]) {
-		this.sphere.Update(
-			SphereFitting.GetCenter(params),
-			SphereFitting.GetRadius(params)
-		);
+		this.sphere.center = SphereFitting.GetCenter(params),
+		this.sphere.radius = SphereFitting.GetRadius(params);
 	}
 }
