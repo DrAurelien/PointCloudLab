@@ -63,13 +63,16 @@ class Matrix {
 		this.values[this.FlatIndex(row, col)] = value;
 	}
 
+	AddValue(row: number, col: number, value: number): void {
+		this.values[this.FlatIndex(row, col)] += value;
+	}
+
 	GetValue(row: number, col: number): number {
 		return this.values[this.FlatIndex(row, col)];
 	}
 
 	Clone(): Matrix {
-		var values = new Float32Array(this.values);
-		return new Matrix(this.width, this.height, values);
+		return new Matrix(this.width, this.height, this.values.slice());
 	}
 
 	Times(s: number): Matrix {

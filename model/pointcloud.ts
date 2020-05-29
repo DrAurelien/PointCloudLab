@@ -5,10 +5,11 @@
 /// <reference path="../maths/vector.ts" />
 /// <reference path="../maths/matrix.ts" />
 /// <reference path="../maths/eigendecomposition.ts" />
+/// <reference path="../maths/leatssquaresfitting.ts" />
 /// <reference path="../tools/transform.ts" />
 
 
-class PointCloud {
+class PointCloud implements DataProvider<Vector>{
 	points: Float32Array;
 	pointssize: number;
 	normals: Float32Array;
@@ -60,6 +61,10 @@ class PointCloud {
 			this.points[index],
 			this.points[index + 1],
 			this.points[index + 2]]);
+	}
+
+	GetData(i: number): Vector {
+		return this.GetPoint(i);
 	}
 
 	private static SetValues(i: number, p: Vector, target: Float32Array) {

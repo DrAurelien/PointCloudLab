@@ -9,6 +9,7 @@
 
 abstract class Shape {
 	boundingbox: BoundingBox;
+	onChange: Function;
 
 	constructor() {
 		this.boundingbox = null;
@@ -31,6 +32,12 @@ abstract class Shape {
 	}
 
 	ComputeBounds(points: number[], cloud: PointCloud): void {
+	}
+
+	protected NotifyChange() {
+		if (this.onChange) {
+			this.onChange();
+		}
 	}
 }
 

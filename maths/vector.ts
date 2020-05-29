@@ -45,6 +45,28 @@
 		return new Vector(result);
 	}
 
+	//Sum in place
+	Add(v: Vector) {
+		if (this.coordinates.length != v.coordinates.length) {
+			throw 'Cannot add vectors with different dimensions'
+		}
+		for (let index: number = 0; index < this.coordinates.length; index++) {
+			this.coordinates[index] += v.coordinates[index];
+		}
+	}
+
+	//Product of two vectors
+	Multiply(v: Vector): Vector {
+		if (this.coordinates.length != v.coordinates.length) {
+			throw 'Cannot multiply vectors with different dimensions'
+		}
+		let result: number[] = new Array(this.coordinates.length);
+		for (let index: number = 0; index < this.coordinates.length; index++) {
+			result[index] = this.coordinates[index] * v.coordinates[index];
+		}
+		return new Vector(result);
+	}
+
 	//Difference between two vectors
 	Minus(v: Vector): Vector {
 		if (this.coordinates.length != v.coordinates.length) {

@@ -126,6 +126,29 @@ class RansacDetectionAction extends PCLCloudAction {
 }
 
 //===================================================
+// Shapes fitting
+//===================================================
+class SphereFittingAction extends PCLCloudAction {
+	constructor(cloud: PCLPointCloud) {
+		super(cloud, 'Fit a sphere', 'Find the sphere that best fits the whole point cloud (assuming the point cloud samples a sphere).');
+	}
+
+	Enabled(): boolean {
+		return true;
+	}
+
+	Run() {
+		let sphere = Sphere.InitialGuessForFitting(this.GetCloud());
+		let pclsphere = new PCLSphere(sphere)
+		let owner = this.GetPCLCloud().owner;
+		owner.Add(pclsphere);
+		owner.NotifyChange(pclsphere, ChangeType.Creation);
+
+		sphere.FitToPointCloud(this.GetCloud());
+	}
+}
+
+//===================================================
 // Normals computation
 //===================================================
 class ComputeNormalsAction extends PCLCloudAction {

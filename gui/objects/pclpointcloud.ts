@@ -127,6 +127,8 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 			ransac = true;
 		}
 
+		result.push(new SphereFittingAction(this));
+
 		if (ransac)
 			result.push(null);
 		result.push(new ExportPointCloudFileAction(this));
