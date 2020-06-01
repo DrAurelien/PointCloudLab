@@ -30,7 +30,13 @@ class PCLApp implements Controlable, ActionDelegate {
 	static sceneStorageKey = 'PointCloudLab-Scene';
 
 	constructor() {
-		let scenebuffer: string = window.localStorage.getItem(PCLApp.sceneStorageKey);
+		let scenebuffer: string = null;
+		try {
+			scenebuffer = window.localStorage.getItem(PCLApp.sceneStorageKey);
+		}
+		catch (e) {
+			scenebuffer = null;
+		}
 		if (scenebuffer) {
 			console.info('Loading locally stored data');
 			let loader = new PCLLoader(scenebuffer);

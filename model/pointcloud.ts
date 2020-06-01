@@ -3,9 +3,7 @@
 /// <reference path="neighbourhood.ts" />
 /// <reference path="regiongrowth.ts" />
 /// <reference path="../maths/vector.ts" />
-/// <reference path="../maths/matrix.ts" />
-/// <reference path="../maths/eigendecomposition.ts" />
-/// <reference path="../maths/leatssquaresfitting.ts" />
+/// <reference path="../maths/geometry.ts" />
 /// <reference path="../tools/transform.ts" />
 
 
@@ -123,14 +121,14 @@ class PointCloud implements DataProvider<Vector>{
 		return Math.sqrt(nearest[0].sqrdistance);
 	}
 
-	KNearestNeighbours = function (queryPoint: Vector, k: number) {
+	KNearestNeighbours(queryPoint: Vector, k: number): KNearestNeighbours {
 		if (!this.tree) {
 			this.tree = new KDTree(this);
 		}
 
 		let knn = new KNearestNeighbours(k);
 		this.tree.FindNearestNeighbours(queryPoint, knn);
-		return knn.Neighbours();
+		return knn;
 	}
 
 	RayIntersection(ray: Ray): Picking {
@@ -142,43 +140,7 @@ class PointCloud implements DataProvider<Vector>{
 		let point = this.GetPoint(index);
 		let knn = this.KNearestNeighbours(point, k + 1);
 
-		//Compute the coletiance matrix
-		let coletiance = Matrix.Null(3, 3);
-		let center = new Vector([0, 0, 0]);
-		for (let ii = 0; ii < knn.length; ii++) {
-			if (knn[ii].index != index) {
-				center = center.Plus(this.GetPoint(knn[ii].index));
-			}
-		}
-		center = center.Times(1 / (knn.length - 1));
-		for (let kk = 0; kk < knn.length; kk++) {
-			if (knn[kk].index != index) {
-				let vec = this.GetPoint(knn[kk].index).Minus(center);
-				for (let ii = 0; ii < 3; ii++) {
-					for (let jj = 0; jj < 3; jj++) {
-						coletiance.SetValue(ii, jj,
-							coletiance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj))
-						);
-					}
-				}
-			}
-		}
-
-		//The normal is the eigenvector having the smallest eigenvalue in the coletiance matrix
-		for (let ii = 0; ii < 3; ii++) {
-			//Check no column is null in the coletiance matrix
-			if (coletiance.GetColumnVector(ii).SqrNorm() <= 1.0e-12) {
-				let result = new Vector([0, 0, 0]);
-				result.Set(ii, 1);
-				return result;
-			}
-		}
-		let eigen = new EigenDecomposition(coletiance);
-		if (eigen) {
-			return eigen[0].eigenVector.Normalized();
-		}
-
-		return null;
+		return Geometry.PlaneFitting(knn).normal;
 	}
 
 	ApplyTransform(transform: Transform) {

@@ -75,7 +75,7 @@ class KDTree {
 		return null;
 	}
 
-	FindNearestNeighbours(queryPoint: Vector, nbh: Neighbourhood, cell: KDTreeCell) {
+	FindNearestNeighbours(queryPoint: Vector, nbh: Neighbourhood, cell: KDTreeCell=null) {
 		if (!cell) {
 			cell = this.root;
 			nbh.Initialize(this.cloud, queryPoint);

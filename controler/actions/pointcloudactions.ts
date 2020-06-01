@@ -5,6 +5,7 @@
 /// <reference path="../../model/ransac.ts" />
 /// <reference path="../../model/regiongrowth.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../gui/objects/pclpointcloud.ts" />
 /// <reference path="../../gui/objects/pclscalarfield.ts" />
 /// <reference path="../../gui/objects/pclshapewrapper.ts" />
@@ -128,9 +129,9 @@ class RansacDetectionAction extends PCLCloudAction {
 //===================================================
 // Shapes fitting
 //===================================================
-class SphereFittingAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Fit a sphere', 'Find the sphere that best fits the whole point cloud (assuming the point cloud samples a sphere).');
+abstract class ShapeFittingAction extends PCLCloudAction {
+	constructor(cloud: PCLPointCloud, message: string, hint: string) {
+		super(cloud, message, hint);
 	}
 
 	Enabled(): boolean {
@@ -138,13 +139,36 @@ class SphereFittingAction extends PCLCloudAction {
 	}
 
 	Run() {
-		let sphere = Sphere.InitialGuessForFitting(this.GetCloud());
-		let pclsphere = new PCLSphere(sphere)
+		let shape = this.ComputeBestFittingShape(this.GetCloud());
+		let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
 		let owner = this.GetPCLCloud().owner;
-		owner.Add(pclsphere);
-		owner.NotifyChange(pclsphere, ChangeType.Creation);
+		owner.Add(pclshape);
+		owner.NotifyChange(pclshape, ChangeType.Creation);
+	}
 
-		sphere.FitToPointCloud(this.GetCloud());
+	abstract ComputeBestFittingShape(cloud: PointCloud): Shape;
+}
+
+class SphereFittingAction extends ShapeFittingAction {
+	constructor(cloud: PCLPointCloud) {
+		super(cloud, 'Fit a sphere', 'Find the sphere that best fits the whole point cloud (assuming the point cloud samples a sphere).');
+	}
+
+	ComputeBestFittingShape(cloud: PointCloud): Shape {
+		let sphere = Sphere.InitialGuessForFitting(cloud);
+		sphere.FitToPointCloud(cloud);
+		return sphere;
+	}
+}
+
+class PlaneFittingAction extends ShapeFittingAction {
+	constructor(cloud: PCLPointCloud) {
+		super(cloud, 'Fit a plane', 'Find the plane that best fits the whole point cloud (assuming the point cloud samples a planar surface).');
+	}
+
+	ComputeBestFittingShape(cloud: PointCloud): Shape {
+		let planefit = Geometry.PlaneFitting(cloud);
+		return new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud));
 	}
 }
 
@@ -329,7 +353,7 @@ class DensityComputer extends IterativeLongProcess {
 	Iterate(step: number) {
 		let cloud = this.cloud.cloud;
 		let nbh = cloud.KNearestNeighbours(cloud.GetPoint(step), this.k + 1);
-		let ballSqrRadius = nbh.pop().sqrdistance;
+		let ballSqrRadius = nbh.GetSqrDistance();
 		this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
 	}
 }
@@ -375,7 +399,7 @@ class NoiseComputer extends IterativeLongProcess {
 		let cloud = this.cloud.cloud;
 		let point = cloud.GetPoint(step);
 		let normal = cloud.GetNormal(step);
-		let nbh = cloud.KNearestNeighbours(point, this.k + 1);
+		let nbh = cloud.KNearestNeighbours(point, this.k + 1).Neighbours();
 		let noise = 0;
 		for (let index = 0; index < nbh.length; index++) {
 			noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].sqrdistance);

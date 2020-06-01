@@ -147,6 +147,7 @@
     <TypeScriptCompile Include="gui\controls\colorscale\scalerenderer.ts" />
     <Content Include="gui\objects\selectionlist.ts" />
     <TypeScriptCompile Include="maths\leatssquaresfitting.ts" />
+    <Content Include="tools\dataprovider.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />

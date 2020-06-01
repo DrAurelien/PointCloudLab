@@ -1,15 +1,11 @@
 ﻿/// <reference path="matrix.ts" />
+/// <reference path="../tools/dataprovider.ts" />
 
 
 interface LeastSquaresEvaluable<DataType> {
 	Distance(parameters: number[], point: DataType): number;
 	DistanceGradient(parameters: number[], point: DataType): number[];
 	NotifyNewSolution(parameters: number[]);
-}
-
-interface DataProvider<DataType> {
-	Size(): number;
-	GetData(i: number): DataType;
 }
 
 /*Solves parametric model least squares fitting using Levenberg Marquardt algorithm

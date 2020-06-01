@@ -51,7 +51,7 @@ class RegionGrowthIterator {
 		this.status[this.currentIndex] = RegionGrowthStatus.processed;
 
 		//Enqueue current point neighbourhood
-		this.currentNeighborhood = this.cloud.KNearestNeighbours(this.cloud.GetPoint(this.currentIndex), this.k);
+		this.currentNeighborhood = this.cloud.KNearestNeighbours(this.cloud.GetPoint(this.currentIndex), this.k).Neighbours();
 		for (let ii = 0; ii < this.currentNeighborhood.length; ii++) {
 			let nbhindex = this.currentNeighborhood[ii].index;
 			if (this.status[nbhindex] == RegionGrowthStatus.unprocessed)
