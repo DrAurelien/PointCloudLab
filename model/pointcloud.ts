@@ -117,7 +117,7 @@ class PointCloud implements DataProvider<Vector>{
 	}
 
 	Distance(p: Vector): number {
-		let nearest = this.KNearestNeighbours(p, 1);
+		let nearest = this.KNearestNeighbours(p, 1).Neighbours();
 		return Math.sqrt(nearest[0].sqrdistance);
 	}
 
@@ -159,5 +159,42 @@ class PointCloud implements DataProvider<Vector>{
 		if (this.tree) {
 			delete this.tree;
 		}
+	}
+}
+
+class GaussianSphere implements DataProvider<Vector> {
+	normals: Vector[];
+	constructor(private cloud: PointCloud) {
+		this.normals = null;
+		if (!cloud.HasNormals()) {
+			let size = cloud.Size();
+			this.normals = new Array<Vector>(size);
+			for (let index = 0; index < size; index++) {
+				this.normals[index] = cloud.ComputeNormal(index, 30);
+			}
+		}
+	}
+
+	Size(): number {
+		return this.cloud.Size();
+	}
+
+	GetData(index: number): Vector {
+		if (this.normals) {
+			return this.normals[index];
+		}
+		else {
+			return this.cloud.GetNormal(index);
+		}
+	}
+
+	ToPointCloud(): PointCloud {
+		let gsphere = new PointCloud();
+		let size = this.Size();
+		gsphere.Reserve(size);
+		for (let index = 0; index < size; index++) {
+			gsphere.PushPoint(this.GetData(index));
+		}
+		return gsphere;
 	}
 }

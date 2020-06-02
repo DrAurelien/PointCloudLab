@@ -54,6 +54,10 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		return field;
 	}
 
+	GetDisplayIcon(): string {
+		return 'fa-cloud';
+	}
+
 	GetScalarField(name: string): PCLScalarField {
 		for (let index = 0; index < this.fields.length; index++) {
 			if (this.fields[index].name === name) {
@@ -129,6 +133,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 
 		result.push(new PlaneFittingAction(this));
 		result.push(new SphereFittingAction(this));
+		result.push(new CylinderFittingAction(this));
 
 		if (ransac)
 			result.push(null);

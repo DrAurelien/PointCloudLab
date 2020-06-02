@@ -12,6 +12,10 @@
 		return this.coordinates;
 	}
 
+	Clone(): Vector {
+		return new Vector(this.coordinates.slice());
+	}
+
 	Dimension(): number {
 		return this.coordinates.length;
 	}

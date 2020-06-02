@@ -63,15 +63,25 @@ class Geometry {
 		return ap.Cross(ab).Norm();
 	}
 
-	static PlaneFitting(data: DataProvider<Vector>): PlaneFittingResult {
-		//Compute the coletiance matrix
-		let coletiance = Matrix.Null(3, 3);
+	static Centroid(data: DataProvider<Vector>, weights: DataProvider<number>=null): Vector {
 		let center = new Vector([0, 0, 0]);
 		let size = data.Size();
 		for (let index = 0; index < size; index++) {
-			center = center.Plus(data.GetData(index));
+			let datum = data.GetData(index);
+			if (weights) {
+				datum = datum.Times(weights.GetData(index));
+			}
+			center.Add(datum);
 		}
 		center = center.Times(1 / size);
+		return center;
+	}
+
+	static PlaneFitting(data: DataProvider<Vector>): PlaneFittingResult {
+		//Compute the coletiance matrix
+		let coletiance = Matrix.Null(3, 3);
+		let center = Geometry.Centroid(data);
+		let size = data.Size();
 		for (let index = 0; index < size; index++) {
 			let vec = data.GetData(index).Minus(center);
 			for (let ii = 0; ii < 3; ii++) {
@@ -100,5 +110,56 @@ class Geometry {
 			);
 		}
 		return null;
+	}
+
+	//=======================================================
+	// Spherical coordinates tools
+	// Let theta, phi, fully describing an orthogonal base (theta, phi being the spherical coordinates of the Z axis)
+	//=======================================================
+	static GetTheta(zaxis: Vector): number {
+		return Math.acos(zaxis.Get(2));
+	}
+
+	static GetPhi(zaxis: Vector): number {
+		let waxis = zaxis.Clone();
+		waxis.Set(2, 0);
+		if (waxis.SqrNorm() < 1e-8) {
+			waxis.Set(0, 1);
+		}
+		waxis.Normalize();
+		return Math.acos(waxis.Get(0));
+	}
+
+	static GetZAxis(theta: number, phi: number): Vector {
+		return new Vector([
+			Math.cos(phi) * Math.sin(theta),
+			Math.sin(phi) * Math.sin(theta),
+			Math.cos(theta)
+		]);
+	}
+
+	static GetXAxis(theta: number, phi: number): Vector {
+		return new Vector([
+			Math.cos(phi) * Math.cos(theta),
+			Math.sin(phi) * Math.cos(theta),
+			-Math.sin(theta)
+		]);
+	}
+
+	static GetYAxis(theta: number, phi: number): Vector {
+		return new Vector([
+			-Math.sin(phi),
+			Math.cos(phi),
+			0
+		]);
+	}
+
+	//This one is the projection of both Zaxis and XAxis in the plane Z=0 (thus, it's orthogonal to YAxis as well)
+	static GetWAxis(theta: number, phi: number): Vector {
+		return new Vector([
+			Math.cos(phi),
+			Math.sin(phi),
+			0
+		]);
 	}
 }

@@ -24,10 +24,6 @@ abstract class Shape {
 
 	abstract RayIntersection(ray: Ray, wrapper: Pickable);
 
-	GetLogStr(): string {
-		return "";
-	}
-
 	GetBoundingBox(): BoundingBox{
 		if (!this.boundingbox) {
 			this.boundingbox = this.ComputeBoundingBox();

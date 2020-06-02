@@ -130,8 +130,11 @@ class RansacDetectionAction extends PCLCloudAction {
 // Shapes fitting
 //===================================================
 abstract class ShapeFittingAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, message: string, hint: string) {
-		super(cloud, message, hint);
+	constructor(cloud: PCLPointCloud, shapename: string) {
+		super(cloud,
+			'Fit a ' + shapename,
+			'Find the ' + shapename + ' that best fits the <u><b>whole</b><u> selected point cloud (assuming the point cloud samples a ' + shapename + ').'
+		);
 	}
 
 	Enabled(): boolean {
@@ -149,9 +152,21 @@ abstract class ShapeFittingAction extends PCLCloudAction {
 	abstract ComputeBestFittingShape(cloud: PointCloud): Shape;
 }
 
+class PlaneFittingAction extends ShapeFittingAction {
+	constructor(cloud: PCLPointCloud) {
+		super(cloud, 'plane');
+	}
+
+	ComputeBestFittingShape(cloud: PointCloud): Shape {
+		let planefit = Geometry.PlaneFitting(cloud);
+		return new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud));
+	}
+}
+
+
 class SphereFittingAction extends ShapeFittingAction {
 	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Fit a sphere', 'Find the sphere that best fits the whole point cloud (assuming the point cloud samples a sphere).');
+		super(cloud, 'sphere');
 	}
 
 	ComputeBestFittingShape(cloud: PointCloud): Shape {
@@ -161,14 +176,15 @@ class SphereFittingAction extends ShapeFittingAction {
 	}
 }
 
-class PlaneFittingAction extends ShapeFittingAction {
+class CylinderFittingAction extends ShapeFittingAction {
 	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Fit a plane', 'Find the plane that best fits the whole point cloud (assuming the point cloud samples a planar surface).');
+		super(cloud, 'cylinder');
 	}
 
 	ComputeBestFittingShape(cloud: PointCloud): Shape {
-		let planefit = Geometry.PlaneFitting(cloud);
-		return new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud));
+		let cylinder = Cylinder.InitialGuessForFitting(cloud);
+		cylinder.FitToPointCloud(cloud);
+		return cylinder;
 	}
 }
 
@@ -262,14 +278,8 @@ class GaussianSphereAction extends PCLCloudAction {
 	}
 
 	Run() {
-		let gsphere = new PCLPointCloud();
-		let gcloud = gsphere.cloud;
-		let cloud = this.GetCloud();
-		let cloudSize = cloud.Size();
-		gcloud.Reserve(cloudSize);
-		for (let index = 0; index < cloudSize; index++) {
-			gcloud.PushPoint(cloud.GetNormal(index));
-		}
+		let gsphere = new PCLPointCloud(new GaussianSphere(this.GetCloud()).ToPointCloud());
+		gsphere.name = 'Gaussian sphere of "' + this.GetPCLCloud().name + '"';
 		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.Creation);
 	}
 }
