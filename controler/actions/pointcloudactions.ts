@@ -55,7 +55,7 @@ class ResetDetectionAction extends PCLCloudAction {
 		return !!this.GetPCLCloud().ransac;
 	}
 
-	Run() {
+	Trigger() {
 		this.GetPCLCloud().ransac = null;
 	}
 }
@@ -69,7 +69,7 @@ class RansacDetectionAction extends PCLCloudAction {
 		return this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		let cloud = this.GetPCLCloud();
 		if (!cloud.ransac) {
 			let self = this;
@@ -141,7 +141,7 @@ abstract class ShapeFittingAction extends PCLCloudAction {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		let shape = this.ComputeBestFittingShape(this.GetCloud());
 		let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
 		let owner = this.GetPCLCloud().owner;
@@ -213,7 +213,7 @@ class ComputeNormalsAction extends PCLCloudAction {
 		return !this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		let k = 30;
 		let cloud = this.GetPCLCloud();
 		let ondone = () => cloud.InvalidateDrawing();
@@ -275,7 +275,7 @@ class ClearNormalsAction extends PCLCloudAction {
 		return this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		this.GetCloud().ClearNormals();
 		this.GetPCLCloud().InvalidateDrawing();
 	}
@@ -290,7 +290,7 @@ class GaussianSphereAction extends PCLCloudAction {
 		return this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		let gsphere = new PCLPointCloud(new GaussianSphere(this.GetCloud()).ToPointCloud());
 		gsphere.name = 'Gaussian sphere of "' + this.GetPCLCloud().name + '"';
 		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.NewItem);
@@ -309,7 +309,7 @@ class ConnectedComponentsAction extends PCLCloudAction {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		let k = 30;
 		let self = this;
 		let ondone = (b: ConnecterComponentsBuilder) => self.GetPCLCloud().NotifyChange(b.result, ChangeType.NewItem);
@@ -350,7 +350,7 @@ class ComputeDensityAction extends PCLCloudAction {
 		return !this.GetPCLCloud().GetScalarField(PCLScalarField.DensityFieldName);
 	}
 
-	Run() {
+	Trigger() {
 		let k = 30;
 		let density = new DensityComputer(this.GetPCLCloud(), k);
 		density.Start();
@@ -395,7 +395,7 @@ class ComputeNoiseAction extends PCLCloudAction {
 		return !this.GetPCLCloud().GetScalarField(PCLScalarField.NoiseFieldName);
 	}
 
-	Run() {
+	Trigger() {
 		let k = 10;
 		let noise = new NoiseComputer(this.GetPCLCloud(), k);
 		noise.Start();
@@ -447,7 +447,7 @@ class ComputeDistancesAction extends PCLCloudAction {
 		return !this.GetPCLCloud().GetScalarField(this.GetFieldName());
 	}
 
-	Run() {
+	Trigger() {
 		let noise = new DistancesComputer(this.GetPCLCloud(), this.target, this.GetFieldName());
 		noise.Start();
 	}
@@ -487,7 +487,7 @@ class ExportPointCloudFileAction extends PCLCloudAction {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		FileExporter.ExportFile(this.GetPCLCloud().name + '.csv', this.GetPCLCloud().GetCSVData(), 'text/csv');
 	}
 }

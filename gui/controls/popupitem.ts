@@ -18,7 +18,7 @@ class PopupItem implements Control {
 				this.item.className += 'Inactive';
 			}
 
-			let itemLabel = document.createTextNode(action.label);
+			let itemLabel = document.createTextNode(action.GetLabel());
 			this.item.appendChild(itemLabel);
 
 			if (action.hintMessage) {

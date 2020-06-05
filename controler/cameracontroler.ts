@@ -63,21 +63,4 @@ class CameraControler extends MouseControler {
 		this.target.NotifyViewPointChange(ViewPointChange.Zoom);
 		return true;
 	}
-
-	protected HandleKey(key: number): boolean {
-		switch (key) {
-			case 'p'.charCodeAt(0):
-				this.target.ToggleRendering(RenderingMode.Point);
-				break;
-			case 'w'.charCodeAt(0):
-				this.target.ToggleRendering(RenderingMode.Wire);
-				break;
-			case 's'.charCodeAt(0):
-				this.target.ToggleRendering(RenderingMode.Surface);
-				break;
-			default:
-				return true;
-		}
-		return true;
-    }
 }

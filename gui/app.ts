@@ -26,16 +26,20 @@ class PCLApp implements Controlable, ActionDelegate {
 	menu: Menu;
 	currentControler: Controler;
 	coordinatesSystem: CoordinatesSystem;
+	shortcuts: Record<string, Action>;
 
 	static sceneStorageKey = 'PointCloudLab-Scene';
 
 	constructor() {
+		this.shortcuts = {};
+
 		let scenebuffer: string = null;
 		try {
 			scenebuffer = window.localStorage.getItem(PCLApp.sceneStorageKey);
 		}
 		catch (e) {
 			scenebuffer = null;
+			console.warn('Could not load data from local storage');
 		}
 		if (scenebuffer) {
 			console.info('Loading locally stored data');
@@ -101,7 +105,7 @@ class PCLApp implements Controlable, ActionDelegate {
 		document.body.appendChild(this.coordinatesSystem.GetElement());
 
 		//Create the default controler (camera controler)
-		this.currentControler = new CameraControler(this);
+		this.SetCurrentControler(new CameraControler(this), false);
 
 		this.sceneRenderer.Draw(scene);
 		this.coordinatesSystem.Refresh();
@@ -158,15 +162,23 @@ class PCLApp implements Controlable, ActionDelegate {
 		return this.sceneRenderer.camera;
 	}
 
-	GetLightPosition(): LightingPosition {
+	GetLightPosition(takeFocus: boolean): LightingPosition {
 		let scene = this.dataHandler.scene;
-		if (scene.Lights.children.length == 1)
-			return scene.Lights.children[0] as Light;
-
-		let item = this.dataHandler.selection.GetSingleSelection();
-		if (item && item instanceof Light) {
-			return item as Light;
+		let light: Light;
+		if (scene.Lights.children.length == 1) {
+			light = scene.Lights.children[0] as Light;
+			if (takeFocus) {
+				this.dataHandler.selection.Clear();
+				light.Select(true);
+			}
 		}
+		else {
+			let item = this.dataHandler.selection.GetSingleSelection();
+			if (item && item instanceof Light) {
+				light = item as Light;
+			}
+		}
+		return light;
 	}
 
 	GetCurrentTransformable(): Transformable {
@@ -206,8 +218,12 @@ class PCLApp implements Controlable, ActionDelegate {
 		return this.sceneRenderer.GetElement();
 	}
 
-	SetCurrentControler(controler: Controler) {
+	SetCurrentControler(controler: Controler, refresh: boolean=true) {
 		this.currentControler = controler;
+		this.sceneRenderer.drawingcontext.bboxcolor = controler.GetSelectionColor();
+		if (refresh) {
+			this.RefreshRendering();
+		}
 	}
 
 	GetCurrentControler(): Controler {
@@ -252,6 +268,29 @@ class PCLApp implements Controlable, ActionDelegate {
 				break;
 		}
 		this.RenderScene();
+	}
+
+	RegisterShortCut(action: Action): Action {
+		let shortcut = action.GetShortCut();
+		if (shortcut) {
+			let key = shortcut.toLowerCase();
+			if (!(key in this.shortcuts)) {
+				this.shortcuts[key] = action;
+			}
+			else {
+				console.error('Shortcut "' + shortcut + '" is being registered multiples times.');
+			}
+		}
+		return action;
+	}
+
+	HandleShortcut(key: string): boolean {
+		let action = this.shortcuts[key.toLowerCase()];
+		if (action && action.Enabled()) {
+			action.Run();
+			return true;
+		}
+		return false;
 	}
 
 	//===================================

@@ -7,7 +7,7 @@ class CenterCameraAction extends Action {
 		super('Center camera on selection', 'Change the camera viewing direction so that it points to the selected object(s)');
 	}
 
-	Run() {
+	Trigger() {
 		this.target.FocusOnCurrentSelection();
 	}
 

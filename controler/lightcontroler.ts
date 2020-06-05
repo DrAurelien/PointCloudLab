@@ -13,7 +13,7 @@ class LightControler extends MouseControler {
 	constructor(target: Controlable) {
 		super(target);
 
-		this.light = this.target.GetLightPosition();
+		this.light = this.target.GetLightPosition(true);
 		target.GetViewPoint().SetPosition(this.light.GetPosition());
 		target.NotifyViewPointChange(ViewPointChange.Position);
 	}
@@ -53,10 +53,6 @@ class LightControler extends MouseControler {
 	}
 
 	protected HandleWheel(delta: number): boolean {
-		return true;
-	}
-
-	protected HandleKey(key: number): boolean {
 		return true;
 	}
 }

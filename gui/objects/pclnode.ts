@@ -230,7 +230,7 @@ class BoundingBoxDrawing {
 			ctx.EnableNormals(false);
 			BoundingBoxDrawing.Initialize(ctx);
 
-			ctx.gl.uniform3fv(ctx.color, new Float32Array([1.0, 1.0, 0.0]));
+			ctx.gl.uniform3fv(ctx.color, ctx.bboxcolor);
 
 			let size = box.GetSize();
 			let center = box.GetCenter();

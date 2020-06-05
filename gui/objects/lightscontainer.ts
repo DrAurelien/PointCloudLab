@@ -47,7 +47,7 @@ class NewLightAction extends Action {
 		super('New light', 'Add up to ' + DrawingContext.NbMaxLights + ' light sources');
 	}
 
-	Run() {
+	Trigger() {
 		let light = new Light(new Vector([100.0, 100.0, 100.0]));
 		this.container.Add(light);
 	}

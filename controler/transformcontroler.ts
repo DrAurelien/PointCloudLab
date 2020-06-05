@@ -85,7 +85,7 @@ class TransformControler extends MouseControler {
 		return true;
 	}
 
-	protected HandleKey(key: number): boolean {
-		return true;
+	GetSelectionColor(): number[] {
+		return [1, 0, 0];
 	}
 }

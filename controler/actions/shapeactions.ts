@@ -15,7 +15,7 @@ class CreateShapeMeshAction extends Action {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		let self = this;
 		let dialog = new Dialog(
 			//Ok has been clicked
