@@ -121,13 +121,10 @@ class Geometry {
 	}
 
 	static GetPhi(zaxis: Vector): number {
-		let waxis = zaxis.Clone();
-		waxis.Set(2, 0);
-		if (waxis.SqrNorm() < 1e-8) {
-			waxis.Set(0, 1);
+		if (Math.abs(zaxis.Get(0)) > 1e-6) {
+			return Math.atan2(zaxis.Get(1), zaxis.Get(0));
 		}
-		waxis.Normalize();
-		return Math.acos(waxis.Get(0));
+		return 0;
 	}
 
 	static GetZAxis(theta: number, phi: number): Vector {

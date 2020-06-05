@@ -188,6 +188,19 @@ class CylinderFittingAction extends ShapeFittingAction {
 	}
 }
 
+
+class ConeFittingAction extends ShapeFittingAction {
+	constructor(cloud: PCLPointCloud) {
+		super(cloud, 'cone');
+	}
+
+	ComputeBestFittingShape(cloud: PointCloud): Shape {
+		let cone = Cone.InitialGuessForFitting(cloud);
+		cone.FitToPointCloud(cloud);
+		return cone;
+	}
+}
+
 //===================================================
 // Normals computation
 //===================================================

@@ -206,7 +206,7 @@ class Cylinder extends Shape {
 		}
 		radius /= size;
 
-		return new Cylinder(center, plane.normal, radius, null);
+		return new Cylinder(center, plane.normal, radius, 0);
 	}
 
 	FitToPointCloud(cloud: PointCloud) {

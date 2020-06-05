@@ -1,5 +1,6 @@
 ﻿/// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -27,9 +28,9 @@ class Cone extends Shape {
 	}
 
 	ApplyTransform(transform: Transform) {
+		let c = this.apex.Plus(this.axis.Times(this.height * 0.5));
 		this.axis = transform.TransformVector(this.axis).Normalized();
 		this.height *= transform.scalefactor;
-		let c = this.apex.Plus(this.axis.Times(this.height * 0.5));
 		c = transform.TransformPoint(c);
 		this.apex = c.Minus(this.axis.Times(this.height * 0.5));
 	}
@@ -54,13 +55,14 @@ class Cone extends Shape {
 
 		let xx = this.axis.GetOrthogonnal();
 		let yy = this.axis.Cross(xx).Normalized();
+		let radius = this.height * Math.tan(this.angle);
 		let radials = [];
 		for (let ii = 0; ii < sampling; ii++) {
 			let phi = 2.0 * ii * Math.PI / sampling;
 			let c = Math.cos(phi);
 			let s = Math.sin(phi);
 			let radial = xx.Times(c).Plus(yy.Times(s));
-			radials.push(radial.Times(this.angle));
+			radials.push(radial.Times(radius));
 		}
 		let center = this.apex.Plus(this.axis.Times(this.height));
 		points.PushPoint(center);
@@ -147,11 +149,18 @@ class Cone extends Shape {
 	}
 
 	Distance(point: Vector): number {
-		return 0.0;
+		let delta = point.Minus(this.apex);
+		let dist = delta.Norm();
+		let beyondApex = (delta.Dot(this.axis)) < (- Math.sin(this.angle) * dist);
+		if (beyondApex) {
+			return dist;
+		}
+		else {
+			return (Math.cos(this.angle) * delta.Cross(this.axis).Norm()) - (Math.sin(this.angle) * delta.Dot(this.axis));
+		}
 	}
 
 	ComputeBounds(points: number[], cloud: PointCloud): void {
-		let min = 0;
 		let max = 0;
 		for (let ii = 0; ii < points.length; ii++) {
 			let d = cloud.GetPoint(points[ii]).Minus(this.apex).Dot(this.axis);
@@ -160,5 +169,157 @@ class Cone extends Shape {
 			}
 		}
 		this.height = max;
+	}
+
+	static InitialGuessForFitting(cloud: PointCloud): Cone {
+		let gsphere = new GaussianSphere(cloud);
+		let plane = Geometry.PlaneFitting(gsphere);
+		let planeheight = plane.center.Norm();
+		let angle = Math.asin(planeheight);
+		let size = cloud.Size();
+		//Find the appex, being the point that belongs to all the normals planes
+		//(Suboptimal : would be better to have the closed form solution, not the time right now)
+		let left = Matrix.Null(3, 3);
+		let right = Matrix.Null(1, 3);
+		for (let index = 0; index < size; index++) {
+			let n = gsphere.GetData(index);
+			let p = cloud.GetPoint(index);
+			let s = p.Dot(n);
+			for (let ii = 0; ii < 3; ii++) {
+				right.AddValue(ii, 0, n.Get(ii) * s);
+				for (let jj = 0; jj < 3; jj++) {
+					left.AddValue(ii, jj, n.Get(ii) * n.Get(jj));
+				}
+			}
+		}
+		let apex = left.LUSolve(right).GetColumnVector(0);
+		//Handle axis orientation : make it point to he cloud centroid ... otherwise, we could face ill-conditionned matrices during the fitting step
+		let delta = Geometry.Centroid(cloud).Minus(apex);
+		if (plane.normal.Dot(delta) < 0) {
+			plane.normal = plane.normal.Times(-1);
+		}
+		return new Cone(apex, plane.normal, angle, 0);
+	}
+
+	FitToPointCloud(cloud: PointCloud) {
+		let evaluable = new ConeFitting(this);
+		let lsFitting = new LeastSquaresFitting(cloud);
+		lsFitting.Initialize(ConeFitting.Parameters(this.apex, this.axis, this.angle));
+		lsFitting.Solve(evaluable);
+
+		//Compute actual cone height and axis direction
+		let zmax = null;
+		let size = cloud.Size();
+		for (let index = 0; index < size; index++) {
+			let z = cloud.GetPoint(index).Minus(this.apex).Dot(this.axis);
+			if (zmax === null || Math.abs(zmax) < Math.abs(z)) {
+				zmax = z;
+			}
+		}
+		if (zmax < 0) {
+			this.axis = this.axis.Times(-1);
+		}
+		this.height = Math.abs(zmax);
+
+		this.NotifyChange();
+	}
+}
+
+class ConeFitting implements LeastSquaresEvaluable<Vector> {
+	constructor(private cone: Cone) {
+	}
+
+	static Parameters(apex: Vector, axis: Vector, angle: number): number[] {
+		let theta = Geometry.GetTheta(axis);
+		let phi = Geometry.GetPhi(axis);
+		let result = apex.Clone().Flatten();
+		result.push(theta);
+		result.push(phi);
+		result.push(angle);
+		return result;
+	}
+
+	static GetApex(params: number[]): Vector {
+		return new Vector(params.slice(0, 3));
+	}
+
+	static GetAxis(params: number[]): Vector {
+		return Geometry.GetZAxis(
+			ConeFitting.GetTheta(params),
+			ConeFitting.GetPhi(params)
+		);
+	} 
+
+	private static GetTheta(params: number[]): number {
+		return params[3];
+	}
+
+	private static GetPhi(params: number[]): number {
+		return params[4];
+	}
+
+	static GetAngle(params: number[]): number {
+		return params[5];
+	}
+
+	static IsBeyondApex(apexToPoint: Vector, axis: Vector, angle: number): boolean {
+		return (apexToPoint.Dot(axis)) < (- Math.sin(angle) * apexToPoint.Norm());
+	}
+
+	Distance(params: number[], point: Vector): number {
+		let apex = ConeFitting.GetApex(params);
+		let axis = ConeFitting.GetAxis(params);
+		let angle = ConeFitting.GetAngle(params);
+		let delta = point.Minus(apex);
+		if (ConeFitting.IsBeyondApex(delta, axis, angle)) {
+			return delta.Norm();
+		}
+		else {
+			return (Math.cos(angle) * delta.Cross(axis).Norm()) - (Math.sin(angle) * delta.Dot(axis));
+		}
+	}
+
+	DistanceGradient(params: number[], point: Vector): number[] {
+		let apex = ConeFitting.GetApex(params);
+		let theta = ConeFitting.GetTheta(params);
+		let phi = ConeFitting.GetPhi(params);
+		let zaxis = Geometry.GetZAxis(theta, phi);
+		let angle = ConeFitting.GetAngle(params);
+		let delta = point.Minus(apex);
+
+		if (ConeFitting.IsBeyondApex(delta, zaxis, angle)) {
+			delta.Normalized();
+			let result = delta.Times(-1).Flatten();
+			result.push(0);
+			result.push(0);
+			result.push(0);
+			return result;
+		}
+		else {
+			let xaxis = Geometry.GetXAxis(theta, phi);
+			let yaxis = Geometry.GetYAxis(theta, phi);
+			let ca = Math.cos(angle);
+			let sa = Math.sin(angle);
+			let ss = delta.Dot(zaxis);
+			let cc = delta.Cross(zaxis).Norm();
+			let ff = (ca * ss / cc) + sa;
+
+			let ddtheta = - ff * delta.Dot(xaxis);
+			let ddphi = - Math.sin(theta) * ff * delta.Dot(yaxis);
+			let ddapex = delta.Times(-ca / cc).Plus(zaxis.Times(ff));
+			let ddangle = (- sa * cc) - (ca * ss);
+
+			let result = ddapex.Flatten();
+			result.push(ddtheta);
+			result.push(ddphi);
+			result.push(ddangle);
+			return result;
+		}
+	}
+
+	NotifyNewSolution(params: number[]) {
+		this.cone.apex = ConeFitting.GetApex(params);
+		this.cone.axis = ConeFitting.GetAxis(params);
+		this.cone.angle = ConeFitting.GetAngle(params);
 	}
 }
