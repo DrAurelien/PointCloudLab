@@ -27,7 +27,7 @@ class Menu extends HideablePannel implements ActionsProvider {
 				else {
 					let owner = dataHandler.GetNewItemOwner();
 					owner.Add(createdObject);
-					createdObject.NotifyChange(createdObject, ChangeType.Creation);
+					createdObject.NotifyChange(createdObject, ChangeType.NewItem);
 				}
 
 			}
@@ -40,7 +40,7 @@ class Menu extends HideablePannel implements ActionsProvider {
 		this.toolbar.AddControl(new ComboBox('[Icon:bars]', this, 'Contextual menu : list of actions available for the current selection.'));
 
 		this.toolbar.AddControl(new Button('[Icon:search]', () => {
-			ownerView.FocusOnCurrentItem();
+			ownerView.FocusOnCurrentSelection();
 		},
 			'Focus current viewpoint on the selected item'));
 

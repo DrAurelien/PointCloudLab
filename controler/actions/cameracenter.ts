@@ -8,7 +8,7 @@ class CenterCameraAction extends Action {
 	}
 
 	Run() {
-		this.target.FocusOnCurrentItem();
+		this.target.FocusOnCurrentSelection();
 	}
 
 	Enabled(): boolean {

@@ -88,7 +88,7 @@ class Renderer implements Control {
 		scanner.SetNext((s: SceneScanner) => {
 			let cloud = new PCLPointCloud(s.cloud);
 			group.Add(cloud);
-			cloud.NotifyChange(cloud, ChangeType.Creation);
+			cloud.NotifyChange(cloud, ChangeType.NewItem);
 		});
 		scanner.Start();
 	}

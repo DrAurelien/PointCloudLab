@@ -122,7 +122,7 @@ class RansacDetectionAction extends PCLCloudAction {
 		let pclshape = new PCLShapeWrapper(shape).GetPCLShape();
 		let owner = this.GetPCLCloud().owner;
 		owner.Add(pclshape);
-		owner.NotifyChange(pclshape, ChangeType.Creation);
+		pclshape.NotifyChange(pclshape, ChangeType.NewItem);
 	}
 }
 
@@ -146,7 +146,7 @@ abstract class ShapeFittingAction extends PCLCloudAction {
 		let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
 		let owner = this.GetPCLCloud().owner;
 		owner.Add(pclshape);
-		owner.NotifyChange(pclshape, ChangeType.Creation);
+		owner.NotifyChange(pclshape, ChangeType.NewItem);
 	}
 
 	abstract ComputeBestFittingShape(cloud: PointCloud): Shape;
@@ -293,7 +293,7 @@ class GaussianSphereAction extends PCLCloudAction {
 	Run() {
 		let gsphere = new PCLPointCloud(new GaussianSphere(this.GetCloud()).ToPointCloud());
 		gsphere.name = 'Gaussian sphere of "' + this.GetPCLCloud().name + '"';
-		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.Creation);
+		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.NewItem);
 	}
 }
 
@@ -312,7 +312,7 @@ class ConnectedComponentsAction extends PCLCloudAction {
 	Run() {
 		let k = 30;
 		let self = this;
-		let ondone = (b: ConnecterComponentsBuilder) => self.GetPCLCloud().NotifyChange(b.result, ChangeType.Creation);
+		let ondone = (b: ConnecterComponentsBuilder) => self.GetPCLCloud().NotifyChange(b.result, ChangeType.NewItem);
 		let builder = new ConnecterComponentsBuilder(this.GetCloud(), k, this.GetPCLCloud().name);
 		builder.SetNext(ondone);
 		builder.Start();

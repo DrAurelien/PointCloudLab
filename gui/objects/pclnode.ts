@@ -17,7 +17,9 @@ enum ChangeType {
 	Display = 0x000008,
 	Folding = 0x000010,
 	Children = 0x000020,
-	ColorScale = 0x000040
+	ColorScale = 0x000040,
+	TakeFocus = 0x000080,
+	NewItem = Creation | Display | TakeFocus
 }
 
 interface Notifiable {

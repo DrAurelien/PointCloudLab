@@ -225,7 +225,7 @@ class PCLApp implements Controlable, ActionDelegate {
 		}
 	}
 
-	FocusOnCurrentItem() {
+	FocusOnCurrentSelection() {
 		let selection = this.dataHandler.selection;
 		let selectionbb = selection.GetBoundingBox();
 		if (selectionbb && this.sceneRenderer.camera.CenterOnBox(selectionbb)) {

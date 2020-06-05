@@ -38,7 +38,7 @@ class CreateShapeMeshAction extends Action {
 		result = new PCLMesh(mesh);
 		let self = this;
 		mesh.ComputeOctree(() => {
-			self.shape.NotifyChange(result, ChangeType.Creation);
+			self.shape.NotifyChange(result, ChangeType.NewItem);
 		});
 		return true;
 	}

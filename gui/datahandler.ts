@@ -81,6 +81,12 @@ class DataHandler extends HideablePannel {
 		this.RefreshColorScale();
 	}
 
+	FocusOnItem(item: PCLNode) {
+		this.selection.Clear();
+		item.Select(true);
+		this.ownerView.FocusOnCurrentSelection();
+	}
+
 	UpdateProperties() {
 		let properties = this.selection.GetProperties();
 		if (this.currentProperties !== properties) {

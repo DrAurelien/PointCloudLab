@@ -55,7 +55,7 @@ interface Controlable {
 	SetCurrentControler(controler: Controler);
 	GetCurrentControler(): Controler;
 	PickItem(x: number, y: number, exlusive: boolean);
-	FocusOnCurrentItem();
+	FocusOnCurrentSelection();
 	CanFocus(): boolean;
 	ToggleRendering(mode: RenderingMode);
 }

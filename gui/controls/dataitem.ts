@@ -177,6 +177,10 @@ class DataItem implements Control, Notifiable {
 		if (change & ChangeType.Properties) {
 			this.dataHandler.UpdateProperties();
 		}
+
+		if (change & ChangeType.TakeFocus) {
+			this.dataHandler.FocusOnItem(source);
+		}
 	}
 
 	//Group folding management - When clicking a group icon
