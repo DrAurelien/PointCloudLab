@@ -61,6 +61,9 @@ var Vector = /** @class */ (function () {
     Vector.prototype.Flatten = function () {
         return this.coordinates;
     };
+    Vector.prototype.Clone = function () {
+        return new Vector(this.coordinates.slice());
+    };
     Vector.prototype.Dimension = function () {
         return this.coordinates.length;
     };
@@ -86,6 +89,26 @@ var Vector = /** @class */ (function () {
         var result = new Array(this.coordinates.length);
         for (var index = 0; index < this.coordinates.length; index++) {
             result[index] = this.coordinates[index] + v.coordinates[index];
+        }
+        return new Vector(result);
+    };
+    //Sum in place
+    Vector.prototype.Add = function (v) {
+        if (this.coordinates.length != v.coordinates.length) {
+            throw 'Cannot add vectors with different dimensions';
+        }
+        for (var index = 0; index < this.coordinates.length; index++) {
+            this.coordinates[index] += v.coordinates[index];
+        }
+    };
+    //Product of two vectors
+    Vector.prototype.Multiply = function (v) {
+        if (this.coordinates.length != v.coordinates.length) {
+            throw 'Cannot multiply vectors with different dimensions';
+        }
+        var result = new Array(this.coordinates.length);
+        for (var index = 0; index < this.coordinates.length; index++) {
+            result[index] = this.coordinates[index] * v.coordinates[index];
         }
         return new Vector(result);
     };
@@ -307,12 +330,14 @@ var Matrix = /** @class */ (function () {
     Matrix.prototype.SetValue = function (row, col, value) {
         this.values[this.FlatIndex(row, col)] = value;
     };
+    Matrix.prototype.AddValue = function (row, col, value) {
+        this.values[this.FlatIndex(row, col)] += value;
+    };
     Matrix.prototype.GetValue = function (row, col) {
         return this.values[this.FlatIndex(row, col)];
     };
     Matrix.prototype.Clone = function () {
-        var values = new Float32Array(this.values);
-        return new Matrix(this.width, this.height, values);
+        return new Matrix(this.width, this.height, this.values.slice());
     };
     Matrix.prototype.Times = function (s) {
         var result = new Float32Array(this.width * this.height);
@@ -581,6 +606,24 @@ var MouseControler = /** @class */ (function () {
         this.cursor.Restore(this.targetElement);
         this.EndMouseEvent();
     };
+    MouseControler.prototype.HandleKey = function (key) {
+        var strkey = String.fromCharCode(key);
+        switch (strkey) {
+            case 'p':
+                this.target.ToggleRendering(RenderingMode.Point);
+                break;
+            case 'w':
+                this.target.ToggleRendering(RenderingMode.Wire);
+                break;
+            case 's':
+                this.target.ToggleRendering(RenderingMode.Surface);
+                break;
+            default:
+                this.target.HandleShortcut(strkey);
+                break;
+        }
+        return true;
+    };
     MouseControler.prototype.StartMouseEvent = function () {
     };
     MouseControler.prototype.EndMouseEvent = function () {
@@ -593,6 +636,9 @@ var MouseControler = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    MouseControler.prototype.GetSelectionColor = function () {
+        return [1, 1, 0];
+    };
     return MouseControler;
 }());
 /// <reference path="mousecontroler.ts" />
@@ -641,7 +687,7 @@ var CameraControler = /** @class */ (function (_super) {
                 this.target.PickItem(tracker.x, tracker.y, !tracker.ctrlKey);
                 break;
             case 2: //Middle mouse
-                this.target.FocusOnCurrentItem();
+                this.target.FocusOnCurrentSelection();
                 break;
             default:
                 return true;
@@ -652,22 +698,6 @@ var CameraControler = /** @class */ (function (_super) {
         var camera = this.target.GetViewPoint();
         camera.Zoom(-delta / 100);
         this.target.NotifyViewPointChange(ViewPointChange.Zoom);
-        return true;
-    };
-    CameraControler.prototype.HandleKey = function (key) {
-        switch (key) {
-            case 'p'.charCodeAt(0):
-                this.target.ToggleRendering(RenderingMode.Point);
-                break;
-            case 'w'.charCodeAt(0):
-                this.target.ToggleRendering(RenderingMode.Wire);
-                break;
-            case 's'.charCodeAt(0):
-                this.target.ToggleRendering(RenderingMode.Surface);
-                break;
-            default:
-                return true;
-        }
         return true;
     };
     return CameraControler;
@@ -683,7 +713,7 @@ var LightControler = /** @class */ (function (_super) {
     __extends(LightControler, _super);
     function LightControler(target) {
         var _this = _super.call(this, target) || this;
-        _this.light = _this.target.GetLightPosition();
+        _this.light = _this.target.GetLightPosition(true);
         target.GetViewPoint().SetPosition(_this.light.GetPosition());
         target.NotifyViewPointChange(ViewPointChange.Position);
         return _this;
@@ -719,9 +749,6 @@ var LightControler = /** @class */ (function (_super) {
         return true;
     };
     LightControler.prototype.HandleWheel = function (delta) {
-        return true;
-    };
-    LightControler.prototype.HandleKey = function (key) {
         return true;
     };
     return LightControler;
@@ -788,7 +815,7 @@ var TransformControler = /** @class */ (function (_super) {
                 this.target.PickItem(tracker.x, tracker.y, !tracker.ctrlKey);
                 break;
             case 2: //Middle mouse
-                this.target.FocusOnCurrentItem();
+                this.target.FocusOnCurrentSelection();
                 break;
             default:
                 return true;
@@ -801,8 +828,8 @@ var TransformControler = /** @class */ (function (_super) {
         this.target.NotifyTransform();
         return true;
     };
-    TransformControler.prototype.HandleKey = function (key) {
-        return true;
+    TransformControler.prototype.GetSelectionColor = function () {
+        return [1, 0, 0];
     };
     return TransformControler;
 }(MouseControler));
@@ -810,9 +837,30 @@ var Action = /** @class */ (function () {
     function Action(label, hintMessage) {
         this.label = label;
         this.hintMessage = hintMessage;
+        this.listeners = [];
     }
+    Action.prototype.Run = function () {
+        this.Trigger();
+        for (var index = 0; index < this.listeners.length; index++) {
+            this.listeners[index].OnTrigger(this);
+        }
+    };
     Action.IsActionProvider = function (x) {
         return x && x.GetActions && x.GetActions instanceof Function;
+    };
+    Action.prototype.GetShortCut = function () {
+        return null;
+    };
+    Action.prototype.GetLabel = function (withShortcut) {
+        if (withShortcut === void 0) { withShortcut = true; }
+        if (withShortcut) {
+            var shortcut = this.GetShortCut();
+            return (shortcut ? ('[' + shortcut + '] ') : '') + this.label;
+        }
+        return this.label;
+    };
+    Action.prototype.AddListener = function (listener) {
+        this.listeners.push(listener);
     };
     return Action;
 }());
@@ -821,7 +869,6 @@ var SimpleAction = /** @class */ (function (_super) {
     function SimpleAction(label, callback, hintMessage) {
         if (callback === void 0) { callback = null; }
         var _this = _super.call(this, label, hintMessage) || this;
-        _this.label = label;
         _this.callback = callback;
         _this.hintMessage = hintMessage;
         return _this;
@@ -829,7 +876,7 @@ var SimpleAction = /** @class */ (function (_super) {
     SimpleAction.prototype.Enabled = function () {
         return this.callback !== null;
     };
-    SimpleAction.prototype.Run = function () {
+    SimpleAction.prototype.Trigger = function () {
         return this.callback();
     };
     return SimpleAction;
@@ -843,8 +890,8 @@ var CenterCameraAction = /** @class */ (function (_super) {
         _this.target = target;
         return _this;
     }
-    CenterCameraAction.prototype.Run = function () {
-        this.target.FocusOnCurrentItem();
+    CenterCameraAction.prototype.Trigger = function () {
+        this.target.FocusOnCurrentSelection();
     };
     CenterCameraAction.prototype.Enabled = function () {
         return this.target.CanFocus();
@@ -862,11 +909,14 @@ var CameraModeAction = /** @class */ (function (_super) {
         _this.target = target;
         return _this;
     }
-    CameraModeAction.prototype.Run = function () {
+    CameraModeAction.prototype.Trigger = function () {
         this.target.SetCurrentControler(new CameraControler(this.target));
     };
     CameraModeAction.prototype.Enabled = function () {
         return !(this.target.GetCurrentControler() instanceof CameraControler);
+    };
+    CameraModeAction.prototype.GetShortCut = function () {
+        return 'C';
     };
     return CameraModeAction;
 }(Action));
@@ -877,13 +927,16 @@ var TransformModeAction = /** @class */ (function (_super) {
         _this.target = target;
         return _this;
     }
-    TransformModeAction.prototype.Run = function () {
+    TransformModeAction.prototype.Trigger = function () {
         this.target.SetCurrentControler(new TransformControler(this.target));
     };
     TransformModeAction.prototype.Enabled = function () {
         if (!this.target.GetCurrentTransformable())
             return false;
         return !(this.target.GetCurrentControler() instanceof TransformControler);
+    };
+    TransformModeAction.prototype.GetShortCut = function () {
+        return 'T';
     };
     return TransformModeAction;
 }(Action));
@@ -894,13 +947,16 @@ var LightModeAction = /** @class */ (function (_super) {
         _this.target = target;
         return _this;
     }
-    LightModeAction.prototype.Run = function () {
+    LightModeAction.prototype.Trigger = function () {
         this.target.SetCurrentControler(new LightControler(this.target));
     };
     LightModeAction.prototype.Enabled = function () {
-        if (!this.target.GetLightPosition())
+        if (!this.target.GetLightPosition(false))
             return false;
         return !(this.target.GetCurrentControler() instanceof LightControler);
+    };
+    LightModeAction.prototype.GetShortCut = function () {
+        return 'L';
     };
     return LightModeAction;
 }(Action));
@@ -1129,6 +1185,7 @@ var DrawingContext = /** @class */ (function () {
         this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");
         this.glossy = this.gl.getUniformLocation(this.shaders, "GlossyPow");
         this.usenormals = this.gl.getUniformLocation(this.shaders, "UseNormals");
+        this.bboxcolor = [1, 1, 1];
     }
     DrawingContext.prototype.EnableNormals = function (b) {
         if (b) {
@@ -1786,6 +1843,8 @@ var ChangeType;
     ChangeType[ChangeType["Folding"] = 16] = "Folding";
     ChangeType[ChangeType["Children"] = 32] = "Children";
     ChangeType[ChangeType["ColorScale"] = 64] = "ColorScale";
+    ChangeType[ChangeType["TakeFocus"] = 128] = "TakeFocus";
+    ChangeType[ChangeType["NewItem"] = 138] = "NewItem";
 })(ChangeType || (ChangeType = {}));
 var PCLNode = /** @class */ (function () {
     function PCLNode(name) {
@@ -1940,7 +1999,7 @@ var BoundingBoxDrawing = /** @class */ (function () {
         if (box && box.IsValid()) {
             ctx.EnableNormals(false);
             BoundingBoxDrawing.Initialize(ctx);
-            ctx.gl.uniform3fv(ctx.color, new Float32Array([1.0, 1.0, 0.0]));
+            ctx.gl.uniform3fv(ctx.color, ctx.bboxcolor);
             var size = box.GetSize();
             var center = box.GetCenter();
             var shapetransform = Matrix.Identity(4);
@@ -2676,6 +2735,12 @@ var Neighbourhood = /** @class */ (function () {
         var sqrdist = this.queryPoint.Minus(this.cloud.GetPoint(pointIndex)).SqrNorm();
         return new Neighbour(sqrdist, pointIndex);
     };
+    Neighbourhood.prototype.GetData = function (pointIndex) {
+        return this.cloud.GetPoint(this.neighbours[pointIndex].index);
+    };
+    Neighbourhood.prototype.Size = function () {
+        return this.neighbours.length;
+    };
     Neighbourhood.prototype.Accept = function (distance) {
         var sqrdist = distance * distance;
         var maxdist = this.GetSqrDistance();
@@ -2801,6 +2866,7 @@ var KDTree = /** @class */ (function () {
         return null;
     };
     KDTree.prototype.FindNearestNeighbours = function (queryPoint, nbh, cell) {
+        if (cell === void 0) { cell = null; }
         if (!cell) {
             cell = this.root;
             nbh.Initialize(this.cloud, queryPoint);
@@ -2937,7 +3003,7 @@ var RegionGrowthIterator = /** @class */ (function () {
         this.currentIndex = this.queue.Dequeue();
         this.status[this.currentIndex] = RegionGrowthStatus.processed;
         //Enqueue current point neighbourhood
-        this.currentNeighborhood = this.cloud.KNearestNeighbours(this.cloud.GetPoint(this.currentIndex), this.k);
+        this.currentNeighborhood = this.cloud.KNearestNeighbours(this.cloud.GetPoint(this.currentIndex), this.k).Neighbours();
         for (var ii = 0; ii < this.currentNeighborhood.length; ii++) {
             var nbhindex = this.currentNeighborhood[ii].index;
             if (this.status[nbhindex] == RegionGrowthStatus.unprocessed)
@@ -3059,25 +3125,161 @@ var EigenDecomposition = /** @class */ (function () {
     }
     return EigenDecomposition;
 }());
+/// <reference path="vector.ts" />
+/// <reference path="matrix.ts" />
+/// <reference path="eigendecomposition.ts" />
+/// <reference path="../tools/picking.ts" />
+/// <reference path="../tools/dataprovider.ts" />
+var PlaneFittingResult = /** @class */ (function () {
+    function PlaneFittingResult(center, normal) {
+        this.center = center;
+        this.normal = normal;
+    }
+    PlaneFittingResult.prototype.ComputePatchRadius = function (data) {
+        var maxradius = 0;
+        var size = data.Size();
+        for (var index = 0; index < size; index++) {
+            var radius = data.GetData(index).Minus(this.center).Cross(this.normal).Norm();
+            if (radius > maxradius) {
+                maxradius = radius;
+            }
+        }
+        return maxradius;
+    };
+    return PlaneFittingResult;
+}());
+var Geometry = /** @class */ (function () {
+    function Geometry() {
+    }
+    Geometry.LinesIntersection = function (a, b) {
+        var d = a.dir.Dot(b.dir);
+        var sqrLenA = a.dir.SqrNorm();
+        var sqrLenB = b.dir.SqrNorm();
+        var s = ((sqrLenA * sqrLenB) - (d * d));
+        if (s <= 1.0e-12) {
+            //Aligned axes
+            return a.from.Plus(b.from).Times(0.5);
+        }
+        var delta = a.from.Minus(b.from);
+        var t1 = delta.Dot(b.dir.Times(d).Minus(a.dir.Times(sqrLenB))) / s;
+        var t2 = delta.Dot(b.dir.Times(sqrLenA).Minus(a.dir.Times(d))) / s;
+        var r1 = a.from.Plus(a.dir.Times(t1));
+        var r2 = b.from.Plus(b.dir.Times(t2));
+        return r1.Plus(r2).Times(0.5);
+    };
+    Geometry.DegreeToRadian = function (a) {
+        return Math.PI * a / 180.0;
+    };
+    Geometry.RadianToDegree = function (a) {
+        return a / Math.PI * 180;
+    };
+    Geometry.DistanceToSegment = function (point, a, b) {
+        var ab = b.Minus(a);
+        var ap = point.Minus(a);
+        if (ap.Dot(ab) <= 0)
+            return ap.Norm();
+        var bp = point.Minus(b);
+        if (bp.Dot(ab) >= 0)
+            return bp.Norm();
+        ab.Normalize();
+        return ap.Cross(ab).Norm();
+    };
+    Geometry.Centroid = function (data, weights) {
+        if (weights === void 0) { weights = null; }
+        var center = new Vector([0, 0, 0]);
+        var size = data.Size();
+        for (var index = 0; index < size; index++) {
+            var datum = data.GetData(index);
+            if (weights) {
+                datum = datum.Times(weights.GetData(index));
+            }
+            center.Add(datum);
+        }
+        center = center.Times(1 / size);
+        return center;
+    };
+    Geometry.PlaneFitting = function (data) {
+        //Compute the coletiance matrix
+        var coletiance = Matrix.Null(3, 3);
+        var center = Geometry.Centroid(data);
+        var size = data.Size();
+        for (var index = 0; index < size; index++) {
+            var vec = data.GetData(index).Minus(center);
+            for (var ii = 0; ii < 3; ii++) {
+                for (var jj = 0; jj < 3; jj++) {
+                    coletiance.SetValue(ii, jj, coletiance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj)));
+                }
+            }
+        }
+        //The normal is the eigenvector having the smallest eigenvalue in the coletiance matrix
+        for (var ii = 0; ii < 3; ii++) {
+            //Check no column is null in the coletiance matrix
+            if (coletiance.GetColumnVector(ii).SqrNorm() <= 1.0e-12) {
+                var result = new Vector([0, 0, 0]);
+                result.Set(ii, 1);
+                return new PlaneFittingResult(center, result);
+            }
+        }
+        var eigen = new EigenDecomposition(coletiance);
+        if (eigen) {
+            return new PlaneFittingResult(center, eigen[0].eigenVector.Normalized());
+        }
+        return null;
+    };
+    //=======================================================
+    // Spherical coordinates tools
+    // Let theta, phi, fully describing an orthogonal base (theta, phi being the spherical coordinates of the Z axis)
+    //=======================================================
+    Geometry.GetTheta = function (zaxis) {
+        return Math.acos(zaxis.Get(2));
+    };
+    Geometry.GetPhi = function (zaxis) {
+        if (Math.abs(zaxis.Get(0)) > 1e-6) {
+            return Math.atan2(zaxis.Get(1), zaxis.Get(0));
+        }
+        return 0;
+    };
+    Geometry.GetZAxis = function (theta, phi) {
+        return new Vector([
+            Math.cos(phi) * Math.sin(theta),
+            Math.sin(phi) * Math.sin(theta),
+            Math.cos(theta)
+        ]);
+    };
+    Geometry.GetXAxis = function (theta, phi) {
+        return new Vector([
+            Math.cos(phi) * Math.cos(theta),
+            Math.sin(phi) * Math.cos(theta),
+            -Math.sin(theta)
+        ]);
+    };
+    Geometry.GetYAxis = function (theta, phi) {
+        return new Vector([
+            -Math.sin(phi),
+            Math.cos(phi),
+            0
+        ]);
+    };
+    //This one is the projection of both Zaxis and XAxis in the plane Z=0 (thus, it's orthogonal to YAxis as well)
+    Geometry.GetWAxis = function (theta, phi) {
+        return new Vector([
+            Math.cos(phi),
+            Math.sin(phi),
+            0
+        ]);
+    };
+    return Geometry;
+}());
 /// <reference path="kdtree.ts" />
 /// <reference path="boundingbox.ts" />
 /// <reference path="neighbourhood.ts" />
 /// <reference path="regiongrowth.ts" />
 /// <reference path="../maths/vector.ts" />
-/// <reference path="../maths/matrix.ts" />
-/// <reference path="../maths/eigendecomposition.ts" />
+/// <reference path="../maths/geometry.ts" />
 /// <reference path="../tools/transform.ts" />
 var PointCloud = /** @class */ (function () {
     function PointCloud(points, normals) {
         this.tree = null;
-        this.KNearestNeighbours = function (queryPoint, k) {
-            if (!this.tree) {
-                this.tree = new KDTree(this);
-            }
-            var knn = new KNearestNeighbours(k);
-            this.tree.FindNearestNeighbours(queryPoint, knn);
-            return knn.Neighbours();
-        };
         this.points = points || new Float32Array([]);
         this.pointssize = this.points.length;
         this.normals = normals || new Float32Array([]);
@@ -3117,6 +3319,9 @@ var PointCloud = /** @class */ (function () {
             this.points[index + 1],
             this.points[index + 2]
         ]);
+    };
+    PointCloud.prototype.GetData = function (i) {
+        return this.GetPoint(i);
     };
     PointCloud.SetValues = function (i, p, target) {
         var index = 3 * i;
@@ -3162,8 +3367,16 @@ var PointCloud = /** @class */ (function () {
         this.normalssize = 0;
     };
     PointCloud.prototype.Distance = function (p) {
-        var nearest = this.KNearestNeighbours(p, 1);
+        var nearest = this.KNearestNeighbours(p, 1).Neighbours();
         return Math.sqrt(nearest[0].sqrdistance);
+    };
+    PointCloud.prototype.KNearestNeighbours = function (queryPoint, k) {
+        if (!this.tree) {
+            this.tree = new KDTree(this);
+        }
+        var knn = new KNearestNeighbours(k);
+        this.tree.FindNearestNeighbours(queryPoint, knn);
+        return knn;
     };
     PointCloud.prototype.RayIntersection = function (ray) {
         return new Picking(this);
@@ -3172,39 +3385,7 @@ var PointCloud = /** @class */ (function () {
         //Get the K-nearest neighbours (including the query point)
         var point = this.GetPoint(index);
         var knn = this.KNearestNeighbours(point, k + 1);
-        //Compute the coletiance matrix
-        var coletiance = Matrix.Null(3, 3);
-        var center = new Vector([0, 0, 0]);
-        for (var ii = 0; ii < knn.length; ii++) {
-            if (knn[ii].index != index) {
-                center = center.Plus(this.GetPoint(knn[ii].index));
-            }
-        }
-        center = center.Times(1 / (knn.length - 1));
-        for (var kk = 0; kk < knn.length; kk++) {
-            if (knn[kk].index != index) {
-                var vec = this.GetPoint(knn[kk].index).Minus(center);
-                for (var ii = 0; ii < 3; ii++) {
-                    for (var jj = 0; jj < 3; jj++) {
-                        coletiance.SetValue(ii, jj, coletiance.GetValue(ii, jj) + (vec.Get(ii) * vec.Get(jj)));
-                    }
-                }
-            }
-        }
-        //The normal is the eigenvector having the smallest eigenvalue in the coletiance matrix
-        for (var ii = 0; ii < 3; ii++) {
-            //Check no column is null in the coletiance matrix
-            if (coletiance.GetColumnVector(ii).SqrNorm() <= 1.0e-12) {
-                var result = new Vector([0, 0, 0]);
-                result.Set(ii, 1);
-                return result;
-            }
-        }
-        var eigen = new EigenDecomposition(coletiance);
-        if (eigen) {
-            return eigen[0].eigenVector.Normalized();
-        }
-        return null;
+        return Geometry.PlaneFitting(knn).normal;
     };
     PointCloud.prototype.ApplyTransform = function (transform) {
         this.boundingbox = new BoundingBox();
@@ -3224,6 +3405,40 @@ var PointCloud = /** @class */ (function () {
         }
     };
     return PointCloud;
+}());
+var GaussianSphere = /** @class */ (function () {
+    function GaussianSphere(cloud) {
+        this.cloud = cloud;
+        this.normals = null;
+        if (!cloud.HasNormals()) {
+            var size = cloud.Size();
+            this.normals = new Array(size);
+            for (var index = 0; index < size; index++) {
+                this.normals[index] = cloud.ComputeNormal(index, 30);
+            }
+        }
+    }
+    GaussianSphere.prototype.Size = function () {
+        return this.cloud.Size();
+    };
+    GaussianSphere.prototype.GetData = function (index) {
+        if (this.normals) {
+            return this.normals[index];
+        }
+        else {
+            return this.cloud.GetNormal(index);
+        }
+    };
+    GaussianSphere.prototype.ToPointCloud = function () {
+        var gsphere = new PointCloud();
+        var size = this.Size();
+        gsphere.Reserve(size);
+        for (var index = 0; index < size; index++) {
+            gsphere.PushPoint(this.GetData(index));
+        }
+        return gsphere;
+    };
+    return GaussianSphere;
 }());
 /// <reference path="octree.ts" />
 /// <reference path="pointcloud.ts" />
@@ -3561,6 +3776,11 @@ var Shape = /** @class */ (function () {
     };
     Shape.prototype.ComputeBounds = function (points, cloud) {
     };
+    Shape.prototype.NotifyChange = function () {
+        if (this.onChange) {
+            this.onChange();
+        }
+    };
     return Shape;
 }());
 /// <reference path="container.ts" />
@@ -3602,7 +3822,7 @@ var Hint = /** @class */ (function () {
         this.owner = owner;
         this.container = document.createElement('div');
         this.container.className = 'Hint';
-        this.container.appendChild(document.createTextNode(message));
+        this.container.innerHTML = message;
         if (owner) {
             var element = this.owner.GetElement();
             var self_4 = this;
@@ -3635,11 +3855,17 @@ var Hint = /** @class */ (function () {
 }());
 var TemporaryHint = /** @class */ (function (_super) {
     __extends(TemporaryHint, _super);
-    function TemporaryHint(message) {
-        var _this = _super.call(this, null, message) || this;
+    function TemporaryHint(message, duration) {
+        if (duration === void 0) { duration = TemporaryHint.DisplayDuration; }
+        var _this = _super.call(this, null, message + (duration ? '' : '<br/><i>(Click this box to close)</i>')) || this;
         var self = _this;
         _this.Show();
-        setTimeout(function () { return self.Hide(); }, TemporaryHint.DisplayDuration);
+        if (duration) {
+            setTimeout(function () { return self.Hide(); }, duration);
+        }
+        else {
+            _this.container.onclick = function () { return self.Hide(); };
+        }
         return _this;
     }
     TemporaryHint.DisplayDuration = 4000;
@@ -3787,7 +4013,7 @@ var CreateShapeMeshAction = /** @class */ (function (_super) {
     CreateShapeMeshAction.prototype.Enabled = function () {
         return true;
     };
-    CreateShapeMeshAction.prototype.Run = function () {
+    CreateShapeMeshAction.prototype.Trigger = function () {
         var self = this;
         var dialog = new Dialog(
         //Ok has been clicked
@@ -3808,7 +4034,7 @@ var CreateShapeMeshAction = /** @class */ (function (_super) {
         result = new PCLMesh(mesh);
         var self = this;
         mesh.ComputeOctree(function () {
-            self.shape.NotifyChange(result, ChangeType.Creation);
+            self.shape.NotifyChange(result, ChangeType.NewItem);
         });
         return true;
     };
@@ -3830,10 +4056,15 @@ var CreateShapeMeshAction = /** @class */ (function (_super) {
 /// <reference path="../../tools/transform.ts" />
 var PCLShape = /** @class */ (function (_super) {
     __extends(PCLShape, _super);
-    function PCLShape(name) {
+    function PCLShape(name, shape) {
         var _this = _super.call(this, name) || this;
         _this.drawing = new MeshDrawing();
         _this.meshsampling = 0;
+        var self = _this;
+        shape.onChange = function () {
+            self.Invalidate();
+            self.NotifyChange(self, ChangeType.Display | ChangeType.Properties);
+        };
         return _this;
     }
     PCLShape.prototype.TransformPrivitive = function (transform) {
@@ -3854,7 +4085,7 @@ var PCLShape = /** @class */ (function (_super) {
             //Asynchroneous computation of the mesh to be rendered
             var self_5 = this;
             this.GetShape().ComputeMesh(drawingContext.sampling, function (mesh) {
-                if (self_5.meshsampling != drawingContext.sampling) {
+                if (self_5.meshsampling = drawingContext.sampling) {
                     self_5.meshsampling = drawingContext.sampling;
                     self_5.drawing.FillBuffers(mesh, drawingContext);
                     self_5.NotifyChange(self_5, ChangeType.Display);
@@ -4048,7 +4279,7 @@ var VectorProperty = /** @class */ (function (_super) {
 var PCLPlane = /** @class */ (function (_super) {
     __extends(PCLPlane, _super);
     function PCLPlane(plane) {
-        var _this = _super.call(this, NameProvider.GetName('Plane')) || this;
+        var _this = _super.call(this, NameProvider.GetName('Plane'), plane) || this;
         _this.plane = plane;
         return _this;
     }
@@ -4121,8 +4352,124 @@ var PCLPlaneParsingHandler = /** @class */ (function (_super) {
     };
     return PCLPlaneParsingHandler;
 }(PCLPrimitiveParsingHandler));
+/// <reference path="matrix.ts" />
+/// <reference path="../tools/dataprovider.ts" />
+/*Solves parametric model least squares fitting using Levenberg Marquardt algorithm
+The solver stops as soon as one of the following requirement is met :
+ - the solution did not evelve after StabilityNbSteps steps
+ - the solution improve ratio falls bellow StabilityFactor in ]0,1[*/
+var LeastSquaresFitting = /** @class */ (function (_super) {
+    __extends(LeastSquaresFitting, _super);
+    function LeastSquaresFitting(solution, evaluable, data, message, lambda, lambdaFactor, stabilityNbSteps, stabilityFactor) {
+        if (lambda === void 0) { lambda = 1.0; }
+        if (lambdaFactor === void 0) { lambdaFactor = 10.0; }
+        if (stabilityNbSteps === void 0) { stabilityNbSteps = 10; }
+        if (stabilityFactor === void 0) { stabilityFactor = 1.0e-3; }
+        var _this = _super.call(this, message) || this;
+        _this.solution = solution;
+        _this.evaluable = evaluable;
+        _this.data = data;
+        _this.lambda = lambda;
+        _this.lambdaFactor = lambdaFactor;
+        _this.stabilityNbSteps = stabilityNbSteps;
+        _this.stabilityFactor = stabilityFactor;
+        return _this;
+    }
+    LeastSquaresFitting.prototype.Initialize = function () {
+        this.error = this.ComputeError(this.solution);
+        this.iterations = 0;
+        this.counter = 0;
+        this.maxcounter = 0;
+    };
+    Object.defineProperty(LeastSquaresFitting.prototype, "Done", {
+        get: function () {
+            return (this.counter >= this.stabilityNbSteps) ||
+                (this.delta < this.stabilityFactor * this.error);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(LeastSquaresFitting.prototype, "Current", {
+        get: function () {
+            return this.maxcounter;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(LeastSquaresFitting.prototype, "Target", {
+        get: function () {
+            return this.stabilityNbSteps;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    LeastSquaresFitting.prototype.Step = function () {
+        this.counter++;
+        if (this.counter > this.maxcounter) {
+            this.maxcounter = this.counter;
+        }
+        //Compute matrices
+        if (this.jacobian == null || this.rightHand == null) {
+            this.jacobian = Matrix.Null(this.solution.length, this.solution.length);
+            this.rightHand = Matrix.Null(1, this.solution.length);
+            var size = this.data.Size();
+            for (var index = 0; index < size; index++) {
+                var datum = this.data.GetData(index);
+                var dist = -this.evaluable.Distance(this.solution, datum);
+                var grad = this.evaluable.DistanceGradient(this.solution, datum);
+                for (var ii = 0; ii < this.solution.length; ii++) {
+                    this.rightHand.AddValue(ii, 0, grad[ii] * dist);
+                    for (var jj = 0; jj < this.solution.length; jj++) {
+                        this.jacobian.AddValue(ii, jj, grad[ii] * grad[jj]);
+                    }
+                }
+            }
+        }
+        //Compute the modified jacobian
+        var leftHand = this.jacobian.Clone();
+        for (var index = 0; index < this.jacobian.width; index++) {
+            leftHand.SetValue(index, index, this.jacobian.GetValue(index, index) * (1.0 + this.lambda));
+        }
+        // Solve leftHand . step = rightHand to get the next solution
+        var step = leftHand.LUSolve(this.rightHand);
+        var next = new Array(this.solution.length);
+        for (var index = 0; index < this.solution.length; index++) {
+            next[index] = step.GetValue(index, 0) + this.solution[index];
+        }
+        var nextError = this.ComputeError(next);
+        if (nextError < this.error) {
+            //Solution has been improved : accept solution and dicrease lambda
+            this.solution = next;
+            this.evaluable.NotifyNewSolution(this.solution);
+            //Solution has changed : invalidate matrices
+            this.jacobian = null;
+            this.rightHand = null;
+            this.lambda /= this.lambdaFactor;
+            //If solution increase falls bellow a tolerance, stop computations
+            this.iterations += this.counter;
+            this.delta = this.error - nextError;
+            this.error = nextError;
+            //Reset counter as the solution gets better
+            this.counter = 0;
+        }
+        else {
+            //Solution is worst : increase lambda
+            this.lambda *= this.lambdaFactor;
+        }
+    };
+    LeastSquaresFitting.prototype.ComputeError = function (parameters) {
+        var error = 0.0;
+        var size = this.data.Size();
+        for (var index = 0; index < size; index++) {
+            error += Math.pow(this.evaluable.Distance(parameters, this.data.GetData(index)), 2);
+        }
+        return error / size;
+    };
+    return LeastSquaresFitting;
+}(LongProcess));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/leatssquaresfitting.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -4243,8 +4590,60 @@ var Sphere = /** @class */ (function (_super) {
         this.center = transform.TransformPoint(this.center);
         this.radius *= transform.scalefactor;
     };
+    Sphere.InitialGuessForFitting = function (cloud) {
+        var center = new Vector([0, 0, 0]);
+        var size = cloud.Size();
+        //Rough estimate
+        for (var index = 0; index < size; index++) {
+            center.Add(cloud.GetPoint(index));
+        }
+        center = center.Times(1 / size);
+        var radius = 0;
+        for (var index = 0; index < cloud.Size(); index++) {
+            radius += center.Minus(cloud.GetPoint(index)).Norm();
+        }
+        radius /= size;
+        return new Sphere(center, radius);
+    };
+    Sphere.prototype.FitToPointCloud = function (cloud) {
+        var lsFitting = new LeastSquaresFitting(SphereFitting.Parameters(this.center, this.radius), new SphereFitting(this), cloud, 'Computing best fitting sphere');
+        var self = this;
+        lsFitting.SetNext(function () { return self.NotifyChange(); });
+        lsFitting.Start();
+    };
     return Sphere;
 }(Shape));
+var SphereFitting = /** @class */ (function () {
+    function SphereFitting(sphere) {
+        this.sphere = sphere;
+    }
+    SphereFitting.Parameters = function (center, radius) {
+        var params = center.coordinates.slice();
+        params.push(radius);
+        return params;
+    };
+    SphereFitting.GetCenter = function (params) {
+        return new Vector(params.slice(0, 3));
+    };
+    SphereFitting.GetRadius = function (params) {
+        return params[3];
+    };
+    SphereFitting.prototype.Distance = function (params, point) {
+        return SphereFitting.GetCenter(params).Minus(point).Norm() - SphereFitting.GetRadius(params);
+    };
+    SphereFitting.prototype.DistanceGradient = function (params, point) {
+        var delta = SphereFitting.GetCenter(params).Minus(point);
+        delta.Normalize();
+        var gradient = delta.Flatten();
+        gradient.push(-1);
+        return gradient;
+    };
+    SphereFitting.prototype.NotifyNewSolution = function (params) {
+        this.sphere.center = SphereFitting.GetCenter(params);
+        this.sphere.radius = SphereFitting.GetRadius(params);
+    };
+    return SphereFitting;
+}());
 /// <reference path="pclshape.ts" />
 /// <reference path="pclgroup.ts" />
 /// <reference path="../nameprovider.ts" />
@@ -4257,8 +4656,13 @@ var Sphere = /** @class */ (function (_super) {
 var PCLSphere = /** @class */ (function (_super) {
     __extends(PCLSphere, _super);
     function PCLSphere(sphere) {
-        var _this = _super.call(this, NameProvider.GetName('Sphere')) || this;
+        var _this = _super.call(this, NameProvider.GetName('Sphere'), sphere) || this;
         _this.sphere = sphere;
+        var self = _this;
+        sphere.onChange = function () {
+            self.Invalidate();
+            self.NotifyChange(self, ChangeType.Properties | ChangeType.Display);
+        };
         return _this;
     }
     PCLSphere.prototype.GetShape = function () {
@@ -4320,6 +4724,7 @@ var PCLSphereParsingHandler = /** @class */ (function (_super) {
 }(PCLPrimitiveParsingHandler));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -4501,8 +4906,124 @@ var Cylinder = /** @class */ (function (_super) {
         this.center = this.center.Plus(this.axis.Times(d));
         this.height = max - min;
     };
+    Cylinder.InitialGuessForFitting = function (cloud) {
+        var gsphere = new GaussianSphere(cloud);
+        var plane = Geometry.PlaneFitting(gsphere);
+        var center = Geometry.Centroid(cloud);
+        var radius = 0;
+        var size = cloud.Size();
+        for (var index = 0; index < size; index++) {
+            radius += cloud.GetPoint(index).Minus(center).Cross(plane.normal).Norm();
+        }
+        radius /= size;
+        return new Cylinder(center, plane.normal, radius, 0);
+    };
+    Cylinder.prototype.FitToPointCloud = function (cloud) {
+        var self = this;
+        var lsFitting = new LeastSquaresFitting(CylinderFitting.Parameters(this.center, this.axis, this.radius), new CylinderFitting(this), cloud, 'Computing best fitting cylinder');
+        lsFitting.SetNext(function () { return self.FinalizeFitting(cloud); });
+        lsFitting.Start();
+    };
+    Cylinder.prototype.FinalizeFitting = function (cloud) {
+        //Compute actual cylinder center and bounds along the axis
+        var zmin = null;
+        var zmax = null;
+        var size = cloud.Size();
+        for (var index = 0; index < size; index++) {
+            var z = cloud.GetPoint(index).Minus(this.center).Dot(this.axis);
+            if (zmin === null || zmin > z) {
+                zmin = z;
+            }
+            if (zmax === null || zmax < z) {
+                zmax = z;
+            }
+        }
+        this.center = this.center.Plus(this.axis.Times((zmax + zmin) / 2.0));
+        this.height = zmax - zmin;
+        this.NotifyChange();
+    };
     return Cylinder;
 }(Shape));
+var CylinderFitting = /** @class */ (function () {
+    function CylinderFitting(cylinder) {
+        this.cylinder = cylinder;
+    }
+    CylinderFitting.Parameters = function (center, axis, radius) {
+        var theta = Geometry.GetTheta(axis);
+        var phi = Geometry.GetPhi(axis);
+        var xaxis = Geometry.GetXAxis(theta, phi);
+        var yaxis = Geometry.GetYAxis(theta, phi);
+        var x = xaxis.Dot(center);
+        var y = yaxis.Dot(center);
+        return [x, y, theta, phi, radius];
+    };
+    CylinderFitting.GetCenter = function (params) {
+        var theta = CylinderFitting.GetTheta(params);
+        var phi = CylinderFitting.GetPhi(params);
+        var x = CylinderFitting.GetX(params);
+        var y = CylinderFitting.GetY(params);
+        return Geometry.GetXAxis(theta, phi).Times(x).Plus(Geometry.GetYAxis(theta, phi).Times(y));
+    };
+    CylinderFitting.GetAxis = function (params) {
+        return Geometry.GetZAxis(CylinderFitting.GetTheta(params), CylinderFitting.GetPhi(params));
+    };
+    CylinderFitting.GetX = function (params) {
+        return params[0];
+    };
+    CylinderFitting.GetY = function (params) {
+        return params[1];
+    };
+    CylinderFitting.GetTheta = function (params) {
+        return params[2];
+    };
+    CylinderFitting.GetPhi = function (params) {
+        return params[3];
+    };
+    CylinderFitting.GetRadius = function (params) {
+        return params[4];
+    };
+    CylinderFitting.prototype.Distance = function (params, point) {
+        var theta = CylinderFitting.GetTheta(params);
+        var phi = CylinderFitting.GetPhi(params);
+        var x = CylinderFitting.GetX(params);
+        var y = CylinderFitting.GetY(params);
+        var radius = CylinderFitting.GetRadius(params);
+        var xaxis = Geometry.GetXAxis(theta, phi);
+        var yaxis = Geometry.GetYAxis(theta, phi);
+        var dx = point.Dot(xaxis) - x;
+        var dy = point.Dot(yaxis) - y;
+        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)) - radius;
+    };
+    CylinderFitting.prototype.DistanceGradient = function (params, point) {
+        var theta = CylinderFitting.GetTheta(params);
+        var phi = CylinderFitting.GetPhi(params);
+        var x = CylinderFitting.GetX(params);
+        var y = CylinderFitting.GetY(params);
+        var xaxis = Geometry.GetXAxis(theta, phi);
+        var yaxis = Geometry.GetYAxis(theta, phi);
+        var zaxis = Geometry.GetZAxis(theta, phi);
+        var waxis = Geometry.GetWAxis(theta, phi);
+        var px = point.Dot(xaxis);
+        var py = point.Dot(yaxis);
+        var pz = point.Dot(zaxis);
+        var pw = point.Dot(waxis);
+        var dx = px - x;
+        var dy = py - y;
+        var dist = Math.sqrt((Math.pow(dx, 2)) + (Math.pow(dy, 2)));
+        var ddx = -dx / dist;
+        var ddy = -dy / dist;
+        var ddtheta = -dx * pz / dist;
+        var ddphi = ((Math.cos(theta) * dx * py) - (dy * pw)) / dist;
+        var ddradius = -1;
+        return [ddx, ddy, ddtheta, ddphi, ddradius];
+    };
+    CylinderFitting.prototype.NotifyNewSolution = function (params) {
+        this.cylinder.center = CylinderFitting.GetCenter(params);
+        this.cylinder.axis = CylinderFitting.GetAxis(params);
+        this.cylinder.radius = CylinderFitting.GetRadius(params);
+    };
+    return CylinderFitting;
+}());
 /// <reference path="pclshape.ts" />
 /// <reference path="pclgroup.ts" />
 /// <reference path="../nameprovider.ts" />
@@ -4514,7 +5035,7 @@ var Cylinder = /** @class */ (function (_super) {
 var PCLCylinder = /** @class */ (function (_super) {
     __extends(PCLCylinder, _super);
     function PCLCylinder(cylinder) {
-        var _this = _super.call(this, NameProvider.GetName('Cylinder')) || this;
+        var _this = _super.call(this, NameProvider.GetName('Cylinder'), cylinder) || this;
         _this.cylinder = cylinder;
         return _this;
     }
@@ -4596,6 +5117,7 @@ var PCLCylinderParsingHandler = /** @class */ (function (_super) {
 }(PCLPrimitiveParsingHandler));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -4625,9 +5147,9 @@ var Cone = /** @class */ (function (_super) {
         return bb;
     };
     Cone.prototype.ApplyTransform = function (transform) {
+        var c = this.apex.Plus(this.axis.Times(this.height * 0.5));
         this.axis = transform.TransformVector(this.axis).Normalized();
         this.height *= transform.scalefactor;
-        var c = this.apex.Plus(this.axis.Times(this.height * 0.5));
         c = transform.TransformPoint(c);
         this.apex = c.Minus(this.axis.Times(this.height * 0.5));
     };
@@ -4649,13 +5171,14 @@ var Cone = /** @class */ (function (_super) {
         points.Reserve(1 + 3 * sampling);
         var xx = this.axis.GetOrthogonnal();
         var yy = this.axis.Cross(xx).Normalized();
+        var radius = this.height * Math.tan(this.angle);
         var radials = [];
         for (var ii = 0; ii < sampling; ii++) {
             var phi = 2.0 * ii * Math.PI / sampling;
             var c = Math.cos(phi);
             var s = Math.sin(phi);
             var radial = xx.Times(c).Plus(yy.Times(s));
-            radials.push(radial.Times(this.angle));
+            radials.push(radial.Times(radius));
         }
         var center = this.apex.Plus(this.axis.Times(this.height));
         points.PushPoint(center);
@@ -4733,10 +5256,17 @@ var Cone = /** @class */ (function (_super) {
         return result;
     };
     Cone.prototype.Distance = function (point) {
-        return 0.0;
+        var delta = point.Minus(this.apex);
+        var dist = delta.Norm();
+        var beyondApex = (delta.Dot(this.axis)) < (-Math.sin(this.angle) * dist);
+        if (beyondApex) {
+            return dist;
+        }
+        else {
+            return (Math.cos(this.angle) * delta.Cross(this.axis).Norm()) - (Math.sin(this.angle) * delta.Dot(this.axis));
+        }
     };
     Cone.prototype.ComputeBounds = function (points, cloud) {
-        var min = 0;
         var max = 0;
         for (var ii = 0; ii < points.length; ii++) {
             var d = cloud.GetPoint(points[ii]).Minus(this.apex).Dot(this.axis);
@@ -4746,8 +5276,143 @@ var Cone = /** @class */ (function (_super) {
         }
         this.height = max;
     };
+    Cone.InitialGuessForFitting = function (cloud) {
+        var gsphere = new GaussianSphere(cloud);
+        var plane = Geometry.PlaneFitting(gsphere);
+        var planeheight = plane.center.Norm();
+        var angle = Math.asin(planeheight);
+        var size = cloud.Size();
+        //Find the appex, being the point that belongs to all the normals planes
+        //(Suboptimal : would be better to have the closed form solution, not the time right now)
+        var left = Matrix.Null(3, 3);
+        var right = Matrix.Null(1, 3);
+        for (var index = 0; index < size; index++) {
+            var n = gsphere.GetData(index);
+            var p = cloud.GetPoint(index);
+            var s = p.Dot(n);
+            for (var ii = 0; ii < 3; ii++) {
+                right.AddValue(ii, 0, n.Get(ii) * s);
+                for (var jj = 0; jj < 3; jj++) {
+                    left.AddValue(ii, jj, n.Get(ii) * n.Get(jj));
+                }
+            }
+        }
+        var apex = left.LUSolve(right).GetColumnVector(0);
+        //Handle axis orientation : make it point to he cloud centroid ... otherwise, we could face ill-conditionned matrices during the fitting step
+        var delta = Geometry.Centroid(cloud).Minus(apex);
+        if (plane.normal.Dot(delta) < 0) {
+            plane.normal = plane.normal.Times(-1);
+        }
+        return new Cone(apex, plane.normal, angle, 0);
+    };
+    Cone.prototype.FitToPointCloud = function (cloud) {
+        var self = this;
+        var lsFitting = new LeastSquaresFitting(ConeFitting.Parameters(this.apex, this.axis, this.angle), new ConeFitting(this), cloud, 'Computing best fitting cone');
+        lsFitting.SetNext(function () { return self.FinalizeFitting(cloud); });
+        lsFitting.Start();
+    };
+    Cone.prototype.FinalizeFitting = function (cloud) {
+        //Compute actual cone height and axis direction
+        var zmax = null;
+        var size = cloud.Size();
+        for (var index = 0; index < size; index++) {
+            var z = cloud.GetPoint(index).Minus(this.apex).Dot(this.axis);
+            if (zmax === null || Math.abs(zmax) < Math.abs(z)) {
+                zmax = z;
+            }
+        }
+        if (zmax < 0) {
+            this.axis = this.axis.Times(-1);
+        }
+        this.height = Math.abs(zmax);
+        this.NotifyChange();
+    };
     return Cone;
 }(Shape));
+var ConeFitting = /** @class */ (function () {
+    function ConeFitting(cone) {
+        this.cone = cone;
+    }
+    ConeFitting.Parameters = function (apex, axis, angle) {
+        var theta = Geometry.GetTheta(axis);
+        var phi = Geometry.GetPhi(axis);
+        var result = apex.Clone().Flatten();
+        result.push(theta);
+        result.push(phi);
+        result.push(angle);
+        return result;
+    };
+    ConeFitting.GetApex = function (params) {
+        return new Vector(params.slice(0, 3));
+    };
+    ConeFitting.GetAxis = function (params) {
+        return Geometry.GetZAxis(ConeFitting.GetTheta(params), ConeFitting.GetPhi(params));
+    };
+    ConeFitting.GetTheta = function (params) {
+        return params[3];
+    };
+    ConeFitting.GetPhi = function (params) {
+        return params[4];
+    };
+    ConeFitting.GetAngle = function (params) {
+        return params[5];
+    };
+    ConeFitting.IsBeyondApex = function (apexToPoint, axis, angle) {
+        return (apexToPoint.Dot(axis)) < (-Math.sin(angle) * apexToPoint.Norm());
+    };
+    ConeFitting.prototype.Distance = function (params, point) {
+        var apex = ConeFitting.GetApex(params);
+        var axis = ConeFitting.GetAxis(params);
+        var angle = ConeFitting.GetAngle(params);
+        var delta = point.Minus(apex);
+        if (ConeFitting.IsBeyondApex(delta, axis, angle)) {
+            return delta.Norm();
+        }
+        else {
+            return (Math.cos(angle) * delta.Cross(axis).Norm()) - (Math.sin(angle) * delta.Dot(axis));
+        }
+    };
+    ConeFitting.prototype.DistanceGradient = function (params, point) {
+        var apex = ConeFitting.GetApex(params);
+        var theta = ConeFitting.GetTheta(params);
+        var phi = ConeFitting.GetPhi(params);
+        var zaxis = Geometry.GetZAxis(theta, phi);
+        var angle = ConeFitting.GetAngle(params);
+        var delta = point.Minus(apex);
+        if (ConeFitting.IsBeyondApex(delta, zaxis, angle)) {
+            delta.Normalized();
+            var result = delta.Times(-1).Flatten();
+            result.push(0);
+            result.push(0);
+            result.push(0);
+            return result;
+        }
+        else {
+            var xaxis = Geometry.GetXAxis(theta, phi);
+            var yaxis = Geometry.GetYAxis(theta, phi);
+            var ca = Math.cos(angle);
+            var sa = Math.sin(angle);
+            var ss = delta.Dot(zaxis);
+            var cc = delta.Cross(zaxis).Norm();
+            var ff = (ca * ss / cc) + sa;
+            var ddtheta = -ff * delta.Dot(xaxis);
+            var ddphi = -Math.sin(theta) * ff * delta.Dot(yaxis);
+            var ddapex = delta.Times(-ca / cc).Plus(zaxis.Times(ff));
+            var ddangle = (-sa * cc) - (ca * ss);
+            var result = ddapex.Flatten();
+            result.push(ddtheta);
+            result.push(ddphi);
+            result.push(ddangle);
+            return result;
+        }
+    };
+    ConeFitting.prototype.NotifyNewSolution = function (params) {
+        this.cone.apex = ConeFitting.GetApex(params);
+        this.cone.axis = ConeFitting.GetAxis(params);
+        this.cone.angle = ConeFitting.GetAngle(params);
+    };
+    return ConeFitting;
+}());
 /// <reference path="pclshape.ts" />
 /// <reference path="pclgroup.ts" />
 /// <reference path="../nameprovider.ts" />
@@ -4760,7 +5425,7 @@ var Cone = /** @class */ (function (_super) {
 var PCLCone = /** @class */ (function (_super) {
     __extends(PCLCone, _super);
     function PCLCone(cone) {
-        var _this = _super.call(this, NameProvider.GetName('Cone')) || this;
+        var _this = _super.call(this, NameProvider.GetName('Cone'), cone) || this;
         _this.cone = cone;
         return _this;
     }
@@ -4980,7 +5645,7 @@ var Torus = /** @class */ (function (_super) {
 var PCLTorus = /** @class */ (function (_super) {
     __extends(PCLTorus, _super);
     function PCLTorus(torus) {
-        var _this = _super.call(this, NameProvider.GetName('Torus')) || this;
+        var _this = _super.call(this, NameProvider.GetName('Torus'), torus) || this;
         _this.torus = torus;
         return _this;
     }
@@ -5074,7 +5739,7 @@ var ScanFromCurrentViewPointAction = /** @class */ (function (_super) {
     ScanFromCurrentViewPointAction.prototype.Enabled = function () {
         return this.group.IsScannable();
     };
-    ScanFromCurrentViewPointAction.prototype.Run = function () {
+    ScanFromCurrentViewPointAction.prototype.Trigger = function () {
         var self = this;
         var dialog = new Dialog(
         //Ok has been clicked
@@ -5244,9 +5909,9 @@ var PCLGroup = /** @class */ (function (_super) {
     PCLGroup.prototype.WrapNodeCreator = function (creator) {
         var self = this;
         return function () {
-            var shape = creator();
-            self.Add(shape);
-            shape.Select(true);
+            var node = creator();
+            self.Add(node);
+            node.NotifyChange(node, ChangeType.NewItem);
         };
     };
     PCLGroup.prototype.GetGroupCreator = function () {
@@ -5406,46 +6071,6 @@ var ScalarField = /** @class */ (function () {
         return this.max;
     };
     return ScalarField;
-}());
-/// <reference path="vector.ts" />
-/// <reference path="../tools/picking.ts" />
-var Geometry = /** @class */ (function () {
-    function Geometry() {
-    }
-    Geometry.LinesIntersection = function (a, b) {
-        var d = a.dir.Dot(b.dir);
-        var sqrLenA = a.dir.SqrNorm();
-        var sqrLenB = b.dir.SqrNorm();
-        var s = ((sqrLenA * sqrLenB) - (d * d));
-        if (s <= 1.0e-12) {
-            //Aligned axes
-            return a.from.Plus(b.from).Times(0.5);
-        }
-        var delta = a.from.Minus(b.from);
-        var t1 = delta.Dot(b.dir.Times(d).Minus(a.dir.Times(sqrLenB))) / s;
-        var t2 = delta.Dot(b.dir.Times(sqrLenA).Minus(a.dir.Times(d))) / s;
-        var r1 = a.from.Plus(a.dir.Times(t1));
-        var r2 = b.from.Plus(b.dir.Times(t2));
-        return r1.Plus(r2).Times(0.5);
-    };
-    Geometry.DegreeToRadian = function (a) {
-        return Math.PI * a / 180.0;
-    };
-    Geometry.RadianToDegree = function (a) {
-        return a / Math.PI * 180;
-    };
-    Geometry.DistanceToSegment = function (point, a, b) {
-        var ab = b.Minus(a);
-        var ap = point.Minus(a);
-        if (ap.Dot(ab) <= 0)
-            return ap.Norm();
-        var bp = point.Minus(b);
-        if (bp.Dot(ab) >= 0)
-            return bp.Norm();
-        ab.Normalize();
-        return ap.Cross(ab).Norm();
-    };
-    return Geometry;
 }());
 /// <reference path="../maths/vector.ts" />
 /// <reference path="../maths/geometry.ts" />
@@ -5826,6 +6451,9 @@ var PCLPointCloud = /** @class */ (function (_super) {
         this.AddScaralFieldProperty(this.fields.length - 1);
         return field;
     };
+    PCLPointCloud.prototype.GetDisplayIcon = function () {
+        return 'fa-cloud';
+    };
     PCLPointCloud.prototype.GetScalarField = function (name) {
         for (var index = 0; index < this.fields.length; index++) {
             if (this.fields[index].name === name) {
@@ -5889,6 +6517,7 @@ var PCLPointCloud = /** @class */ (function (_super) {
             result.push(new RansacDetectionAction(this));
             ransac = true;
         }
+        result.push(new FindBestFittingShapeAction(this));
         if (ransac)
             result.push(null);
         result.push(new ExportPointCloudFileAction(this));
@@ -6171,10 +6800,12 @@ var FileExporter = /** @class */ (function () {
 /// <reference path="../../model/ransac.ts" />
 /// <reference path="../../model/regiongrowth.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../gui/objects/pclpointcloud.ts" />
 /// <reference path="../../gui/objects/pclscalarfield.ts" />
 /// <reference path="../../gui/objects/pclshapewrapper.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
+/// <reference path="../../gui/controls/hint.ts" />
 /// <reference path="../../files/fileexporter.ts" />
 //===================================================
 // Generic actions
@@ -6221,7 +6852,7 @@ var ResetDetectionAction = /** @class */ (function (_super) {
     ResetDetectionAction.prototype.Enabled = function () {
         return !!this.GetPCLCloud().ransac;
     };
-    ResetDetectionAction.prototype.Run = function () {
+    ResetDetectionAction.prototype.Trigger = function () {
         this.GetPCLCloud().ransac = null;
     };
     return ResetDetectionAction;
@@ -6234,7 +6865,7 @@ var RansacDetectionAction = /** @class */ (function (_super) {
     RansacDetectionAction.prototype.Enabled = function () {
         return this.GetCloud().HasNormals();
     };
-    RansacDetectionAction.prototype.Run = function () {
+    RansacDetectionAction.prototype.Trigger = function () {
         var cloud = this.GetPCLCloud();
         if (!cloud.ransac) {
             var self_8 = this;
@@ -6280,10 +6911,188 @@ var RansacDetectionAction = /** @class */ (function (_super) {
         var pclshape = new PCLShapeWrapper(shape).GetPCLShape();
         var owner = this.GetPCLCloud().owner;
         owner.Add(pclshape);
-        owner.NotifyChange(pclshape, ChangeType.Creation);
+        pclshape.NotifyChange(pclshape, ChangeType.NewItem);
     };
     return RansacDetectionAction;
 }(PCLCloudAction));
+//===================================================
+// Shapes fitting
+//===================================================
+var ShapeFittingResult = /** @class */ (function () {
+    function ShapeFittingResult(cloud) {
+        this.cloud = cloud;
+        this.shapes = [];
+        this.errors = [];
+    }
+    ShapeFittingResult.prototype.AddFittingResult = function (shape) {
+        var error = 0;
+        var size = this.cloud.Size();
+        for (var index = 0; index < size; index++) {
+            error += Math.pow(shape.Distance(this.cloud.GetPoint(index)), 2);
+        }
+        error /= size;
+        this.shapes.push(shape);
+        this.errors.push(error);
+    };
+    ShapeFittingResult.prototype.GetBestShape = function () {
+        var bestindex = null;
+        var besterror = null;
+        for (var index = 0; index < this.shapes.length; index++) {
+            if (besterror === null || this.errors[index] < besterror) {
+                bestindex = index;
+                besterror = this.errors[index];
+            }
+        }
+        if (bestindex !== null) {
+            this.ShowResult(bestindex);
+            return this.shapes[bestindex];
+        }
+        return null;
+    };
+    ShapeFittingResult.prototype.ShowResult = function (bestShapeIndex) {
+        var message = 'Shapes fitting results :\n';
+        message += '<table><tbody><tr style="font-style:italic;"><td>Shape</td><td>Mean Square Error</td></tr>';
+        for (var index = 0; index < this.shapes.length; index++) {
+            var emphasize = (index === bestShapeIndex);
+            message += '<tr' + (emphasize ? ' style="color:green; text-decoration:underline;"' : '') + '>';
+            message += '<td style="font-weight:bold;">';
+            message += this.shapes[index].constructor['name'];
+            message += '</td><td>';
+            message += this.errors[index];
+            message += '</td></tr>';
+        }
+        message += '</tbody></table>';
+        new TemporaryHint(message, null);
+    };
+    return ShapeFittingResult;
+}());
+var FindBestFittingShapeAction = /** @class */ (function (_super) {
+    __extends(FindBestFittingShapeAction, _super);
+    function FindBestFittingShapeAction(cloud) {
+        return _super.call(this, cloud, 'Find the best fitting shape ...', 'Compute the shape (plane, sphere, cylinder, cone) that best fits the whole selected point cloud (assuming the point cloud samples a single shape)') || this;
+    }
+    FindBestFittingShapeAction.prototype.Enabled = function () {
+        return true;
+    };
+    FindBestFittingShapeAction.prototype.Trigger = function () {
+        var self = this;
+        var dialog = new Dialog(function (d) { return self.ComputeBestFittingShape(d); }, function (d) { return true; });
+        dialog.InsertTitle('Shapes to be tested');
+        dialog.InsertCheckBox('Plane', true);
+        dialog.InsertCheckBox('Sphere', true);
+        dialog.InsertCheckBox('Cylinder', true);
+        dialog.InsertCheckBox('Cone', true);
+    };
+    FindBestFittingShapeAction.prototype.ComputeBestFittingShape = function (properties) {
+        var cloud = this.GetCloud();
+        this.results = new ShapeFittingResult(cloud);
+        var fittingProcesses = [];
+        if (properties.GetValue('Plane')) {
+            fittingProcesses.push(new PlaneFittingProcess(this.results));
+        }
+        if (properties.GetValue('Sphere')) {
+            fittingProcesses.push(new SphereFittingProcess(this.results));
+        }
+        if (properties.GetValue('Cylinder')) {
+            fittingProcesses.push(new CylinderFittingProcess(this.results));
+        }
+        if (properties.GetValue('Cone')) {
+            fittingProcesses.push(new ConeFittingProcess(this.results));
+        }
+        if (fittingProcesses.length) {
+            var self_10 = this;
+            for (var index = 1; index < fittingProcesses.length; index++) {
+                fittingProcesses[index - 1].SetNext(fittingProcesses[index]);
+            }
+            fittingProcesses[fittingProcesses.length - 1].SetNext(function () { return self_10.HandleResult(); });
+            fittingProcesses[0].Start();
+            return true;
+        }
+        return false;
+    };
+    FindBestFittingShapeAction.prototype.HandleResult = function () {
+        var shape = this.results.GetBestShape();
+        if (shape) {
+            var pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
+            pclshape.name = 'Best fit to "' + this.GetPCLCloud().name + '"';
+            var owner = this.GetPCLCloud().owner;
+            owner.Add(pclshape);
+            owner.NotifyChange(pclshape, ChangeType.NewItem);
+        }
+    };
+    return FindBestFittingShapeAction;
+}(PCLCloudAction));
+var PlaneFittingProcess = /** @class */ (function (_super) {
+    __extends(PlaneFittingProcess, _super);
+    function PlaneFittingProcess(fittingResult) {
+        var _this = _super.call(this) || this;
+        _this.fittingResult = fittingResult;
+        return _this;
+    }
+    PlaneFittingProcess.prototype.Run = function (ondone) {
+        var cloud = this.fittingResult.cloud;
+        var planefit = Geometry.PlaneFitting(cloud);
+        this.fittingResult.AddFittingResult(new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud)));
+        ondone();
+    };
+    return PlaneFittingProcess;
+}(Process));
+var LSFittingProcess = /** @class */ (function (_super) {
+    __extends(LSFittingProcess, _super);
+    function LSFittingProcess(fittingResult) {
+        var _this = _super.call(this) || this;
+        _this.fittingResult = fittingResult;
+        return _this;
+    }
+    LSFittingProcess.prototype.AddResultHandlerHook = function (shape, ondone) {
+        var self = this;
+        shape.onChange = function () {
+            shape.onChange = null;
+            self.fittingResult.AddFittingResult(shape);
+            ondone();
+        };
+    };
+    return LSFittingProcess;
+}(Process));
+var SphereFittingProcess = /** @class */ (function (_super) {
+    __extends(SphereFittingProcess, _super);
+    function SphereFittingProcess(fittingResult) {
+        return _super.call(this, fittingResult) || this;
+    }
+    SphereFittingProcess.prototype.Run = function (ondone) {
+        var cloud = this.fittingResult.cloud;
+        var sphere = Sphere.InitialGuessForFitting(cloud);
+        this.AddResultHandlerHook(sphere, ondone);
+        sphere.FitToPointCloud(cloud);
+    };
+    return SphereFittingProcess;
+}(LSFittingProcess));
+var CylinderFittingProcess = /** @class */ (function (_super) {
+    __extends(CylinderFittingProcess, _super);
+    function CylinderFittingProcess(fittingResult) {
+        return _super.call(this, fittingResult) || this;
+    }
+    CylinderFittingProcess.prototype.Run = function (ondone) {
+        var cloud = this.fittingResult.cloud;
+        var cylinder = Cylinder.InitialGuessForFitting(cloud);
+        this.AddResultHandlerHook(cylinder, ondone);
+        cylinder.FitToPointCloud(cloud);
+    };
+    return CylinderFittingProcess;
+}(LSFittingProcess));
+var ConeFittingProcess = /** @class */ (function (_super) {
+    __extends(ConeFittingProcess, _super);
+    function ConeFittingProcess(fittingResult) {
+        return _super.call(this, fittingResult) || this;
+    }
+    ConeFittingProcess.prototype.Run = function (ondone) {
+        var cloud = this.fittingResult.cloud;
+        var cone = Cone.InitialGuessForFitting(cloud);
+        this.AddResultHandlerHook(cone, ondone);
+        cone.FitToPointCloud(cloud);
+    };
+    return ConeFittingProcess;
+}(LSFittingProcess));
 //===================================================
 // Normals computation
 //===================================================
@@ -6295,7 +7104,7 @@ var ComputeNormalsAction = /** @class */ (function (_super) {
     ComputeNormalsAction.prototype.Enabled = function () {
         return !this.GetCloud().HasNormals();
     };
-    ComputeNormalsAction.prototype.Run = function () {
+    ComputeNormalsAction.prototype.Trigger = function () {
         var k = 30;
         var cloud = this.GetPCLCloud();
         var ondone = function () { return cloud.InvalidateDrawing(); };
@@ -6360,7 +7169,7 @@ var ClearNormalsAction = /** @class */ (function (_super) {
     ClearNormalsAction.prototype.Enabled = function () {
         return this.GetCloud().HasNormals();
     };
-    ClearNormalsAction.prototype.Run = function () {
+    ClearNormalsAction.prototype.Trigger = function () {
         this.GetCloud().ClearNormals();
         this.GetPCLCloud().InvalidateDrawing();
     };
@@ -6374,16 +7183,10 @@ var GaussianSphereAction = /** @class */ (function (_super) {
     GaussianSphereAction.prototype.Enabled = function () {
         return this.GetCloud().HasNormals();
     };
-    GaussianSphereAction.prototype.Run = function () {
-        var gsphere = new PCLPointCloud();
-        var gcloud = gsphere.cloud;
-        var cloud = this.GetCloud();
-        var cloudSize = cloud.Size();
-        gcloud.Reserve(cloudSize);
-        for (var index = 0; index < cloudSize; index++) {
-            gcloud.PushPoint(cloud.GetNormal(index));
-        }
-        this.GetPCLCloud().NotifyChange(gsphere, ChangeType.Creation);
+    GaussianSphereAction.prototype.Trigger = function () {
+        var gsphere = new PCLPointCloud(new GaussianSphere(this.GetCloud()).ToPointCloud());
+        gsphere.name = 'Gaussian sphere of "' + this.GetPCLCloud().name + '"';
+        this.GetPCLCloud().NotifyChange(gsphere, ChangeType.NewItem);
     };
     return GaussianSphereAction;
 }(PCLCloudAction));
@@ -6398,10 +7201,10 @@ var ConnectedComponentsAction = /** @class */ (function (_super) {
     ConnectedComponentsAction.prototype.Enabled = function () {
         return true;
     };
-    ConnectedComponentsAction.prototype.Run = function () {
+    ConnectedComponentsAction.prototype.Trigger = function () {
         var k = 30;
         var self = this;
-        var ondone = function (b) { return self.GetPCLCloud().NotifyChange(b.result, ChangeType.Creation); };
+        var ondone = function (b) { return self.GetPCLCloud().NotifyChange(b.result, ChangeType.NewItem); };
         var builder = new ConnecterComponentsBuilder(this.GetCloud(), k, this.GetPCLCloud().name);
         builder.SetNext(ondone);
         builder.Start();
@@ -6436,7 +7239,7 @@ var ComputeDensityAction = /** @class */ (function (_super) {
     ComputeDensityAction.prototype.Enabled = function () {
         return !this.GetPCLCloud().GetScalarField(PCLScalarField.DensityFieldName);
     };
-    ComputeDensityAction.prototype.Run = function () {
+    ComputeDensityAction.prototype.Trigger = function () {
         var k = 30;
         var density = new DensityComputer(this.GetPCLCloud(), k);
         density.Start();
@@ -6460,7 +7263,7 @@ var DensityComputer = /** @class */ (function (_super) {
     DensityComputer.prototype.Iterate = function (step) {
         var cloud = this.cloud.cloud;
         var nbh = cloud.KNearestNeighbours(cloud.GetPoint(step), this.k + 1);
-        var ballSqrRadius = nbh.pop().sqrdistance;
+        var ballSqrRadius = nbh.GetSqrDistance();
         this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
     };
     return DensityComputer;
@@ -6478,7 +7281,7 @@ var ComputeNoiseAction = /** @class */ (function (_super) {
             return false;
         return !this.GetPCLCloud().GetScalarField(PCLScalarField.NoiseFieldName);
     };
-    ComputeNoiseAction.prototype.Run = function () {
+    ComputeNoiseAction.prototype.Trigger = function () {
         var k = 10;
         var noise = new NoiseComputer(this.GetPCLCloud(), k);
         noise.Start();
@@ -6503,7 +7306,7 @@ var NoiseComputer = /** @class */ (function (_super) {
         var cloud = this.cloud.cloud;
         var point = cloud.GetPoint(step);
         var normal = cloud.GetNormal(step);
-        var nbh = cloud.KNearestNeighbours(point, this.k + 1);
+        var nbh = cloud.KNearestNeighbours(point, this.k + 1).Neighbours();
         var noise = 0;
         for (var index = 0; index < nbh.length; index++) {
             noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].sqrdistance);
@@ -6528,7 +7331,7 @@ var ComputeDistancesAction = /** @class */ (function (_super) {
     ComputeDistancesAction.prototype.Enabled = function () {
         return !this.GetPCLCloud().GetScalarField(this.GetFieldName());
     };
-    ComputeDistancesAction.prototype.Run = function () {
+    ComputeDistancesAction.prototype.Trigger = function () {
         var noise = new DistancesComputer(this.GetPCLCloud(), this.target, this.GetFieldName());
         noise.Start();
     };
@@ -6566,7 +7369,7 @@ var ExportPointCloudFileAction = /** @class */ (function (_super) {
     ExportPointCloudFileAction.prototype.Enabled = function () {
         return true;
     };
-    ExportPointCloudFileAction.prototype.Run = function () {
+    ExportPointCloudFileAction.prototype.Trigger = function () {
         FileExporter.ExportFile(this.GetPCLCloud().name + '.csv', this.GetPCLCloud().GetCSVData(), 'text/csv');
     };
     return ExportPointCloudFileAction;
@@ -7473,7 +8276,7 @@ var NewLightAction = /** @class */ (function (_super) {
         _this.container = container;
         return _this;
     }
-    NewLightAction.prototype.Run = function () {
+    NewLightAction.prototype.Trigger = function () {
         var light = new Light(new Vector([100.0, 100.0, 100.0]));
         this.container.Add(light);
     };
@@ -7527,9 +8330,9 @@ var Light = /** @class */ (function (_super) {
     };
     Light.prototype.FillProperties = function () {
         if (this.properties) {
-            var self_10 = this;
-            this.properties.Push(new VectorProperty('Position', function () { return self_10.position; }, false, function () { }));
-            this.properties.Push(new ColorProperty('Color', function () { return self_10.color; }, function (newColor) { return self_10.color = newColor; }));
+            var self_11 = this;
+            this.properties.Push(new VectorProperty('Position', function () { return self_11.position; }, false, function () { }));
+            this.properties.Push(new ColorProperty('Color', function () { return self_11.color; }, function (newColor) { return self_11.color = newColor; }));
         }
     };
     Light.prototype.GetDisplayIcon = function () {
@@ -7738,7 +8541,7 @@ var Renderer = /** @class */ (function () {
         scanner.SetNext(function (s) {
             var cloud = new PCLPointCloud(s.cloud);
             group.Add(cloud);
-            cloud.NotifyChange(cloud, ChangeType.Creation);
+            cloud.NotifyChange(cloud, ChangeType.NewItem);
         });
         scanner.Start();
     };
@@ -7994,7 +8797,7 @@ var PopupItem = /** @class */ (function () {
             else {
                 this.item.className += 'Inactive';
             }
-            var itemLabel = document.createTextNode(action.label);
+            var itemLabel = document.createTextNode(action.GetLabel());
             this.item.appendChild(itemLabel);
             if (action.hintMessage) {
                 this.hint = new Hint(this, action.hintMessage);
@@ -8670,6 +9473,9 @@ var DataItem = /** @class */ (function () {
         if (change & ChangeType.Properties) {
             this.dataHandler.UpdateProperties();
         }
+        if (change & ChangeType.TakeFocus) {
+            this.dataHandler.FocusOnItem(source);
+        }
     };
     //Group folding management - When clicking a group icon
     DataItem.prototype.ItemFolded = function () {
@@ -8787,9 +9593,9 @@ var SelectionList = /** @class */ (function () {
         }
         else if (this.Size() > 1) {
             if (!this.ownProperties) {
-                var self_11 = this;
+                var self_12 = this;
                 this.ownProperties = new Properties();
-                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_11.Size(); }, null));
+                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_12.Size(); }, null));
             }
             return this.ownProperties;
         }
@@ -8807,13 +9613,23 @@ var SelectionList = /** @class */ (function () {
         if (this.Size() == 1) {
             actions = this.items[0].GetActions(delegate);
         }
-        else {
-            if (this.Size() == 2 && this.items[0] instanceof PCLPointCloud) {
+        else if (this.Size() == 2) {
+            var cloudindex = this.FindFirst(function (n) { return n instanceof PCLPointCloud; });
+            if (cloudindex >= 0) {
                 actions = actions || [];
-                actions.push(new ComputeDistancesAction(this.items[0], this.items[1]));
+                var cloud = this.items[cloudindex];
+                var other = this.items[1 - cloudindex];
+                actions.push(new ComputeDistancesAction(cloud, other));
             }
         }
         return actions;
+    };
+    SelectionList.prototype.FindFirst = function (test) {
+        for (var index = 0; index < this.items.length; index++) {
+            if (test(this.items[index]))
+                return index;
+        }
+        return -1;
     };
     SelectionList.prototype.ShowAll = function (b) {
         for (var index = 0; index < this.Size(); index++) {
@@ -8903,6 +9719,11 @@ var DataHandler = /** @class */ (function (_super) {
         this.UpdateProperties();
         this.ownerView.RefreshRendering();
         this.RefreshColorScale();
+    };
+    DataHandler.prototype.FocusOnItem = function (item) {
+        this.selection.Clear();
+        item.Select(true);
+        this.ownerView.FocusOnCurrentSelection();
     };
     DataHandler.prototype.UpdateProperties = function () {
         var properties = this.selection.GetProperties();
@@ -9059,12 +9880,12 @@ var FileOpener = /** @class */ (function (_super) {
     };
     FileOpener.prototype.LoadFile = function (file) {
         if (file) {
-            var self_12 = this;
+            var self_13 = this;
             var progress_1 = new ProgressBar();
             var reader = new FileReader();
             reader.onloadend = function () {
                 progress_1.Delete();
-                self_12.LoadFromContent(file.name, this.result);
+                self_13.LoadFromContent(file.name, this.result);
             };
             reader.onprogress = function (event) {
                 progress_1.Update(event.loaded, event.total);
@@ -9102,8 +9923,8 @@ var FileOpener = /** @class */ (function (_super) {
                     break;
             }
             if (loader) {
-                var self_13 = this;
-                loader.Load(function (result) { self_13.filehandler(result); }, function (error) { alert(error); });
+                var self_14 = this;
+                loader.Load(function (result) { self_14.filehandler(result); }, function (error) { alert(error); });
             }
         }
     };
@@ -9113,42 +9934,33 @@ var FileOpener = /** @class */ (function (_super) {
 var SelectDrop = /** @class */ (function () {
     function SelectDrop(label, options, selected, hintMessage) {
         var self = this;
-        this.button = new Button(label, function () {
-            var selectOptions = [];
-            for (var index = 0; index < options.length; index++) {
-                if (options[index].label !== self.button.GetLabel()) {
-                    selectOptions.push(new SelectOption(self, options[index]));
-                }
-            }
-            Popup.CreatePopup(self.button, selectOptions);
-        }, hintMessage);
-        this.SetCurrent(options[selected].label);
+        for (var index = 0; index < options.length; index++) {
+            options[index].AddListener(this);
+        }
+        this.button = new Button(label, function () { return Popup.CreatePopup(self.button, self.GetAvailableOptions(options)); }, hintMessage);
+        this.SetCurrent(options[selected].GetLabel(false));
     }
+    SelectDrop.prototype.GetAvailableOptions = function (options) {
+        var availableOptions = [];
+        for (var index = 0; index < options.length; index++) {
+            var option = options[index];
+            if (option.GetLabel(false) !== this.button.GetLabel()) {
+                availableOptions.push(option);
+            }
+        }
+        return availableOptions;
+    };
     SelectDrop.prototype.GetElement = function () {
         return this.button.GetElement();
     };
     SelectDrop.prototype.SetCurrent = function (current) {
         this.button.SetLabel(current);
     };
+    SelectDrop.prototype.OnTrigger = function (action) {
+        this.SetCurrent(action.GetLabel(false));
+    };
     return SelectDrop;
 }());
-var SelectOption = /** @class */ (function (_super) {
-    __extends(SelectOption, _super);
-    function SelectOption(select, innerAction) {
-        var _this = _super.call(this, innerAction.label, innerAction.hintMessage) || this;
-        _this.select = select;
-        _this.innerAction = innerAction;
-        return _this;
-    }
-    SelectOption.prototype.Run = function () {
-        this.select.SetCurrent(this.label);
-        this.innerAction.Run();
-    };
-    SelectOption.prototype.Enabled = function () {
-        return this.innerAction.Enabled();
-    };
-    return SelectOption;
-}(Action));
 /// <reference path="controls/hideablepannel.ts" />
 /// <reference path="controls/toolbar.ts" />
 /// <reference path="controls/fileopener.ts" />
@@ -9159,12 +9971,12 @@ var SelectOption = /** @class */ (function (_super) {
 /// <reference path="../controler/actions/controlerchoice.ts" />
 var Menu = /** @class */ (function (_super) {
     __extends(Menu, _super);
-    function Menu(ownerView) {
+    function Menu(application) {
         var _this = _super.call(this, 'MenuToolbar', HandlePosition.Bottom) || this;
-        _this.ownerView = ownerView;
+        _this.application = application;
         _this.toolbar = new Toolbar();
         _this.container.AddControl(_this.toolbar);
-        var dataHandler = ownerView.dataHandler;
+        var dataHandler = application.dataHandler;
         _this.toolbar.AddControl(new FileOpener('[Icon:file-o]', function (createdObject) {
             if (createdObject != null) {
                 if (createdObject instanceof Scene) {
@@ -9173,22 +9985,22 @@ var Menu = /** @class */ (function (_super) {
                 else {
                     var owner = dataHandler.GetNewItemOwner();
                     owner.Add(createdObject);
-                    createdObject.NotifyChange(createdObject, ChangeType.Creation);
+                    createdObject.NotifyChange(createdObject, ChangeType.NewItem);
                 }
             }
         }, 'Load data from a file'));
         _this.toolbar.AddControl(new Button('[Icon:save]', function () {
-            ownerView.SaveCurrentScene();
+            application.SaveCurrentScene();
         }, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
         _this.toolbar.AddControl(new ComboBox('[Icon:bars]', _this, 'Contextual menu : list of actions available for the current selection.'));
         _this.toolbar.AddControl(new Button('[Icon:search]', function () {
-            ownerView.FocusOnCurrentItem();
+            application.FocusOnCurrentSelection();
         }, 'Focus current viewpoint on the selected item'));
         _this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
-            new CameraModeAction(ownerView),
-            new TransformModeAction(ownerView),
-            new LightModeAction(ownerView)
-        ], 0, 'Change the current working mode (changes the mouse input '));
+            application.RegisterShortCut(new CameraModeAction(application)),
+            application.RegisterShortCut(new TransformModeAction(application)),
+            application.RegisterShortCut(new LightModeAction(application))
+        ], 0, 'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'));
         _this.toolbar.AddControl(new Button('[Icon:question-circle]', function () {
             window.open('help.html', '_blank');
         }));
@@ -9198,7 +10010,7 @@ var Menu = /** @class */ (function (_super) {
         this.toolbar.Clear();
     };
     Menu.prototype.GetActions = function () {
-        return this.ownerView.dataHandler.selection.GetActions(this.ownerView);
+        return this.application.dataHandler.selection.GetActions(this.application);
     };
     return Menu;
 }(HideablePannel));
@@ -9338,15 +10150,23 @@ var CoordinatesSystem = /** @class */ (function () {
 //===========================================
 var PCLApp = /** @class */ (function () {
     function PCLApp() {
-        var scenebuffer = window.localStorage.getItem(PCLApp.sceneStorageKey);
+        this.shortcuts = {};
+        var scenebuffer = null;
+        try {
+            scenebuffer = window.localStorage.getItem(PCLApp.sceneStorageKey);
+        }
+        catch (e) {
+            scenebuffer = null;
+            console.warn('Could not load data from local storage');
+        }
         if (scenebuffer) {
             console.info('Loading locally stored data');
             var loader = new PCLLoader(scenebuffer);
-            var self_14 = this;
-            loader.Load(function (scene) { return self_14.Initialize(scene); }, function (error) {
+            var self_15 = this;
+            loader.Load(function (scene) { return self_15.Initialize(scene); }, function (error) {
                 console.error('Failed to initialize scene from storage : ' + error);
                 console.warn('Start from an empty scene, instead');
-                self_14.Initialize(new Scene());
+                self_15.Initialize(new Scene());
             });
         }
         else {
@@ -9392,7 +10212,7 @@ var PCLApp = /** @class */ (function () {
         this.coordinatesSystem = new CoordinatesSystem(this);
         document.body.appendChild(this.coordinatesSystem.GetElement());
         //Create the default controler (camera controler)
-        this.currentControler = new CameraControler(this);
+        this.SetCurrentControler(new CameraControler(this), false);
         this.sceneRenderer.Draw(scene);
         this.coordinatesSystem.Refresh();
     };
@@ -9441,14 +10261,23 @@ var PCLApp = /** @class */ (function () {
     PCLApp.prototype.GetViewPoint = function () {
         return this.sceneRenderer.camera;
     };
-    PCLApp.prototype.GetLightPosition = function () {
+    PCLApp.prototype.GetLightPosition = function (takeFocus) {
         var scene = this.dataHandler.scene;
-        if (scene.Lights.children.length == 1)
-            return scene.Lights.children[0];
-        var item = this.dataHandler.selection.GetSingleSelection();
-        if (item && item instanceof Light) {
-            return item;
+        var light;
+        if (scene.Lights.children.length == 1) {
+            light = scene.Lights.children[0];
+            if (takeFocus) {
+                this.dataHandler.selection.Clear();
+                light.Select(true);
+            }
         }
+        else {
+            var item = this.dataHandler.selection.GetSingleSelection();
+            if (item && item instanceof Light) {
+                light = item;
+            }
+        }
+        return light;
     };
     PCLApp.prototype.GetCurrentTransformable = function () {
         var item = this.dataHandler.selection.GetSingleSelection();
@@ -9480,8 +10309,13 @@ var PCLApp = /** @class */ (function () {
     PCLApp.prototype.GetRengeringArea = function () {
         return this.sceneRenderer.GetElement();
     };
-    PCLApp.prototype.SetCurrentControler = function (controler) {
+    PCLApp.prototype.SetCurrentControler = function (controler, refresh) {
+        if (refresh === void 0) { refresh = true; }
         this.currentControler = controler;
+        this.sceneRenderer.drawingcontext.bboxcolor = controler.GetSelectionColor();
+        if (refresh) {
+            this.RefreshRendering();
+        }
     };
     PCLApp.prototype.GetCurrentControler = function () {
         return this.currentControler;
@@ -9496,7 +10330,7 @@ var PCLApp = /** @class */ (function () {
             selected.Select(true);
         }
     };
-    PCLApp.prototype.FocusOnCurrentItem = function () {
+    PCLApp.prototype.FocusOnCurrentSelection = function () {
         var selection = this.dataHandler.selection;
         var selectionbb = selection.GetBoundingBox();
         if (selectionbb && this.sceneRenderer.camera.CenterOnBox(selectionbb)) {
@@ -9521,6 +10355,27 @@ var PCLApp = /** @class */ (function () {
                 break;
         }
         this.RenderScene();
+    };
+    PCLApp.prototype.RegisterShortCut = function (action) {
+        var shortcut = action.GetShortCut();
+        if (shortcut) {
+            var key = shortcut.toLowerCase();
+            if (!(key in this.shortcuts)) {
+                this.shortcuts[key] = action;
+            }
+            else {
+                console.error('Shortcut "' + shortcut + '" is being registered multiples times.');
+            }
+        }
+        return action;
+    };
+    PCLApp.prototype.HandleShortcut = function (key) {
+        var action = this.shortcuts[key.toLowerCase()];
+        if (action && action.Enabled()) {
+            action.Run();
+            return true;
+        }
+        return false;
     };
     //===================================
     // Implement ActionsDelegate interface
