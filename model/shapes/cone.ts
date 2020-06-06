@@ -206,7 +206,9 @@ class Cone extends Shape {
 		let lsFitting = new LeastSquaresFitting(
 			ConeFitting.Parameters(this.apex, this.axis, this.angle),
 			new ConeFitting(this),
-			cloud);
+			cloud,
+			'Computing best fitting cone'
+		);
 		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
 		lsFitting.Start();
 	}

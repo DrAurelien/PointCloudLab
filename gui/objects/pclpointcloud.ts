@@ -131,10 +131,7 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 			ransac = true;
 		}
 
-		result.push(new PlaneFittingAction(this));
-		result.push(new SphereFittingAction(this));
-		result.push(new CylinderFittingAction(this));
-		result.push(new ConeFittingAction(this));
+		result.push(new FindBestFittingShapeAction(this));
 
 		if (ransac)
 			result.push(null);

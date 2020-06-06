@@ -158,7 +158,8 @@ class Sphere extends Shape {
 		let lsFitting = new LeastSquaresFitting(
 			SphereFitting.Parameters(this.center, this.radius),
 			new SphereFitting(this),
-			cloud);
+			cloud,
+			'Computing best fitting sphere');
 		let self = this;
 		lsFitting.SetNext(() => self.NotifyChange());
 		lsFitting.Start();

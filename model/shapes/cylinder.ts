@@ -214,7 +214,8 @@ class Cylinder extends Shape {
 		let lsFitting = new LeastSquaresFitting(
 			CylinderFitting.Parameters(this.center, this.axis, this.radius),
 			new CylinderFitting(this),
-			cloud);
+			cloud,
+			'Computing best fitting cylinder');
 		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
 		lsFitting.Start();
 	}

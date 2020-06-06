@@ -39,6 +39,7 @@ abstract class Shape {
 			this.onChange();
 		}
 	}
+
 }
 
 interface ShapeCreator {

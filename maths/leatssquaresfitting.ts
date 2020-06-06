@@ -25,12 +25,13 @@ class LeastSquaresFitting<DataType> extends LongProcess {
 		public solution: number[],
 		public evaluable: LeastSquaresEvaluable<DataType>,
 		private data: DataProvider<DataType>,
+		message: string,
 		public lambda: number = 1.0,
 		public lambdaFactor: number = 10.0,
 		public stabilityNbSteps: number = 10,
 		public stabilityFactor: number = 1.0e-3
 	) {
-		super('Performing least squares fitting');
+		super(message);
 	}
 
 	Initialize() {

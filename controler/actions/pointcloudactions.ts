@@ -129,88 +129,177 @@ class RansacDetectionAction extends PCLCloudAction {
 //===================================================
 // Shapes fitting
 //===================================================
-abstract class ShapeFittingAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, private shapename: string) {
-		super(cloud,
-			'Fit a ' + shapename,
-			'Find the ' + shapename + ' that best fits the <u><b>whole</b><u> selected point cloud (assuming the point cloud samples a ' + shapename + ').'
-		);
+class ShapeFittingResult {
+	shapes: Shape[];
+	errors: number[];
+
+	constructor(public cloud: PointCloud) {
+		this.shapes = [];
+		this.errors = [];
+	}
+
+	AddFittingResult(shape: Shape) {
+		let error = 0;
+		let size = this.cloud.Size();
+		for (let index = 0; index < size; index++) {
+			error += shape.Distance(this.cloud.GetPoint(index)) ** 2;
+		}
+
+		this.shapes.push(shape);
+		this.errors.push(error);
+	}
+
+	GetBestShape(): Shape {
+		let bestindex = null;
+		let besterror = null;
+		for (let index = 0; index < this.shapes.length; index++) {
+			if (besterror === null || this.errors[index] < besterror) {
+				bestindex = index;
+				besterror = this.errors[index];
+			}
+		}
+		if (bestindex !== null) {
+			return this.shapes[bestindex];
+		}
+		return null;
+	}
+}
+
+class FindBestFittingShapeAction extends PCLCloudAction {
+	results: ShapeFittingResult;
+
+	constructor(cloud: PCLPointCloud) {
+		super(cloud,'Find the best fitting shape ...', 'Compute the shape (plane, sphere, cylinder, cone) that best fits the whole selected point cloud (assuming the point cloud samples a signel shape)');
 	}
 
 	Enabled(): boolean {
 		return true;
 	}
 
-	protected AddResultHandlerHook(shape: Shape) {
+	Trigger() {
+		let self = this;
+		var dialog = new Dialog(
+			(d: Dialog) => { return self.ComputeBestFittingShape(d); },
+			(d: Dialog) => { return true; }
+		);
+		dialog.InsertTitle('Shapes to be tested');
+		dialog.InsertCheckBox('Plane', true);
+		dialog.InsertCheckBox('Sphere', true);
+		dialog.InsertCheckBox('Cylinder', true);
+		dialog.InsertCheckBox('Cone', true);
+	}
+
+	ComputeBestFittingShape(properties: Dialog): boolean {
+		let cloud = this.GetCloud();
+		this.results = new ShapeFittingResult(cloud);
+
+		let fittingProcesses: Process[] = []
+		if (properties.GetValue('Plane')) {
+			fittingProcesses.push(new PlaneFittingProcess(this.results));
+		}
+		if (properties.GetValue('Sphere')) {
+			fittingProcesses.push(new SphereFittingProcess(this.results));
+		}
+		if (properties.GetValue('Cylinder')) {
+			fittingProcesses.push(new CylinderFittingProcess(this.results));
+		}
+		if (properties.GetValue('Cone')) {
+			fittingProcesses.push(new ConeFittingProcess(this.results));
+		}
+
+		if (fittingProcesses.length) {
+			let self = this;
+			for (let index = 1; index < fittingProcesses.length; index++) {
+				fittingProcesses[index - 1].SetNext(fittingProcesses[index]);
+			}
+			fittingProcesses[fittingProcesses.length - 1].SetNext(() => self.HandleResult());
+			fittingProcesses[0].Start();
+			return true;
+		}
+		return false;
+	}
+
+	HandleResult() {
+		let shape = this.results.GetBestShape();
+		if (shape) {
+			let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
+			pclshape.name = 'Best fit to "' + this.GetPCLCloud().name + '"';
+			let owner = this.GetPCLCloud().owner;
+			owner.Add(pclshape);
+			owner.NotifyChange(pclshape, ChangeType.NewItem);
+		}
+	}
+}
+
+class PlaneFittingProcess extends Process {
+	constructor(private fittingResult: ShapeFittingResult) {
+		super();
+	}
+
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
+		let planefit = Geometry.PlaneFitting(cloud);
+		this.fittingResult.AddFittingResult(
+			new Plane(
+				planefit.center,
+				planefit.normal,
+				planefit.ComputePatchRadius(cloud)
+			)
+		);
+		ondone();
+	}
+}
+
+abstract class LSFittingProcess extends Process {
+	constructor(protected fittingResult: ShapeFittingResult) {
+		super();
+	}
+
+	AddResultHandlerHook(shape: Shape, ondone:Function) {
 		let self = this;
 		shape.onChange = () => {
 			shape.onChange = null;
-			self.HandleResult(shape)
+			self.fittingResult.AddFittingResult(shape);
+			ondone();
 		}
 	}
-
-	HandleResult(shape: Shape) {
-		let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
-		pclshape.name = this.shapename + ' fitting to "' + this.GetPCLCloud().name + '"';
-		pclshape.name = pclshape.name.charAt(0).toUpperCase() + pclshape.name.substr(1);
-		let owner = this.GetPCLCloud().owner;
-		owner.Add(pclshape);
-		owner.NotifyChange(pclshape, ChangeType.NewItem);
-	}
 }
 
-class PlaneFittingAction extends ShapeFittingAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'plane');
+class SphereFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
 	}
 
-	Trigger() {
-		let cloud = this.GetCloud();
-		let planefit = Geometry.PlaneFitting(cloud);
-		let result = new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud));
-		this.HandleResult(result);
-	}
-}
-
-class SphereFittingAction extends ShapeFittingAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'sphere');
-	}
-	Trigger() {
-		let self = this;
-		let cloud = this.GetCloud();
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
 		let sphere = Sphere.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(sphere);
+		this.AddResultHandlerHook(sphere, ondone);
 		sphere.FitToPointCloud(cloud);
 	}
-
 }
 
-class CylinderFittingAction extends ShapeFittingAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'cylinder');
+class CylinderFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
 	}
 
-	Trigger() {
-		let self = this;
-		let cloud = this.GetCloud();
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
 		let cylinder = Cylinder.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(cylinder);
+		this.AddResultHandlerHook(cylinder, ondone);
 		cylinder.FitToPointCloud(cloud);
 	}
 }
 
-
-class ConeFittingAction extends ShapeFittingAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'cone');
+class ConeFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
 	}
 
-	Trigger() {
-		let self = this;
-		let cloud = this.GetCloud();
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
 		let cone = Cone.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(cone);
+		this.AddResultHandlerHook(cone, ondone);
 		cone.FitToPointCloud(cloud);
 	}
 }
