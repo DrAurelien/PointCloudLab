@@ -19,10 +19,16 @@ abstract class PCLShape extends PCLPrimitive implements Pickable {
 	drawing: MeshDrawing;
 	private meshsampling: number;
 
-	constructor(name: string) {
+	constructor(name: string, shape: Shape) {
 		super(name);
 		this.drawing = new MeshDrawing();
 		this.meshsampling = 0;
+
+		let self = this;
+		shape.onChange = () => {
+			self.Invalidate();
+			self.NotifyChange(self, ChangeType.Display | ChangeType.Properties);
+		};
 	}
 
 	abstract GetGeometry(): Properties;

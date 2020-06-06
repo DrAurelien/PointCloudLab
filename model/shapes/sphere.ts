@@ -155,11 +155,13 @@ class Sphere extends Shape {
 	}
 
 	FitToPointCloud(cloud: PointCloud) {
-		let evaluable = new SphereFitting(this);
-		let lsFitting = new LeastSquaresFitting(cloud);
-		lsFitting.Initialize(SphereFitting.Parameters(this.center, this.radius));
-		lsFitting.Solve(evaluable);
-		this.NotifyChange();
+		let lsFitting = new LeastSquaresFitting(
+			SphereFitting.Parameters(this.center, this.radius),
+			new SphereFitting(this),
+			cloud);
+		let self = this;
+		lsFitting.SetNext(() => self.NotifyChange());
+		lsFitting.Start();
 	}
 }
 

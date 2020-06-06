@@ -210,11 +210,16 @@ class Cylinder extends Shape {
 	}
 
 	FitToPointCloud(cloud: PointCloud) {
-		let evaluable = new CylinderFitting(this);
-		let lsFitting = new LeastSquaresFitting(cloud);
-		lsFitting.Initialize(CylinderFitting.Parameters(this.center, this.axis, this.radius));
-		lsFitting.Solve(evaluable);
+		let self = this;
+		let lsFitting = new LeastSquaresFitting(
+			CylinderFitting.Parameters(this.center, this.axis, this.radius),
+			new CylinderFitting(this),
+			cloud);
+		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
+		lsFitting.Start();
+	}
 
+	private FinalizeFitting(cloud: PointCloud) {
 		//Compute actual cylinder center and bounds along the axis
 		let zmin = null;
 		let zmax = null;

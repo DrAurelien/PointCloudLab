@@ -130,7 +130,7 @@ class RansacDetectionAction extends PCLCloudAction {
 // Shapes fitting
 //===================================================
 abstract class ShapeFittingAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud, shapename: string) {
+	constructor(cloud: PCLPointCloud, private shapename: string) {
 		super(cloud,
 			'Fit a ' + shapename,
 			'Find the ' + shapename + ' that best fits the <u><b>whole</b><u> selected point cloud (assuming the point cloud samples a ' + shapename + ').'
@@ -141,15 +141,22 @@ abstract class ShapeFittingAction extends PCLCloudAction {
 		return true;
 	}
 
-	Trigger() {
-		let shape = this.ComputeBestFittingShape(this.GetCloud());
+	protected AddResultHandlerHook(shape: Shape) {
+		let self = this;
+		shape.onChange = () => {
+			shape.onChange = null;
+			self.HandleResult(shape)
+		}
+	}
+
+	HandleResult(shape: Shape) {
 		let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
+		pclshape.name = this.shapename + ' fitting to "' + this.GetPCLCloud().name + '"';
+		pclshape.name = pclshape.name.charAt(0).toUpperCase() + pclshape.name.substr(1);
 		let owner = this.GetPCLCloud().owner;
 		owner.Add(pclshape);
 		owner.NotifyChange(pclshape, ChangeType.NewItem);
 	}
-
-	abstract ComputeBestFittingShape(cloud: PointCloud): Shape;
 }
 
 class PlaneFittingAction extends ShapeFittingAction {
@@ -157,23 +164,26 @@ class PlaneFittingAction extends ShapeFittingAction {
 		super(cloud, 'plane');
 	}
 
-	ComputeBestFittingShape(cloud: PointCloud): Shape {
+	Trigger() {
+		let cloud = this.GetCloud();
 		let planefit = Geometry.PlaneFitting(cloud);
-		return new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud));
+		let result = new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud));
+		this.HandleResult(result);
 	}
 }
-
 
 class SphereFittingAction extends ShapeFittingAction {
 	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'sphere');
 	}
-
-	ComputeBestFittingShape(cloud: PointCloud): Shape {
+	Trigger() {
+		let self = this;
+		let cloud = this.GetCloud();
 		let sphere = Sphere.InitialGuessForFitting(cloud);
+		this.AddResultHandlerHook(sphere);
 		sphere.FitToPointCloud(cloud);
-		return sphere;
 	}
+
 }
 
 class CylinderFittingAction extends ShapeFittingAction {
@@ -181,10 +191,12 @@ class CylinderFittingAction extends ShapeFittingAction {
 		super(cloud, 'cylinder');
 	}
 
-	ComputeBestFittingShape(cloud: PointCloud): Shape {
+	Trigger() {
+		let self = this;
+		let cloud = this.GetCloud();
 		let cylinder = Cylinder.InitialGuessForFitting(cloud);
+		this.AddResultHandlerHook(cylinder);
 		cylinder.FitToPointCloud(cloud);
-		return cylinder;
 	}
 }
 
@@ -194,10 +206,12 @@ class ConeFittingAction extends ShapeFittingAction {
 		super(cloud, 'cone');
 	}
 
-	ComputeBestFittingShape(cloud: PointCloud): Shape {
+	Trigger() {
+		let self = this;
+		let cloud = this.GetCloud();
 		let cone = Cone.InitialGuessForFitting(cloud);
+		this.AddResultHandlerHook(cone);
 		cone.FitToPointCloud(cloud);
-		return cone;
 	}
 }
 

@@ -10,7 +10,7 @@
 
 class PCLCylinder extends PCLShape {
 	constructor(public cylinder: Cylinder) {
-		super(NameProvider.GetName('Cylinder'));
+		super(NameProvider.GetName('Cylinder'), cylinder);
 	}
 
 	GetShape(): Shape {

@@ -202,11 +202,16 @@ class Cone extends Shape {
 	}
 
 	FitToPointCloud(cloud: PointCloud) {
-		let evaluable = new ConeFitting(this);
-		let lsFitting = new LeastSquaresFitting(cloud);
-		lsFitting.Initialize(ConeFitting.Parameters(this.apex, this.axis, this.angle));
-		lsFitting.Solve(evaluable);
+		let self = this;
+		let lsFitting = new LeastSquaresFitting(
+			ConeFitting.Parameters(this.apex, this.axis, this.angle),
+			new ConeFitting(this),
+			cloud);
+		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
+		lsFitting.Start();
+	}
 
+	private FinalizeFitting(cloud: PointCloud) {
 		//Compute actual cone height and axis direction
 		let zmax = null;
 		let size = cloud.Size();

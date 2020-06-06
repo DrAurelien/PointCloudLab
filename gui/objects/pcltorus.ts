@@ -11,7 +11,7 @@
 
 class PCLTorus extends PCLShape {
 	constructor(public torus: Torus) {
-		super(NameProvider.GetName('Torus'));
+		super(NameProvider.GetName('Torus'), torus);
 	}
 
 	GetShape(): Shape {
