@@ -10,8 +10,7 @@ class Hint implements Control {
 	constructor(public owner: Control, message: string) {
 		this.container = document.createElement('div');
 		this.container.className = 'Hint';
-
-		this.container.appendChild(document.createTextNode(message));
+		this.container.innerHTML = message;
 
 		if (owner) {
 			let element = this.owner.GetElement();
@@ -48,11 +47,16 @@ class Hint implements Control {
 class TemporaryHint extends Hint {
 	static DisplayDuration = 4000;
 
-	constructor(message: string) {
-		super(null, message);
+	constructor(message: string, duration = TemporaryHint.DisplayDuration) {
+		super(null, message + (duration ? '' : '<br/><i>(Click this box to close)</i>'));
 
 		let self = this;
 		this.Show();
-		setTimeout(() => self.Hide(), TemporaryHint.DisplayDuration)
+		if (duration) {
+			setTimeout(() => self.Hide(), duration);
+		}
+		else {
+			this.container.onclick = () => self.Hide();
+		}
 	}
 }

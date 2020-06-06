@@ -10,6 +10,7 @@
 /// <reference path="../../gui/objects/pclscalarfield.ts" />
 /// <reference path="../../gui/objects/pclshapewrapper.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
+/// <reference path="../../gui/controls/hint.ts" />
 /// <reference path="../../files/fileexporter.ts" />
 
 
@@ -144,6 +145,7 @@ class ShapeFittingResult {
 		for (let index = 0; index < size; index++) {
 			error += shape.Distance(this.cloud.GetPoint(index)) ** 2;
 		}
+		error /= size;
 
 		this.shapes.push(shape);
 		this.errors.push(error);
@@ -159,9 +161,26 @@ class ShapeFittingResult {
 			}
 		}
 		if (bestindex !== null) {
+			this.ShowResult(bestindex);
 			return this.shapes[bestindex];
 		}
 		return null;
+	}
+
+	private ShowResult(bestShapeIndex: number) {
+		let message: string = 'Shapes fitting results :\n';
+		message += '<table><tbody><tr style="font-style:italic;"><td>Shape</td><td>Mean Square Error</td></tr>';
+		for (let index = 0; index < this.shapes.length; index++) {
+			let emphasize = (index === bestShapeIndex);
+			message += '<tr' + (emphasize ? ' style="color:green; text-decoration:underline;"' : '') + '>';
+			message += '<td style="font-weight:bold;">';
+			message += this.shapes[index].constructor['name'];
+			message += '</td><td>';
+			message += this.errors[index];
+			message += '</td></tr>';
+		}
+		message += '</tbody></table>';
+		new TemporaryHint(message, null);
 	}
 }
 
@@ -169,7 +188,7 @@ class FindBestFittingShapeAction extends PCLCloudAction {
 	results: ShapeFittingResult;
 
 	constructor(cloud: PCLPointCloud) {
-		super(cloud,'Find the best fitting shape ...', 'Compute the shape (plane, sphere, cylinder, cone) that best fits the whole selected point cloud (assuming the point cloud samples a signel shape)');
+		super(cloud,'Find the best fitting shape ...', 'Compute the shape (plane, sphere, cylinder, cone) that best fits the whole selected point cloud (assuming the point cloud samples a single shape)');
 	}
 
 	Enabled(): boolean {
