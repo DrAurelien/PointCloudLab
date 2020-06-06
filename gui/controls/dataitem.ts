@@ -14,12 +14,29 @@ class DataItem implements Control, Notifiable {
 	itemName: Text;
 	visibilityIcon: HTMLElement;
 	sons: DataItem[];
+	uuid: number;
 
+	//Fast access to all the data items
+	static ItemsCache: DataItem[] = [];
+	static IdPrefix = 'DataItem#';
+	static GetItemById(id: string): DataItem {
+		let key = parseInt(id.replace(DataItem.IdPrefix, ''), 10);
+		return DataItem.ItemsCache[key];
+	}
+	static GetId(uuid: number) {
+		return DataItem.IdPrefix + uuid;
+	}
+
+	//Here we go
 	constructor(public item: PCLNode, private dataHandler: DataHandler) {
+		this.uuid = DataItem.ItemsCache.length;
+		DataItem.ItemsCache.push(this);
 		this.sons = [];
 
 		this.container = <HTMLDivElement>document.createElement('div');
 		this.container.className = 'TreeItemContainer';
+		this.container.id = DataItem.GetId(this.uuid);
+		this.container.draggable = true;
 
 		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
 		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
@@ -65,6 +82,26 @@ class DataItem implements Control, Notifiable {
 		//Handle left/right click on the item title
 		this.itemContentContainer.onclick = (ev) => self.ItemClicked(ev);
 		this.itemContentContainer.oncontextmenu = (ev) => this.ItemMenu(ev);
+
+		//Handle Drag'n drop
+		this.container.ondragstart = (ev: DragEvent) => {
+			ev.dataTransfer.setData("application/my-app", ((ev.target) as HTMLElement).id);
+			ev.dataTransfer.dropEffect = 'move';
+		};
+		this.container.ondragover = (ev: DragEvent) => {
+			ev.preventDefault();
+			ev.dataTransfer.dropEffect = 'move';
+
+		};
+		this.container.ondrop = (ev: DragEvent) => {
+			ev.preventDefault();
+			let sourceId = ev.dataTransfer.getData("application/my-app");
+			let source = DataItem.GetItemById(sourceId).item;
+			let target = this.item;
+			let container: PCLContainer = PCLNode.IsPCLContainer(target) ? target as PCLContainer : target.owner;
+			container.Add(source);
+			ev.stopPropagation();
+		};
 
 		//Populate children
 		this.itemChildContainer = document.createElement('div');
