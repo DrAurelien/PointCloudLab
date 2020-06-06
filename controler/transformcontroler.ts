@@ -70,7 +70,7 @@ class TransformControler extends MouseControler {
 				this.target.PickItem(tracker.x, tracker.y, !tracker.ctrlKey);
 				break;
 			case 2: //Middle mouse
-				this.target.FocusOnCurrentItem();
+				this.target.FocusOnCurrentSelection();
 				break;
 			default:
 				return true;
@@ -85,7 +85,7 @@ class TransformControler extends MouseControler {
 		return true;
 	}
 
-	protected HandleKey(key: number): boolean {
-		return true;
+	GetSelectionColor(): number[] {
+		return [1, 0, 0];
 	}
 }

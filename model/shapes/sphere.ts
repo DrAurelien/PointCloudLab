@@ -1,5 +1,6 @@
 ﻿/// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/leatssquaresfitting.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -132,5 +133,71 @@ class Sphere extends Shape {
 	ApplyTransform(transform: Transform) {
 		this.center = transform.TransformPoint(this.center);
 		this.radius *= transform.scalefactor;
+	}
+
+	static InitialGuessForFitting(cloud: PointCloud): Sphere {
+		let center = new Vector([0, 0, 0]);
+		let size = cloud.Size();
+
+		//Rough estimate
+		for (let index = 0; index < size; index++) {
+			center.Add(cloud.GetPoint(index));
+		}
+		center = center.Times(1 / size);
+
+		let radius = 0;
+		for (let index = 0; index < cloud.Size(); index++) {
+			radius += center.Minus(cloud.GetPoint(index)).Norm();
+		}
+		radius /= size;
+
+		return new Sphere(center, radius);
+	}
+
+	FitToPointCloud(cloud: PointCloud) {
+		let lsFitting = new LeastSquaresFitting(
+			SphereFitting.Parameters(this.center, this.radius),
+			new SphereFitting(this),
+			cloud,
+			'Computing best fitting sphere');
+		let self = this;
+		lsFitting.SetNext(() => self.NotifyChange());
+		lsFitting.Start();
+	}
+}
+
+class SphereFitting implements LeastSquaresEvaluable<Vector> {
+	constructor(private sphere: Sphere) {
+	}
+
+	static Parameters(center: Vector, radius: number): number[] {
+		let params = center.coordinates.slice();
+		params.push(radius);
+		return params;
+	}
+
+	static GetCenter(params: number[]): Vector {
+		return new Vector(params.slice(0, 3));
+	}
+
+	static GetRadius(params: number[]): number {
+		return params[3];
+	}
+
+	Distance(params: number[], point: Vector): number {
+		return SphereFitting.GetCenter(params).Minus(point).Norm() - SphereFitting.GetRadius(params);
+	}
+
+	DistanceGradient(params: number[], point: Vector): number[] {
+		let delta = SphereFitting.GetCenter(params).Minus(point);
+		delta.Normalize();
+		let gradient = delta.Flatten();
+		gradient.push(-1);
+		return gradient;
+	}
+
+	NotifyNewSolution(params: number[]) {
+		this.sphere.center = SphereFitting.GetCenter(params);
+		this.sphere.radius = SphereFitting.GetRadius(params);
 	}
 }

@@ -1,5 +1,6 @@
 ﻿/// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -192,5 +193,149 @@ class Cylinder extends Shape {
 		let d = 0.5 * (min + max);
 		this.center = this.center.Plus(this.axis.Times(d));
 		this.height = max - min;
+	}
+
+	static InitialGuessForFitting(cloud: PointCloud): Cylinder {
+		let gsphere = new GaussianSphere(cloud);
+		let plane = Geometry.PlaneFitting(gsphere);
+		let center = Geometry.Centroid(cloud);
+		let radius = 0;
+		let size = cloud.Size();
+		for (let index = 0; index < size; index++) {
+			radius += cloud.GetPoint(index).Minus(center).Cross(plane.normal).Norm();
+		}
+		radius /= size;
+
+		return new Cylinder(center, plane.normal, radius, 0);
+	}
+
+	FitToPointCloud(cloud: PointCloud) {
+		let self = this;
+		let lsFitting = new LeastSquaresFitting(
+			CylinderFitting.Parameters(this.center, this.axis, this.radius),
+			new CylinderFitting(this),
+			cloud,
+			'Computing best fitting cylinder');
+		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
+		lsFitting.Start();
+	}
+
+	private FinalizeFitting(cloud: PointCloud) {
+		//Compute actual cylinder center and bounds along the axis
+		let zmin = null;
+		let zmax = null;
+		let size = cloud.Size();
+		for (let index = 0; index < size; index++) {
+			let z = cloud.GetPoint(index).Minus(this.center).Dot(this.axis);
+			if (zmin === null || zmin > z) {
+				zmin = z;
+			}
+			if (zmax === null || zmax < z) {
+				zmax = z;
+			}
+		}
+		this.center = this.center.Plus(this.axis.Times((zmax + zmin) / 2.0));
+		this.height = zmax - zmin;
+
+		this.NotifyChange();
+	}
+}
+
+class CylinderFitting implements LeastSquaresEvaluable<Vector> {
+	constructor(private cylinder: Cylinder) {
+	}
+
+	static Parameters(center: Vector, axis: Vector, radius: number): number[] {
+		let theta = Geometry.GetTheta(axis);
+		let phi = Geometry.GetPhi(axis);
+		let xaxis = Geometry.GetXAxis(theta, phi);
+		let yaxis = Geometry.GetYAxis(theta, phi);
+		let x = xaxis.Dot(center);
+		let y = yaxis.Dot(center);
+		return [x, y, theta, phi, radius];
+
+	}
+
+	static GetCenter(params: number[]): Vector {
+		let theta = CylinderFitting.GetTheta(params);
+		let phi = CylinderFitting.GetPhi(params);
+		let x = CylinderFitting.GetX(params);
+		let y = CylinderFitting.GetY(params);
+		return Geometry.GetXAxis(theta, phi).Times(x).Plus(Geometry.GetYAxis(theta, phi).Times(y));
+	}
+
+	static GetAxis(params: number[]): Vector {
+		return Geometry.GetZAxis(
+			CylinderFitting.GetTheta(params),
+			CylinderFitting.GetPhi(params)
+		);
+	}
+
+	private static GetX(params: number[]): number {
+		return params[0];
+	}
+
+	private static GetY(params: number[]): number {
+		return params[1];
+	}
+
+	private static GetTheta(params: number[]): number {
+		return params[2];
+	}
+
+	private static GetPhi(params: number[]): number {
+		return params[3];
+	}
+
+	static GetRadius(params: number[]): number {
+		return params[4];
+	}
+
+	Distance(params: number[], point: Vector): number {
+		let theta = CylinderFitting.GetTheta(params);
+		let phi = CylinderFitting.GetPhi(params);
+		let x = CylinderFitting.GetX(params);
+		let y = CylinderFitting.GetY(params);
+		let radius = CylinderFitting.GetRadius(params);
+		let xaxis = Geometry.GetXAxis(theta, phi);
+		let yaxis = Geometry.GetYAxis(theta, phi);
+
+		let dx = point.Dot(xaxis) - x;
+		let dy = point.Dot(yaxis) - y;
+		return Math.sqrt(dx ** 2 + dy ** 2) - radius;
+	}
+
+	DistanceGradient(params: number[], point: Vector): number[] {
+		let theta = CylinderFitting.GetTheta(params);
+		let phi = CylinderFitting.GetPhi(params);
+		let x = CylinderFitting.GetX(params);
+		let y = CylinderFitting.GetY(params);
+		let xaxis = Geometry.GetXAxis(theta, phi);
+		let yaxis = Geometry.GetYAxis(theta, phi);
+		let zaxis = Geometry.GetZAxis(theta, phi);
+		let waxis = Geometry.GetWAxis(theta, phi);
+
+		let px = point.Dot(xaxis);
+		let py = point.Dot(yaxis);
+		let pz = point.Dot(zaxis);
+		let pw = point.Dot(waxis);
+
+		let dx = px - x;
+		let dy = py - y;
+		let dist = Math.sqrt((dx ** 2) + (dy ** 2));
+
+		let ddx = - dx / dist;
+		let ddy = - dy / dist;
+		let ddtheta = - dx * pz / dist;
+		let ddphi = ((Math.cos(theta) * dx * py) - (dy * pw)) / dist;
+		let ddradius = -1;
+
+		return [ddx, ddy, ddtheta, ddphi, ddradius];
+	}
+
+	NotifyNewSolution(params: number[]) {
+		this.cylinder.center = CylinderFitting.GetCenter(params);
+		this.cylinder.axis = CylinderFitting.GetAxis(params);
+		this.cylinder.radius = CylinderFitting.GetRadius(params);
 	}
 }

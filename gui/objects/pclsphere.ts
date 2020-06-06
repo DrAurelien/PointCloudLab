@@ -11,7 +11,13 @@
 
 class PCLSphere extends PCLShape {
 	constructor(public sphere: Sphere) {
-		super(NameProvider.GetName('Sphere'));
+		super(NameProvider.GetName('Sphere'), sphere);
+
+		let self = this;
+		sphere.onChange = () => {
+			self.Invalidate();
+			self.NotifyChange(self, ChangeType.Properties | ChangeType.Display);
+		};
 	}
 
 	GetShape(): Shape {

@@ -2,7 +2,7 @@
 /// <reference path="pointcloud.ts" />
 
 
-abstract class Neighbourhood {
+abstract class Neighbourhood implements DataProvider<Vector> {
 	cloud: PointCloud;
 	queryPoint: Vector;
 	neighbours: Neighbour[];
@@ -13,9 +13,17 @@ abstract class Neighbourhood {
 		this.neighbours = [];
 	}
 
-	GetPointData(pointIndex: number): Neighbour {
+	protected GetPointData(pointIndex: number): Neighbour {
 		var sqrdist = this.queryPoint.Minus(this.cloud.GetPoint(pointIndex)).SqrNorm();
 		return new Neighbour(sqrdist, pointIndex);
+	}
+
+	GetData(pointIndex: number): Vector {
+		return this.cloud.GetPoint(this.neighbours[pointIndex].index);
+	}
+
+	Size(): number {
+		return this.neighbours.length;
 	}
 
 	Accept(distance: number): boolean {

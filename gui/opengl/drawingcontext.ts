@@ -32,6 +32,8 @@ class DrawingContext {
 	maxscalarcolor: WebGLUniformLocation;
 	//Extensions
 	useuint: boolean;
+	//
+	bboxcolor: number[];
 
 	constructor(public renderingArea: HTMLCanvasElement) {
 		this.rendering = new RenderingType();
@@ -90,6 +92,8 @@ class DrawingContext {
 		this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");
 		this.glossy = this.gl.getUniformLocation(this.shaders, "GlossyPow");
 		this.usenormals = this.gl.getUniformLocation(this.shaders, "UseNormals");
+
+		this.bboxcolor = [1, 1, 1];
 	}
 
 	EnableNormals(b): void {

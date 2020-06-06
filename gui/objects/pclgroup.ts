@@ -162,9 +162,9 @@ class PCLGroup extends PCLNode {
 	private WrapNodeCreator(creator: PCLNodeCreator): Function {
 		let self = this;
 		return () => {
-			let shape = creator();
-			self.Add(shape);
-			shape.Select(true);
+			let node = creator();
+			self.Add(node);
+			node.NotifyChange(node, ChangeType.NewItem);
 		}
 	}
 

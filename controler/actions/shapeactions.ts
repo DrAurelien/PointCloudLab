@@ -15,7 +15,7 @@ class CreateShapeMeshAction extends Action {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		let self = this;
 		let dialog = new Dialog(
 			//Ok has been clicked
@@ -38,7 +38,7 @@ class CreateShapeMeshAction extends Action {
 		result = new PCLMesh(mesh);
 		let self = this;
 		mesh.ComputeOctree(() => {
-			self.shape.NotifyChange(result, ChangeType.Creation);
+			self.shape.NotifyChange(result, ChangeType.NewItem);
 		});
 		return true;
 	}

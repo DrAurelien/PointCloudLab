@@ -83,14 +83,26 @@ class SelectionList implements Notifiable {
 		if (this.Size() == 1) {
 			actions = this.items[0].GetActions(delegate);
 		}
-		else {
-			if (this.Size() == 2 && this.items[0] instanceof PCLPointCloud) {
+		else if (this.Size() == 2) {
+			let cloudindex = this.FindFirst(n => n instanceof PCLPointCloud);
+			if (cloudindex>=0) {
 				actions = actions || [];
-				actions.push(new ComputeDistancesAction(this.items[0] as PCLPointCloud, this.items[1]));
+				let cloud = this.items[cloudindex] as PCLPointCloud;
+				let other = this.items[1 - cloudindex];
+
+				actions.push(new ComputeDistancesAction(cloud, other));
 			}
 		}
 
 		return actions;
+	}
+
+	FindFirst(test: Function): number {
+		for (let index = 0; index < this.items.length; index++) {
+			if (test(this.items[index]))
+				return index;
+		}
+		return -1;
 	}
 
 	ShowAll(b: boolean) {

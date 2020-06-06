@@ -77,7 +77,24 @@ abstract class MouseControler implements Controler {
 	protected abstract HandleMouseMove(displacement: MouseDisplacement): boolean;
 	protected abstract HandleClick(tracker: MouseTracker): boolean;
 	protected abstract HandleWheel(delta: number): boolean;
-	protected abstract HandleKey(key: number): boolean;
+	protected HandleKey(key: number): boolean {
+		let strkey = String.fromCharCode(key);
+		switch (strkey) {
+			case 'p':
+				this.target.ToggleRendering(RenderingMode.Point);
+				break;
+			case 'w':
+				this.target.ToggleRendering(RenderingMode.Wire);
+				break;
+			case 's':
+				this.target.ToggleRendering(RenderingMode.Surface);
+				break;
+			default:
+				this.target.HandleShortcut(strkey);
+				break;
+		}
+		return true;
+	}
 
 	protected StartMouseEvent() {
 	}
@@ -88,5 +105,9 @@ abstract class MouseControler implements Controler {
 	protected set Cursor(iconCode: string) {
 		this.cursor.Icon = iconCode;
 		this.cursor.Apply(this.targetElement);
+	}
+
+	GetSelectionColor(): number[] {
+		return [1, 1, 0];
 	}
 }

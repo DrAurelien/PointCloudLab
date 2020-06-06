@@ -11,7 +11,7 @@
 
 class PCLPlane extends PCLShape {
 	constructor(public plane: Plane) {
-		super(NameProvider.GetName('Plane'));
+		super(NameProvider.GetName('Plane'), plane);
 	}
 
 	GetShape(): Shape {

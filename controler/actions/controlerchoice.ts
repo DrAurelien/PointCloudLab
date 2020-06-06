@@ -9,12 +9,16 @@ class CameraModeAction extends Action {
 		super('Camera mode', 'The mouse can be used to control the position of the camera');
 	}
 
-	Run() {
+	Trigger() {
 		this.target.SetCurrentControler(new CameraControler(this.target));
 	}
 
 	Enabled(): boolean {
 		return !(this.target.GetCurrentControler() instanceof CameraControler);
+	}
+
+	GetShortCut(): string {
+		return 'C';
 	}
 }
 
@@ -23,7 +27,7 @@ class TransformModeAction extends Action {
 		super('Transformation mode', 'The mouse can be used to control the geometry of the selected item');
 	}
 
-	Run() {
+	Trigger() {
 		this.target.SetCurrentControler(new TransformControler(this.target));
 	}
 
@@ -32,6 +36,10 @@ class TransformModeAction extends Action {
 			return false;
 		return !(this.target.GetCurrentControler() instanceof TransformControler);
 	}
+
+	GetShortCut(): string {
+		return 'T';
+	}
 }
 
 class LightModeAction extends Action {
@@ -39,13 +47,17 @@ class LightModeAction extends Action {
 		super('Light mode', 'The mouse can be used to control the position of the selected light');
 	}
 
-	Run() {
+	Trigger() {
 		this.target.SetCurrentControler(new LightControler(this.target));
 	}
 
 	Enabled(): boolean {
-		if (!this.target.GetLightPosition())
+		if (!this.target.GetLightPosition(false))
 			return false;
 		return !(this.target.GetCurrentControler() instanceof LightControler);
+	}
+
+	GetShortCut(): string {
+		return 'L';
 	}
 }

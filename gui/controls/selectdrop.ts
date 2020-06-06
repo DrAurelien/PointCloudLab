@@ -1,23 +1,31 @@
 ﻿/// <reference path="control.ts" />
 
 
-class SelectDrop implements Control {
+class SelectDrop implements Control, ActionListener {
 	private button: Button;
 
 	constructor(label: string, options: Action[], selected: number, hintMessage?: string) {
 		let self = this;
 
-		this.button = new Button(label, function () {
-			let selectOptions = [];
-			for (let index = 0; index < options.length; index++) {
-				if (options[index].label !== self.button.GetLabel()) {
-					selectOptions.push(new SelectOption(self, options[index]));
-				}
-			}
-			Popup.CreatePopup(self.button, selectOptions);
-		}, hintMessage);
+		for (let index = 0; index < options.length; index++) {
+			options[index].AddListener(this);
+		}
+		this.button = new Button(label,
+			() => Popup.CreatePopup(self.button, self.GetAvailableOptions(options)),
+			hintMessage
+		);
+		this.SetCurrent(options[selected].GetLabel(false));
+	}
 
-		this.SetCurrent(options[selected].label);
+	GetAvailableOptions(options: Action[]): Action[] {
+		let availableOptions: Action[] = [];
+		for (let index = 0; index < options.length; index++) {
+			let option = options[index];
+			if (option.GetLabel(false) !== this.button.GetLabel()) {
+				availableOptions.push(option);
+			}
+		}
+		return availableOptions;
 	}
 
 	GetElement(): HTMLElement {
@@ -27,19 +35,8 @@ class SelectDrop implements Control {
 	SetCurrent(current: string) {
 		this.button.SetLabel(current);
 	}
-}
 
-class SelectOption extends Action {
-	constructor(private select: SelectDrop, private innerAction: Action) {
-		super(innerAction.label, innerAction.hintMessage);
-	}
-
-	Run() {
-		this.select.SetCurrent(this.label);
-		this.innerAction.Run();
-	}
-
-	Enabled(): boolean {
-		return this.innerAction.Enabled();
+	OnTrigger(action: Action) {
+		this.SetCurrent(action.GetLabel(false));
 	}
 }

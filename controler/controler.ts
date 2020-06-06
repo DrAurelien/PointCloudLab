@@ -40,11 +40,12 @@ interface Transformable {
 }
 
 interface Controler {
+	GetSelectionColor(): number[];
 }
 
 interface Controlable {
 	GetViewPoint(): ViewPoint;
-	GetLightPosition(): LightingPosition;
+	GetLightPosition(takeFocus:boolean): LightingPosition;
 	GetCurrentTransformable(): Transformable;
 	NotifyViewPointChange(c: ViewPointChange);
 	NotifyTransform();
@@ -55,7 +56,8 @@ interface Controlable {
 	SetCurrentControler(controler: Controler);
 	GetCurrentControler(): Controler;
 	PickItem(x: number, y: number, exlusive: boolean);
-	FocusOnCurrentItem();
+	FocusOnCurrentSelection();
 	CanFocus(): boolean;
 	ToggleRendering(mode: RenderingMode);
+	HandleShortcut(key: string): boolean;
 }

@@ -11,7 +11,7 @@
 
 class PCLCone extends PCLShape {
 	constructor(public cone: Cone) {
-		super(NameProvider.GetName('Cone'));
+		super(NameProvider.GetName('Cone'), cone);
 	}
 
 	GetShape(): Shape {

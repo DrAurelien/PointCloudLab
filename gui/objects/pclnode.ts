@@ -17,7 +17,9 @@ enum ChangeType {
 	Display = 0x000008,
 	Folding = 0x000010,
 	Children = 0x000020,
-	ColorScale = 0x000040
+	ColorScale = 0x000040,
+	TakeFocus = 0x000080,
+	NewItem = Creation | Display | TakeFocus
 }
 
 interface Notifiable {
@@ -228,7 +230,7 @@ class BoundingBoxDrawing {
 			ctx.EnableNormals(false);
 			BoundingBoxDrawing.Initialize(ctx);
 
-			ctx.gl.uniform3fv(ctx.color, new Float32Array([1.0, 1.0, 0.0]));
+			ctx.gl.uniform3fv(ctx.color, ctx.bboxcolor);
 
 			let size = box.GetSize();
 			let center = box.GetCenter();

@@ -11,13 +11,13 @@
 class Menu extends HideablePannel implements ActionsProvider {
 	toolbar: Toolbar;
 
-	constructor(private ownerView: PCLApp) {
+	constructor(private application: PCLApp) {
 		super('MenuToolbar', HandlePosition.Bottom);
 
 		this.toolbar = new Toolbar();
 		this.container.AddControl(this.toolbar);
 
-		let dataHandler = ownerView.dataHandler;
+		let dataHandler = application.dataHandler;
 
 		this.toolbar.AddControl(new FileOpener('[Icon:file-o]', function (createdObject: PCLNode) {
 			if (createdObject != null) {
@@ -27,30 +27,30 @@ class Menu extends HideablePannel implements ActionsProvider {
 				else {
 					let owner = dataHandler.GetNewItemOwner();
 					owner.Add(createdObject);
-					createdObject.NotifyChange(createdObject, ChangeType.Creation);
+					createdObject.NotifyChange(createdObject, ChangeType.NewItem);
 				}
 
 			}
 		}, 'Load data from a file'));
 
 		this.toolbar.AddControl(new Button('[Icon:save]', () => {
-			ownerView.SaveCurrentScene();
+			application.SaveCurrentScene();
 		}, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
 
 		this.toolbar.AddControl(new ComboBox('[Icon:bars]', this, 'Contextual menu : list of actions available for the current selection.'));
 
 		this.toolbar.AddControl(new Button('[Icon:search]', () => {
-			ownerView.FocusOnCurrentItem();
+			application.FocusOnCurrentSelection();
 		},
 			'Focus current viewpoint on the selected item'));
 
 		this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
-			new CameraModeAction(ownerView),
-			new TransformModeAction(ownerView),
-			new LightModeAction(ownerView)
+			application.RegisterShortCut(new CameraModeAction(application)),
+			application.RegisterShortCut(new TransformModeAction(application)),
+			application.RegisterShortCut(new LightModeAction(application))
 		],
 			0,
-			'Change the current working mode (changes the mouse input '
+			'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'
 		));
 
 		this.toolbar.AddControl(new Button('[Icon:question-circle]', function () {
@@ -63,6 +63,6 @@ class Menu extends HideablePannel implements ActionsProvider {
 	}
 
 	GetActions(): Action[] {
-		return this.ownerView.dataHandler.selection.GetActions(this.ownerView);
+		return this.application.dataHandler.selection.GetActions(this.application);
 	}
 }

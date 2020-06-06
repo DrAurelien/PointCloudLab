@@ -5,10 +5,12 @@
 /// <reference path="../../model/ransac.ts" />
 /// <reference path="../../model/regiongrowth.ts" />
 /// <reference path="../../model/shapes/shape.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../gui/objects/pclpointcloud.ts" />
 /// <reference path="../../gui/objects/pclscalarfield.ts" />
 /// <reference path="../../gui/objects/pclshapewrapper.ts" />
 /// <reference path="../../gui/controls/dialog.ts" />
+/// <reference path="../../gui/controls/hint.ts" />
 /// <reference path="../../files/fileexporter.ts" />
 
 
@@ -54,7 +56,7 @@ class ResetDetectionAction extends PCLCloudAction {
 		return !!this.GetPCLCloud().ransac;
 	}
 
-	Run() {
+	Trigger() {
 		this.GetPCLCloud().ransac = null;
 	}
 }
@@ -68,7 +70,7 @@ class RansacDetectionAction extends PCLCloudAction {
 		return this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		let cloud = this.GetPCLCloud();
 		if (!cloud.ransac) {
 			let self = this;
@@ -121,7 +123,203 @@ class RansacDetectionAction extends PCLCloudAction {
 		let pclshape = new PCLShapeWrapper(shape).GetPCLShape();
 		let owner = this.GetPCLCloud().owner;
 		owner.Add(pclshape);
-		owner.NotifyChange(pclshape, ChangeType.Creation);
+		pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+	}
+}
+
+//===================================================
+// Shapes fitting
+//===================================================
+class ShapeFittingResult {
+	shapes: Shape[];
+	errors: number[];
+
+	constructor(public cloud: PointCloud) {
+		this.shapes = [];
+		this.errors = [];
+	}
+
+	AddFittingResult(shape: Shape) {
+		let error = 0;
+		let size = this.cloud.Size();
+		for (let index = 0; index < size; index++) {
+			error += shape.Distance(this.cloud.GetPoint(index)) ** 2;
+		}
+		error /= size;
+
+		this.shapes.push(shape);
+		this.errors.push(error);
+	}
+
+	GetBestShape(): Shape {
+		let bestindex = null;
+		let besterror = null;
+		for (let index = 0; index < this.shapes.length; index++) {
+			if (besterror === null || this.errors[index] < besterror) {
+				bestindex = index;
+				besterror = this.errors[index];
+			}
+		}
+		if (bestindex !== null) {
+			this.ShowResult(bestindex);
+			return this.shapes[bestindex];
+		}
+		return null;
+	}
+
+	private ShowResult(bestShapeIndex: number) {
+		let message: string = 'Shapes fitting results :\n';
+		message += '<table><tbody><tr style="font-style:italic;"><td>Shape</td><td>Mean Square Error</td></tr>';
+		for (let index = 0; index < this.shapes.length; index++) {
+			let emphasize = (index === bestShapeIndex);
+			message += '<tr' + (emphasize ? ' style="color:green; text-decoration:underline;"' : '') + '>';
+			message += '<td style="font-weight:bold;">';
+			message += this.shapes[index].constructor['name'];
+			message += '</td><td>';
+			message += this.errors[index];
+			message += '</td></tr>';
+		}
+		message += '</tbody></table>';
+		new TemporaryHint(message, null);
+	}
+}
+
+class FindBestFittingShapeAction extends PCLCloudAction {
+	results: ShapeFittingResult;
+
+	constructor(cloud: PCLPointCloud) {
+		super(cloud,'Find the best fitting shape ...', 'Compute the shape (plane, sphere, cylinder, cone) that best fits the whole selected point cloud (assuming the point cloud samples a single shape)');
+	}
+
+	Enabled(): boolean {
+		return true;
+	}
+
+	Trigger() {
+		let self = this;
+		var dialog = new Dialog(
+			(d: Dialog) => { return self.ComputeBestFittingShape(d); },
+			(d: Dialog) => { return true; }
+		);
+		dialog.InsertTitle('Shapes to be tested');
+		dialog.InsertCheckBox('Plane', true);
+		dialog.InsertCheckBox('Sphere', true);
+		dialog.InsertCheckBox('Cylinder', true);
+		dialog.InsertCheckBox('Cone', true);
+	}
+
+	ComputeBestFittingShape(properties: Dialog): boolean {
+		let cloud = this.GetCloud();
+		this.results = new ShapeFittingResult(cloud);
+
+		let fittingProcesses: Process[] = []
+		if (properties.GetValue('Plane')) {
+			fittingProcesses.push(new PlaneFittingProcess(this.results));
+		}
+		if (properties.GetValue('Sphere')) {
+			fittingProcesses.push(new SphereFittingProcess(this.results));
+		}
+		if (properties.GetValue('Cylinder')) {
+			fittingProcesses.push(new CylinderFittingProcess(this.results));
+		}
+		if (properties.GetValue('Cone')) {
+			fittingProcesses.push(new ConeFittingProcess(this.results));
+		}
+
+		if (fittingProcesses.length) {
+			let self = this;
+			for (let index = 1; index < fittingProcesses.length; index++) {
+				fittingProcesses[index - 1].SetNext(fittingProcesses[index]);
+			}
+			fittingProcesses[fittingProcesses.length - 1].SetNext(() => self.HandleResult());
+			fittingProcesses[0].Start();
+			return true;
+		}
+		return false;
+	}
+
+	HandleResult() {
+		let shape = this.results.GetBestShape();
+		if (shape) {
+			let pclshape = (new PCLShapeWrapper(shape)).GetPCLShape();
+			pclshape.name = 'Best fit to "' + this.GetPCLCloud().name + '"';
+			let owner = this.GetPCLCloud().owner;
+			owner.Add(pclshape);
+			owner.NotifyChange(pclshape, ChangeType.NewItem);
+		}
+	}
+}
+
+class PlaneFittingProcess extends Process {
+	constructor(private fittingResult: ShapeFittingResult) {
+		super();
+	}
+
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
+		let planefit = Geometry.PlaneFitting(cloud);
+		this.fittingResult.AddFittingResult(
+			new Plane(
+				planefit.center,
+				planefit.normal,
+				planefit.ComputePatchRadius(cloud)
+			)
+		);
+		ondone();
+	}
+}
+
+abstract class LSFittingProcess extends Process {
+	constructor(protected fittingResult: ShapeFittingResult) {
+		super();
+	}
+
+	AddResultHandlerHook(shape: Shape, ondone:Function) {
+		let self = this;
+		shape.onChange = () => {
+			shape.onChange = null;
+			self.fittingResult.AddFittingResult(shape);
+			ondone();
+		}
+	}
+}
+
+class SphereFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
+	}
+
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
+		let sphere = Sphere.InitialGuessForFitting(cloud);
+		this.AddResultHandlerHook(sphere, ondone);
+		sphere.FitToPointCloud(cloud);
+	}
+}
+
+class CylinderFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
+	}
+
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
+		let cylinder = Cylinder.InitialGuessForFitting(cloud);
+		this.AddResultHandlerHook(cylinder, ondone);
+		cylinder.FitToPointCloud(cloud);
+	}
+}
+
+class ConeFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
+	}
+
+	Run(ondone: Function) {
+		let cloud = this.fittingResult.cloud;
+		let cone = Cone.InitialGuessForFitting(cloud);
+		this.AddResultHandlerHook(cone, ondone);
+		cone.FitToPointCloud(cloud);
 	}
 }
 
@@ -137,7 +335,7 @@ class ComputeNormalsAction extends PCLCloudAction {
 		return !this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		let k = 30;
 		let cloud = this.GetPCLCloud();
 		let ondone = () => cloud.InvalidateDrawing();
@@ -199,7 +397,7 @@ class ClearNormalsAction extends PCLCloudAction {
 		return this.GetCloud().HasNormals();
 	}
 
-	Run() {
+	Trigger() {
 		this.GetCloud().ClearNormals();
 		this.GetPCLCloud().InvalidateDrawing();
 	}
@@ -214,16 +412,10 @@ class GaussianSphereAction extends PCLCloudAction {
 		return this.GetCloud().HasNormals();
 	}
 
-	Run() {
-		let gsphere = new PCLPointCloud();
-		let gcloud = gsphere.cloud;
-		let cloud = this.GetCloud();
-		let cloudSize = cloud.Size();
-		gcloud.Reserve(cloudSize);
-		for (let index = 0; index < cloudSize; index++) {
-			gcloud.PushPoint(cloud.GetNormal(index));
-		}
-		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.Creation);
+	Trigger() {
+		let gsphere = new PCLPointCloud(new GaussianSphere(this.GetCloud()).ToPointCloud());
+		gsphere.name = 'Gaussian sphere of "' + this.GetPCLCloud().name + '"';
+		this.GetPCLCloud().NotifyChange(gsphere, ChangeType.NewItem);
 	}
 }
 
@@ -239,10 +431,10 @@ class ConnectedComponentsAction extends PCLCloudAction {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		let k = 30;
 		let self = this;
-		let ondone = (b: ConnecterComponentsBuilder) => self.GetPCLCloud().NotifyChange(b.result, ChangeType.Creation);
+		let ondone = (b: ConnecterComponentsBuilder) => self.GetPCLCloud().NotifyChange(b.result, ChangeType.NewItem);
 		let builder = new ConnecterComponentsBuilder(this.GetCloud(), k, this.GetPCLCloud().name);
 		builder.SetNext(ondone);
 		builder.Start();
@@ -280,7 +472,7 @@ class ComputeDensityAction extends PCLCloudAction {
 		return !this.GetPCLCloud().GetScalarField(PCLScalarField.DensityFieldName);
 	}
 
-	Run() {
+	Trigger() {
 		let k = 30;
 		let density = new DensityComputer(this.GetPCLCloud(), k);
 		density.Start();
@@ -306,7 +498,7 @@ class DensityComputer extends IterativeLongProcess {
 	Iterate(step: number) {
 		let cloud = this.cloud.cloud;
 		let nbh = cloud.KNearestNeighbours(cloud.GetPoint(step), this.k + 1);
-		let ballSqrRadius = nbh.pop().sqrdistance;
+		let ballSqrRadius = nbh.GetSqrDistance();
 		this.scalarfield.PushValue(this.k / Math.sqrt(ballSqrRadius));
 	}
 }
@@ -325,7 +517,7 @@ class ComputeNoiseAction extends PCLCloudAction {
 		return !this.GetPCLCloud().GetScalarField(PCLScalarField.NoiseFieldName);
 	}
 
-	Run() {
+	Trigger() {
 		let k = 10;
 		let noise = new NoiseComputer(this.GetPCLCloud(), k);
 		noise.Start();
@@ -352,7 +544,7 @@ class NoiseComputer extends IterativeLongProcess {
 		let cloud = this.cloud.cloud;
 		let point = cloud.GetPoint(step);
 		let normal = cloud.GetNormal(step);
-		let nbh = cloud.KNearestNeighbours(point, this.k + 1);
+		let nbh = cloud.KNearestNeighbours(point, this.k + 1).Neighbours();
 		let noise = 0;
 		for (let index = 0; index < nbh.length; index++) {
 			noise += Math.abs(normal.Dot(cloud.GetPoint(nbh[index].index).Minus(point))) / (1 + nbh[index].sqrdistance);
@@ -377,7 +569,7 @@ class ComputeDistancesAction extends PCLCloudAction {
 		return !this.GetPCLCloud().GetScalarField(this.GetFieldName());
 	}
 
-	Run() {
+	Trigger() {
 		let noise = new DistancesComputer(this.GetPCLCloud(), this.target, this.GetFieldName());
 		noise.Start();
 	}
@@ -417,7 +609,7 @@ class ExportPointCloudFileAction extends PCLCloudAction {
 		return true;
 	}
 
-	Run() {
+	Trigger() {
 		FileExporter.ExportFile(this.GetPCLCloud().name + '.csv', this.GetPCLCloud().GetCSVData(), 'text/csv');
 	}
 }
