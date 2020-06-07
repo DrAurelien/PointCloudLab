@@ -31,8 +31,8 @@ abstract class Shape {
 		return this.boundingbox;
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud): void {
-	}
+	abstract ComputeBounds(points: PointSet);
+	abstract FitToPoints(points: PointSet);
 
 	protected NotifyChange() {
 		if (this.onChange) {

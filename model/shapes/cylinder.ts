@@ -178,11 +178,11 @@ class Cylinder extends Shape {
 		return Math.abs(op - this.radius);
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud): void {
+	ComputeBounds(points: PointSet): void {
 		let min = 0;
 		let max = 0;
-		for (let ii = 0; ii < points.length; ii++) {
-			let d = cloud.GetPoint(points[ii]).Minus(this.center).Dot(this.axis);
+		for (let ii = 0; ii < points.Size(); ii++) {
+			let d = points.GetPoint(ii).Minus(this.center).Dot(this.axis);
 			if (ii == 0 || d < min) {
 				min = d;
 			}
@@ -209,24 +209,24 @@ class Cylinder extends Shape {
 		return new Cylinder(center, plane.normal, radius, 0);
 	}
 
-	FitToPointCloud(cloud: PointCloud) {
+	FitToPoints(points: PointSet) {
 		let self = this;
 		let lsFitting = new LeastSquaresFitting(
 			CylinderFitting.Parameters(this.center, this.axis, this.radius),
 			new CylinderFitting(this),
-			cloud,
+			points,
 			'Computing best fitting cylinder');
-		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
+		lsFitting.SetNext(() => self.FinalizeFitting(points));
 		lsFitting.Start();
 	}
 
-	private FinalizeFitting(cloud: PointCloud) {
+	private FinalizeFitting(points: PointSet) {
 		//Compute actual cylinder center and bounds along the axis
 		let zmin = null;
 		let zmax = null;
-		let size = cloud.Size();
+		let size = points.Size();
 		for (let index = 0; index < size; index++) {
-			let z = cloud.GetPoint(index).Minus(this.center).Dot(this.axis);
+			let z = points.GetPoint(index).Minus(this.center).Dot(this.axis);
 			if (zmin === null || zmin > z) {
 				zmin = z;
 			}

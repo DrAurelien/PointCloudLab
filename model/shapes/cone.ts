@@ -160,10 +160,10 @@ class Cone extends Shape {
 		}
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud): void {
+	ComputeBounds(points: PointSet): void {
 		let max = 0;
-		for (let ii = 0; ii < points.length; ii++) {
-			let d = cloud.GetPoint(points[ii]).Minus(this.apex).Dot(this.axis);
+		for (let ii = 0; ii < points.Size(); ii++) {
+			let d = points.GetPoint(ii).Minus(this.apex).Dot(this.axis);
 			if (ii == 0 || d > max) {
 				max = d;
 			}
@@ -177,22 +177,13 @@ class Cone extends Shape {
 		let planeheight = plane.center.Norm();
 		let angle = Math.asin(planeheight);
 		let size = cloud.Size();
-		//Find the appex, being the point that belongs to all the normals planes
-		//(Suboptimal : would be better to have the closed form solution, not the time right now)
-		let left = Matrix.Null(3, 3);
-		let right = Matrix.Null(1, 3);
+
+		let planes = new Array<PlaneFittingResult>(size);
 		for (let index = 0; index < size; index++) {
-			let n = gsphere.GetData(index);
-			let p = cloud.GetPoint(index);
-			let s = p.Dot(n);
-			for (let ii = 0; ii < 3; ii++) {
-				right.AddValue(ii, 0, n.Get(ii) * s);
-				for (let jj = 0; jj < 3; jj++) {
-					left.AddValue(ii, jj, n.Get(ii) * n.Get(jj));
-				}
-			}
+			planes[index] = new PlaneFittingResult(cloud.GetPoint(index), gsphere.GetPoint(index));
 		}
-		let apex = left.LUSolve(right).GetColumnVector(0);
+		let apex = Geometry.PlanesIntersection(planes);
+
 		//Handle axis orientation : make it point to he cloud centroid ... otherwise, we could face ill-conditionned matrices during the fitting step
 		let delta = Geometry.Centroid(cloud).Minus(apex);
 		if (plane.normal.Dot(delta) < 0) {
@@ -201,24 +192,24 @@ class Cone extends Shape {
 		return new Cone(apex, plane.normal, angle, 0);
 	}
 
-	FitToPointCloud(cloud: PointCloud) {
+	FitToPoints(points: PointSet) {
 		let self = this;
 		let lsFitting = new LeastSquaresFitting(
 			ConeFitting.Parameters(this.apex, this.axis, this.angle),
 			new ConeFitting(this),
-			cloud,
+			points,
 			'Computing best fitting cone'
 		);
-		lsFitting.SetNext(() => self.FinalizeFitting(cloud));
+		lsFitting.SetNext(() => self.FinalizeFitting(points));
 		lsFitting.Start();
 	}
 
-	private FinalizeFitting(cloud: PointCloud) {
+	private FinalizeFitting(points: PointSet) {
 		//Compute actual cone height and axis direction
 		let zmax = null;
-		let size = cloud.Size();
+		let size = points.Size();
 		for (let index = 0; index < size; index++) {
-			let z = cloud.GetPoint(index).Minus(this.apex).Dot(this.axis);
+			let z = points.GetPoint(index).Minus(this.apex).Dot(this.axis);
 			if (zmax === null || Math.abs(zmax) < Math.abs(z)) {
 				zmax = z;
 			}

@@ -13,6 +13,7 @@ class Ransac {
 	nbFailure: number;
 	noise: number;
 	ignore: boolean[];
+	fineShapeFitting: boolean;
 
 	constructor(public cloud : PointCloud, private generators: ShapeGenerator[] = null) {
 		this.nbPoints = 3;
@@ -64,48 +65,24 @@ class Ransac {
 
 	GenerateCandidate(points: PickedPoints[]): Candidate {
 		//Generate a candidate shape
-		var candidates = [];
+		var candidates: Candidate[] = [];
 		for (var ii = 0; ii < this.generators.length; ii++) {
 			var shape = this.generators[ii](points);
 			if (shape != null) {
-				candidates.push(shape);
+				candidates.push(new Candidate(shape));
 			}
 		}
 
 		//Compute scores and keep the best candidate
 		var candidate = null;
 		for (var ii = 0; ii < candidates.length; ii++) {
-			var score = this.ComputeShapeScore(candidates[ii]);
-			if (candidate == null || candidate.score > score.score) {
-				candidate = {
-					score: score.score,
-					points: score.points,
-					shape: candidates[ii]
-				};
+			candidates[ii].ComputeScore(this.cloud, this.noise, this.ignore);
+			if (candidate == null || candidate.score > candidates[ii].score) {
+				candidate = candidates[ii];
 			}
 		}
 
 		return candidate;
-	}
-
-	ComputeShapeScore = function (shape) {
-		var score = {
-			score: 0,
-			points: []
-		};
-		for (var ii = 0; ii < this.cloud.Size(); ii++) {
-			if (!this.ignore[ii]) {
-				var dist = shape.Distance(this.cloud.GetPoint(ii));
-				if (dist > this.noise) {
-					dist = this.noise;
-				}
-				else {
-					score.points.push(ii);
-				}
-				score.score += dist * dist;
-			}
-		}
-		return score;
 	}
 
 	static RansacPlane(points: PickedPoints[]) : Shape {
@@ -120,8 +97,7 @@ class Ransac {
 		var center = Geometry.LinesIntersection(r1, r2);
 		var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
 
-		var result = new Sphere(center, radius);
-		return result;
+		return new Sphere(center, radius);
 	}
 
 	static RansacCylinder(points: PickedPoints[]): Shape {
@@ -132,8 +108,28 @@ class Ransac {
 		var axis = r1.dir.Cross(r2.dir);
 		var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
 
-		var result = new Cylinder(center, axis, radius, 1.0);
-		return result;
+		return new Cylinder(center, axis, radius, 0);
+	}
+
+
+	static RansacCone(points: PickedPoints[]): Shape {
+		let axis = points[2].normal.Minus(points[0].normal).Cross(points[1].normal.Minus(points[0].normal));
+		axis.Normalize();
+		let hh = axis.Dot(points[0].normal);
+		let angle = Math.asin(hh);
+
+		let planes = [
+			new PlaneFittingResult(points[0].point, points[0].normal),
+			new PlaneFittingResult(points[1].point, points[1].normal),
+			new PlaneFittingResult(points[2].point, points[2].normal)
+		];
+		let apex = Geometry.PlanesIntersection(planes);
+
+		if (axis.Dot(points[0].point.Minus(apex)) < 0) {
+			axis = axis.Times(-1);
+		}
+
+		return new Cone(apex, axis, angle, 0);
 	}
 }
 
@@ -147,7 +143,29 @@ class PickedPoints {
 }
 
 class Candidate {
-	constructor(public score: number, public points: number[], public shape: Shape) {
+	score: number;
+	points: number[];
+
+	constructor(public shape: Shape) {
+	}
+
+	ComputeScore(cloud: PointCloud, noise: number, ignore: boolean[]) {
+		this.score = 0;
+		this.points = [];
+
+		//Suboptimal. TODO : use the KDTree to grant fast access to the shapes neighbours
+		for (var ii = 0; ii < cloud.Size(); ii++) {
+			if (!ignore[ii]) {
+				var dist = this.shape.Distance(cloud.GetPoint(ii));
+				if (dist > noise) {
+					dist = noise;
+				}
+				else {
+					this.points.push(ii);
+				}
+				this.score += dist * dist;
+			}
+		}
 	}
 }
 
@@ -190,7 +208,9 @@ class RansacStepProcessor extends LongProcess{
 	}
 
 	Finalize() {
-		this.best.shape.ComputeBounds(this.best.points, this.ransac.cloud);
+		this.best.shape.FitToPoints(new PointSubCloud(this.ransac.cloud, this.best.points));
+		this.best.ComputeScore(this.ransac.cloud, this.ransac.noise, this.ransac.ignore);
+		this.best.shape.ComputeBounds(new PointSubCloud(this.ransac.cloud, this.best.points));
 
 		for (let index = 0; index < this.best.points.length; index++) {
 			this.ransac.ignore[this.best.points[index]] = true;

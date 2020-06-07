@@ -250,37 +250,32 @@ class FindBestFittingShapeAction extends PCLCloudAction {
 	}
 }
 
-class PlaneFittingProcess extends Process {
-	constructor(private fittingResult: ShapeFittingResult) {
-		super();
-	}
-
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let planefit = Geometry.PlaneFitting(cloud);
-		this.fittingResult.AddFittingResult(
-			new Plane(
-				planefit.center,
-				planefit.normal,
-				planefit.ComputePatchRadius(cloud)
-			)
-		);
-		ondone();
-	}
-}
-
 abstract class LSFittingProcess extends Process {
 	constructor(protected fittingResult: ShapeFittingResult) {
 		super();
 	}
 
-	AddResultHandlerHook(shape: Shape, ondone:Function) {
+	Run(ondone: Function) {
 		let self = this;
+		let shape = this.GetInitialGuess(this.fittingResult.cloud);
 		shape.onChange = () => {
 			shape.onChange = null;
 			self.fittingResult.AddFittingResult(shape);
 			ondone();
 		}
+		shape.FitToPoints(this.fittingResult.cloud);
+	}
+
+	abstract GetInitialGuess(cloud: PointCloud): Shape;
+}
+
+class PlaneFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
+	}
+
+	GetInitialGuess(): Shape {
+		return new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 0);
 	}
 }
 
@@ -289,11 +284,8 @@ class SphereFittingProcess extends LSFittingProcess {
 		super(fittingResult);
 	}
 
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let sphere = Sphere.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(sphere, ondone);
-		sphere.FitToPointCloud(cloud);
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Sphere.InitialGuessForFitting(cloud);
 	}
 }
 
@@ -302,11 +294,8 @@ class CylinderFittingProcess extends LSFittingProcess {
 		super(fittingResult);
 	}
 
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let cylinder = Cylinder.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(cylinder, ondone);
-		cylinder.FitToPointCloud(cloud);
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Cylinder.InitialGuessForFitting(cloud);
 	}
 }
 
@@ -315,11 +304,8 @@ class ConeFittingProcess extends LSFittingProcess {
 		super(fittingResult);
 	}
 
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let cone = Cone.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(cone, ondone);
-		cone.FitToPointCloud(cloud);
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Cone.InitialGuessForFitting(cloud);
 	}
 }
 

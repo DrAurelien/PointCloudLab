@@ -154,11 +154,15 @@ class Sphere extends Shape {
 		return new Sphere(center, radius);
 	}
 
-	FitToPointCloud(cloud: PointCloud) {
+	ComputeBounds(points: PointSet) {
+		//NA
+	}
+
+	FitToPoints(points: PointSet) {
 		let lsFitting = new LeastSquaresFitting(
 			SphereFitting.Parameters(this.center, this.radius),
 			new SphereFitting(this),
-			cloud,
+			points,
 			'Computing best fitting sphere');
 		let self = this;
 		lsFitting.SetNext(() => self.NotifyChange());
