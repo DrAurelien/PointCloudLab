@@ -37,7 +37,7 @@
 // Process taking significant time
 // At least, enough time to let the user know he/she has to wait
 //================================================
-interface ProgessHandler {
+interface ProgressHandler {
 	Initialize(message: string);
 	Update(current: number, target: number);
 	Finalize();
@@ -45,7 +45,7 @@ interface ProgessHandler {
 }
 
 interface ProgessFactory {
-	(): ProgessHandler;
+	(): ProgressHandler;
 }
 
 abstract class LongProcess extends Process {
@@ -64,7 +64,7 @@ abstract class LongProcess extends Process {
 	}
 
 	protected Run(ondone: Function) {
-		let progress: ProgessHandler = null;
+		let progress: ProgressHandler = null;
 		if (this.message && LongProcess.progresFactory) {
 			progress = LongProcess.progresFactory();
 			progress.Initialize(this.message);

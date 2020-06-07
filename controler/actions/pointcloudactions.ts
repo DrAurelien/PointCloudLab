@@ -47,23 +47,13 @@ abstract class CloudProcess extends IterativeLongProcess {
 //===================================================
 // Shapes detection
 //===================================================
-class ResetDetectionAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Reset detection');
-	}
-
-	Enabled(): boolean {
-		return !!this.GetPCLCloud().ransac;
-	}
-
-	Trigger() {
-		this.GetPCLCloud().ransac = null;
-	}
-}
-
 class RansacDetectionAction extends PCLCloudAction {
+	ransac: Ransac;
+	progress: ProgressBar;
+	result: PCLGroup;
+
 	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape', 'Try to detect the shape a shape in the poiutn cloud');
+		super(cloud, 'Detect shapes ...', 'Try to detect as many shapes as possible in the selected point cloud (using the RANSAC algorithm)');
 	}
 
 	Enabled() {
@@ -72,35 +62,26 @@ class RansacDetectionAction extends PCLCloudAction {
 
 	Trigger() {
 		let cloud = this.GetPCLCloud();
-		if (!cloud.ransac) {
-			let self = this;
-			cloud.ransac = new Ransac(this.GetCloud());
-			var dialog = new Dialog(
-				(d: Dialog) => { return self.InitializeAndLauchRansac(d); },
-				function () {
-					cloud.ransac = null;
-					return true;
-				}
-			);
-			dialog.InsertValue('Failures', cloud.ransac.nbFailure);
-			dialog.InsertValue('Noise', cloud.ransac.noise);
-			dialog.InsertTitle('Shapes to detect');
-			dialog.InsertCheckBox('Planes', true);
-			dialog.InsertCheckBox('Spheres', true);
-			dialog.InsertCheckBox('Cylinders', true);
-			dialog.InsertCheckBox('Cones', true);
-		}
-		else {
-			let self = this;
-			cloud.ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s));
-		}
+		let self = this;
+		var dialog = new Dialog(
+			(d: Dialog) => { return self.InitializeAndLauchRansac(d); },
+			(d: Dialog) => { return true; }
+		);
+		dialog.InsertValue('Failures', 100);
+		dialog.InsertValue('Noise', 0.1);
+		dialog.InsertTitle('Shapes to detect');
+		dialog.InsertCheckBox('Planes', true);
+		dialog.InsertCheckBox('Spheres', true);
+		dialog.InsertCheckBox('Cylinders', true);
+		dialog.InsertCheckBox('Cones', true);
 	}
 
 	InitializeAndLauchRansac(properties: Dialog): boolean {
-		let ransac = this.GetPCLCloud().ransac;
+		let nbFailure;
+		let noise;
 		try {
-			ransac.nbFailure = parseInt(properties.GetValue('Failures'));
-			ransac.noise = parseFloat(properties.GetValue('Noise'));
+			nbFailure = parseInt(properties.GetValue('Failures'));
+			noise = parseFloat(properties.GetValue('Noise'));
 		}
 		catch (exc) {
 			return false;
@@ -115,18 +96,45 @@ class RansacDetectionAction extends PCLCloudAction {
 			generators.push(Ransac.RansacCylinder);
 		if (properties.GetValue('Cones'))
 			generators.push(Ransac.RansacCone);
-		ransac.SetGenerators(generators);
 
-		let self = this;
-		ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s));
+		this.ransac = new Ransac(this.GetCloud(), generators, nbFailure, noise);
+		this.progress = new ProgressBar();
+		this.progress.Initialize('Dicovering shapes in the point cloud');
+
+		this.LaunchNewRansacStep();
+
 		return true;
 	}
 
+	LaunchNewRansacStep() {
+		let self = this;
+
+		let target = this.ransac.cloud.Size();
+		let done = target - this.ransac.remainingPoints
+		this.progress.Update(done, target);
+
+		if (this.ransac.remainingPoints > this.ransac.nbPoints) {
+			setTimeout(() => self.ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s)), this.progress.RefreshDelay());
+		}
+		else {
+			this.progress.Finalize();
+			this.progress.Delete();
+		}
+	}
+
 	HandleResult(shape: Shape) {
+		if (!this.result) {
+			this.result = new PCLGroup('Shapes detection in "' + this.GetPCLCloud().name + '"');
+			let owner = this.GetPCLCloud().owner;
+			owner.Add(this.result);
+			this.result.NotifyChange(this.result, ChangeType.NewItem);
+		}
+
 		let pclshape = new PCLShapeWrapper(shape).GetPCLShape();
-		let owner = this.GetPCLCloud().owner;
-		owner.Add(pclshape);
+		this.result.Add(pclshape);
 		pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+
+		this.LaunchNewRansacStep();
 	}
 }
 

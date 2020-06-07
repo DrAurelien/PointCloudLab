@@ -18,7 +18,6 @@
 // - Get/set the point cloud properties
 //=================================================
 class PCLPointCloud extends PCLPrimitive implements Pickable {
-	ransac: Ransac;
 	fields: PCLScalarField[];
 	currentfield: number;
 	drawing: PointCloudDrawing;
@@ -105,7 +104,9 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		let cloud = this;
 		let result: Action[] = super.GetActions(delegate);
 
+		result.push(new ExportPointCloudFileAction(this));
 		result.push(null);
+
 		if (this.cloud.HasNormals()) {
 			result.push(new ClearNormalsAction(this));
 		}
@@ -121,21 +122,8 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 		result.push(new ComputeNoiseAction(this));
 
 		result.push(null);
-		let ransac = false;
-		if (cloud.ransac) {
-			result.push(new ResetDetectionAction(this));
-			ransac = true;
-		}
-		if (!(cloud.ransac && cloud.ransac.IsDone())) {
-			result.push(new RansacDetectionAction(this));
-			ransac = true;
-		}
-
+		result.push(new RansacDetectionAction(this));
 		result.push(new FindBestFittingShapeAction(this));
-
-		if (ransac)
-			result.push(null);
-		result.push(new ExportPointCloudFileAction(this));
 
 		return result;
 	}

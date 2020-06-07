@@ -10,19 +10,21 @@
 
 class Ransac {
 	nbPoints: number;
-	nbFailure: number;
-	noise: number;
 	ignore: boolean[];
+	remainingPoints: number;
 	fineShapeFitting: boolean;
 
-	constructor(public cloud : PointCloud, private generators: ShapeGenerator[] = null) {
+	constructor(public cloud: PointCloud,
+		private generators: ShapeGenerator[] = null,
+		public nbFailure: number,
+		public noise: number
+	) {
 		this.nbPoints = 3;
-		this.nbFailure = 100;
-		this.noise = 0.1;
 		this.ignore = new Array(this.cloud.Size());
-		for (var ii = 0; ii < this.cloud.Size(); ii++) {
+		for (let ii = 0; ii < this.cloud.Size(); ii++) {
 			this.ignore[ii] = false;
 		}
+		this.remainingPoints = this.cloud.Size();
 	}
 
 	SetGenerators(generators: ShapeGenerator[]): void {
@@ -30,12 +32,7 @@ class Ransac {
 	}
 
 	IsDone(): boolean {
-		for (var ii = 0; ii < this.ignore.length; ii++) {
-			if (!this.ignore[ii]) {
-				return false;
-			}
-		}
-		return true;
+		return this.remainingPoints > 0;
 	}
 
 	FindBestFittingShape(onDone: Function): void {
@@ -65,17 +62,17 @@ class Ransac {
 
 	GenerateCandidate(points: PickedPoints[]): Candidate {
 		//Generate a candidate shape
-		var candidates: Candidate[] = [];
-		for (var ii = 0; ii < this.generators.length; ii++) {
-			var shape = this.generators[ii](points);
+		let candidates: Candidate[] = [];
+		for (let ii = 0; ii < this.generators.length; ii++) {
+			let shape = this.generators[ii](points);
 			if (shape != null) {
 				candidates.push(new Candidate(shape));
 			}
 		}
 
 		//Compute scores and keep the best candidate
-		var candidate = null;
-		for (var ii = 0; ii < candidates.length; ii++) {
+		let candidate = null;
+		for (let ii = 0; ii < candidates.length; ii++) {
 			candidates[ii].ComputeScore(this.cloud, this.noise, this.ignore);
 			if (candidate == null || candidate.score > candidates[ii].score) {
 				candidate = candidates[ii];
@@ -86,27 +83,27 @@ class Ransac {
 	}
 
 	static RansacPlane(points: PickedPoints[]) : Shape {
-		var result = new Plane(points[0].point, points[0].normal, 0);
+		let result = new Plane(points[0].point, points[0].normal, 0);
 		return result;
 	}
 
 	static RansacSphere(points: PickedPoints[]) : Shape {
-		var r1 = new Ray(points[0].point, points[0].normal);
-		var r2 = new Ray(points[1].point, points[1].normal);
+		let r1 = new Ray(points[0].point, points[0].normal);
+		let r2 = new Ray(points[1].point, points[1].normal);
 
-		var center = Geometry.LinesIntersection(r1, r2);
-		var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
+		let center = Geometry.LinesIntersection(r1, r2);
+		let radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
 
 		return new Sphere(center, radius);
 	}
 
 	static RansacCylinder(points: PickedPoints[]): Shape {
-		var r1 = new Ray(points[0].point, points[0].normal);
-		var r2 = new Ray(points[1].point, points[1].normal);
+		let r1 = new Ray(points[0].point, points[0].normal);
+		let r2 = new Ray(points[1].point, points[1].normal);
 
-		var center = Geometry.LinesIntersection(r1, r2);
-		var axis = r1.dir.Cross(r2.dir);
-		var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
+		let center = Geometry.LinesIntersection(r1, r2);
+		let axis = r1.dir.Cross(r2.dir);
+		let radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
 
 		return new Cylinder(center, axis, radius, 0);
 	}
@@ -153,9 +150,9 @@ class Candidate {
 		this.points = [];
 
 		//Suboptimal. TODO : use the KDTree to grant fast access to the shapes neighbours
-		for (var ii = 0; ii < cloud.Size(); ii++) {
+		for (let ii = 0; ii < cloud.Size(); ii++) {
 			if (!ignore[ii]) {
-				var dist = this.shape.Distance(cloud.GetPoint(ii));
+				let dist = this.shape.Distance(cloud.GetPoint(ii));
 				if (dist > noise) {
 					dist = noise;
 				}
@@ -174,7 +171,9 @@ class RansacStepProcessor extends LongProcess{
 	best: Candidate;
 
 	constructor(private ransac: Ransac) {
-		super('Searching for a shape');
+		super('Searching for a new shape in the point cloud');
+		this.nbTrials = 0;
+		this.progress = 0;
 	}
 
 	get Done() {
@@ -213,6 +212,7 @@ class RansacStepProcessor extends LongProcess{
 
 		for (let index = 0; index < this.best.points.length; index++) {
 			this.ransac.ignore[this.best.points[index]] = true;
+			this.ransac.remainingPoints--;
 		}
 	}
 }
