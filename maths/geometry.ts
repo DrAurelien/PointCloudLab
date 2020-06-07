@@ -4,7 +4,6 @@
 /// <reference path="../tools/picking.ts" />
 /// <reference path="../tools/dataprovider.ts" />
 
-
 class PlaneFittingResult {
 	constructor(public center: Vector, public normal: Vector) { }
 
@@ -41,6 +40,28 @@ class Geometry {
 		var r2 = b.from.Plus(b.dir.Times(t2));
 
 		return r1.Plus(r2).Times(0.5);
+	}
+
+	static PlanesIntersection(planes: PlaneFittingResult[]): Vector {
+		//Simply solve the (over constrained) linear problem
+		//Having ni.x = ni.pi for all ni, pi being respectively the planes normals and centers
+		//Thus N.x = Y (N being the normals matrix, Y being the matrix of dot products between normals and centers)
+		//Use the Pseudo inverse method, we have to find x satifying N[t].N.x = N[t].Y ([t] = transposed)
+		let left = Matrix.Null(3, 3);
+		let right = Matrix.Null(1, 3);
+		let size = planes.length;
+		for (let index = 0; index < size; index++) {
+			let n = planes[index].normal;
+			let p = planes[index].center;
+			let s = p.Dot(n);
+			for (let ii = 0; ii < 3; ii++) {
+				right.AddValue(ii, 0, n.Get(ii) * s);
+				for (let jj = 0; jj < 3; jj++) {
+					left.AddValue(ii, jj, n.Get(ii) * n.Get(jj));
+				}
+			}
+		}
+		return left.LUSolve(right).GetColumnVector(0);
 	}
 
 	static DegreeToRadian(a: number): number {

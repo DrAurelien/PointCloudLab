@@ -251,15 +251,23 @@ div.ProgressControl {
 	position: fixed;
 	right: 10px;
 	bottom: 10px;
-	width: 500px;
-	height: 40px;
 	overflow: hidden;
 	margin: 0px;
-	padding: 0px;
+	padding: 5px;
 	background-color: white;
 	opacity: 0.8;
 	z-index: 1;
 	border-radius: 7px;
+}
+
+div.NestedProgressContainer {
+	padding-left: 20px;
+}
+
+div.NestedProgressContainer .ProgressControl {
+	position: relative;
+	right: unset;
+	bottom: unset;
 }
 
 div.ProgressMessage {

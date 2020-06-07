@@ -18,11 +18,13 @@ abstract class PCLShape extends PCLPrimitive implements Pickable {
 	visible: boolean;
 	drawing: MeshDrawing;
 	private meshsampling: number;
+	private pendingmesh: boolean;
 
 	constructor(name: string, shape: Shape) {
 		super(name);
 		this.drawing = new MeshDrawing();
 		this.meshsampling = 0;
+		this.pendingmesh = false;
 
 		let self = this;
 		shape.onChange = () => {
@@ -53,13 +55,20 @@ abstract class PCLShape extends PCLPrimitive implements Pickable {
 	}
 
 	PrepareForDrawing(drawingContext: DrawingContext): boolean {
+		//Avoid concurrent mesh computation requests
+		if (this.pendingmesh) {
+			return false;
+		}
+
 		if (this.meshsampling !== drawingContext.sampling) {
+			this.pendingmesh = true;
 			//Asynchroneous computation of the mesh to be rendered
 			let self = this;
 			this.GetShape().ComputeMesh(drawingContext.sampling, (mesh: Mesh) => {
 				if (self.meshsampling = drawingContext.sampling) {
 					self.meshsampling = drawingContext.sampling;
 					self.drawing.FillBuffers(mesh, drawingContext);
+					self.pendingmesh = false;
 					self.NotifyChange(self, ChangeType.Display);
 				}
 			});

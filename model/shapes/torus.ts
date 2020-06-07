@@ -137,4 +137,12 @@ class Torus extends Shape {
 		this.greatRadius *= transform.scalefactor;
 		this.smallRadius *= transform.scalefactor;
 	}
+
+	ComputeBounds(points: PointSet) {
+		//NA
+	}
+
+	FitToPoints(points: PointSet) {
+		throw 'Not implemented yet';
+	}
 }

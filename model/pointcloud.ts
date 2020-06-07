@@ -7,7 +7,7 @@
 /// <reference path="../tools/transform.ts" />
 
 
-class PointCloud implements DataProvider<Vector>{
+class PointCloud extends PointSet {
 	points: Float32Array;
 	pointssize: number;
 	normals: Float32Array;
@@ -16,6 +16,8 @@ class PointCloud implements DataProvider<Vector>{
 	boundingbox: BoundingBox;
 
 	constructor(points?: Float32Array, normals?: Float32Array) {
+		super();
+
 		this.points = points || new Float32Array([]);
 		this.pointssize = this.points.length;
 		this.normals = normals || new Float32Array([]);
@@ -162,9 +164,10 @@ class PointCloud implements DataProvider<Vector>{
 	}
 }
 
-class GaussianSphere implements DataProvider<Vector> {
+class GaussianSphere extends PointSet {
 	normals: Vector[];
 	constructor(private cloud: PointCloud) {
+		super();
 		this.normals = null;
 		if (!cloud.HasNormals()) {
 			let size = cloud.Size();
@@ -179,7 +182,7 @@ class GaussianSphere implements DataProvider<Vector> {
 		return this.cloud.Size();
 	}
 
-	GetData(index: number): Vector {
+	GetPoint(index: number): Vector {
 		if (this.normals) {
 			return this.normals[index];
 		}
@@ -193,8 +196,36 @@ class GaussianSphere implements DataProvider<Vector> {
 		let size = this.Size();
 		gsphere.Reserve(size);
 		for (let index = 0; index < size; index++) {
-			gsphere.PushPoint(this.GetData(index));
+			gsphere.PushPoint(this.GetPoint(index));
 		}
 		return gsphere;
+	}
+}
+
+
+class PointSubCloud extends PointSet{
+	constructor(public cloud: PointCloud, public indices: number[]) {
+		super();
+	}
+
+	Size(): number {
+		return this.indices.length;
+	}
+
+	GetPoint(index: number): Vector {
+		return this.cloud.GetPoint(this.indices[index]);
+	}
+
+	ToPointCloud(): PointCloud {
+		let subcloud = new PointCloud();
+		let size = this.Size();
+		subcloud.Reserve(size);
+		for (let index = 0; index < size; index++) {
+			subcloud.PushPoint(this.GetPoint(index));
+			if (this.cloud.HasNormals()) {
+				subcloud.PushNormal(this.cloud.GetNormal(this.indices[index]));
+			}
+		}
+		return subcloud;
 	}
 }

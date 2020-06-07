@@ -47,23 +47,15 @@ abstract class CloudProcess extends IterativeLongProcess {
 //===================================================
 // Shapes detection
 //===================================================
-class ResetDetectionAction extends PCLCloudAction {
+class RansacDetectionAction extends PCLCloudAction implements Stopable {
+	ransac: Ransac;
+	progress: ProgressBar;
+	result: PCLGroup;
+	stoped: boolean;
+	pendingstep: RansacStepProcessor;
+
 	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Reset detection');
-	}
-
-	Enabled(): boolean {
-		return !!this.GetPCLCloud().ransac;
-	}
-
-	Trigger() {
-		this.GetPCLCloud().ransac = null;
-	}
-}
-
-class RansacDetectionAction extends PCLCloudAction {
-	constructor(cloud: PCLPointCloud) {
-		super(cloud, 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape', 'Try to detect the shape a shape in the poiutn cloud');
+		super(cloud, 'Detect shapes ...', 'Try to detect as many shapes as possible in the selected point cloud (using the RANSAC algorithm)');
 	}
 
 	Enabled() {
@@ -71,35 +63,26 @@ class RansacDetectionAction extends PCLCloudAction {
 	}
 
 	Trigger() {
-		let cloud = this.GetPCLCloud();
-		if (!cloud.ransac) {
-			let self = this;
-			cloud.ransac = new Ransac(this.GetCloud());
-			var dialog = new Dialog(
-				(d: Dialog) => { return self.InitializeAndLauchRansac(d); },
-				function () {
-					cloud.ransac = null;
-					return true;
-				}
-			);
-			dialog.InsertValue('Failures', cloud.ransac.nbFailure);
-			dialog.InsertValue('Noise', cloud.ransac.noise);
-			dialog.InsertTitle('Shapes to detect');
-			dialog.InsertCheckBox('Planes', true);
-			dialog.InsertCheckBox('Spheres', true);
-			dialog.InsertCheckBox('Cylinders', true);
-		}
-		else {
-			let self = this;
-			cloud.ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s));
-		}
+		let self = this;
+		var dialog = new Dialog(
+			(d: Dialog) => { return self.InitializeAndLauchRansac(d); },
+			(d: Dialog) => { return true; }
+		);
+		dialog.InsertValue('Failures', 100);
+		dialog.InsertValue('Noise', 0.1);
+		dialog.InsertTitle('Shapes to detect');
+		dialog.InsertCheckBox('Planes', true);
+		dialog.InsertCheckBox('Spheres', true);
+		dialog.InsertCheckBox('Cylinders', true);
+		dialog.InsertCheckBox('Cones', true);
 	}
 
 	InitializeAndLauchRansac(properties: Dialog): boolean {
-		let ransac = this.GetPCLCloud().ransac;
+		let nbFailure;
+		let noise;
 		try {
-			ransac.nbFailure = parseInt(properties.GetValue('Failures'));
-			ransac.noise = parseFloat(properties.GetValue('Noise'));
+			nbFailure = parseInt(properties.GetValue('Failures'));
+			noise = parseFloat(properties.GetValue('Noise'));
 		}
 		catch (exc) {
 			return false;
@@ -112,18 +95,74 @@ class RansacDetectionAction extends PCLCloudAction {
 			generators.push(Ransac.RansacSphere);
 		if (properties.GetValue('Cylinders'))
 			generators.push(Ransac.RansacCylinder);
-		ransac.SetGenerators(generators);
+		if (properties.GetValue('Cones'))
+			generators.push(Ransac.RansacCone);
 
 		let self = this;
-		ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s));
+		this.stoped = false;
+		this.ransac = new Ransac(this.GetCloud(), generators, nbFailure, noise);
+		this.progress = new ProgressBar(() => self.Stop());
+		this.progress.Initialize('Dicovering shapes in the point cloud', this);
+
+		this.LaunchNewRansacStep();
+
 		return true;
 	}
 
-	HandleResult(shape: Shape) {
-		let pclshape = new PCLShapeWrapper(shape).GetPCLShape();
-		let owner = this.GetPCLCloud().owner;
-		owner.Add(pclshape);
-		pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+	Stopable(): boolean {
+		return true;
+	}
+
+	Stop() {
+		this.stoped = true;
+		if (this.pendingstep) {
+			this.pendingstep.Stop();
+		}
+		this.progress.Finalize();
+		this.progress.Delete();
+	}
+
+	LaunchNewRansacStep() {
+		let self = this;
+
+		let target = this.ransac.cloud.Size();
+		let done = target - this.ransac.remainingPoints
+		this.progress.Update(done, target);
+
+		if (this.ransac.remainingPoints > this.ransac.nbPoints && !this.stoped) {
+			setTimeout(() => {
+				self.pendingstep = self.ransac.FindBestFittingShape((s: Candidate) => self.HandleResult(s))
+			}, this.progress.RefreshDelay());
+		}
+		else {
+			if (!this.stoped) {
+				this.GetPCLCloud().SetVisibility(false);
+			}
+			this.progress.Finalize();
+			this.progress.Delete();
+		}
+	}
+
+	HandleResult(candidate: Candidate) {
+		if (!this.stoped) {
+			if (!this.result) {
+				this.result = new PCLGroup('Shapes detection in "' + this.GetPCLCloud().name + '"');
+				let owner = this.GetPCLCloud().owner;
+				owner.Add(this.result);
+				this.result.NotifyChange(this.result, ChangeType.NewItem);
+			}
+
+			let subcloud = new PointSubCloud(this.ransac.cloud, candidate.points);
+			let segment = new PCLPointCloud(subcloud.ToPointCloud());
+			this.result.Add(segment);
+			segment.NotifyChange(segment, ChangeType.NewItem);
+
+			let pclshape = new PCLShapeWrapper(candidate.shape).GetPCLShape();
+			this.result.Add(pclshape);
+			pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+
+			this.LaunchNewRansacStep();
+		}
 	}
 }
 
@@ -250,37 +289,32 @@ class FindBestFittingShapeAction extends PCLCloudAction {
 	}
 }
 
-class PlaneFittingProcess extends Process {
-	constructor(private fittingResult: ShapeFittingResult) {
-		super();
-	}
-
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let planefit = Geometry.PlaneFitting(cloud);
-		this.fittingResult.AddFittingResult(
-			new Plane(
-				planefit.center,
-				planefit.normal,
-				planefit.ComputePatchRadius(cloud)
-			)
-		);
-		ondone();
-	}
-}
-
 abstract class LSFittingProcess extends Process {
 	constructor(protected fittingResult: ShapeFittingResult) {
 		super();
 	}
 
-	AddResultHandlerHook(shape: Shape, ondone:Function) {
+	Run(ondone: Function) {
 		let self = this;
+		let shape = this.GetInitialGuess(this.fittingResult.cloud);
 		shape.onChange = () => {
 			shape.onChange = null;
 			self.fittingResult.AddFittingResult(shape);
 			ondone();
 		}
+		shape.FitToPoints(this.fittingResult.cloud);
+	}
+
+	abstract GetInitialGuess(cloud: PointCloud): Shape;
+}
+
+class PlaneFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
+	}
+
+	GetInitialGuess(): Shape {
+		return new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 0);
 	}
 }
 
@@ -289,11 +323,8 @@ class SphereFittingProcess extends LSFittingProcess {
 		super(fittingResult);
 	}
 
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let sphere = Sphere.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(sphere, ondone);
-		sphere.FitToPointCloud(cloud);
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Sphere.InitialGuessForFitting(cloud);
 	}
 }
 
@@ -302,11 +333,8 @@ class CylinderFittingProcess extends LSFittingProcess {
 		super(fittingResult);
 	}
 
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let cylinder = Cylinder.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(cylinder, ondone);
-		cylinder.FitToPointCloud(cloud);
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Cylinder.InitialGuessForFitting(cloud);
 	}
 }
 
@@ -315,11 +343,8 @@ class ConeFittingProcess extends LSFittingProcess {
 		super(fittingResult);
 	}
 
-	Run(ondone: Function) {
-		let cloud = this.fittingResult.cloud;
-		let cone = Cone.InitialGuessForFitting(cloud);
-		this.AddResultHandlerHook(cone, ondone);
-		cone.FitToPointCloud(cloud);
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Cone.InitialGuessForFitting(cloud);
 	}
 }
 

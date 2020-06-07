@@ -1,5 +1,6 @@
 ﻿/// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -89,19 +90,28 @@ class Plane extends Shape {
 		return result;
 	}
 
-	ComputeBounds(points: number[], cloud: PointCloud): void {
+	ComputeBounds(points: PointSet): void {
 		this.center = new Vector([0, 0, 0]);
-		for (let ii = 0; ii < points.length; ii++) {
-			this.center = this.center.Plus(cloud.GetPoint(points[ii]));
+		let size = points.Size();
+		for (let ii = 0; ii < points.Size(); ii++) {
+			this.center = this.center.Plus(points.GetPoint(ii));
 		}
-		this.center = this.center.Times(1.0 / points.length);
+		this.center = this.center.Times(1.0 / size);
 		this.patchRadius = 0;
-		for (let ii = 0; ii < points.length; ii++) {
-			let d = cloud.GetPoint(points[ii]).Minus(this.center).SqrNorm();
+		for (let ii = 0; ii < size; ii++) {
+			let d = points.GetPoint(ii).Minus(this.center).SqrNorm();
 			if (d > this.patchRadius) {
 				this.patchRadius = d;
 			}
 		}
 		this.patchRadius = Math.sqrt(this.patchRadius);
+	}
+
+	FitToPoints(points: PointSet) {
+		let result = Geometry.PlaneFitting(points);
+		this.normal = result.normal;
+		this.center = result.center;
+		this.patchRadius = result.ComputePatchRadius(points);
+		this.NotifyChange();
 	}
 }
