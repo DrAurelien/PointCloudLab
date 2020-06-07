@@ -1846,6 +1846,11 @@ var ChangeType;
     ChangeType[ChangeType["TakeFocus"] = 128] = "TakeFocus";
     ChangeType[ChangeType["NewItem"] = 138] = "NewItem";
 })(ChangeType || (ChangeType = {}));
+var PCLInsertionMode;
+(function (PCLInsertionMode) {
+    PCLInsertionMode[PCLInsertionMode["Before"] = 0] = "Before";
+    PCLInsertionMode[PCLInsertionMode["After"] = 1] = "After";
+})(PCLInsertionMode || (PCLInsertionMode = {}));
 var PCLNode = /** @class */ (function () {
     function PCLNode(name) {
         this.name = name;
@@ -1957,6 +1962,12 @@ var PCLNode = /** @class */ (function () {
         }
         this.SerializeNode(serializer);
         serializer.End(this);
+    };
+    PCLNode.IsPCLContainer = function (x) {
+        return x &&
+            x.Add && x.Add instanceof Function &&
+            x.Remove && x.Remove instanceof Function &&
+            x.NotifyChange && x.NotifyChange instanceof Function;
     };
     return PCLNode;
 }());
@@ -5791,9 +5802,15 @@ var PCLGroup = /** @class */ (function (_super) {
         _this.folded = false;
         return _this;
     }
+    PCLGroup.prototype.SetFolding = function (f) {
+        var changed = f !== this.folded;
+        this.folded = f;
+        if (changed) {
+            this.NotifyChange(this, ChangeType.Folding);
+        }
+    };
     PCLGroup.prototype.ToggleFolding = function () {
-        this.folded = !this.folded;
-        this.NotifyChange(this, ChangeType.Folding);
+        this.SetFolding(!this.folded);
     };
     PCLGroup.prototype.DrawNode = function (drawingContext) {
         if (this.visible) {
@@ -5830,6 +5847,15 @@ var PCLGroup = /** @class */ (function (_super) {
         }
         son.owner = this;
         this.children.push(son);
+        this.NotifyChange(this, ChangeType.Children | ChangeType.Properties);
+    };
+    PCLGroup.prototype.Insert = function (node, refnode, mode) {
+        if (node.owner) {
+            node.owner.Remove(node);
+        }
+        node.owner = this;
+        var index = this.children.indexOf(refnode);
+        this.children.splice(mode == PCLInsertionMode.Before ? index : (index + 1), 0, node);
         this.NotifyChange(this, ChangeType.Children | ChangeType.Properties);
     };
     PCLGroup.prototype.Remove = function (son) {
@@ -9332,15 +9358,20 @@ var ColorScale = /** @class */ (function (_super) {
 /// <reference path="../datahandler.ts" />
 /// <reference path="./colorscale/colorscale.ts" />
 var DataItem = /** @class */ (function () {
+    //Here we go
     function DataItem(item, dataHandler) {
         var _this = this;
         this.item = item;
         this.dataHandler = dataHandler;
+        this.uuid = DataItem.ItemsCache.length;
+        DataItem.ItemsCache.push(this);
         this.sons = [];
         this.container = document.createElement('div');
         this.container.className = 'TreeItemContainer';
+        this.container.id = DataItem.GetId(this.uuid);
+        this.container.draggable = true;
         this.itemContentContainer = document.createElement('div');
-        this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
+        this.itemContentContainer.className = item.selected ? 'SelectedSceneItem' : 'SceneItem';
         this.container.appendChild(this.itemContentContainer);
         //Diplay a small icon to show the itam nature
         this.itemIcon = document.createElement('i');
@@ -9376,6 +9407,8 @@ var DataItem = /** @class */ (function () {
         //Handle left/right click on the item title
         this.itemContentContainer.onclick = function (ev) { return self.ItemClicked(ev); };
         this.itemContentContainer.oncontextmenu = function (ev) { return _this.ItemMenu(ev); };
+        //Handle Drag'n drop
+        this.InitializeDrapNDrop();
         //Populate children
         this.itemChildContainer = document.createElement('div');
         this.itemChildContainer.className = 'ItemChildContainer';
@@ -9391,6 +9424,75 @@ var DataItem = /** @class */ (function () {
         item.AddChangeListener(this);
         item.AddChangeListener(this.dataHandler.selection);
     }
+    DataItem.GetItemById = function (id) {
+        var key = parseInt(id.replace(DataItem.IdPrefix, ''), 10);
+        return DataItem.ItemsCache[key];
+    };
+    DataItem.GetId = function (uuid) {
+        return DataItem.IdPrefix + uuid;
+    };
+    DataItem.prototype.ClearDrapNDropStyles = function () {
+        this.container.classList.remove('DropInside');
+        this.container.classList.remove('DropBefore');
+        this.container.classList.remove('DropAfter');
+    };
+    DataItem.prototype.InitializeDrapNDrop = function () {
+        var _this = this;
+        this.container.ondragstart = function (ev) {
+            ev.stopPropagation();
+            ev.dataTransfer.setData("application/my-app", (ev.target).id);
+            ev.dataTransfer.dropEffect = 'move';
+            if (PCLNode.IsPCLContainer(_this.item)) {
+                _this.item.SetFolding(true);
+            }
+        };
+        this.container.ondragover = function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.dataTransfer.dropEffect = 'move';
+            var target = (ev.target);
+            if (PCLNode.IsPCLContainer(_this.item) && target.classList.contains('ItemIcon')) {
+                _this.container.classList.add('DropInside');
+                _this.item.SetFolding(false);
+            }
+            else {
+                if (ev.offsetY > _this.itemContentContainer.clientHeight / 2) {
+                    _this.container.classList.remove('DropBefore');
+                    _this.container.classList.add('DropAfter');
+                }
+                else {
+                    _this.container.classList.remove('DropAfter');
+                    _this.container.classList.add('DropBefore');
+                }
+            }
+        };
+        this.container.ondragleave = function (ev) {
+            ev.stopPropagation();
+            _this.ClearDrapNDropStyles();
+        };
+        this.container.ondragend = function (ev) {
+            _this.ClearDrapNDropStyles();
+        };
+        this.container.ondrop = function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            var sourceId = ev.dataTransfer.getData("application/my-app");
+            var source = DataItem.GetItemById(sourceId).item;
+            var target = _this.item;
+            if (PCLNode.IsPCLContainer(target) && ev.target.classList.contains('ItemIcon')) {
+                target.Add(source);
+            }
+            else {
+                if (ev.offsetY > _this.itemContentContainer.clientHeight / 2) {
+                    (target.owner).Insert(source, target, PCLInsertionMode.After);
+                }
+                else {
+                    (target.owner).Insert(source, target, PCLInsertionMode.Before);
+                }
+            }
+            _this.ClearDrapNDropStyles();
+        };
+    };
     // Hierarchy management
     DataItem.prototype.AddSon = function (item, index) {
         if (index === void 0) { index = null; }
@@ -9429,7 +9531,7 @@ var DataItem = /** @class */ (function () {
             this.UpdateGroupFolding(this.item);
         }
         this.itemName.data = this.item.name;
-        this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
+        this.itemContentContainer.className = this.item.selected ? 'SelectedSceneItem' : 'SceneItem';
         this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
         this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
     };
@@ -9542,6 +9644,9 @@ var DataItem = /** @class */ (function () {
     DataItem.prototype.GetContainerElement = function () {
         return this.container;
     };
+    //Fast access to all the data items
+    DataItem.ItemsCache = [];
+    DataItem.IdPrefix = 'DataItem#';
     return DataItem;
 }());
 /// <reference path="pclnode.ts" />
