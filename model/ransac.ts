@@ -111,7 +111,6 @@ class Ransac {
 		return new Cylinder(center, axis, radius, 0);
 	}
 
-
 	static RansacCone(points: PickedPoints[]): Shape {
 		let axis = points[2].normal.Minus(points[0].normal).Cross(points[1].normal.Minus(points[0].normal));
 		axis.Normalize();

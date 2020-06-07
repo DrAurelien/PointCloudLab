@@ -88,6 +88,7 @@ class RansacDetectionAction extends PCLCloudAction {
 			dialog.InsertCheckBox('Planes', true);
 			dialog.InsertCheckBox('Spheres', true);
 			dialog.InsertCheckBox('Cylinders', true);
+			dialog.InsertCheckBox('Cones', true);
 		}
 		else {
 			let self = this;
@@ -112,6 +113,8 @@ class RansacDetectionAction extends PCLCloudAction {
 			generators.push(Ransac.RansacSphere);
 		if (properties.GetValue('Cylinders'))
 			generators.push(Ransac.RansacCylinder);
+		if (properties.GetValue('Cones'))
+			generators.push(Ransac.RansacCone);
 		ransac.SetGenerators(generators);
 
 		let self = this;
