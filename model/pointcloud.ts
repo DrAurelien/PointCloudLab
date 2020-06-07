@@ -215,4 +215,17 @@ class PointSubCloud extends PointSet{
 	GetPoint(index: number): Vector {
 		return this.cloud.GetPoint(this.indices[index]);
 	}
+
+	ToPointCloud(): PointCloud {
+		let subcloud = new PointCloud();
+		let size = this.Size();
+		subcloud.Reserve(size);
+		for (let index = 0; index < size; index++) {
+			subcloud.PushPoint(this.GetPoint(index));
+			if (this.cloud.HasNormals()) {
+				subcloud.PushNormal(this.cloud.GetNormal(this.indices[index]));
+			}
+		}
+		return subcloud;
+	}
 }

@@ -8,6 +8,10 @@
 /// <reference path="../tools/longprocess.ts" />
 
 
+interface CandidateHandler {
+	(c: Candidate);
+}
+
 class Ransac {
 	nbPoints: number;
 	ignore: boolean[];
@@ -35,10 +39,11 @@ class Ransac {
 		return this.remainingPoints > 0;
 	}
 
-	FindBestFittingShape(onDone: Function): void {
+	FindBestFittingShape(onDone: CandidateHandler): RansacStepProcessor {
 		let step = new RansacStepProcessor(this);
-		step.SetNext((s: RansacStepProcessor) => onDone(s.best.shape));
+		step.SetNext((s: RansacStepProcessor) => onDone(s.best));
 		step.Start();
+		return step;
 	}
 
 	PickPoints(): PickedPoints[] {

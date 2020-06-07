@@ -47,10 +47,12 @@ abstract class CloudProcess extends IterativeLongProcess {
 //===================================================
 // Shapes detection
 //===================================================
-class RansacDetectionAction extends PCLCloudAction {
+class RansacDetectionAction extends PCLCloudAction implements Stopable {
 	ransac: Ransac;
 	progress: ProgressBar;
 	result: PCLGroup;
+	stoped: boolean;
+	pendingstep: RansacStepProcessor;
 
 	constructor(cloud: PCLPointCloud) {
 		super(cloud, 'Detect shapes ...', 'Try to detect as many shapes as possible in the selected point cloud (using the RANSAC algorithm)');
@@ -61,7 +63,6 @@ class RansacDetectionAction extends PCLCloudAction {
 	}
 
 	Trigger() {
-		let cloud = this.GetPCLCloud();
 		let self = this;
 		var dialog = new Dialog(
 			(d: Dialog) => { return self.InitializeAndLauchRansac(d); },
@@ -97,13 +98,28 @@ class RansacDetectionAction extends PCLCloudAction {
 		if (properties.GetValue('Cones'))
 			generators.push(Ransac.RansacCone);
 
+		let self = this;
+		this.stoped = false;
 		this.ransac = new Ransac(this.GetCloud(), generators, nbFailure, noise);
-		this.progress = new ProgressBar();
-		this.progress.Initialize('Dicovering shapes in the point cloud');
+		this.progress = new ProgressBar(() => self.Stop());
+		this.progress.Initialize('Dicovering shapes in the point cloud', this);
 
 		this.LaunchNewRansacStep();
 
 		return true;
+	}
+
+	Stopable(): boolean {
+		return true;
+	}
+
+	Stop() {
+		this.stoped = true;
+		if (this.pendingstep) {
+			this.pendingstep.Stop();
+		}
+		this.progress.Finalize();
+		this.progress.Delete();
 	}
 
 	LaunchNewRansacStep() {
@@ -113,28 +129,40 @@ class RansacDetectionAction extends PCLCloudAction {
 		let done = target - this.ransac.remainingPoints
 		this.progress.Update(done, target);
 
-		if (this.ransac.remainingPoints > this.ransac.nbPoints) {
-			setTimeout(() => self.ransac.FindBestFittingShape((s: Shape) => self.HandleResult(s)), this.progress.RefreshDelay());
+		if (this.ransac.remainingPoints > this.ransac.nbPoints && !this.stoped) {
+			setTimeout(() => {
+				self.pendingstep = self.ransac.FindBestFittingShape((s: Candidate) => self.HandleResult(s))
+			}, this.progress.RefreshDelay());
 		}
 		else {
+			if (!this.stoped) {
+				this.GetPCLCloud().SetVisibility(false);
+			}
 			this.progress.Finalize();
 			this.progress.Delete();
 		}
 	}
 
-	HandleResult(shape: Shape) {
-		if (!this.result) {
-			this.result = new PCLGroup('Shapes detection in "' + this.GetPCLCloud().name + '"');
-			let owner = this.GetPCLCloud().owner;
-			owner.Add(this.result);
-			this.result.NotifyChange(this.result, ChangeType.NewItem);
+	HandleResult(candidate: Candidate) {
+		if (!this.stoped) {
+			if (!this.result) {
+				this.result = new PCLGroup('Shapes detection in "' + this.GetPCLCloud().name + '"');
+				let owner = this.GetPCLCloud().owner;
+				owner.Add(this.result);
+				this.result.NotifyChange(this.result, ChangeType.NewItem);
+			}
+
+			let subcloud = new PointSubCloud(this.ransac.cloud, candidate.points);
+			let segment = new PCLPointCloud(subcloud.ToPointCloud());
+			this.result.Add(segment);
+			segment.NotifyChange(segment, ChangeType.NewItem);
+
+			let pclshape = new PCLShapeWrapper(candidate.shape).GetPCLShape();
+			this.result.Add(pclshape);
+			pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+
+			this.LaunchNewRansacStep();
 		}
-
-		let pclshape = new PCLShapeWrapper(shape).GetPCLShape();
-		this.result.Add(pclshape);
-		pclshape.NotifyChange(pclshape, ChangeType.NewItem);
-
-		this.LaunchNewRansacStep();
 	}
 }
 

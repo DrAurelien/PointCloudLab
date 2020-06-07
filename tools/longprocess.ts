@@ -37,8 +37,13 @@
 // Process taking significant time
 // At least, enough time to let the user know he/she has to wait
 //================================================
+interface Stopable {
+	Stopable(): boolean;
+	Stop();
+}
+
 interface ProgressHandler {
-	Initialize(message: string);
+	Initialize(message: string, stopable: Stopable);
 	Update(current: number, target: number);
 	Finalize();
 	RefreshDelay(): number;
@@ -48,8 +53,10 @@ interface ProgessFactory {
 	(): ProgressHandler;
 }
 
-abstract class LongProcess extends Process {
-	constructor(private message: string) {
+abstract class LongProcess extends Process implements Stopable {
+	stoped: boolean;
+
+	constructor(private message: string, private onstoped: Function=null) {
 		super();
 	}
 
@@ -64,15 +71,17 @@ abstract class LongProcess extends Process {
 	}
 
 	protected Run(ondone: Function) {
+		this.stoped = false;
+
 		let progress: ProgressHandler = null;
 		if (this.message && LongProcess.progresFactory) {
 			progress = LongProcess.progresFactory();
-			progress.Initialize(this.message);
+			progress.Initialize(this.message, this);
 		}
 
 		let self = this;
 		function RunInternal(): boolean {
-			while (!self.Done) {
+			while (!self.Done && !self.stoped) {
 				self.Step();
 				if (progress && progress.Update(self.Current, self.Target)) {
 					setTimeout(RunInternal, progress.RefreshDelay());
@@ -83,8 +92,16 @@ abstract class LongProcess extends Process {
 			if (progress) {
 				progress.Finalize();
 			}
-			if (ondone) {
-				ondone();
+
+			if (this.stoped) {
+				if (this.onstoped) {
+					this.onstoped();
+				}
+			}
+			else {
+				if (ondone) {
+					ondone();
+				}
 			}
 			return true;
 		}
@@ -95,6 +112,14 @@ abstract class LongProcess extends Process {
 		else {
 			RunInternal();
 		}
+	}
+
+	Stopable(): boolean {
+		return !!this.onstoped;
+	}
+
+	Stop() {
+		this.stoped = true;
 	}
 }
 

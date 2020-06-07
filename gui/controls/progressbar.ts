@@ -13,7 +13,7 @@ class ProgressBar implements Control, ProgressHandler {
 
 	static CurrentProgress: ProgressBar;
 
-	constructor() {
+	constructor(onstop: Function = null) {
 		this.control = document.createElement('div');
 		this.control.className = 'ProgressControl';
 
@@ -38,9 +38,18 @@ class ProgressBar implements Control, ProgressHandler {
 		this.updatedelay = 500;
 	}
 
-	Initialize(message: string) {
+	Initialize(message: string, stopable: Stopable=null) {
 		this.SetMessage(message);
 		this.Show();
+
+		if (stopable && stopable.Stopable()) {
+			let stopbtn: HTMLInputElement = document.createElement('input');
+			stopbtn.type = 'button';
+			stopbtn.className = 'ProgressStop';
+			stopbtn.value = 'Stop';
+			stopbtn.onclick = () => stopable.Stop();
+			this.control.appendChild(stopbtn);
+		}
 	}
 
 	Finalize() {
@@ -67,7 +76,7 @@ class ProgressBar implements Control, ProgressHandler {
 	}
 
 	Delete(): void {
-		if (this.control.parentNode) {
+		if (this.control.parentNode && this.control.parentNode.contains(this.control)) {
 			this.control.parentNode.removeChild(this.control);
 		}
 		if (ProgressBar.CurrentProgress === this) {
