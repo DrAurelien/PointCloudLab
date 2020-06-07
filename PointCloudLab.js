@@ -2408,9 +2408,11 @@ var Process = /** @class */ (function () {
 }());
 var LongProcess = /** @class */ (function (_super) {
     __extends(LongProcess, _super);
-    function LongProcess(message) {
+    function LongProcess(message, onstoped) {
+        if (onstoped === void 0) { onstoped = null; }
         var _this = _super.call(this) || this;
         _this.message = message;
+        _this.onstoped = onstoped;
         return _this;
     }
     ;
@@ -2422,14 +2424,15 @@ var LongProcess = /** @class */ (function (_super) {
         configurable: true
     });
     LongProcess.prototype.Run = function (ondone) {
+        this.stoped = false;
         var progress = null;
         if (this.message && LongProcess.progresFactory) {
             progress = LongProcess.progresFactory();
-            progress.Initialize(this.message);
+            progress.Initialize(this.message, this);
         }
         var self = this;
         function RunInternal() {
-            while (!self.Done) {
+            while (!self.Done && !self.stoped) {
                 self.Step();
                 if (progress && progress.Update(self.Current, self.Target)) {
                     setTimeout(RunInternal, progress.RefreshDelay());
@@ -2439,8 +2442,15 @@ var LongProcess = /** @class */ (function (_super) {
             if (progress) {
                 progress.Finalize();
             }
-            if (ondone) {
-                ondone();
+            if (this.stoped) {
+                if (this.onstoped) {
+                    this.onstoped();
+                }
+            }
+            else {
+                if (ondone) {
+                    ondone();
+                }
             }
             return true;
         }
@@ -2450,6 +2460,12 @@ var LongProcess = /** @class */ (function (_super) {
         else {
             RunInternal();
         }
+    };
+    LongProcess.prototype.Stopable = function () {
+        return !!this.onstoped;
+    };
+    LongProcess.prototype.Stop = function () {
+        this.stoped = true;
     };
     LongProcess.progresFactory = null;
     return LongProcess;
@@ -3136,6 +3152,14 @@ var EigenDecomposition = /** @class */ (function () {
     }
     return EigenDecomposition;
 }());
+var PointSet = /** @class */ (function () {
+    function PointSet() {
+    }
+    PointSet.prototype.GetData = function (index) {
+        return this.GetPoint(index);
+    };
+    return PointSet;
+}());
 /// <reference path="vector.ts" />
 /// <reference path="matrix.ts" />
 /// <reference path="eigendecomposition.ts" />
@@ -3177,6 +3201,27 @@ var Geometry = /** @class */ (function () {
         var r1 = a.from.Plus(a.dir.Times(t1));
         var r2 = b.from.Plus(b.dir.Times(t2));
         return r1.Plus(r2).Times(0.5);
+    };
+    Geometry.PlanesIntersection = function (planes) {
+        //Simply solve the (over constrained) linear problem
+        //Having ni.x = ni.pi for all ni, pi being respectively the planes normals and centers
+        //Thus N.x = Y (N being the normals matrix, Y being the matrix of dot products between normals and centers)
+        //Use the Pseudo inverse method, we have to find x satifying N[t].N.x = N[t].Y ([t] = transposed)
+        var left = Matrix.Null(3, 3);
+        var right = Matrix.Null(1, 3);
+        var size = planes.length;
+        for (var index = 0; index < size; index++) {
+            var n = planes[index].normal;
+            var p = planes[index].center;
+            var s = p.Dot(n);
+            for (var ii = 0; ii < 3; ii++) {
+                right.AddValue(ii, 0, n.Get(ii) * s);
+                for (var jj = 0; jj < 3; jj++) {
+                    left.AddValue(ii, jj, n.Get(ii) * n.Get(jj));
+                }
+            }
+        }
+        return left.LUSolve(right).GetColumnVector(0);
     };
     Geometry.DegreeToRadian = function (a) {
         return Math.PI * a / 180.0;
@@ -3288,17 +3333,20 @@ var Geometry = /** @class */ (function () {
 /// <reference path="../maths/vector.ts" />
 /// <reference path="../maths/geometry.ts" />
 /// <reference path="../tools/transform.ts" />
-var PointCloud = /** @class */ (function () {
+var PointCloud = /** @class */ (function (_super) {
+    __extends(PointCloud, _super);
     function PointCloud(points, normals) {
-        this.tree = null;
-        this.points = points || new Float32Array([]);
-        this.pointssize = this.points.length;
-        this.normals = normals || new Float32Array([]);
-        this.normalssize = this.normals.length;
-        this.boundingbox = new BoundingBox();
-        for (var index = 0; index < this.Size(); index++) {
-            this.boundingbox.Add(this.GetPoint(index));
+        var _this = _super.call(this) || this;
+        _this.tree = null;
+        _this.points = points || new Float32Array([]);
+        _this.pointssize = _this.points.length;
+        _this.normals = normals || new Float32Array([]);
+        _this.normalssize = _this.normals.length;
+        _this.boundingbox = new BoundingBox();
+        for (var index = 0; index < _this.Size(); index++) {
+            _this.boundingbox.Add(_this.GetPoint(index));
         }
+        return _this;
     }
     PointCloud.prototype.PushPoint = function (p) {
         if (this.pointssize + p.Dimension() > this.points.length) {
@@ -3416,23 +3464,26 @@ var PointCloud = /** @class */ (function () {
         }
     };
     return PointCloud;
-}());
-var GaussianSphere = /** @class */ (function () {
+}(PointSet));
+var GaussianSphere = /** @class */ (function (_super) {
+    __extends(GaussianSphere, _super);
     function GaussianSphere(cloud) {
-        this.cloud = cloud;
-        this.normals = null;
+        var _this = _super.call(this) || this;
+        _this.cloud = cloud;
+        _this.normals = null;
         if (!cloud.HasNormals()) {
             var size = cloud.Size();
-            this.normals = new Array(size);
+            _this.normals = new Array(size);
             for (var index = 0; index < size; index++) {
-                this.normals[index] = cloud.ComputeNormal(index, 30);
+                _this.normals[index] = cloud.ComputeNormal(index, 30);
             }
         }
+        return _this;
     }
     GaussianSphere.prototype.Size = function () {
         return this.cloud.Size();
     };
-    GaussianSphere.prototype.GetData = function (index) {
+    GaussianSphere.prototype.GetPoint = function (index) {
         if (this.normals) {
             return this.normals[index];
         }
@@ -3445,12 +3496,40 @@ var GaussianSphere = /** @class */ (function () {
         var size = this.Size();
         gsphere.Reserve(size);
         for (var index = 0; index < size; index++) {
-            gsphere.PushPoint(this.GetData(index));
+            gsphere.PushPoint(this.GetPoint(index));
         }
         return gsphere;
     };
     return GaussianSphere;
-}());
+}(PointSet));
+var PointSubCloud = /** @class */ (function (_super) {
+    __extends(PointSubCloud, _super);
+    function PointSubCloud(cloud, indices) {
+        var _this = _super.call(this) || this;
+        _this.cloud = cloud;
+        _this.indices = indices;
+        return _this;
+    }
+    PointSubCloud.prototype.Size = function () {
+        return this.indices.length;
+    };
+    PointSubCloud.prototype.GetPoint = function (index) {
+        return this.cloud.GetPoint(this.indices[index]);
+    };
+    PointSubCloud.prototype.ToPointCloud = function () {
+        var subcloud = new PointCloud();
+        var size = this.Size();
+        subcloud.Reserve(size);
+        for (var index = 0; index < size; index++) {
+            subcloud.PushPoint(this.GetPoint(index));
+            if (this.cloud.HasNormals()) {
+                subcloud.PushNormal(this.cloud.GetNormal(this.indices[index]));
+            }
+        }
+        return subcloud;
+    };
+    return PointSubCloud;
+}(PointSet));
 /// <reference path="octree.ts" />
 /// <reference path="pointcloud.ts" />
 /// <reference path="meshface.ts" />
@@ -3785,8 +3864,6 @@ var Shape = /** @class */ (function () {
         }
         return this.boundingbox;
     };
-    Shape.prototype.ComputeBounds = function (points, cloud) {
-    };
     Shape.prototype.NotifyChange = function () {
         if (this.onChange) {
             this.onChange();
@@ -4071,6 +4148,7 @@ var PCLShape = /** @class */ (function (_super) {
         var _this = _super.call(this, name) || this;
         _this.drawing = new MeshDrawing();
         _this.meshsampling = 0;
+        _this.pendingmesh = false;
         var self = _this;
         shape.onChange = function () {
             self.Invalidate();
@@ -4092,13 +4170,19 @@ var PCLShape = /** @class */ (function (_super) {
         return this.GetShape().Distance(p);
     };
     PCLShape.prototype.PrepareForDrawing = function (drawingContext) {
+        //Avoid concurrent mesh computation requests
+        if (this.pendingmesh) {
+            return false;
+        }
         if (this.meshsampling !== drawingContext.sampling) {
+            this.pendingmesh = true;
             //Asynchroneous computation of the mesh to be rendered
             var self_5 = this;
             this.GetShape().ComputeMesh(drawingContext.sampling, function (mesh) {
                 if (self_5.meshsampling = drawingContext.sampling) {
                     self_5.meshsampling = drawingContext.sampling;
                     self_5.drawing.FillBuffers(mesh, drawingContext);
+                    self_5.pendingmesh = false;
                     self_5.NotifyChange(self_5, ChangeType.Display);
                 }
             });
@@ -4142,6 +4226,7 @@ var PCLShape = /** @class */ (function (_super) {
 }(PCLPrimitive));
 /// <reference path="../../maths/vector.ts" />
 /// <reference path="../../maths/matrix.ts" />
+/// <reference path="../../maths/geometry.ts" />
 /// <reference path="../../tools/transform.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../boundingbox.ts" />
@@ -4222,20 +4307,28 @@ var Plane = /** @class */ (function (_super) {
         }
         return result;
     };
-    Plane.prototype.ComputeBounds = function (points, cloud) {
+    Plane.prototype.ComputeBounds = function (points) {
         this.center = new Vector([0, 0, 0]);
-        for (var ii = 0; ii < points.length; ii++) {
-            this.center = this.center.Plus(cloud.GetPoint(points[ii]));
+        var size = points.Size();
+        for (var ii = 0; ii < points.Size(); ii++) {
+            this.center = this.center.Plus(points.GetPoint(ii));
         }
-        this.center = this.center.Times(1.0 / points.length);
+        this.center = this.center.Times(1.0 / size);
         this.patchRadius = 0;
-        for (var ii = 0; ii < points.length; ii++) {
-            var d = cloud.GetPoint(points[ii]).Minus(this.center).SqrNorm();
+        for (var ii = 0; ii < size; ii++) {
+            var d = points.GetPoint(ii).Minus(this.center).SqrNorm();
             if (d > this.patchRadius) {
                 this.patchRadius = d;
             }
         }
         this.patchRadius = Math.sqrt(this.patchRadius);
+    };
+    Plane.prototype.FitToPoints = function (points) {
+        var result = Geometry.PlaneFitting(points);
+        this.normal = result.normal;
+        this.center = result.center;
+        this.patchRadius = result.ComputePatchRadius(points);
+        this.NotifyChange();
     };
     return Plane;
 }(Shape));
@@ -4616,8 +4709,11 @@ var Sphere = /** @class */ (function (_super) {
         radius /= size;
         return new Sphere(center, radius);
     };
-    Sphere.prototype.FitToPointCloud = function (cloud) {
-        var lsFitting = new LeastSquaresFitting(SphereFitting.Parameters(this.center, this.radius), new SphereFitting(this), cloud, 'Computing best fitting sphere');
+    Sphere.prototype.ComputeBounds = function (points) {
+        //NA
+    };
+    Sphere.prototype.FitToPoints = function (points) {
+        var lsFitting = new LeastSquaresFitting(SphereFitting.Parameters(this.center, this.radius), new SphereFitting(this), points, 'Computing best fitting sphere');
         var self = this;
         lsFitting.SetNext(function () { return self.NotifyChange(); });
         lsFitting.Start();
@@ -4901,11 +4997,11 @@ var Cylinder = /** @class */ (function (_super) {
         var op = Math.sqrt(hyp - (adj * adj));
         return Math.abs(op - this.radius);
     };
-    Cylinder.prototype.ComputeBounds = function (points, cloud) {
+    Cylinder.prototype.ComputeBounds = function (points) {
         var min = 0;
         var max = 0;
-        for (var ii = 0; ii < points.length; ii++) {
-            var d_1 = cloud.GetPoint(points[ii]).Minus(this.center).Dot(this.axis);
+        for (var ii = 0; ii < points.Size(); ii++) {
+            var d_1 = points.GetPoint(ii).Minus(this.center).Dot(this.axis);
             if (ii == 0 || d_1 < min) {
                 min = d_1;
             }
@@ -4929,19 +5025,19 @@ var Cylinder = /** @class */ (function (_super) {
         radius /= size;
         return new Cylinder(center, plane.normal, radius, 0);
     };
-    Cylinder.prototype.FitToPointCloud = function (cloud) {
+    Cylinder.prototype.FitToPoints = function (points) {
         var self = this;
-        var lsFitting = new LeastSquaresFitting(CylinderFitting.Parameters(this.center, this.axis, this.radius), new CylinderFitting(this), cloud, 'Computing best fitting cylinder');
-        lsFitting.SetNext(function () { return self.FinalizeFitting(cloud); });
+        var lsFitting = new LeastSquaresFitting(CylinderFitting.Parameters(this.center, this.axis, this.radius), new CylinderFitting(this), points, 'Computing best fitting cylinder');
+        lsFitting.SetNext(function () { return self.FinalizeFitting(points); });
         lsFitting.Start();
     };
-    Cylinder.prototype.FinalizeFitting = function (cloud) {
+    Cylinder.prototype.FinalizeFitting = function (points) {
         //Compute actual cylinder center and bounds along the axis
         var zmin = null;
         var zmax = null;
-        var size = cloud.Size();
+        var size = points.Size();
         for (var index = 0; index < size; index++) {
-            var z = cloud.GetPoint(index).Minus(this.center).Dot(this.axis);
+            var z = points.GetPoint(index).Minus(this.center).Dot(this.axis);
             if (zmin === null || zmin > z) {
                 zmin = z;
             }
@@ -5277,10 +5373,10 @@ var Cone = /** @class */ (function (_super) {
             return (Math.cos(this.angle) * delta.Cross(this.axis).Norm()) - (Math.sin(this.angle) * delta.Dot(this.axis));
         }
     };
-    Cone.prototype.ComputeBounds = function (points, cloud) {
+    Cone.prototype.ComputeBounds = function (points) {
         var max = 0;
-        for (var ii = 0; ii < points.length; ii++) {
-            var d = cloud.GetPoint(points[ii]).Minus(this.apex).Dot(this.axis);
+        for (var ii = 0; ii < points.Size(); ii++) {
+            var d = points.GetPoint(ii).Minus(this.apex).Dot(this.axis);
             if (ii == 0 || d > max) {
                 max = d;
             }
@@ -5293,22 +5389,11 @@ var Cone = /** @class */ (function (_super) {
         var planeheight = plane.center.Norm();
         var angle = Math.asin(planeheight);
         var size = cloud.Size();
-        //Find the appex, being the point that belongs to all the normals planes
-        //(Suboptimal : would be better to have the closed form solution, not the time right now)
-        var left = Matrix.Null(3, 3);
-        var right = Matrix.Null(1, 3);
+        var planes = new Array(size);
         for (var index = 0; index < size; index++) {
-            var n = gsphere.GetData(index);
-            var p = cloud.GetPoint(index);
-            var s = p.Dot(n);
-            for (var ii = 0; ii < 3; ii++) {
-                right.AddValue(ii, 0, n.Get(ii) * s);
-                for (var jj = 0; jj < 3; jj++) {
-                    left.AddValue(ii, jj, n.Get(ii) * n.Get(jj));
-                }
-            }
+            planes[index] = new PlaneFittingResult(cloud.GetPoint(index), gsphere.GetPoint(index));
         }
-        var apex = left.LUSolve(right).GetColumnVector(0);
+        var apex = Geometry.PlanesIntersection(planes);
         //Handle axis orientation : make it point to he cloud centroid ... otherwise, we could face ill-conditionned matrices during the fitting step
         var delta = Geometry.Centroid(cloud).Minus(apex);
         if (plane.normal.Dot(delta) < 0) {
@@ -5316,18 +5401,18 @@ var Cone = /** @class */ (function (_super) {
         }
         return new Cone(apex, plane.normal, angle, 0);
     };
-    Cone.prototype.FitToPointCloud = function (cloud) {
+    Cone.prototype.FitToPoints = function (points) {
         var self = this;
-        var lsFitting = new LeastSquaresFitting(ConeFitting.Parameters(this.apex, this.axis, this.angle), new ConeFitting(this), cloud, 'Computing best fitting cone');
-        lsFitting.SetNext(function () { return self.FinalizeFitting(cloud); });
+        var lsFitting = new LeastSquaresFitting(ConeFitting.Parameters(this.apex, this.axis, this.angle), new ConeFitting(this), points, 'Computing best fitting cone');
+        lsFitting.SetNext(function () { return self.FinalizeFitting(points); });
         lsFitting.Start();
     };
-    Cone.prototype.FinalizeFitting = function (cloud) {
+    Cone.prototype.FinalizeFitting = function (points) {
         //Compute actual cone height and axis direction
         var zmax = null;
-        var size = cloud.Size();
+        var size = points.Size();
         for (var index = 0; index < size; index++) {
-            var z = cloud.GetPoint(index).Minus(this.apex).Dot(this.axis);
+            var z = points.GetPoint(index).Minus(this.apex).Dot(this.axis);
             if (zmax === null || Math.abs(zmax) < Math.abs(z)) {
                 zmax = z;
             }
@@ -5641,6 +5726,12 @@ var Torus = /** @class */ (function (_super) {
         this.center = transform.TransformPoint(this.center);
         this.greatRadius *= transform.scalefactor;
         this.smallRadius *= transform.scalefactor;
+    };
+    Torus.prototype.ComputeBounds = function (points) {
+        //NA
+    };
+    Torus.prototype.FitToPoints = function (points) {
+        throw 'Not implemented yet';
     };
     return Torus;
 }(Shape));
@@ -6107,52 +6198,30 @@ var ScalarField = /** @class */ (function () {
 /// <reference path="shapes/cylinder.ts" />
 /// <reference path="../tools/longprocess.ts" />
 var Ransac = /** @class */ (function () {
-    function Ransac(cloud, generators) {
+    function Ransac(cloud, generators, nbFailure, noise) {
         if (generators === void 0) { generators = null; }
         this.cloud = cloud;
         this.generators = generators;
-        this.ComputeShapeScore = function (shape) {
-            var score = {
-                score: 0,
-                points: []
-            };
-            for (var ii = 0; ii < this.cloud.Size(); ii++) {
-                if (!this.ignore[ii]) {
-                    var dist = shape.Distance(this.cloud.GetPoint(ii));
-                    if (dist > this.noise) {
-                        dist = this.noise;
-                    }
-                    else {
-                        score.points.push(ii);
-                    }
-                    score.score += dist * dist;
-                }
-            }
-            return score;
-        };
+        this.nbFailure = nbFailure;
+        this.noise = noise;
         this.nbPoints = 3;
-        this.nbFailure = 100;
-        this.noise = 0.1;
         this.ignore = new Array(this.cloud.Size());
         for (var ii = 0; ii < this.cloud.Size(); ii++) {
             this.ignore[ii] = false;
         }
+        this.remainingPoints = this.cloud.Size();
     }
     Ransac.prototype.SetGenerators = function (generators) {
         this.generators = generators;
     };
     Ransac.prototype.IsDone = function () {
-        for (var ii = 0; ii < this.ignore.length; ii++) {
-            if (!this.ignore[ii]) {
-                return false;
-            }
-        }
-        return true;
+        return this.remainingPoints > 0;
     };
     Ransac.prototype.FindBestFittingShape = function (onDone) {
         var step = new RansacStepProcessor(this);
-        step.SetNext(function (s) { return onDone(s.best.shape); });
+        step.SetNext(function (s) { return onDone(s.best); });
         step.Start();
+        return step;
     };
     Ransac.prototype.PickPoints = function () {
         var points = [];
@@ -6176,19 +6245,15 @@ var Ransac = /** @class */ (function () {
         for (var ii = 0; ii < this.generators.length; ii++) {
             var shape = this.generators[ii](points);
             if (shape != null) {
-                candidates.push(shape);
+                candidates.push(new Candidate(shape));
             }
         }
         //Compute scores and keep the best candidate
         var candidate = null;
         for (var ii = 0; ii < candidates.length; ii++) {
-            var score = this.ComputeShapeScore(candidates[ii]);
-            if (candidate == null || candidate.score > score.score) {
-                candidate = {
-                    score: score.score,
-                    points: score.points,
-                    shape: candidates[ii]
-                };
+            candidates[ii].ComputeScore(this.cloud, this.noise, this.ignore);
+            if (candidate == null || candidate.score > candidates[ii].score) {
+                candidate = candidates[ii];
             }
         }
         return candidate;
@@ -6202,8 +6267,7 @@ var Ransac = /** @class */ (function () {
         var r2 = new Ray(points[1].point, points[1].normal);
         var center = Geometry.LinesIntersection(r1, r2);
         var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
-        var result = new Sphere(center, radius);
-        return result;
+        return new Sphere(center, radius);
     };
     Ransac.RansacCylinder = function (points) {
         var r1 = new Ray(points[0].point, points[0].normal);
@@ -6211,8 +6275,23 @@ var Ransac = /** @class */ (function () {
         var center = Geometry.LinesIntersection(r1, r2);
         var axis = r1.dir.Cross(r2.dir);
         var radius = 0.5 * (r1.from.Minus(center).Norm() + r2.from.Minus(center).Norm());
-        var result = new Cylinder(center, axis, radius, 1.0);
-        return result;
+        return new Cylinder(center, axis, radius, 0);
+    };
+    Ransac.RansacCone = function (points) {
+        var axis = points[2].normal.Minus(points[0].normal).Cross(points[1].normal.Minus(points[0].normal));
+        axis.Normalize();
+        var hh = axis.Dot(points[0].normal);
+        var angle = Math.asin(hh);
+        var planes = [
+            new PlaneFittingResult(points[0].point, points[0].normal),
+            new PlaneFittingResult(points[1].point, points[1].normal),
+            new PlaneFittingResult(points[2].point, points[2].normal)
+        ];
+        var apex = Geometry.PlanesIntersection(planes);
+        if (axis.Dot(points[0].point.Minus(apex)) < 0) {
+            axis = axis.Times(-1);
+        }
+        return new Cone(apex, axis, angle, 0);
     };
     return Ransac;
 }());
@@ -6225,18 +6304,35 @@ var PickedPoints = /** @class */ (function () {
     return PickedPoints;
 }());
 var Candidate = /** @class */ (function () {
-    function Candidate(score, points, shape) {
-        this.score = score;
-        this.points = points;
+    function Candidate(shape) {
         this.shape = shape;
     }
+    Candidate.prototype.ComputeScore = function (cloud, noise, ignore) {
+        this.score = 0;
+        this.points = [];
+        //Suboptimal. TODO : use the KDTree to grant fast access to the shapes neighbours
+        for (var ii = 0; ii < cloud.Size(); ii++) {
+            if (!ignore[ii]) {
+                var dist = this.shape.Distance(cloud.GetPoint(ii));
+                if (dist > noise) {
+                    dist = noise;
+                }
+                else {
+                    this.points.push(ii);
+                }
+                this.score += dist * dist;
+            }
+        }
+    };
     return Candidate;
 }());
 var RansacStepProcessor = /** @class */ (function (_super) {
     __extends(RansacStepProcessor, _super);
     function RansacStepProcessor(ransac) {
-        var _this = _super.call(this, 'Searching for a shape') || this;
+        var _this = _super.call(this, 'Searching for a new shape in the point cloud') || this;
         _this.ransac = ransac;
+        _this.nbTrials = 0;
+        _this.progress = 0;
         return _this;
     }
     Object.defineProperty(RansacStepProcessor.prototype, "Done", {
@@ -6275,9 +6371,12 @@ var RansacStepProcessor = /** @class */ (function (_super) {
         }
     };
     RansacStepProcessor.prototype.Finalize = function () {
-        this.best.shape.ComputeBounds(this.best.points, this.ransac.cloud);
+        this.best.shape.FitToPoints(new PointSubCloud(this.ransac.cloud, this.best.points));
+        this.best.ComputeScore(this.ransac.cloud, this.ransac.noise, this.ransac.ignore);
+        this.best.shape.ComputeBounds(new PointSubCloud(this.ransac.cloud, this.best.points));
         for (var index = 0; index < this.best.points.length; index++) {
             this.ransac.ignore[this.best.points[index]] = true;
+            this.ransac.remainingPoints--;
         }
     };
     return RansacStepProcessor;
@@ -6521,6 +6620,7 @@ var PCLPointCloud = /** @class */ (function (_super) {
     PCLPointCloud.prototype.GetActions = function (delegate) {
         var cloud = this;
         var result = _super.prototype.GetActions.call(this, delegate);
+        result.push(new ExportPointCloudFileAction(this));
         result.push(null);
         if (this.cloud.HasNormals()) {
             result.push(new ClearNormalsAction(this));
@@ -6534,19 +6634,8 @@ var PCLPointCloud = /** @class */ (function (_super) {
         result.push(new ComputeDensityAction(this));
         result.push(new ComputeNoiseAction(this));
         result.push(null);
-        var ransac = false;
-        if (cloud.ransac) {
-            result.push(new ResetDetectionAction(this));
-            ransac = true;
-        }
-        if (!(cloud.ransac && cloud.ransac.IsDone())) {
-            result.push(new RansacDetectionAction(this));
-            ransac = true;
-        }
+        result.push(new RansacDetectionAction(this));
         result.push(new FindBestFittingShapeAction(this));
-        if (ransac)
-            result.push(null);
-        result.push(new ExportPointCloudFileAction(this));
         return result;
     };
     PCLPointCloud.prototype.TransformPrivitive = function (transform) {
@@ -6870,53 +6959,31 @@ var CloudProcess = /** @class */ (function (_super) {
 //===================================================
 // Shapes detection
 //===================================================
-var ResetDetectionAction = /** @class */ (function (_super) {
-    __extends(ResetDetectionAction, _super);
-    function ResetDetectionAction(cloud) {
-        return _super.call(this, cloud, 'Reset detection') || this;
-    }
-    ResetDetectionAction.prototype.Enabled = function () {
-        return !!this.GetPCLCloud().ransac;
-    };
-    ResetDetectionAction.prototype.Trigger = function () {
-        this.GetPCLCloud().ransac = null;
-    };
-    return ResetDetectionAction;
-}(PCLCloudAction));
 var RansacDetectionAction = /** @class */ (function (_super) {
     __extends(RansacDetectionAction, _super);
     function RansacDetectionAction(cloud) {
-        return _super.call(this, cloud, 'Detect ' + (cloud.ransac ? 'another' : 'a') + ' shape', 'Try to detect the shape a shape in the poiutn cloud') || this;
+        return _super.call(this, cloud, 'Detect shapes ...', 'Try to detect as many shapes as possible in the selected point cloud (using the RANSAC algorithm)') || this;
     }
     RansacDetectionAction.prototype.Enabled = function () {
         return this.GetCloud().HasNormals();
     };
     RansacDetectionAction.prototype.Trigger = function () {
-        var cloud = this.GetPCLCloud();
-        if (!cloud.ransac) {
-            var self_8 = this;
-            cloud.ransac = new Ransac(this.GetCloud());
-            var dialog = new Dialog(function (d) { return self_8.InitializeAndLauchRansac(d); }, function () {
-                cloud.ransac = null;
-                return true;
-            });
-            dialog.InsertValue('Failures', cloud.ransac.nbFailure);
-            dialog.InsertValue('Noise', cloud.ransac.noise);
-            dialog.InsertTitle('Shapes to detect');
-            dialog.InsertCheckBox('Planes', true);
-            dialog.InsertCheckBox('Spheres', true);
-            dialog.InsertCheckBox('Cylinders', true);
-        }
-        else {
-            var self_9 = this;
-            cloud.ransac.FindBestFittingShape(function (s) { return self_9.HandleResult(s); });
-        }
+        var self = this;
+        var dialog = new Dialog(function (d) { return self.InitializeAndLauchRansac(d); }, function (d) { return true; });
+        dialog.InsertValue('Failures', 100);
+        dialog.InsertValue('Noise', 0.1);
+        dialog.InsertTitle('Shapes to detect');
+        dialog.InsertCheckBox('Planes', true);
+        dialog.InsertCheckBox('Spheres', true);
+        dialog.InsertCheckBox('Cylinders', true);
+        dialog.InsertCheckBox('Cones', true);
     };
     RansacDetectionAction.prototype.InitializeAndLauchRansac = function (properties) {
-        var ransac = this.GetPCLCloud().ransac;
+        var nbFailure;
+        var noise;
         try {
-            ransac.nbFailure = parseInt(properties.GetValue('Failures'));
-            ransac.noise = parseFloat(properties.GetValue('Noise'));
+            nbFailure = parseInt(properties.GetValue('Failures'));
+            noise = parseFloat(properties.GetValue('Noise'));
         }
         catch (exc) {
             return false;
@@ -6928,16 +6995,62 @@ var RansacDetectionAction = /** @class */ (function (_super) {
             generators.push(Ransac.RansacSphere);
         if (properties.GetValue('Cylinders'))
             generators.push(Ransac.RansacCylinder);
-        ransac.SetGenerators(generators);
+        if (properties.GetValue('Cones'))
+            generators.push(Ransac.RansacCone);
         var self = this;
-        ransac.FindBestFittingShape(function (s) { return self.HandleResult(s); });
+        this.stoped = false;
+        this.ransac = new Ransac(this.GetCloud(), generators, nbFailure, noise);
+        this.progress = new ProgressBar(function () { return self.Stop(); });
+        this.progress.Initialize('Dicovering shapes in the point cloud', this);
+        this.LaunchNewRansacStep();
         return true;
     };
-    RansacDetectionAction.prototype.HandleResult = function (shape) {
-        var pclshape = new PCLShapeWrapper(shape).GetPCLShape();
-        var owner = this.GetPCLCloud().owner;
-        owner.Add(pclshape);
-        pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+    RansacDetectionAction.prototype.Stopable = function () {
+        return true;
+    };
+    RansacDetectionAction.prototype.Stop = function () {
+        this.stoped = true;
+        if (this.pendingstep) {
+            this.pendingstep.Stop();
+        }
+        this.progress.Finalize();
+        this.progress.Delete();
+    };
+    RansacDetectionAction.prototype.LaunchNewRansacStep = function () {
+        var self = this;
+        var target = this.ransac.cloud.Size();
+        var done = target - this.ransac.remainingPoints;
+        this.progress.Update(done, target);
+        if (this.ransac.remainingPoints > this.ransac.nbPoints && !this.stoped) {
+            setTimeout(function () {
+                self.pendingstep = self.ransac.FindBestFittingShape(function (s) { return self.HandleResult(s); });
+            }, this.progress.RefreshDelay());
+        }
+        else {
+            if (!this.stoped) {
+                this.GetPCLCloud().SetVisibility(false);
+            }
+            this.progress.Finalize();
+            this.progress.Delete();
+        }
+    };
+    RansacDetectionAction.prototype.HandleResult = function (candidate) {
+        if (!this.stoped) {
+            if (!this.result) {
+                this.result = new PCLGroup('Shapes detection in "' + this.GetPCLCloud().name + '"');
+                var owner = this.GetPCLCloud().owner;
+                owner.Add(this.result);
+                this.result.NotifyChange(this.result, ChangeType.NewItem);
+            }
+            var subcloud = new PointSubCloud(this.ransac.cloud, candidate.points);
+            var segment = new PCLPointCloud(subcloud.ToPointCloud());
+            this.result.Add(segment);
+            segment.NotifyChange(segment, ChangeType.NewItem);
+            var pclshape = new PCLShapeWrapper(candidate.shape).GetPCLShape();
+            this.result.Add(pclshape);
+            pclshape.NotifyChange(pclshape, ChangeType.NewItem);
+            this.LaunchNewRansacStep();
+        }
     };
     return RansacDetectionAction;
 }(PCLCloudAction));
@@ -7026,11 +7139,11 @@ var FindBestFittingShapeAction = /** @class */ (function (_super) {
             fittingProcesses.push(new ConeFittingProcess(this.results));
         }
         if (fittingProcesses.length) {
-            var self_10 = this;
+            var self_8 = this;
             for (var index = 1; index < fittingProcesses.length; index++) {
                 fittingProcesses[index - 1].SetNext(fittingProcesses[index]);
             }
-            fittingProcesses[fittingProcesses.length - 1].SetNext(function () { return self_10.HandleResult(); });
+            fittingProcesses[fittingProcesses.length - 1].SetNext(function () { return self_8.HandleResult(); });
             fittingProcesses[0].Start();
             return true;
         }
@@ -7048,21 +7161,6 @@ var FindBestFittingShapeAction = /** @class */ (function (_super) {
     };
     return FindBestFittingShapeAction;
 }(PCLCloudAction));
-var PlaneFittingProcess = /** @class */ (function (_super) {
-    __extends(PlaneFittingProcess, _super);
-    function PlaneFittingProcess(fittingResult) {
-        var _this = _super.call(this) || this;
-        _this.fittingResult = fittingResult;
-        return _this;
-    }
-    PlaneFittingProcess.prototype.Run = function (ondone) {
-        var cloud = this.fittingResult.cloud;
-        var planefit = Geometry.PlaneFitting(cloud);
-        this.fittingResult.AddFittingResult(new Plane(planefit.center, planefit.normal, planefit.ComputePatchRadius(cloud)));
-        ondone();
-    };
-    return PlaneFittingProcess;
-}(Process));
 var LSFittingProcess = /** @class */ (function (_super) {
     __extends(LSFittingProcess, _super);
     function LSFittingProcess(fittingResult) {
@@ -7070,26 +7168,35 @@ var LSFittingProcess = /** @class */ (function (_super) {
         _this.fittingResult = fittingResult;
         return _this;
     }
-    LSFittingProcess.prototype.AddResultHandlerHook = function (shape, ondone) {
+    LSFittingProcess.prototype.Run = function (ondone) {
         var self = this;
+        var shape = this.GetInitialGuess(this.fittingResult.cloud);
         shape.onChange = function () {
             shape.onChange = null;
             self.fittingResult.AddFittingResult(shape);
             ondone();
         };
+        shape.FitToPoints(this.fittingResult.cloud);
     };
     return LSFittingProcess;
 }(Process));
+var PlaneFittingProcess = /** @class */ (function (_super) {
+    __extends(PlaneFittingProcess, _super);
+    function PlaneFittingProcess(fittingResult) {
+        return _super.call(this, fittingResult) || this;
+    }
+    PlaneFittingProcess.prototype.GetInitialGuess = function () {
+        return new Plane(new Vector([0, 0, 0]), new Vector([0, 0, 1]), 0);
+    };
+    return PlaneFittingProcess;
+}(LSFittingProcess));
 var SphereFittingProcess = /** @class */ (function (_super) {
     __extends(SphereFittingProcess, _super);
     function SphereFittingProcess(fittingResult) {
         return _super.call(this, fittingResult) || this;
     }
-    SphereFittingProcess.prototype.Run = function (ondone) {
-        var cloud = this.fittingResult.cloud;
-        var sphere = Sphere.InitialGuessForFitting(cloud);
-        this.AddResultHandlerHook(sphere, ondone);
-        sphere.FitToPointCloud(cloud);
+    SphereFittingProcess.prototype.GetInitialGuess = function (cloud) {
+        return Sphere.InitialGuessForFitting(cloud);
     };
     return SphereFittingProcess;
 }(LSFittingProcess));
@@ -7098,11 +7205,8 @@ var CylinderFittingProcess = /** @class */ (function (_super) {
     function CylinderFittingProcess(fittingResult) {
         return _super.call(this, fittingResult) || this;
     }
-    CylinderFittingProcess.prototype.Run = function (ondone) {
-        var cloud = this.fittingResult.cloud;
-        var cylinder = Cylinder.InitialGuessForFitting(cloud);
-        this.AddResultHandlerHook(cylinder, ondone);
-        cylinder.FitToPointCloud(cloud);
+    CylinderFittingProcess.prototype.GetInitialGuess = function (cloud) {
+        return Cylinder.InitialGuessForFitting(cloud);
     };
     return CylinderFittingProcess;
 }(LSFittingProcess));
@@ -7111,11 +7215,8 @@ var ConeFittingProcess = /** @class */ (function (_super) {
     function ConeFittingProcess(fittingResult) {
         return _super.call(this, fittingResult) || this;
     }
-    ConeFittingProcess.prototype.Run = function (ondone) {
-        var cloud = this.fittingResult.cloud;
-        var cone = Cone.InitialGuessForFitting(cloud);
-        this.AddResultHandlerHook(cone, ondone);
-        cone.FitToPointCloud(cloud);
+    ConeFittingProcess.prototype.GetInitialGuess = function (cloud) {
+        return Cone.InitialGuessForFitting(cloud);
     };
     return ConeFittingProcess;
 }(LSFittingProcess));
@@ -8356,9 +8457,9 @@ var Light = /** @class */ (function (_super) {
     };
     Light.prototype.FillProperties = function () {
         if (this.properties) {
-            var self_11 = this;
-            this.properties.Push(new VectorProperty('Position', function () { return self_11.position; }, false, function () { }));
-            this.properties.Push(new ColorProperty('Color', function () { return self_11.color; }, function (newColor) { return self_11.color = newColor; }));
+            var self_9 = this;
+            this.properties.Push(new VectorProperty('Position', function () { return self_9.position; }, false, function () { }));
+            this.properties.Push(new ColorProperty('Color', function () { return self_9.color; }, function (newColor) { return self_9.color = newColor; }));
         }
     };
     Light.prototype.GetDisplayIcon = function () {
@@ -9698,9 +9799,9 @@ var SelectionList = /** @class */ (function () {
         }
         else if (this.Size() > 1) {
             if (!this.ownProperties) {
-                var self_12 = this;
+                var self_10 = this;
                 this.ownProperties = new Properties();
-                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_12.Size(); }, null));
+                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_10.Size(); }, null));
             }
             return this.ownProperties;
         }
@@ -9902,7 +10003,8 @@ var ComboBox = /** @class */ (function () {
 }());
 /// <reference path="control.ts" />
 var ProgressBar = /** @class */ (function () {
-    function ProgressBar() {
+    function ProgressBar(onstop) {
+        if (onstop === void 0) { onstop = null; }
         this.control = document.createElement('div');
         this.control.className = 'ProgressControl';
         this.message = document.createElement('div');
@@ -9914,13 +10016,25 @@ var ProgressBar = /** @class */ (function () {
         this.progress = document.createElement('div');
         this.progress.className = 'ProgressBar';
         this.container.appendChild(this.progress);
+        this.nestedcontainer = document.createElement('div');
+        this.nestedcontainer.className = 'NestedProgressContainer';
+        this.control.appendChild(this.nestedcontainer);
         this.lastupdate = null;
         this.refreshtime = 10;
         this.updatedelay = 500;
     }
-    ProgressBar.prototype.Initialize = function (message) {
+    ProgressBar.prototype.Initialize = function (message, stopable) {
+        if (stopable === void 0) { stopable = null; }
         this.SetMessage(message);
         this.Show();
+        if (stopable && stopable.Stopable()) {
+            var stopbtn = document.createElement('input');
+            stopbtn.type = 'button';
+            stopbtn.className = 'ProgressStop';
+            stopbtn.value = 'Stop';
+            stopbtn.onclick = function () { return stopable.Stop(); };
+            this.control.appendChild(stopbtn);
+        }
     };
     ProgressBar.prototype.Finalize = function () {
         this.Delete();
@@ -9933,11 +10047,20 @@ var ProgressBar = /** @class */ (function () {
         this.message.appendChild(document.createTextNode(message));
     };
     ProgressBar.prototype.Show = function () {
-        document.body.appendChild(this.control);
+        if (ProgressBar.CurrentProgress) {
+            ProgressBar.CurrentProgress.nestedcontainer.appendChild(this.control);
+        }
+        else {
+            document.body.appendChild(this.control);
+            ProgressBar.CurrentProgress = this;
+        }
     };
     ProgressBar.prototype.Delete = function () {
-        if (this.control.parentNode) {
+        if (this.control.parentNode && this.control.parentNode.contains(this.control)) {
             this.control.parentNode.removeChild(this.control);
+        }
+        if (ProgressBar.CurrentProgress === this) {
+            ProgressBar.CurrentProgress = null;
         }
     };
     ProgressBar.prototype.Update = function (current, total) {
@@ -9985,12 +10108,12 @@ var FileOpener = /** @class */ (function (_super) {
     };
     FileOpener.prototype.LoadFile = function (file) {
         if (file) {
-            var self_13 = this;
+            var self_11 = this;
             var progress_1 = new ProgressBar();
             var reader = new FileReader();
             reader.onloadend = function () {
                 progress_1.Delete();
-                self_13.LoadFromContent(file.name, this.result);
+                self_11.LoadFromContent(file.name, this.result);
             };
             reader.onprogress = function (event) {
                 progress_1.Update(event.loaded, event.total);
@@ -10028,8 +10151,8 @@ var FileOpener = /** @class */ (function (_super) {
                     break;
             }
             if (loader) {
-                var self_14 = this;
-                loader.Load(function (result) { self_14.filehandler(result); }, function (error) { alert(error); });
+                var self_12 = this;
+                loader.Load(function (result) { self_12.filehandler(result); }, function (error) { alert(error); });
             }
         }
     };
@@ -10267,11 +10390,11 @@ var PCLApp = /** @class */ (function () {
         if (scenebuffer) {
             console.info('Loading locally stored data');
             var loader = new PCLLoader(scenebuffer);
-            var self_15 = this;
-            loader.Load(function (scene) { return self_15.Initialize(scene); }, function (error) {
+            var self_13 = this;
+            loader.Load(function (scene) { return self_13.Initialize(scene); }, function (error) {
                 console.error('Failed to initialize scene from storage : ' + error);
                 console.warn('Start from an empty scene, instead');
-                self_15.Initialize(new Scene());
+                self_13.Initialize(new Scene());
             });
         }
         else {
