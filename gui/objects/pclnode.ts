@@ -26,8 +26,14 @@ interface Notifiable {
 	NotifyChange(source: PCLNode, type: ChangeType);
 }
 
+enum PCLInsertionMode {
+	Before,
+	After
+}
+
 interface PCLContainer {
 	Add(child: PCLNode);
+	Insert(node: PCLNode, refnode: PCLNode, mode: PCLInsertionMode);
 	Remove(child: PCLNode);
 	NotifyChange(source: PCLNode, type: ChangeType);
 }

@@ -39,7 +39,7 @@ class DataItem implements Control, Notifiable {
 		this.container.draggable = true;
 
 		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
-		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
+		this.itemContentContainer.className = item.selected ? 'SelectedSceneItem' : 'SceneItem';
 		this.container.appendChild(this.itemContentContainer);
 
 		//Diplay a small icon to show the itam nature
@@ -84,24 +84,7 @@ class DataItem implements Control, Notifiable {
 		this.itemContentContainer.oncontextmenu = (ev) => this.ItemMenu(ev);
 
 		//Handle Drag'n drop
-		this.container.ondragstart = (ev: DragEvent) => {
-			ev.dataTransfer.setData("application/my-app", ((ev.target) as HTMLElement).id);
-			ev.dataTransfer.dropEffect = 'move';
-		};
-		this.container.ondragover = (ev: DragEvent) => {
-			ev.preventDefault();
-			ev.dataTransfer.dropEffect = 'move';
-
-		};
-		this.container.ondrop = (ev: DragEvent) => {
-			ev.preventDefault();
-			let sourceId = ev.dataTransfer.getData("application/my-app");
-			let source = DataItem.GetItemById(sourceId).item;
-			let target = this.item;
-			let container: PCLContainer = PCLNode.IsPCLContainer(target) ? target as PCLContainer : target.owner;
-			container.Add(source);
-			ev.stopPropagation();
-		};
+		this.InitializeDrapNDrop();
 
 		//Populate children
 		this.itemChildContainer = document.createElement('div');
@@ -119,6 +102,73 @@ class DataItem implements Control, Notifiable {
 		//Bind HTML content to match the actual state of the item
 		item.AddChangeListener(this);
 		item.AddChangeListener(this.dataHandler.selection);
+	}
+
+	private ClearDrapNDropStyles() {
+		this.container.classList.remove('DropInside');
+		this.container.classList.remove('DropBefore');
+		this.container.classList.remove('DropAfter');
+	}
+
+	private InitializeDrapNDrop() {
+		this.container.ondragstart = (ev: DragEvent) => {
+			ev.stopPropagation();
+			ev.dataTransfer.setData("application/my-app", ((ev.target) as HTMLElement).id);
+			ev.dataTransfer.dropEffect = 'move';
+			if (PCLNode.IsPCLContainer(this.item)) {
+				(this.item as PCLGroup).SetFolding(true);
+			}
+		};
+
+		this.container.ondragover = (ev: DragEvent) => {
+			ev.preventDefault();
+			ev.stopPropagation();
+			ev.dataTransfer.dropEffect = 'move';
+			let target = (ev.target) as HTMLElement;
+			if (PCLNode.IsPCLContainer(this.item) && target.classList.contains('ItemIcon')) {
+				this.container.classList.add('DropInside');
+				(this.item as PCLGroup).SetFolding(false);
+			}
+			else {
+				if (ev.offsetY > this.itemContentContainer.clientHeight / 2) {
+					this.container.classList.remove('DropBefore');
+					this.container.classList.add('DropAfter');
+				}
+				else {
+					this.container.classList.remove('DropAfter');
+					this.container.classList.add('DropBefore');
+				}
+			}
+		};
+
+		this.container.ondragleave = (ev: DragEvent) => {
+			ev.stopPropagation();
+			this.ClearDrapNDropStyles();
+		};
+
+		this.container.ondragend = (ev: DragEvent) => {
+			this.ClearDrapNDropStyles();
+		};
+
+		this.container.ondrop = (ev: DragEvent) => {
+			ev.preventDefault();
+			ev.stopPropagation();
+			let sourceId = ev.dataTransfer.getData("application/my-app");
+			let source = DataItem.GetItemById(sourceId).item;
+			let target = this.item;
+			if (PCLNode.IsPCLContainer(target) && (ev.target as HTMLElement).classList.contains('ItemIcon')) {
+				(target as PCLContainer).Add(source);
+			}
+			else {
+				if (ev.offsetY > this.itemContentContainer.clientHeight / 2) {
+					(target.owner).Insert(source, target, PCLInsertionMode.After);
+				}
+				else {
+					(target.owner).Insert(source, target, PCLInsertionMode.Before);
+				}
+			}
+			this.ClearDrapNDropStyles();
+		};
 	}
 
 	// Hierarchy management
@@ -163,7 +213,7 @@ class DataItem implements Control, Notifiable {
 			this.UpdateGroupFolding(this.item as PCLGroup);
 		}
 		this.itemName.data = this.item.name;
-		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
+		this.itemContentContainer.className = this.item.selected ? 'SelectedSceneItem' : 'SceneItem';
 		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
 		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
 	}
