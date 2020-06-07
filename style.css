@@ -105,6 +105,7 @@ div.TreeItemContainer {
 
 div.SceneItem, div.SelectedSceneItem {
 	cursor: pointer;
+	border: 1px solid transparent;
 }
 
 div.SelectedSceneItem {
@@ -377,3 +378,15 @@ div.ColorScale {
 			height: 200px;
 			border-left: unset;
 		}
+
+.DropInside {
+	border: 2px dashed black !important;
+}
+
+.DropBefore {
+	border-top: 1px dashed black !important;
+}
+
+.DropAfter {
+	border-bottom: 1px dashed black !important;
+}

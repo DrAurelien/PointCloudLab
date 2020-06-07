@@ -14,15 +14,32 @@ class DataItem implements Control, Notifiable {
 	itemName: Text;
 	visibilityIcon: HTMLElement;
 	sons: DataItem[];
+	uuid: number;
 
+	//Fast access to all the data items
+	static ItemsCache: DataItem[] = [];
+	static IdPrefix = 'DataItem#';
+	static GetItemById(id: string): DataItem {
+		let key = parseInt(id.replace(DataItem.IdPrefix, ''), 10);
+		return DataItem.ItemsCache[key];
+	}
+	static GetId(uuid: number) {
+		return DataItem.IdPrefix + uuid;
+	}
+
+	//Here we go
 	constructor(public item: PCLNode, private dataHandler: DataHandler) {
+		this.uuid = DataItem.ItemsCache.length;
+		DataItem.ItemsCache.push(this);
 		this.sons = [];
 
 		this.container = <HTMLDivElement>document.createElement('div');
 		this.container.className = 'TreeItemContainer';
+		this.container.id = DataItem.GetId(this.uuid);
+		this.container.draggable = true;
 
 		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
-		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
+		this.itemContentContainer.className = item.selected ? 'SelectedSceneItem' : 'SceneItem';
 		this.container.appendChild(this.itemContentContainer);
 
 		//Diplay a small icon to show the itam nature
@@ -66,6 +83,9 @@ class DataItem implements Control, Notifiable {
 		this.itemContentContainer.onclick = (ev) => self.ItemClicked(ev);
 		this.itemContentContainer.oncontextmenu = (ev) => this.ItemMenu(ev);
 
+		//Handle Drag'n drop
+		this.InitializeDrapNDrop();
+
 		//Populate children
 		this.itemChildContainer = document.createElement('div');
 		this.itemChildContainer.className = 'ItemChildContainer';
@@ -82,6 +102,73 @@ class DataItem implements Control, Notifiable {
 		//Bind HTML content to match the actual state of the item
 		item.AddChangeListener(this);
 		item.AddChangeListener(this.dataHandler.selection);
+	}
+
+	private ClearDrapNDropStyles() {
+		this.container.classList.remove('DropInside');
+		this.container.classList.remove('DropBefore');
+		this.container.classList.remove('DropAfter');
+	}
+
+	private InitializeDrapNDrop() {
+		this.container.ondragstart = (ev: DragEvent) => {
+			ev.stopPropagation();
+			ev.dataTransfer.setData("application/my-app", ((ev.target) as HTMLElement).id);
+			ev.dataTransfer.dropEffect = 'move';
+			if (PCLNode.IsPCLContainer(this.item)) {
+				(this.item as PCLGroup).SetFolding(true);
+			}
+		};
+
+		this.container.ondragover = (ev: DragEvent) => {
+			ev.preventDefault();
+			ev.stopPropagation();
+			ev.dataTransfer.dropEffect = 'move';
+			let target = (ev.target) as HTMLElement;
+			if (PCLNode.IsPCLContainer(this.item) && target.classList.contains('ItemIcon')) {
+				this.container.classList.add('DropInside');
+				(this.item as PCLGroup).SetFolding(false);
+			}
+			else {
+				if (ev.offsetY > this.itemContentContainer.clientHeight / 2) {
+					this.container.classList.remove('DropBefore');
+					this.container.classList.add('DropAfter');
+				}
+				else {
+					this.container.classList.remove('DropAfter');
+					this.container.classList.add('DropBefore');
+				}
+			}
+		};
+
+		this.container.ondragleave = (ev: DragEvent) => {
+			ev.stopPropagation();
+			this.ClearDrapNDropStyles();
+		};
+
+		this.container.ondragend = (ev: DragEvent) => {
+			this.ClearDrapNDropStyles();
+		};
+
+		this.container.ondrop = (ev: DragEvent) => {
+			ev.preventDefault();
+			ev.stopPropagation();
+			let sourceId = ev.dataTransfer.getData("application/my-app");
+			let source = DataItem.GetItemById(sourceId).item;
+			let target = this.item;
+			if (PCLNode.IsPCLContainer(target) && (ev.target as HTMLElement).classList.contains('ItemIcon')) {
+				(target as PCLContainer).Add(source);
+			}
+			else {
+				if (ev.offsetY > this.itemContentContainer.clientHeight / 2) {
+					(target.owner).Insert(source, target, PCLInsertionMode.After);
+				}
+				else {
+					(target.owner).Insert(source, target, PCLInsertionMode.Before);
+				}
+			}
+			this.ClearDrapNDropStyles();
+		};
 	}
 
 	// Hierarchy management
@@ -126,7 +213,7 @@ class DataItem implements Control, Notifiable {
 			this.UpdateGroupFolding(this.item as PCLGroup);
 		}
 		this.itemName.data = this.item.name;
-		this.itemContentContainer.className = (this.item.selected) ? 'SelectedSceneItem' : 'SceneItem';
+		this.itemContentContainer.className = this.item.selected ? 'SelectedSceneItem' : 'SceneItem';
 		this.itemIcon.className = 'ItemIcon fa ' + this.item.GetDisplayIcon();
 		this.visibilityIcon.className = 'ItemAction fa fa-eye' + (this.item.visible ? '' : '-slash');
 	}

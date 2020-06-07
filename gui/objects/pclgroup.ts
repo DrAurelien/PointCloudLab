@@ -17,7 +17,7 @@
 /// <reference path="../../files/pclserializer.ts" />
 
 
-class PCLGroup extends PCLNode {
+class PCLGroup extends PCLNode implements PCLContainer {
 	children: PCLNode[];
 	folded: boolean;
 
@@ -27,9 +27,16 @@ class PCLGroup extends PCLNode {
 		this.folded = false;
 	}
 
+	SetFolding(f: boolean) {
+		let changed = f !== this.folded;
+		this.folded = f;
+		if (changed) {
+			this.NotifyChange(this, ChangeType.Folding);
+		}
+	}
+
 	ToggleFolding() {
-		this.folded = !this.folded;
-		this.NotifyChange(this, ChangeType.Folding);
+		this.SetFolding(!this.folded);
 	}
 
 	DrawNode(drawingContext: DrawingContext): void {
@@ -70,6 +77,16 @@ class PCLGroup extends PCLNode {
 		}
 		son.owner = this;
 		this.children.push(son);
+		this.NotifyChange(this, ChangeType.Children | ChangeType.Properties);
+	}
+
+	Insert(node: PCLNode, refnode: PCLNode, mode: PCLInsertionMode): void {
+		if (node.owner) {
+			node.owner.Remove(node)
+		}
+		node.owner = this;
+		let index = this.children.indexOf(refnode);
+		this.children.splice(mode == PCLInsertionMode.Before ? index : (index + 1), 0, node);
 		this.NotifyChange(this, ChangeType.Children | ChangeType.Properties);
 	}
 

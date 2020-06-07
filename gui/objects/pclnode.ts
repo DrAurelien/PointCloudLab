@@ -26,8 +26,14 @@ interface Notifiable {
 	NotifyChange(source: PCLNode, type: ChangeType);
 }
 
+enum PCLInsertionMode {
+	Before,
+	After
+}
+
 interface PCLContainer {
 	Add(child: PCLNode);
+	Insert(node: PCLNode, refnode: PCLNode, mode: PCLInsertionMode);
 	Remove(child: PCLNode);
 	NotifyChange(source: PCLNode, type: ChangeType);
 }
@@ -179,6 +185,13 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 	}
 	protected abstract SerializeNode(serializer: PCLSerializer);
 	abstract GetParsingHandler();
+
+	static IsPCLContainer(x: any): x is PCLContainer {
+		return x &&
+			x.Add && x.Add instanceof Function &&
+			x.Remove && x.Remove instanceof Function &&
+			x.NotifyChange && x.NotifyChange instanceof Function;
+	}
 }
 
 interface PCLNodeHandler {
