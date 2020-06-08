@@ -10,7 +10,7 @@
 /// <reference path="../controler/actions/delegate.ts" />
 
 
-class DataHandler extends HideablePannel {
+class DataHandler extends HideablePannel implements SelectionChangeHandler {
 	dataArea: Pannel;
 	propertiesArea: Pannel;
 	selection: SelectionList;
@@ -82,8 +82,7 @@ class DataHandler extends HideablePannel {
 	}
 
 	FocusOnItem(item: PCLNode) {
-		this.selection.Clear();
-		item.Select(true);
+		this.selection.SingleSelect(item);
 		this.ownerView.FocusOnCurrentSelection();
 	}
 

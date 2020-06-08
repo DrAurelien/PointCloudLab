@@ -145,14 +145,25 @@ class PCLApp implements Controlable, ActionDelegate {
 		//Actual serialization
 		serializer = new PCLSerializer(bufferSize);
 		this.dataHandler.scene.Serialize(serializer);
-		window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
+		try {
+			window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
 
-		let data = window.localStorage.getItem(PCLApp.sceneStorageKey);
-		if (data.length != serializer.GetBufferSize()) {
-			console.info('Integrity check failure. Cannot save data to the local storage.');
-			window.localStorage.setItem(PCLApp.sceneStorageKey, '');
+			let data = window.localStorage.getItem(PCLApp.sceneStorageKey);
+			if (data.length != serializer.GetBufferSize()) {
+				console.info('Integrity check failure. Cannot save data to the local storage.');
+				window.localStorage.setItem(PCLApp.sceneStorageKey, '');
+			}
+			console.info('Scene data have been sucessfully saved to local storage.');
 		}
-		console.info('Scene data have been sucessfully saved to local storage.');
+		catch (e) {
+			let message = 'The data cannot be saved to your browser local storage :\n';
+			message += '"' + e + '"\n';
+			message += 'Do you want to save the scene data to a local file, instead ?\n';
+			message += '(You can load the generated file using the leftmost menu entry)';
+			if (confirm(message)) {
+				this.dataHandler.scene.SaveToFile();
+			}
+		}
 	}
 
 	//=========================================
@@ -168,8 +179,7 @@ class PCLApp implements Controlable, ActionDelegate {
 		if (scene.Lights.children.length == 1) {
 			light = scene.Lights.children[0] as Light;
 			if (takeFocus) {
-				this.dataHandler.selection.Clear();
-				light.Select(true);
+				this.dataHandler.selection.SingleSelect(light);
 			}
 		}
 		else {
@@ -234,9 +244,9 @@ class PCLApp implements Controlable, ActionDelegate {
 		let scene = this.dataHandler.scene;
 		let selected = this.sceneRenderer.PickObject(x, y, scene);
 		if (exclusive) {
-			this.dataHandler.selection.Clear();
+			this.dataHandler.selection.SingleSelect(selected as PCLNode);
 		}
-		if (selected && (selected instanceof PCLNode)) {
+		else if (selected && (selected instanceof PCLNode)) {
 			(selected as PCLNode).Select(true);
 		}
 	}

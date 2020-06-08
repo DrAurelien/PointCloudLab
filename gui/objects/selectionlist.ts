@@ -115,13 +115,26 @@ class SelectionList implements Notifiable {
 		return this.items.length == 1 ? this.items[0] : null;
 	}
 
-	Clear() {
+	SingleSelect(node: PCLNode) {
+		let changeHandler = this.changeHandler;
+		this.changeHandler = null;
+		if (node) {
+			node.Select(true);
+		}
 		while (this.items.length) {
 			let length = this.items.length;
-			this.items[length - 1].Select(false);
+			let last = this.items[length - 1];
+			if (last != node) {
+				last.Select(false);
+			}
 			if (this.items.length == length) {
 				this.items.pop();
 			}
 		}
+		if (node) {
+			this.items.push(node);
+		}
+		this.changeHandler = changeHandler;
+		this.changeHandler.OnSelectionChange(this);
 	}
 }
