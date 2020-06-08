@@ -43,10 +43,9 @@ class ProgressBar implements Control, ProgressHandler {
 		this.Show();
 
 		if (stopable && stopable.Stopable()) {
-			let stopbtn: HTMLInputElement = document.createElement('input');
-			stopbtn.type = 'button';
+			let stopbtn: HTMLDivElement = document.createElement('div');
 			stopbtn.className = 'ProgressStop';
-			stopbtn.value = 'Stop';
+			stopbtn.innerText = 'Stop';
 			stopbtn.onclick = () => stopable.Stop();
 			this.control.appendChild(stopbtn);
 		}
@@ -87,6 +86,7 @@ class ProgressBar implements Control, ProgressHandler {
 	Update(current: number, total: number) {
 		let now = (new Date()).getTime();
 		if (this.lastupdate == null || (now - this.lastupdate) > this.updatedelay) {
+			this.progress.innerText = (current / total * 100).toFixed(1) + '%';
 			this.progress.style.width = ((current / total) * this.container.scrollWidth) + 'px';
 			this.lastupdate = now;
 			return true;

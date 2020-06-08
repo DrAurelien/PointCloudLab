@@ -290,8 +290,7 @@ class DataItem implements Control, Notifiable {
 			this.item.ToggleSelection();
 		}
 		else {
-			this.dataHandler.selection.Clear();
-			this.item.Select(true);
+			this.dataHandler.selection.SingleSelect(this.item);
 			new TemporaryHint('You can select multiple items by pressing the CTRL key when clicking an element');
 		}
 		this.CancelBubbling(event);
@@ -300,10 +299,12 @@ class DataItem implements Control, Notifiable {
 	//When right - clicking an item
 	ItemMenu(ev: MouseEvent): boolean {
 		let event: MouseEvent = ev || (window.event as MouseEvent);
-		if (!event.ctrlKey) {
-			this.dataHandler.selection.Clear();
+		if (event.ctrlKey) {
+			this.item.Select(true);
 		}
-		this.item.Select(true);
+		else {
+			this.dataHandler.selection.SingleSelect(this.item);
+		}
 		let actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
 		if (actions) {
 			Popup.CreatePopup(this.itemContentContainer, actions);
