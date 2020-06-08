@@ -1917,16 +1917,17 @@ var PCLNode = /** @class */ (function () {
             result.push(new SimpleAction('Show', function () { self.visible = true; self.NotifyChange(self, ChangeType.Display | ChangeType.Properties); }));
         }
         result.push(null);
-        result.push(new SimpleAction('Save to file', function () {
-            //Dry run (to get the buffer size)
-            var serializer = new PCLSerializer(null);
-            self.Serialize(serializer);
-            //Actual serialization
-            serializer = new PCLSerializer(serializer.GetBufferSize());
-            self.Serialize(serializer);
-            FileExporter.ExportFile(self.name + '.pcld', serializer.GetBuffer(), 'model');
-        }));
+        result.push(new SimpleAction('Save to file', function () { return self.SaveToFile(); }));
         return result;
+    };
+    PCLNode.prototype.SaveToFile = function () {
+        //Dry run (to get the buffer size)
+        var serializer = new PCLSerializer(null);
+        this.Serialize(serializer);
+        //Actual serialization
+        serializer = new PCLSerializer(serializer.GetBufferSize());
+        this.Serialize(serializer);
+        FileExporter.ExportFile(this.name + '.pcld', serializer.GetBuffer(), 'model');
     };
     PCLNode.prototype.GetChildren = function () {
         return [];
@@ -9698,8 +9699,7 @@ var DataItem = /** @class */ (function () {
             this.item.ToggleSelection();
         }
         else {
-            this.dataHandler.selection.Clear();
-            this.item.Select(true);
+            this.dataHandler.selection.SingleSelect(this.item);
             new TemporaryHint('You can select multiple items by pressing the CTRL key when clicking an element');
         }
         this.CancelBubbling(event);
@@ -9707,10 +9707,12 @@ var DataItem = /** @class */ (function () {
     //When right - clicking an item
     DataItem.prototype.ItemMenu = function (ev) {
         var event = ev || window.event;
-        if (!event.ctrlKey) {
-            this.dataHandler.selection.Clear();
+        if (event.ctrlKey) {
+            this.item.Select(true);
         }
-        this.item.Select(true);
+        else {
+            this.dataHandler.selection.SingleSelect(this.item);
+        }
         var actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
         if (actions) {
             Popup.CreatePopup(this.itemContentContainer, actions);
@@ -9845,14 +9847,27 @@ var SelectionList = /** @class */ (function () {
     SelectionList.prototype.GetSingleSelection = function () {
         return this.items.length == 1 ? this.items[0] : null;
     };
-    SelectionList.prototype.Clear = function () {
+    SelectionList.prototype.SingleSelect = function (node) {
+        var changeHandler = this.changeHandler;
+        this.changeHandler = null;
+        if (node) {
+            node.Select(true);
+        }
         while (this.items.length) {
             var length_2 = this.items.length;
-            this.items[length_2 - 1].Select(false);
+            var last = this.items[length_2 - 1];
+            if (last != node) {
+                last.Select(false);
+            }
             if (this.items.length == length_2) {
                 this.items.pop();
             }
         }
+        if (node) {
+            this.items.push(node);
+        }
+        this.changeHandler = changeHandler;
+        this.changeHandler.OnSelectionChange(this);
     };
     return SelectionList;
 }());
@@ -9927,8 +9942,7 @@ var DataHandler = /** @class */ (function (_super) {
         this.RefreshColorScale();
     };
     DataHandler.prototype.FocusOnItem = function (item) {
-        this.selection.Clear();
-        item.Select(true);
+        this.selection.SingleSelect(item);
         this.ownerView.FocusOnCurrentSelection();
     };
     DataHandler.prototype.UpdateProperties = function () {
@@ -10028,10 +10042,9 @@ var ProgressBar = /** @class */ (function () {
         this.SetMessage(message);
         this.Show();
         if (stopable && stopable.Stopable()) {
-            var stopbtn = document.createElement('input');
-            stopbtn.type = 'button';
+            var stopbtn = document.createElement('div');
             stopbtn.className = 'ProgressStop';
-            stopbtn.value = 'Stop';
+            stopbtn.innerText = 'Stop';
             stopbtn.onclick = function () { return stopable.Stop(); };
             this.control.appendChild(stopbtn);
         }
@@ -10066,6 +10079,7 @@ var ProgressBar = /** @class */ (function () {
     ProgressBar.prototype.Update = function (current, total) {
         var now = (new Date()).getTime();
         if (this.lastupdate == null || (now - this.lastupdate) > this.updatedelay) {
+            this.progress.innerText = (current / total * 100).toFixed(1) + '%';
             this.progress.style.width = ((current / total) * this.container.scrollWidth) + 'px';
             this.lastupdate = now;
             return true;
@@ -10475,13 +10489,24 @@ var PCLApp = /** @class */ (function () {
         //Actual serialization
         serializer = new PCLSerializer(bufferSize);
         this.dataHandler.scene.Serialize(serializer);
-        window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
-        var data = window.localStorage.getItem(PCLApp.sceneStorageKey);
-        if (data.length != serializer.GetBufferSize()) {
-            console.info('Integrity check failure. Cannot save data to the local storage.');
-            window.localStorage.setItem(PCLApp.sceneStorageKey, '');
+        try {
+            window.localStorage.setItem(PCLApp.sceneStorageKey, serializer.GetBufferAsString());
+            var data = window.localStorage.getItem(PCLApp.sceneStorageKey);
+            if (data.length != serializer.GetBufferSize()) {
+                console.info('Integrity check failure. Cannot save data to the local storage.');
+                window.localStorage.setItem(PCLApp.sceneStorageKey, '');
+            }
+            console.info('Scene data have been sucessfully saved to local storage.');
         }
-        console.info('Scene data have been sucessfully saved to local storage.');
+        catch (e) {
+            var message = 'The data cannot be saved to your browser local storage :\n';
+            message += '"' + e + '"\n';
+            message += 'Do you want to save the scene data to a local file, instead ?\n';
+            message += '(You can load the generated file using the leftmost menu entry)';
+            if (confirm(message)) {
+                this.dataHandler.scene.SaveToFile();
+            }
+        }
     };
     //=========================================
     // Implement Controlable interface
@@ -10495,8 +10520,7 @@ var PCLApp = /** @class */ (function () {
         if (scene.Lights.children.length == 1) {
             light = scene.Lights.children[0];
             if (takeFocus) {
-                this.dataHandler.selection.Clear();
-                light.Select(true);
+                this.dataHandler.selection.SingleSelect(light);
             }
         }
         else {
@@ -10552,9 +10576,9 @@ var PCLApp = /** @class */ (function () {
         var scene = this.dataHandler.scene;
         var selected = this.sceneRenderer.PickObject(x, y, scene);
         if (exclusive) {
-            this.dataHandler.selection.Clear();
+            this.dataHandler.selection.SingleSelect(selected);
         }
-        if (selected && (selected instanceof PCLNode)) {
+        else if (selected && (selected instanceof PCLNode)) {
             selected.Select(true);
         }
     };
