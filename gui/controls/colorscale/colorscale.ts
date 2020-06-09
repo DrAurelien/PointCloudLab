@@ -30,6 +30,10 @@ class ColorScale extends Pannel {
 		this.histo.GetElement().onclick = () => {
 			self.histo.Collapse();
 		}
+
+		let hintmsg = 'Color scale for field "' + field.name + '".\n';
+		hintmsg += 'Click this element to show/hide the values histogram. You can also modify the scale boundaries.';
+		new Hint(this.renderer, hintmsg);
 	}
 
 	GetColor(value: number): string {

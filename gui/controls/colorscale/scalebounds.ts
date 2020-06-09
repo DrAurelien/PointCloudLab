@@ -18,6 +18,10 @@ class ColorScaleBoundsContainer implements Control {
 
 		this.container.appendChild(this.lower.GetElement());
 		this.container.appendChild(this.upper.GetElement());
+
+		let hintmsg = 'Click the value to change the corresponding bound color.\n';
+		hintmsg += 'Drag the value up/down to set the range of displayable values.';
+		new Hint(this, hintmsg);
 	}
 
 	GetElement() {
