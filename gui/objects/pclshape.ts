@@ -27,10 +27,6 @@ abstract class PCLShape extends PCLPrimitive implements Pickable {
 		this.pendingmesh = false;
 
 		let self = this;
-		shape.onChange = () => {
-			self.Invalidate();
-			self.NotifyChange(self, ChangeType.Display | ChangeType.Properties);
-		};
 	}
 
 	abstract GetGeometry(): Properties;

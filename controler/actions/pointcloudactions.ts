@@ -251,7 +251,7 @@ class FindBestFittingShapeAction extends PCLCloudAction {
 		let cloud = this.GetCloud();
 		this.results = new ShapeFittingResult(cloud);
 
-		let fittingProcesses: Process[] = []
+		let fittingProcesses: LSFittingProcess[] = []
 		if (properties.GetValue('Plane')) {
 			fittingProcesses.push(new PlaneFittingProcess(this.results));
 		}
@@ -295,14 +295,17 @@ abstract class LSFittingProcess extends Process {
 	}
 
 	Run(ondone: Function) {
-		let self = this;
 		let shape = this.GetInitialGuess(this.fittingResult.cloud);
-		shape.onChange = () => {
-			shape.onChange = null;
-			self.fittingResult.AddFittingResult(shape);
+		let fitting = shape.FitToPoints(this.fittingResult.cloud);
+		if (fitting) {
+			let self = this;
+			fitting.SetNext(() => self.fittingResult.AddFittingResult(shape));
+			fitting.SetNext(ondone);
+		}
+		else {
+			this.fittingResult.AddFittingResult(shape);
 			ondone();
 		}
-		shape.FitToPoints(this.fittingResult.cloud);
 	}
 
 	abstract GetInitialGuess(cloud: PointCloud): Shape;

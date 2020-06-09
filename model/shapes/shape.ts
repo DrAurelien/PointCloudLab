@@ -9,7 +9,6 @@
 
 abstract class Shape {
 	boundingbox: BoundingBox;
-	onChange: Function;
 
 	constructor() {
 		this.boundingbox = null;
@@ -32,14 +31,7 @@ abstract class Shape {
 	}
 
 	abstract ComputeBounds(points: PointSet);
-	abstract FitToPoints(points: PointSet);
-
-	protected NotifyChange() {
-		if (this.onChange) {
-			this.onChange();
-		}
-	}
-
+	abstract FitToPoints(points: PointSet): Process;
 }
 
 interface ShapeCreator {

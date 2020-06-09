@@ -209,7 +209,7 @@ class Cylinder extends Shape {
 		return new Cylinder(center, plane.normal, radius, 0);
 	}
 
-	FitToPoints(points: PointSet) {
+	FitToPoints(points: PointSet): Process {
 		let self = this;
 		let lsFitting = new LeastSquaresFitting(
 			CylinderFitting.Parameters(this.center, this.axis, this.radius),
@@ -218,6 +218,7 @@ class Cylinder extends Shape {
 			'Computing best fitting cylinder');
 		lsFitting.SetNext(() => self.FinalizeFitting(points));
 		lsFitting.Start();
+		return lsFitting;
 	}
 
 	private FinalizeFitting(points: PointSet) {
@@ -236,8 +237,6 @@ class Cylinder extends Shape {
 		}
 		this.center = this.center.Plus(this.axis.Times((zmax + zmin) / 2.0));
 		this.height = zmax - zmin;
-
-		this.NotifyChange();
 	}
 }
 

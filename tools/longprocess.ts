@@ -1,36 +1,70 @@
-﻿abstract class Process {
-	private next: Process | Function;
+﻿enum ProcessExecutionStatus {
+	notstarted,
+	started,
+	terminated
+}
+
+abstract class Process {
+	private next: Process;
+	private status: ProcessExecutionStatus;
+
+	constructor() {
+		this.status = ProcessExecutionStatus.notstarted;
+	}
 
 	Start(caller: Process = null) {
 		var self = this;
+		this.status = ProcessExecutionStatus.started;
 		this.Initialize(caller);
 		this.Run(() => {
 			self.Finalize();
+			self.status = ProcessExecutionStatus.terminated;
 			self.InvokeNext();
 		});
 	}
 
 	SetNext(next: Process | Function): Process {
-		this.next = next;
-		if (next instanceof Process)
-			return next;
-		return this;
+		if (this.next) {
+			return this.next.SetNext(next);
+		}
+		else {
+			this.next = next instanceof Process ? next : new SimpleProcess(next);
+			if (this.status == ProcessExecutionStatus.terminated) {
+				this.InvokeNext();
+			}
+			return this.next;
+		}
 	}
 
 	private InvokeNext() {
 		if (this.next) {
-			if (this.next instanceof Process) {
-				(<Process>this.next).Start(this);
-			}
-			else {
-				(<Function>this.next)(this);
-			}
+			this.next.Start(this);
 		}
 	}
 
 	protected Initialize(caller: Process) { }
 	protected Finalize() { }
 	protected abstract Run(ondone: Function);
+}
+
+//================================================
+// Simple synchroneous function execution
+//================================================
+class SimpleProcess extends Process {
+	caller: Process;
+
+	constructor(private callback) {
+		super();
+	}
+
+	Initialize(caller: Process) {
+		this.caller = caller;
+	}
+
+	Run(ondone) {
+		this.callback(this.caller);
+		ondone();
+	}
 }
 
 //================================================

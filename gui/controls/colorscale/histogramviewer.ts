@@ -23,6 +23,10 @@ class HistogramViewer implements Control {
 			self.Refresh();
 			event.stopPropagation();
 		}
+
+		let hintmsg = 'Histogram of values for field "' + scalarfield.name + '"\n';
+		hintmsg += 'You can modify the number of classes in the histogram by scrolling up / down (using the mouse wheel)';
+		new Hint(this, hintmsg);
 	}
 
 	Refresh() {

@@ -142,7 +142,7 @@ class Torus extends Shape {
 		//NA
 	}
 
-	FitToPoints(points: PointSet) {
+	FitToPoints(points: PointSet): Process {
 		throw 'Not implemented yet';
 	}
 }

@@ -41,7 +41,9 @@ class Ransac {
 
 	FindBestFittingShape(onDone: CandidateHandler): RansacStepProcessor {
 		let step = new RansacStepProcessor(this);
-		step.SetNext((s: RansacStepProcessor) => onDone(s.best));
+		let finalizer = new RansacStepFinalizer(this);
+		step.SetNext(finalizer)
+			.SetNext((s: RansacStepFinalizer) => onDone(s.best));
 		step.Start();
 		return step;
 	}
@@ -209,9 +211,30 @@ class RansacStepProcessor extends LongProcess{
 			}
 		}
 	}
+}
+
+class RansacStepFinalizer extends Process {
+	best: Candidate;
+
+	constructor(private ransac: Ransac) {
+		super();
+	}
+
+	Initialize(ransacstep: RansacStepProcessor) {
+		this.best = ransacstep.best;
+	}
+
+	Run(ondone) {
+		let fitting = this.best.shape.FitToPoints(new PointSubCloud(this.ransac.cloud, this.best.points));
+		if (fitting) {
+			fitting.SetNext(ondone);
+		}
+		else {
+			ondone();
+		}
+	}
 
 	Finalize() {
-		this.best.shape.FitToPoints(new PointSubCloud(this.ransac.cloud, this.best.points));
 		this.best.ComputeScore(this.ransac.cloud, this.ransac.noise, this.ransac.ignore);
 		this.best.shape.ComputeBounds(new PointSubCloud(this.ransac.cloud, this.best.points));
 
