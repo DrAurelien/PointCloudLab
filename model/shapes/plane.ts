@@ -107,11 +107,11 @@ class Plane extends Shape {
 		this.patchRadius = Math.sqrt(this.patchRadius);
 	}
 
-	FitToPoints(points: PointSet) {
+	FitToPoints(points: PointSet): Process {
 		let result = Geometry.PlaneFitting(points);
 		this.normal = result.normal;
 		this.center = result.center;
 		this.patchRadius = result.ComputePatchRadius(points);
-		this.NotifyChange();
+		return null;
 	}
 }

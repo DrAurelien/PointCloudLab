@@ -192,7 +192,7 @@ class Cone extends Shape {
 		return new Cone(apex, plane.normal, angle, 0);
 	}
 
-	FitToPoints(points: PointSet) {
+	FitToPoints(points: PointSet): Process {
 		let self = this;
 		let lsFitting = new LeastSquaresFitting(
 			ConeFitting.Parameters(this.apex, this.axis, this.angle),
@@ -202,6 +202,7 @@ class Cone extends Shape {
 		);
 		lsFitting.SetNext(() => self.FinalizeFitting(points));
 		lsFitting.Start();
+		return lsFitting;
 	}
 
 	private FinalizeFitting(points: PointSet) {
@@ -218,8 +219,6 @@ class Cone extends Shape {
 			this.axis = this.axis.Times(-1);
 		}
 		this.height = Math.abs(zmax);
-
-		this.NotifyChange();
 	}
 }
 

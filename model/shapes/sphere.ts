@@ -158,15 +158,15 @@ class Sphere extends Shape {
 		//NA
 	}
 
-	FitToPoints(points: PointSet) {
+	FitToPoints(points: PointSet): Process {
 		let lsFitting = new LeastSquaresFitting(
 			SphereFitting.Parameters(this.center, this.radius),
 			new SphereFitting(this),
 			points,
 			'Computing best fitting sphere');
 		let self = this;
-		lsFitting.SetNext(() => self.NotifyChange());
 		lsFitting.Start();
+		return lsFitting;
 	}
 }
 
