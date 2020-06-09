@@ -2375,38 +2375,67 @@ var PCLPrimitiveParsingHandler = /** @class */ (function (_super) {
     };
     return PCLPrimitiveParsingHandler;
 }(PCLNodeParsingHandler));
+var ProcessExecutionStatus;
+(function (ProcessExecutionStatus) {
+    ProcessExecutionStatus[ProcessExecutionStatus["notstarted"] = 0] = "notstarted";
+    ProcessExecutionStatus[ProcessExecutionStatus["started"] = 1] = "started";
+    ProcessExecutionStatus[ProcessExecutionStatus["terminated"] = 2] = "terminated";
+})(ProcessExecutionStatus || (ProcessExecutionStatus = {}));
 var Process = /** @class */ (function () {
     function Process() {
+        this.status = ProcessExecutionStatus.notstarted;
     }
     Process.prototype.Start = function (caller) {
         if (caller === void 0) { caller = null; }
         var self = this;
+        this.status = ProcessExecutionStatus.started;
         this.Initialize(caller);
         this.Run(function () {
             self.Finalize();
+            self.status = ProcessExecutionStatus.terminated;
             self.InvokeNext();
         });
     };
     Process.prototype.SetNext = function (next) {
-        this.next = next;
-        if (next instanceof Process)
-            return next;
-        return this;
+        if (this.next) {
+            return this.next.SetNext(next);
+        }
+        else {
+            this.next = next instanceof Process ? next : new SimpleProcess(next);
+            if (this.status == ProcessExecutionStatus.terminated) {
+                this.InvokeNext();
+            }
+            return this.next;
+        }
     };
     Process.prototype.InvokeNext = function () {
         if (this.next) {
-            if (this.next instanceof Process) {
-                this.next.Start(this);
-            }
-            else {
-                this.next(this);
-            }
+            this.next.Start(this);
         }
     };
     Process.prototype.Initialize = function (caller) { };
     Process.prototype.Finalize = function () { };
     return Process;
 }());
+//================================================
+// Simple synchroneous function execution
+//================================================
+var SimpleProcess = /** @class */ (function (_super) {
+    __extends(SimpleProcess, _super);
+    function SimpleProcess(callback) {
+        var _this = _super.call(this) || this;
+        _this.callback = callback;
+        return _this;
+    }
+    SimpleProcess.prototype.Initialize = function (caller) {
+        this.caller = caller;
+    };
+    SimpleProcess.prototype.Run = function (ondone) {
+        this.callback(this.caller);
+        ondone();
+    };
+    return SimpleProcess;
+}(Process));
 var LongProcess = /** @class */ (function (_super) {
     __extends(LongProcess, _super);
     function LongProcess(message, onstoped) {
@@ -3865,11 +3894,6 @@ var Shape = /** @class */ (function () {
         }
         return this.boundingbox;
     };
-    Shape.prototype.NotifyChange = function () {
-        if (this.onChange) {
-            this.onChange();
-        }
-    };
     return Shape;
 }());
 /// <reference path="container.ts" />
@@ -4151,10 +4175,6 @@ var PCLShape = /** @class */ (function (_super) {
         _this.meshsampling = 0;
         _this.pendingmesh = false;
         var self = _this;
-        shape.onChange = function () {
-            self.Invalidate();
-            self.NotifyChange(self, ChangeType.Display | ChangeType.Properties);
-        };
         return _this;
     }
     PCLShape.prototype.TransformPrivitive = function (transform) {
@@ -4329,7 +4349,7 @@ var Plane = /** @class */ (function (_super) {
         this.normal = result.normal;
         this.center = result.center;
         this.patchRadius = result.ComputePatchRadius(points);
-        this.NotifyChange();
+        return null;
     };
     return Plane;
 }(Shape));
@@ -4716,8 +4736,8 @@ var Sphere = /** @class */ (function (_super) {
     Sphere.prototype.FitToPoints = function (points) {
         var lsFitting = new LeastSquaresFitting(SphereFitting.Parameters(this.center, this.radius), new SphereFitting(this), points, 'Computing best fitting sphere');
         var self = this;
-        lsFitting.SetNext(function () { return self.NotifyChange(); });
         lsFitting.Start();
+        return lsFitting;
     };
     return Sphere;
 }(Shape));
@@ -4766,11 +4786,6 @@ var PCLSphere = /** @class */ (function (_super) {
     function PCLSphere(sphere) {
         var _this = _super.call(this, NameProvider.GetName('Sphere'), sphere) || this;
         _this.sphere = sphere;
-        var self = _this;
-        sphere.onChange = function () {
-            self.Invalidate();
-            self.NotifyChange(self, ChangeType.Properties | ChangeType.Display);
-        };
         return _this;
     }
     PCLSphere.prototype.GetShape = function () {
@@ -5031,6 +5046,7 @@ var Cylinder = /** @class */ (function (_super) {
         var lsFitting = new LeastSquaresFitting(CylinderFitting.Parameters(this.center, this.axis, this.radius), new CylinderFitting(this), points, 'Computing best fitting cylinder');
         lsFitting.SetNext(function () { return self.FinalizeFitting(points); });
         lsFitting.Start();
+        return lsFitting;
     };
     Cylinder.prototype.FinalizeFitting = function (points) {
         //Compute actual cylinder center and bounds along the axis
@@ -5048,7 +5064,6 @@ var Cylinder = /** @class */ (function (_super) {
         }
         this.center = this.center.Plus(this.axis.Times((zmax + zmin) / 2.0));
         this.height = zmax - zmin;
-        this.NotifyChange();
     };
     return Cylinder;
 }(Shape));
@@ -5407,6 +5422,7 @@ var Cone = /** @class */ (function (_super) {
         var lsFitting = new LeastSquaresFitting(ConeFitting.Parameters(this.apex, this.axis, this.angle), new ConeFitting(this), points, 'Computing best fitting cone');
         lsFitting.SetNext(function () { return self.FinalizeFitting(points); });
         lsFitting.Start();
+        return lsFitting;
     };
     Cone.prototype.FinalizeFitting = function (points) {
         //Compute actual cone height and axis direction
@@ -5422,7 +5438,6 @@ var Cone = /** @class */ (function (_super) {
             this.axis = this.axis.Times(-1);
         }
         this.height = Math.abs(zmax);
-        this.NotifyChange();
     };
     return Cone;
 }(Shape));
@@ -6220,7 +6235,9 @@ var Ransac = /** @class */ (function () {
     };
     Ransac.prototype.FindBestFittingShape = function (onDone) {
         var step = new RansacStepProcessor(this);
-        step.SetNext(function (s) { return onDone(s.best); });
+        var finalizer = new RansacStepFinalizer(this);
+        step.SetNext(finalizer)
+            .SetNext(function (s) { return onDone(s.best); });
         step.Start();
         return step;
     };
@@ -6371,8 +6388,28 @@ var RansacStepProcessor = /** @class */ (function (_super) {
             }
         }
     };
-    RansacStepProcessor.prototype.Finalize = function () {
-        this.best.shape.FitToPoints(new PointSubCloud(this.ransac.cloud, this.best.points));
+    return RansacStepProcessor;
+}(LongProcess));
+var RansacStepFinalizer = /** @class */ (function (_super) {
+    __extends(RansacStepFinalizer, _super);
+    function RansacStepFinalizer(ransac) {
+        var _this = _super.call(this) || this;
+        _this.ransac = ransac;
+        return _this;
+    }
+    RansacStepFinalizer.prototype.Initialize = function (ransacstep) {
+        this.best = ransacstep.best;
+    };
+    RansacStepFinalizer.prototype.Run = function (ondone) {
+        var fitting = this.best.shape.FitToPoints(new PointSubCloud(this.ransac.cloud, this.best.points));
+        if (fitting) {
+            fitting.SetNext(ondone);
+        }
+        else {
+            ondone();
+        }
+    };
+    RansacStepFinalizer.prototype.Finalize = function () {
         this.best.ComputeScore(this.ransac.cloud, this.ransac.noise, this.ransac.ignore);
         this.best.shape.ComputeBounds(new PointSubCloud(this.ransac.cloud, this.best.points));
         for (var index = 0; index < this.best.points.length; index++) {
@@ -6380,8 +6417,8 @@ var RansacStepProcessor = /** @class */ (function (_super) {
             this.ransac.remainingPoints--;
         }
     };
-    return RansacStepProcessor;
-}(LongProcess));
+    return RansacStepFinalizer;
+}(Process));
 /// <reference path="../../controler/actions/delegate.ts" />
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../../files/pclserializer.ts" />
@@ -7170,14 +7207,17 @@ var LSFittingProcess = /** @class */ (function (_super) {
         return _this;
     }
     LSFittingProcess.prototype.Run = function (ondone) {
-        var self = this;
         var shape = this.GetInitialGuess(this.fittingResult.cloud);
-        shape.onChange = function () {
-            shape.onChange = null;
-            self.fittingResult.AddFittingResult(shape);
+        var fitting = shape.FitToPoints(this.fittingResult.cloud);
+        if (fitting) {
+            var self_9 = this;
+            fitting.SetNext(function () { return self_9.fittingResult.AddFittingResult(shape); });
+            fitting.SetNext(ondone);
+        }
+        else {
+            this.fittingResult.AddFittingResult(shape);
             ondone();
-        };
-        shape.FitToPoints(this.fittingResult.cloud);
+        }
     };
     return LSFittingProcess;
 }(Process));
@@ -8458,9 +8498,9 @@ var Light = /** @class */ (function (_super) {
     };
     Light.prototype.FillProperties = function () {
         if (this.properties) {
-            var self_9 = this;
-            this.properties.Push(new VectorProperty('Position', function () { return self_9.position; }, false, function () { }));
-            this.properties.Push(new ColorProperty('Color', function () { return self_9.color; }, function (newColor) { return self_9.color = newColor; }));
+            var self_10 = this;
+            this.properties.Push(new VectorProperty('Position', function () { return self_10.position; }, false, function () { }));
+            this.properties.Push(new ColorProperty('Color', function () { return self_10.color; }, function (newColor) { return self_10.color = newColor; }));
         }
     };
     Light.prototype.GetDisplayIcon = function () {
@@ -9099,6 +9139,9 @@ var ColorScaleBoundsContainer = /** @class */ (function () {
         this.upper = new ColorScaleUpperBound(this, function (c) { return field.SetColorMax(c); });
         this.container.appendChild(this.lower.GetElement());
         this.container.appendChild(this.upper.GetElement());
+        var hintmsg = 'Click the value to change the corresponding bound color.\n';
+        hintmsg += 'Drag the value up/down to set the range of displayable values.';
+        new Hint(this, hintmsg);
     }
     ColorScaleBoundsContainer.prototype.GetElement = function () {
         return this.container;
@@ -9360,6 +9403,9 @@ var HistogramViewer = /** @class */ (function () {
             self.Refresh();
             event.stopPropagation();
         };
+        var hintmsg = 'Histogram of values for field "' + scalarfield.name + '"\n';
+        hintmsg += 'You can modify the number of classes in the histogram by scrolling up / down (using the mouse wheel)';
+        new Hint(this, hintmsg);
     }
     HistogramViewer.prototype.Refresh = function () {
         var histogram = new Histogram(this.scalarfield, this.nbrequestedchunks);
@@ -9419,6 +9465,9 @@ var ColorScale = /** @class */ (function (_super) {
         _this.histo.GetElement().onclick = function () {
             self.histo.Collapse();
         };
+        var hintmsg = 'Color scale for field "' + field.name + '".\n';
+        hintmsg += 'Click this element to show/hide the values histogram. You can also modify the scale boundaries.';
+        new Hint(_this.renderer, hintmsg);
         return _this;
     }
     ColorScale.prototype.GetColor = function (value) {
@@ -9801,9 +9850,9 @@ var SelectionList = /** @class */ (function () {
         }
         else if (this.Size() > 1) {
             if (!this.ownProperties) {
-                var self_10 = this;
+                var self_11 = this;
                 this.ownProperties = new Properties();
-                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_10.Size(); }, null));
+                this.ownProperties.Push(new NumberProperty('Selected items', function () { return self_11.Size(); }, null));
             }
             return this.ownProperties;
         }
@@ -10122,12 +10171,12 @@ var FileOpener = /** @class */ (function (_super) {
     };
     FileOpener.prototype.LoadFile = function (file) {
         if (file) {
-            var self_11 = this;
+            var self_12 = this;
             var progress_1 = new ProgressBar();
             var reader = new FileReader();
             reader.onloadend = function () {
                 progress_1.Delete();
-                self_11.LoadFromContent(file.name, this.result);
+                self_12.LoadFromContent(file.name, this.result);
             };
             reader.onprogress = function (event) {
                 progress_1.Update(event.loaded, event.total);
@@ -10165,8 +10214,8 @@ var FileOpener = /** @class */ (function (_super) {
                     break;
             }
             if (loader) {
-                var self_12 = this;
-                loader.Load(function (result) { self_12.filehandler(result); }, function (error) { alert(error); });
+                var self_13 = this;
+                loader.Load(function (result) { self_13.filehandler(result); }, function (error) { alert(error); });
             }
         }
     };
@@ -10404,11 +10453,11 @@ var PCLApp = /** @class */ (function () {
         if (scenebuffer) {
             console.info('Loading locally stored data');
             var loader = new PCLLoader(scenebuffer);
-            var self_13 = this;
-            loader.Load(function (scene) { return self_13.Initialize(scene); }, function (error) {
+            var self_14 = this;
+            loader.Load(function (scene) { return self_14.Initialize(scene); }, function (error) {
                 console.error('Failed to initialize scene from storage : ' + error);
                 console.warn('Start from an empty scene, instead');
-                self_13.Initialize(new Scene());
+                self_14.Initialize(new Scene());
             });
         }
         else {
