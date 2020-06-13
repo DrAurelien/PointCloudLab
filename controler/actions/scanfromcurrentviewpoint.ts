@@ -26,8 +26,8 @@ class ScanFromCurrentViewPointAction extends Action {
 			() => true
 		);
 
-		dialog.InsertValue(ScanFromCurrentViewPointAction.hSamplingTitle, 1084);
-		dialog.InsertValue(ScanFromCurrentViewPointAction.vSamplingTitle, 768);
+		dialog.InsertValue(ScanFromCurrentViewPointAction.hSamplingTitle, 500);
+		dialog.InsertValue(ScanFromCurrentViewPointAction.vSamplingTitle, 500);
 	}
 
 	LaunchScan(properties: Dialog) {
