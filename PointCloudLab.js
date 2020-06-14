@@ -185,7 +185,22 @@ var Vector = /** @class */ (function () {
             this.coordinates[index] /= norm;
         }
     };
+    Vector.Null = function (d) {
+        var v = new Array(d);
+        for (var index = 0; index < d; index++) {
+            v[index] = 0;
+        }
+        return new Vector(v);
+    };
     return Vector;
+}());
+var PointSet = /** @class */ (function () {
+    function PointSet() {
+    }
+    PointSet.prototype.GetData = function (index) {
+        return this.GetPoint(index);
+    };
+    return PointSet;
 }());
 /// <reference path="matrix.ts" />
 var LUDecomposition = /** @class */ (function () {
@@ -275,6 +290,7 @@ var LUDecomposition = /** @class */ (function () {
     };
     return LUDecomposition;
 }());
+/// <reference path="../tools/dataprovider.ts" />
 /// <reference path="vector.ts" />
 /// <reference path="ludecomposition.ts" />
 var Matrix = /** @class */ (function () {
@@ -362,6 +378,16 @@ var Matrix = /** @class */ (function () {
         }
         return result;
     };
+    Matrix.prototype.Plus = function (m) {
+        if (this.width != m.width || this.height != this.height) {
+            throw 'Cannot add matrices whose dimension do not match';
+        }
+        var result = this.Clone();
+        for (var index = 0; index < result.values.length; index++) {
+            result.values[index] += m.values[index];
+        }
+        return result;
+    };
     Matrix.prototype.Transposed = function () {
         var transposed = Matrix.Null(this.height, this.width);
         for (var ii = 0; ii < this.height; ii++) {
@@ -371,21 +397,34 @@ var Matrix = /** @class */ (function () {
         }
         return transposed;
     };
-    Matrix.prototype.GetColumnVector = function (col) {
-        var values = new Array(this.height);
-        for (var index = 0; index < this.height; index++) {
-            values[index] = this.GetValue(index, col);
+    Matrix.prototype.GetColumnVector = function (col, startrow) {
+        if (startrow === void 0) { startrow = 0; }
+        var values = new Array(this.height - startrow);
+        for (var index = startrow; index < this.height; index++) {
+            values[index - startrow] = this.GetValue(index, col);
         }
         return new Vector(values);
     };
-    Matrix.prototype.GetRowVector = function (row) {
-        var values = new Array(this.width);
-        for (var index = 0; index < this.width; index++) {
-            values[index] = this.GetValue(row, index);
+    Matrix.prototype.SetColumnVector = function (col, v) {
+        for (var index = 0; index < this.height; index++) {
+            this.SetValue(index, col, v.Get(index));
+        }
+    };
+    Matrix.prototype.GetRowVector = function (row, startcol) {
+        if (startcol === void 0) { startcol = 0; }
+        var values = new Array(this.width - startcol);
+        for (var index = startcol; index < this.width; index++) {
+            values[index - startcol] = this.GetValue(row, index);
         }
         return new Vector(values);
+    };
+    Matrix.prototype.SetRowVector = function (row, v) {
+        for (var index = 0; index < this.height; index++) {
+            this.SetValue(row, index, v.Get(index));
+        }
     };
     Matrix.prototype.IsDiagonnal = function (error) {
+        if (error === void 0) { error = 1.0e-10; }
         for (var ii = 0; ii < this.height; ii++) {
             for (var jj = 0; jj < this.width; jj++) {
                 if (ii != jj && Math.abs(this.GetValue(ii, jj)) > error) {
@@ -2268,6 +2307,25 @@ var Transform = /** @class */ (function () {
     Transform.prototype.TransformVector = function (v) {
         return Homogeneous.ToVector(this.GetMatrix().Multiply(new HomogeneousVector(v)));
     };
+    Transform.prototype.SetTranslation = function (t) {
+        this.translation = t;
+    };
+    Transform.prototype.SetRotation = function (r) {
+        if (r.width == 4 && r.height == 4) {
+            this.rotation = r;
+        }
+        else if (r.width == 3 && r.height == 3) {
+            this.rotation = Matrix.Identity(4);
+            for (var ii = 0; ii < 3; ii++) {
+                for (var jj = 0; jj < 3; jj++) {
+                    this.rotation.SetValue(ii, jj, r.GetValue(ii, jj));
+                }
+            }
+        }
+        else {
+            throw 'Invalid rotation matrix for rigid transform';
+        }
+    };
     return Transform;
 }());
 /// <reference path="pclnode.ts" />
@@ -2505,8 +2563,9 @@ var LongProcess = /** @class */ (function (_super) {
 //================================================
 var IterativeLongProcess = /** @class */ (function (_super) {
     __extends(IterativeLongProcess, _super);
-    function IterativeLongProcess(nbsteps, message) {
-        var _this = _super.call(this, message) || this;
+    function IterativeLongProcess(nbsteps, message, onstoped) {
+        if (onstoped === void 0) { onstoped = null; }
+        var _this = _super.call(this, message, onstoped) || this;
         _this.nbsteps = nbsteps;
         _this.currentstep = 0;
         return _this;
@@ -3165,7 +3224,7 @@ var EigenDecomposition = /** @class */ (function () {
             var QR = new QRDecomposition(workMatrix);
             workMatrix = QR.R.Multiply(QR.Q);
             eigenVectors = eigenVectors.Multiply(QR.Q);
-            if (workMatrix.IsDiagonnal(1.0e-8)) {
+            if (workMatrix.IsDiagonnal()) {
                 break;
             }
         }
@@ -3181,14 +3240,6 @@ var EigenDecomposition = /** @class */ (function () {
         return result;
     }
     return EigenDecomposition;
-}());
-var PointSet = /** @class */ (function () {
-    function PointSet() {
-    }
-    PointSet.prototype.GetData = function (index) {
-        return this.GetPoint(index);
-    };
-    return PointSet;
 }());
 /// <reference path="vector.ts" />
 /// <reference path="matrix.ts" />
@@ -5724,7 +5775,8 @@ var Torus = /** @class */ (function (_super) {
             2.0 * alpha * beta,
             alpha * alpha
         ]);
-        var roots = quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+        var init = this.GetBoundingBox().RayIntersection(ray);
+        var roots = quartic.FindRealRoots(init.distance);
         var result = new Picking(wrapper);
         for (var index = 0; index < roots.length; index++) {
             result.Add(roots[index]);
@@ -5866,8 +5918,8 @@ var ScanFromCurrentViewPointAction = /** @class */ (function (_super) {
         }, 
         //Cancel has been clicked
         function () { return true; });
-        dialog.InsertValue(ScanFromCurrentViewPointAction.hSamplingTitle, 1084);
-        dialog.InsertValue(ScanFromCurrentViewPointAction.vSamplingTitle, 768);
+        dialog.InsertValue(ScanFromCurrentViewPointAction.hSamplingTitle, 500);
+        dialog.InsertValue(ScanFromCurrentViewPointAction.vSamplingTitle, 500);
     };
     ScanFromCurrentViewPointAction.prototype.LaunchScan = function (properties) {
         var hsampling = parseInt(properties.GetValue(ScanFromCurrentViewPointAction.hSamplingTitle));
@@ -5906,7 +5958,7 @@ var PCLGroup = /** @class */ (function (_super) {
         var _this = _super.call(this, name) || this;
         _this.supportsPrimitivesCreation = supportsPrimitivesCreation;
         _this.children = [];
-        _this.folded = false;
+        _this.folded = true;
         return _this;
     }
     PCLGroup.prototype.SetFolding = function (f) {
@@ -7484,7 +7536,7 @@ var NoiseComputer = /** @class */ (function (_super) {
     return NoiseComputer;
 }(IterativeLongProcess));
 //===================================================
-// Noise
+// Distances
 //===================================================
 var ComputeDistancesAction = /** @class */ (function (_super) {
     __extends(ComputeDistancesAction, _super);
@@ -7526,6 +7578,48 @@ var DistancesComputer = /** @class */ (function (_super) {
     };
     return DistancesComputer;
 }(IterativeLongProcess));
+//===================================================
+// Registration
+//===================================================
+var RegistrationAction = /** @class */ (function (_super) {
+    __extends(RegistrationAction, _super);
+    function RegistrationAction(cloud, reference) {
+        var _this = _super.call(this, cloud, 'Register', 'Compte the rigid motion that fits "' + cloud.name + '" to "' + reference.name + '"') || this;
+        _this.reference = reference;
+        return _this;
+    }
+    RegistrationAction.prototype.Enabled = function () {
+        return true;
+    };
+    RegistrationAction.prototype.Trigger = function () {
+        var self = this;
+        var overlapLabel = 'Overlap (%)';
+        var maxiterationsLabel = 'Max iterations';
+        var dialog = new Dialog(function (d) {
+            var overlap;
+            var maxit;
+            try {
+                overlap = parseFloat(d.GetValue(overlapLabel)) / 100;
+                maxit = parseInt(d.GetValue(maxiterationsLabel), 10);
+            }
+            catch (_a) {
+                return false;
+            }
+            if (overlap > 1 || overlap < 0) {
+                return false;
+            }
+            var pclCloud = self.GetPCLCloud();
+            var registration = new ICPRegistration(self.reference.cloud, self.GetCloud(), overlap, maxit);
+            registration.SetNext(function () { return pclCloud.InvalidateDrawing(); });
+            registration.Start();
+            return true;
+        }, function (d) { return true; });
+        dialog.InsertTitle('Registration settings (Trimmed Iterative Closest Points)');
+        dialog.InsertValue(overlapLabel, 100);
+        dialog.InsertValue(maxiterationsLabel, 20);
+    };
+    return RegistrationAction;
+}(PCLCloudAction));
 //===================================================
 // File export
 //===================================================
@@ -8731,6 +8825,9 @@ var SceneScanner = /** @class */ (function (_super) {
         this.cloud = new PointCloud();
         this.cloud.Reserve(this.width * this.height);
     };
+    SceneScanner.prototype.Stopable = function () {
+        return true;
+    };
     SceneScanner.prototype.Step = function () {
         var screen = this.renderer.camera.screen;
         var x = screen.width * (this.currenti / this.width);
@@ -9801,10 +9898,10 @@ var DataItem = /** @class */ (function () {
     DataItem.IdPrefix = 'DataItem#';
     return DataItem;
 }());
-/// <reference path="pclnode.ts" />
-/// <reference path="../controls/properties/properties.ts" />
-/// <reference path="../../controler/actions/action.ts" />
-/// <reference path="../../model/boundingbox.ts" />
+/// <reference path="objects/pclnode.ts" />
+/// <reference path="controls/properties/properties.ts" />
+/// <reference path="../controler/actions/action.ts" />
+/// <reference path="../model/boundingbox.ts" />
 var SelectionList = /** @class */ (function () {
     function SelectionList(changeHandler) {
         this.changeHandler = changeHandler;
@@ -9878,6 +9975,9 @@ var SelectionList = /** @class */ (function () {
                 var other = this.items[1 - cloudindex];
                 actions.push(new ComputeDistancesAction(cloud, other));
             }
+            if (this.items[0] instanceof PCLPointCloud && this.items[1] instanceof PCLPointCloud) {
+                actions.push(new RegistrationAction(this.items[0], this.items[1]));
+            }
         }
         return actions;
     };
@@ -9925,9 +10025,9 @@ var SelectionList = /** @class */ (function () {
 /// <reference path="controls/dataitem.ts" />
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="objects/pclgroup.ts" />
-/// <reference path="objects/selectionlist.ts" />
 /// <reference path="objects/scene.ts" />
 /// <reference path="app.ts" />
+/// <reference path="selectionlist.ts" />
 /// <reference path="opengl/renderer.ts" />
 /// <reference path="../controler/actions/delegate.ts" />
 var DataHandler = /** @class */ (function (_super) {
@@ -10481,6 +10581,9 @@ var PCLApp = /** @class */ (function () {
             self.Resize();
         };
         this.RefreshRendering();
+        scene.SetFolding(false);
+        scene.Contents.SetFolding(false);
+        scene.Lights.SetFolding(true);
     };
     PCLApp.prototype.InitializeLongProcess = function () {
         LongProcess.progresFactory = function () { return new ProgressBar(); };
@@ -10798,4 +10901,336 @@ var Polynomial = /** @class */ (function () {
     };
     return Polynomial;
 }());
+/// <reference path="vector.ts" />
+/// <reference path="matrix.ts" />
+/// <reference path="eigendecomposition.ts" />
+//Sigular values decomposition
+var SVD = /** @class */ (function () {
+    function SVD(matrix) {
+        if (matrix.width != matrix.height) {
+            throw 'Singular Values Decomposition has not been implemented for non squared matrices';
+        }
+        this.sigma = matrix.Clone();
+        this.lhh = [];
+        this.rhh = [];
+        this.lgg = [];
+        this.rgg = [];
+        this.signs = Matrix.Identity(matrix.width);
+        // Computes B = H[n-1] ... H[2]H[1].M.G*[1].G*[2] ... G*[n-2]
+        // B being a bidiagonnal matrix
+        // ()* denotes the transposed matrix
+        // B is stored in this.sigma at the end the of this routine
+        // H's are stored in this.lhh
+        // G's are stored in this.rhh
+        this.HouseholderDecomposition();
+        // Computes Sigma = L[k] ... L[2]L[1].B.R*[1].R*[2] ... R*[k]
+        // Sigma being a diagonnal matrix
+        // L's are stored in this.lgg
+        // R's are stored in this.rgg
+        this.GivensDecomposition();
+        //Singular values are supposed to be positive
+        for (var index = 0; index < this.signs.width; index++) {
+            if (this.sigma.GetValue(index, index) < 0) {
+                this.signs.SetValue(index, index, -1);
+            }
+        }
+    }
+    SVD.prototype.HouseholderDecomposition = function () {
+        this.lhh = [];
+        this.rhh = [];
+        var width = this.sigma.width;
+        for (var index = 0; index < width - 1; index++) {
+            this.lhh.push(this.GetHouseholderTransform(index, false));
+            if (index < width - 2) {
+                this.rhh.push(this.GetHouseholderTransform(index, true));
+            }
+        }
+    };
+    SVD.prototype.GivensDecomposition = function () {
+        this.lgg = [];
+        this.rgg = [];
+        var width = this.sigma.width;
+        for (var index = 0; index <= 200; index++) {
+            if (this.sigma.IsDiagonnal())
+                break;
+            for (var index_5 = 0; index_5 < width - 1; index_5++) {
+                this.rgg.push(this.GetGivensTransform(index_5, true));
+                this.lgg.push(this.GetGivensTransform(index_5, false));
+            }
+        }
+    };
+    SVD.prototype.GetHouseholderTransform = function (index, right) {
+        if (right === void 0) { right = false; }
+        var v = right ?
+            this.sigma.GetRowVector(index, index + 1) :
+            this.sigma.GetColumnVector(index, index);
+        //Compute v +- ||v||.e1    (with e1 = [1, 0, 0, ..., 0])
+        var a = v.Get(0) > 0 ? -v.Norm() : v.Norm();
+        v.Set(0, v.Get(0) - a);
+        var householder = new HouseholderReflexion(v);
+        householder.ApplyTo(this.sigma, right);
+        return householder;
+    };
+    SVD.prototype.GetGivensTransform = function (index, right) {
+        var f = this.sigma.GetValue(index, index);
+        var g = this.sigma.GetValue(right ? index : index + 1, right ? index + 1 : index);
+        var givens = new GivensRotation(index, f, g);
+        givens.ApplyTo(this.sigma, right);
+        return givens;
+    };
+    //=============================================
+    // Matrices accessors
+    //=============================================
+    // From B = H[n-1] ... H[2]H[1]  .  M  .  G*[1].G*[2] ... G*[n-2]
+    // => we get M = (H[n-1] ... H[2]H[1])*  .  B  .  (G*[1].G*[2] ... G*[n-2])*
+    //           M =        U1               .  B  .          V1*
+    // Then, from Sigma = L[k] ... L[2]L[1]  .  B  .  R*[1].R*[2] ... R*[k]
+    // => we get B = (L[k] ... L[2]L[1])*  .  Sigma  .  (R*[1].R*[2] ... R*[k])*
+    //           B =        U2             .  Sigma  .          V2*
+    // Hence M = (U1.U2) . Sigma . (V1.V2)* 
+    // Furthermore, we introduce signs correction matrix (being its own inverse : Sign . Sign = Id)
+    // in order to get positive singular values :
+    // Finally : M = (U1.U2.Sign) . (Sign.Sigma) . (V1.V2)*
+    SVD.prototype.GetU = function () {
+        var u = this.signs.Clone();
+        var ggsize = this.lgg.length;
+        // U2 = L*[1].L*[2] ... L*[k]
+        for (var index = ggsize - 1; index >= 0; index--) {
+            this.lgg[index].Transposed().ApplyTo(u);
+        }
+        var hhsize = this.lhh.length;
+        // U1 = H*[1].H*[2] ... H*[n-1]
+        // H being symmetric => H* = H, thus U1 = H[1].H[2] ... H[n-1]
+        for (var index = hhsize - 1; index >= 0; index--) {
+            this.lhh[index].ApplyTo(u);
+        }
+        return u;
+    };
+    SVD.prototype.GetV = function () {
+        var v = Matrix.Identity(this.sigma.width);
+        var ggsize = this.rgg.length;
+        // V2 = R*[1].R*[2] ... R*[k]
+        for (var index = ggsize - 1; index >= 0; index--) {
+            this.rgg[index].Transposed().ApplyTo(v);
+        }
+        var hhsize = this.rhh.length;
+        // V1 = G*[1].G*[2] ... G*[n-2]
+        // G being symmetric => G* = G, thus V1 = G[1].G[2] ... G[n-1]
+        for (var index = hhsize - 1; index >= 0; index--) {
+            this.rhh[index].ApplyTo(v);
+        }
+        return v;
+    };
+    SVD.prototype.GetVTransposed = function () {
+        //V* = (V1.V2)* = V2* . V1* . Identity
+        var v = Matrix.Identity(this.sigma.width);
+        var hhsize = this.rhh.length;
+        // V1* = G[n-2] ... G[2].G[1]
+        for (var index = 0; index < hhsize; index++) {
+            this.rhh[index].ApplyTo(v);
+        }
+        var ggsize = this.rgg.length;
+        // V2* = R[k] ... R[2].R[1]
+        for (var index = 0; index < ggsize; index++) {
+            this.rgg[index].ApplyTo(v);
+        }
+        return v;
+    };
+    SVD.prototype.GetSigma = function () {
+        return this.signs.Multiply(this.sigma.Clone());
+    };
+    return SVD;
+}());
+// Householder maps any vector to its symmetric with respect to the plane orthognal to a given vector v
+var HouseholderReflexion = /** @class */ (function () {
+    function HouseholderReflexion(v) {
+        this.v = v;
+    }
+    HouseholderReflexion.prototype.Reflect = function (a) {
+        var v = this.v.Clone();
+        while (v.Dimension() < a.Dimension()) {
+            v.coordinates = [0].concat(v.coordinates);
+        }
+        var s = 2.0 * a.Dot(v) / v.SqrNorm();
+        return a.Minus(v.Times(s));
+    };
+    HouseholderReflexion.prototype.ApplyTo = function (m, right) {
+        if (right === void 0) { right = false; }
+        for (var index = 0; index < m.width; index++) {
+            if (right) {
+                m.SetRowVector(index, this.Reflect(m.GetRowVector(index)));
+            }
+            else {
+                m.SetColumnVector(index, this.Reflect(m.GetColumnVector(index)));
+            }
+        }
+    };
+    HouseholderReflexion.prototype.GetMatrix = function () {
+        var d = this.v.Dimension();
+        var v = new Matrix(1, d, new Float32Array(this.v.Flatten()));
+        return Matrix.Identity(d).Plus(v.Multiply(v.Transposed()).Times(-2 / this.v.SqrNorm()));
+    };
+    return HouseholderReflexion;
+}());
+// Givens rotation can by used to vanish the value in a matrix at a specific position
+// It is based on the following transform (f, g being given) :
+// | c   s | . | f | = | r |
+// | -s  c |   | g |   | 0 |
+var GivensRotation = /** @class */ (function () {
+    function GivensRotation(index, f, g) {
+        this.index = index;
+        if (f == 0) {
+            this.c = 0;
+            this.s = 1;
+        }
+        else if (Math.abs(f) > Math.abs(g)) {
+            var t = g / f;
+            var tt = Math.sqrt(1 + Math.pow(t, 2));
+            this.c = 1 / tt;
+            this.s = t / tt;
+        }
+        else {
+            var t = f / g;
+            var tt = Math.sqrt(1 + Math.pow(t, 2));
+            this.s = 1.0 / tt;
+            this.c = t * this.s;
+        }
+    }
+    GivensRotation.prototype.Transposed = function () {
+        var t = new GivensRotation(this.index, 0, 0);
+        t.c = this.c;
+        t.s = -this.s;
+        return t;
+    };
+    GivensRotation.prototype.Rotate = function (a) {
+        var v = a.Clone();
+        v.Set(this.index, (this.c * a.Get(this.index)) + (this.s * a.Get(this.index + 1)));
+        v.Set(this.index + 1, (this.c * a.Get(this.index + 1)) - (this.s * a.Get(this.index)));
+        return v;
+    };
+    GivensRotation.prototype.ApplyTo = function (matrix, right) {
+        if (right === void 0) { right = false; }
+        for (var index = 0; index < matrix.width; index++) {
+            if (right) {
+                matrix.SetRowVector(index, this.Rotate(matrix.GetRowVector(index)));
+            }
+            else {
+                matrix.SetColumnVector(index, this.Rotate(matrix.GetColumnVector(index)));
+            }
+        }
+    };
+    return GivensRotation;
+}());
+/// <reference path="kdtree.ts" />
+/// <reference path="pointcloud.ts" />
+/// <reference path="neighbourhood.ts" />
+/// <reference path="../maths/vector.ts" />
+/// <reference path="../maths/matrix.ts" />
+/// <reference path="../maths/geometry.ts" />
+/// <reference path="../maths/svd.ts" />
+/// <reference path="../tools/transform.ts" />
+var ICPPairing = /** @class */ (function () {
+    function ICPPairing(cloudIndex, refIndex, sqrdist) {
+        this.cloudIndex = cloudIndex;
+        this.refIndex = refIndex;
+        this.sqrdist = sqrdist;
+    }
+    ICPPairing.Compare = function (a, b) {
+        return a.sqrdist - b.sqrdist;
+    };
+    return ICPPairing;
+}());
+//Trimed Iterative Closest Point implementation
+var ICPRegistration = /** @class */ (function (_super) {
+    __extends(ICPRegistration, _super);
+    function ICPRegistration(reference, cloud, overlap, maxiterations, stabilityfactor) {
+        if (overlap === void 0) { overlap = 1; }
+        if (maxiterations === void 0) { maxiterations = 100; }
+        if (stabilityfactor === void 0) { stabilityfactor = 0.01; }
+        var _this = _super.call(this, maxiterations, 'Iterative closest point registration') || this;
+        _this.reference = reference;
+        _this.cloud = cloud;
+        _this.overlap = overlap;
+        _this.maxiterations = maxiterations;
+        _this.stabilityfactor = stabilityfactor;
+        return _this;
+    }
+    ICPRegistration.prototype.Initialize = function () {
+        if (!this.reference.tree) {
+            this.reference.tree = new KDTree(this.reference);
+        }
+        this.trmse = null;
+        this.done = false;
+    };
+    Object.defineProperty(ICPRegistration.prototype, "Done", {
+        get: function () {
+            return this.done || this.currentstep >= this.maxiterations;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ICPRegistration.prototype, "Trim", {
+        get: function () {
+            return Math.round(this.cloud.Size() * this.overlap);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    ICPRegistration.prototype.Iterate = function () {
+        //Pair each cloud point with its clostest neighbour in reference
+        var pairing;
+        var size = this.cloud.Size();
+        pairing = new Array(size);
+        for (var index = 0; index < size; index++) {
+            var nn = this.reference.KNearestNeighbours(this.cloud.GetPoint(index), 1).Neighbours()[0];
+            pairing[index] = new ICPPairing(index, nn.index, nn.sqrdistance);
+        }
+        //Trim pairing
+        var trim = this.Trim;
+        pairing.sort(ICPPairing.Compare);
+        pairing = pairing.slice(0, trim);
+        //Evaluate the Trimmed Mean Square Error (and then compare with the last one)
+        var mse = 0;
+        for (var index = 0; index < trim; index++) {
+            mse += pairing[index].sqrdist;
+        }
+        mse /= trim;
+        //Stop when stability is reached
+        if (this.trmse !== null && ((this.trmse - mse) < this.trmse * this.stabilityfactor)) {
+            this.done = true;
+            return;
+        }
+        this.trmse = mse;
+        //Build the corresponding point clouds
+        var refIndices = new Array(trim);
+        var cloudIndices = new Array(trim);
+        for (var index = 0; index < trim; index++) {
+            refIndices[index] = pairing[index].refIndex;
+            cloudIndices[index] = pairing[index].cloudIndex;
+        }
+        var refSub = new PointSubCloud(this.reference, refIndices);
+        var cloudSub = new PointSubCloud(this.cloud, cloudIndices);
+        //Get the transform
+        var refCentroid = Geometry.Centroid(refSub);
+        var cloudCentroid = Geometry.Centroid(cloudSub);
+        var covariance = Matrix.Null(3, 3);
+        for (var index = 0; index < trim; index++) {
+            var x = cloudSub.GetPoint(index).Minus(cloudCentroid);
+            var y = refSub.GetPoint(index).Minus(refCentroid);
+            for (var ii = 0; ii < 3; ii++) {
+                for (var jj = 0; jj < 3; jj++) {
+                    covariance.AddValue(ii, jj, x.Get(ii) * y.Get(jj));
+                }
+            }
+        }
+        //Rigid motion computation
+        var svd = new SVD(covariance);
+        var rigidMotion = new Transform();
+        rigidMotion.SetRotation(svd.GetV().Multiply(svd.GetU().Transposed()));
+        rigidMotion.SetTranslation(refCentroid.Minus(rigidMotion.TransformPoint(cloudCentroid)));
+        //Apply the computed transform
+        this.cloud.ApplyTransform(rigidMotion);
+    };
+    return ICPRegistration;
+}(IterativeLongProcess));
 //# sourceMappingURL=PointCloudLab.js.map
