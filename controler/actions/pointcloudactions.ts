@@ -652,6 +652,9 @@ class RegistrationAction extends PCLCloudAction {
 				catch {
 					return false;
 				}
+				if (overlap > 1 || overlap < 0) {
+					return false;
+				}
 
 				let pclCloud = self.GetPCLCloud();
 				let registration = new ICPRegistration(self.reference.cloud, self.GetCloud(), overlap, maxit);
@@ -665,7 +668,6 @@ class RegistrationAction extends PCLCloudAction {
 		dialog.InsertTitle('Registration settings (Trimmed Iterative Closest Points)')
 		dialog.InsertValue(overlapLabel, 100);
 		dialog.InsertValue(maxiterationsLabel, 20);
-		
 	}
 }
 

@@ -1,7 +1,7 @@
-﻿/// <reference path="pclnode.ts" />
-/// <reference path="../controls/properties/properties.ts" />
-/// <reference path="../../controler/actions/action.ts" />
-/// <reference path="../../model/boundingbox.ts" />
+﻿/// <reference path="objects/pclnode.ts" />
+/// <reference path="controls/properties/properties.ts" />
+/// <reference path="../controler/actions/action.ts" />
+/// <reference path="../model/boundingbox.ts" />
 
 
 interface SelectionChangeHandler {

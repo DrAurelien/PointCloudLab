@@ -24,7 +24,7 @@ class PCLGroup extends PCLNode implements PCLContainer {
 	constructor(name: string, public supportsPrimitivesCreation: boolean = true) {
 		super(name);
 		this.children = [];
-		this.folded = false;
+		this.folded = true;
 	}
 
 	SetFolding(f: boolean) {

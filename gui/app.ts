@@ -77,6 +77,10 @@ class PCLApp implements Controlable, ActionDelegate {
 			self.Resize();
 		}
 		this.RefreshRendering();
+
+		scene.SetFolding(false);
+		scene.Contents.SetFolding(false);
+		scene.Lights.SetFolding(true);
 	}
 
 	private InitializeLongProcess() {

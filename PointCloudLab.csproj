@@ -145,7 +145,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="gui\controls\colorscale\scalebounds.ts" />
     <TypeScriptCompile Include="gui\controls\colorscale\scalerenderer.ts" />
-    <Content Include="gui\objects\selectionlist.ts" />
+    <Content Include="gui\selectionlist.ts" />
     <Content Include="maths\svd.ts" />
     <TypeScriptCompile Include="maths\leatssquaresfitting.ts" />
     <Content Include="tools\dataprovider.ts" />
