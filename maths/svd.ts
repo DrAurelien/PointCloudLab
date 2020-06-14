@@ -10,13 +10,18 @@ class SVD {
 	rhh: HouseholderReflexion[]
 	lgg: GivensRotation[];
 	rgg: GivensRotation[];
+	signs: Matrix;
 
 	constructor(matrix: Matrix) {
+		if (matrix.width != matrix.height) {
+			throw 'Singular Values Decomposition has not been implemented for non squared matrices';
+		}
 		this.sigma = matrix.Clone();
 		this.lhh = [];
 		this.rhh = [];
 		this.lgg = [];
 		this.rgg = [];
+		this.signs = Matrix.Identity(matrix.width);
 
 		// Computes B = H[n-1] ... H[2]H[1].M.G*[1].G*[2] ... G*[n-2]
 		// B being a bidiagonnal matrix
@@ -26,12 +31,18 @@ class SVD {
 		// G's are stored in this.rhh
 		this.HouseholderDecomposition();
 
-
 		// Computes Sigma = L[k] ... L[2]L[1].B.R*[1].R*[2] ... R*[k]
 		// Sigma being a diagonnal matrix
 		// L's are stored in this.lgg
 		// R's are stored in this.rgg
 		this.GivensDecomposition();
+
+		//Singular values are supposed to be positive
+		for (let index = 0; index < this.signs.width; index++) {
+			if (this.sigma.GetValue(index, index) < 0) {
+				this.signs.SetValue(index, index, -1);
+			}
+		}
 	}
 
 	private HouseholderDecomposition() {
@@ -95,9 +106,12 @@ class SVD {
 	// => we get B = (L[k] ... L[2]L[1])*  .  Sigma  .  (R*[1].R*[2] ... R*[k])*
 	//           B =        U2             .  Sigma  .          V2*
 	// Hence M = (U1.U2) . Sigma . (V1.V2)* 
+	// Furthermore, we introduce signs correction matrix (being its own inverse : Sign . Sign = Id)
+	// in order to get positive singular values :
+	// Finally : M = (U1.U2.Sign) . (Sign.Sigma) . (V1.V2)*
 
 	GetU(): Matrix {
-		let u = Matrix.Identity(this.sigma.width);
+		let u = this.signs.Clone();
 		let ggsize = this.lgg.length;
 		// U2 = L*[1].L*[2] ... L*[k]
 		for (let index = ggsize - 1; index >= 0; index--) {
@@ -145,7 +159,7 @@ class SVD {
 	}
 
 	GetSigma(): Matrix {
-		return this.sigma;
+		return this.signs.Multiply(this.sigma.Clone());
 	}
 }
 

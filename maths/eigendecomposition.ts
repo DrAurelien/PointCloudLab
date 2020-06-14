@@ -21,7 +21,7 @@ class EigenDecomposition {
 			workMatrix = QR.R.Multiply(QR.Q);
 			eigenVectors = eigenVectors.Multiply(QR.Q);
 
-			if (workMatrix.IsDiagonnal(1.0e-8)) {
+			if (workMatrix.IsDiagonnal()) {
 				break;
 			}
 		}

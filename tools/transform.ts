@@ -53,4 +53,25 @@ class Transform {
 	TransformVector(v: Vector): Vector {
 		return Homogeneous.ToVector(this.GetMatrix().Multiply(new HomogeneousVector(v)));
 	}
+
+	SetTranslation(t: Vector) {
+		this.translation = t;
+	}
+
+	SetRotation(r: Matrix) {
+		if (r.width == 4 && r.height == 4) {
+			this.rotation = r;
+		}
+		else if (r.width == 3 && r.height == 3) {
+			this.rotation = Matrix.Identity(4);
+			for (let ii = 0; ii < 3; ii++) {
+				for (let jj = 0; jj < 3; jj++) {
+					this.rotation.SetValue(ii, jj, r.GetValue(ii, jj));
+				}
+			}
+		}
+		else {
+			throw 'Invalid rotation matrix for rigid transform';
+		}
+	}
 }

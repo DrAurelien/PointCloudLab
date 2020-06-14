@@ -582,7 +582,7 @@ class NoiseComputer extends IterativeLongProcess {
 }
 
 //===================================================
-// Noise
+// Distances
 //===================================================
 class ComputeDistancesAction extends PCLCloudAction {
 	constructor(cloud: PCLPointCloud, private target: PCLNode) {
@@ -624,6 +624,50 @@ class DistancesComputer extends IterativeLongProcess {
 	}
 }
 
+
+//===================================================
+// Registration
+//===================================================
+class RegistrationAction extends PCLCloudAction {
+	constructor(cloud: PCLPointCloud, private reference: PCLPointCloud) {
+		super(cloud, 'Register', 'Compte the rigid motion that fits "' + cloud.name + '" to "' + reference.name + '"');
+	}
+
+	Enabled(): boolean {
+		return true;
+	}
+
+	Trigger() {
+		let self = this;
+		let overlapLabel = 'Overlap (%)';
+		let maxiterationsLabel = 'Max iterations';
+		let dialog = new Dialog(
+			(d) => {
+				let overlap;
+				let maxit;
+				try {
+					overlap = parseFloat(d.GetValue(overlapLabel)) / 100;
+					maxit = parseInt(d.GetValue(maxiterationsLabel), 10);
+				}
+				catch {
+					return false;
+				}
+
+				let pclCloud = self.GetPCLCloud();
+				let registration = new ICPRegistration(self.reference.cloud, self.GetCloud(), overlap, maxit);
+				registration.SetNext(() => pclCloud.InvalidateDrawing());
+				registration.Start();
+				return true;
+			},
+			(d) => { return true; }
+		)
+
+		dialog.InsertTitle('Registration settings (Trimmed Iterative Closest Points)')
+		dialog.InsertValue(overlapLabel, 100);
+		dialog.InsertValue(maxiterationsLabel, 20);
+		
+	}
+}
 
 //===================================================
 // File export

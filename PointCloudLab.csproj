@@ -146,8 +146,10 @@
     <TypeScriptCompile Include="gui\controls\colorscale\scalebounds.ts" />
     <TypeScriptCompile Include="gui\controls\colorscale\scalerenderer.ts" />
     <Content Include="gui\objects\selectionlist.ts" />
+    <Content Include="maths\svd.ts" />
     <TypeScriptCompile Include="maths\leatssquaresfitting.ts" />
     <Content Include="tools\dataprovider.ts" />
+    <Content Include="model\registration.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />

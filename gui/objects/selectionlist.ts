@@ -92,6 +92,10 @@ class SelectionList implements Notifiable {
 
 				actions.push(new ComputeDistancesAction(cloud, other));
 			}
+
+			if (this.items[0] instanceof PCLPointCloud && this.items[1] instanceof PCLPointCloud) {
+				actions.push(new RegistrationAction(this.items[0] as PCLPointCloud, this.items[1] as PCLPointCloud));
+			}
 		}
 
 		return actions;
