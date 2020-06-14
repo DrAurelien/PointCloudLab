@@ -3,9 +3,9 @@
 /// <reference path="controls/dataitem.ts" />
 /// <reference path="objects/pclnode.ts" />
 /// <reference path="objects/pclgroup.ts" />
-/// <reference path="objects/selectionlist.ts" />
 /// <reference path="objects/scene.ts" />
 /// <reference path="app.ts" />
+/// <reference path="selectionlist.ts" />
 /// <reference path="opengl/renderer.ts" />
 /// <reference path="../controler/actions/delegate.ts" />
 

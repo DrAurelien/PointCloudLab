@@ -1,7 +1,7 @@
-﻿/// <reference path="pclnode.ts" />
-/// <reference path="../controls/properties/properties.ts" />
-/// <reference path="../../controler/actions/action.ts" />
-/// <reference path="../../model/boundingbox.ts" />
+﻿/// <reference path="objects/pclnode.ts" />
+/// <reference path="controls/properties/properties.ts" />
+/// <reference path="../controler/actions/action.ts" />
+/// <reference path="../model/boundingbox.ts" />
 
 
 interface SelectionChangeHandler {
@@ -91,6 +91,10 @@ class SelectionList implements Notifiable {
 				let other = this.items[1 - cloudindex];
 
 				actions.push(new ComputeDistancesAction(cloud, other));
+			}
+
+			if (this.items[0] instanceof PCLPointCloud && this.items[1] instanceof PCLPointCloud) {
+				actions.push(new RegistrationAction(this.items[0] as PCLPointCloud, this.items[1] as PCLPointCloud));
 			}
 		}
 

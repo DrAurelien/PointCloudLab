@@ -161,4 +161,12 @@
 		message += ' |';
 		console.log(message);
 	}
+
+	static Null(d: number): Vector {
+		let v = new Array(d);
+		for (let index = 0; index < d; index++) {
+			v[index] = 0;
+		}
+		return new Vector(v);
+	}
 }

@@ -110,6 +110,10 @@ class SceneScanner extends LongProcess {
 		this.cloud.Reserve(this.width * this.height);
 	}
 
+	Stopable(): boolean {
+		return true;
+	}
+
 	Step() {
 		let screen = this.renderer.camera.screen;
 		let x = screen.width * (this.currenti / this.width);

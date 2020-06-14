@@ -116,7 +116,8 @@ class Torus extends Shape {
 			alpha * alpha
 		]);
 
-		let roots = quartic.FindRealRoots(this.center.Minus(ray.from).Dot(ray.dir));
+		let init = this.GetBoundingBox().RayIntersection(ray);
+		let roots = quartic.FindRealRoots(init.distance);
 		let result = new Picking(wrapper);
 		for (let index = 0; index < roots.length; index++) {
 			result.Add(roots[index]);

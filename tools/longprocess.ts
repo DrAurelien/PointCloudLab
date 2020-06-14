@@ -161,9 +161,9 @@ abstract class LongProcess extends Process implements Stopable {
 // Long process, where the total number of steps is defined right from the start
 //================================================
 abstract class IterativeLongProcess extends LongProcess {
-	private currentstep: number;
-	constructor(protected nbsteps: number, message: string) {
-		super(message);
+	protected currentstep: number;
+	constructor(protected nbsteps: number, message: string, onstoped: Function = null) {
+		super(message, onstoped);
 		this.currentstep = 0;
 	}
 
