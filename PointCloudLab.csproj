@@ -150,6 +150,7 @@
     <TypeScriptCompile Include="maths\leatssquaresfitting.ts" />
     <Content Include="tools\dataprovider.ts" />
     <Content Include="model\registration.ts" />
+    <Content Include="tools\random.ts" />
   </ItemGroup>
   <Target Name="Run" DependsOnTargets="$(RunDependsOn)">
     <Exec Command="index.html" />

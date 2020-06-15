@@ -310,8 +310,8 @@ class PCLApp implements Controlable, ActionDelegate {
 	//===================================
 	// Implement ActionsDelegate interface
 	// ==================================
-	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number) {
-		this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling);
+	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number, noise:number) {
+		this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling, noise);
 	}
 
 	GetShapesSampling(): number {
