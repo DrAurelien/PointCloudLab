@@ -5920,18 +5920,21 @@ var ScanFromCurrentViewPointAction = /** @class */ (function (_super) {
         function () { return true; });
         dialog.InsertValue(ScanFromCurrentViewPointAction.hSamplingTitle, 500);
         dialog.InsertValue(ScanFromCurrentViewPointAction.vSamplingTitle, 500);
+        dialog.InsertValue(ScanFromCurrentViewPointAction.Noise, 0);
     };
     ScanFromCurrentViewPointAction.prototype.LaunchScan = function (properties) {
         var hsampling = parseInt(properties.GetValue(ScanFromCurrentViewPointAction.hSamplingTitle));
         var vsampling = parseInt(properties.GetValue(ScanFromCurrentViewPointAction.vSamplingTitle));
-        if (isNaN(hsampling) || isNaN(vsampling) || hsampling < 0 || vsampling < 0) {
+        var noise = parseInt(properties.GetValue(ScanFromCurrentViewPointAction.Noise));
+        if (isNaN(hsampling) || isNaN(vsampling) || isNaN(noise) || hsampling < 0 || vsampling < 0 || noise < 0 || noise > 100) {
             return false;
         }
-        this.deletgate.ScanFromCurrentViewPoint(this.group, hsampling, vsampling);
+        this.deletgate.ScanFromCurrentViewPoint(this.group, hsampling, vsampling, noise / 100);
         return true;
     };
     ScanFromCurrentViewPointAction.hSamplingTitle = 'Horizontal Sampling';
     ScanFromCurrentViewPointAction.vSamplingTitle = 'Vertical Sampling';
+    ScanFromCurrentViewPointAction.Noise = 'Noise (% of time flight)';
     return ScanFromCurrentViewPointAction;
 }(Action));
 /// <reference path="pclnode.ts" />
@@ -8732,6 +8735,30 @@ var SceneParsingHandler = /** @class */ (function (_super) {
     };
     return SceneParsingHandler;
 }(PCLGroupParsingHandler));
+var Random = /** @class */ (function () {
+    function Random() {
+    }
+    Random.Uniform = function (start, end) {
+        if (start === void 0) { start = 0; }
+        if (end === void 0) { end = 1; }
+        var r = Math.random();
+        return start + r * (end - start);
+    };
+    Random.Gaussian = function (mean, sigma) {
+        if (mean === void 0) { mean = 0; }
+        if (sigma === void 0) { sigma = 1; }
+        var x, y, u;
+        //Box-muller transform
+        do {
+            x = Random.Uniform(-1, 1);
+            y = Random.Uniform(-1, 1);
+            u = Math.pow(x, 2) + Math.pow(y, 2);
+        } while (u == 0 || u > 1);
+        var r = x * Math.sqrt(-2 * Math.log(u) / u);
+        return mean + r * sigma;
+    };
+    return Random;
+}());
 /// <reference path="../controls/control.ts" />
 /// <reference path="drawingcontext.ts" />
 /// <reference path="camera.ts" />
@@ -8741,6 +8768,7 @@ var SceneParsingHandler = /** @class */ (function (_super) {
 /// <reference path="../objects/pclpointcloud.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../../tools/longprocess.ts" />
+/// <reference path="../../tools/random.ts" />
 /// <reference path="../../model/pointcloud.ts" />
 var Renderer = /** @class */ (function () {
     function Renderer(className) {
@@ -8798,8 +8826,8 @@ var Renderer = /** @class */ (function () {
         }
         return null;
     };
-    Renderer.prototype.ScanFromCurrentViewPoint = function (group, hsampling, vsampling) {
-        var scanner = new SceneScanner(this, group, hsampling, vsampling);
+    Renderer.prototype.ScanFromCurrentViewPoint = function (group, hsampling, vsampling, noise) {
+        var scanner = new SceneScanner(this, group, hsampling, vsampling, noise);
         scanner.SetNext(function (s) {
             var cloud = new PCLPointCloud(s.cloud);
             group.Add(cloud);
@@ -8811,12 +8839,14 @@ var Renderer = /** @class */ (function () {
 }());
 var SceneScanner = /** @class */ (function (_super) {
     __extends(SceneScanner, _super);
-    function SceneScanner(renderer, group, width, height) {
+    function SceneScanner(renderer, group, width, height, noise) {
+        if (noise === void 0) { noise = 0; }
         var _this = _super.call(this, 'Scanning the scene (' + width + 'x' + height + ')') || this;
         _this.renderer = renderer;
         _this.group = group;
         _this.width = width;
         _this.height = height;
+        _this.noise = noise;
         _this.currenti = 0;
         _this.currentj = 0;
         return _this;
@@ -8835,7 +8865,8 @@ var SceneScanner = /** @class */ (function (_super) {
         var ray = this.renderer.GetRay(x, y);
         var intersection = this.renderer.ResolveRayIntersection(ray, this.group);
         if (intersection && intersection.HasIntersection()) {
-            var point = ray.from.Plus(ray.dir.Times(intersection.distance));
+            var dist = Random.Gaussian(intersection.distance, this.noise);
+            var point = ray.from.Plus(ray.dir.Times(dist));
             this.cloud.PushPoint(point);
         }
         this.currentj++;
@@ -9617,7 +9648,6 @@ var DataItem = /** @class */ (function () {
         this.container = document.createElement('div');
         this.container.className = 'TreeItemContainer';
         this.container.id = DataItem.GetId(this.uuid);
-        this.container.draggable = true;
         this.itemContentContainer = document.createElement('div');
         this.itemContentContainer.className = item.selected ? 'SelectedSceneItem' : 'SceneItem';
         this.container.appendChild(this.itemContentContainer);
@@ -9680,12 +9710,20 @@ var DataItem = /** @class */ (function () {
         return DataItem.IdPrefix + uuid;
     };
     DataItem.prototype.ClearDrapNDropStyles = function () {
-        this.container.classList.remove('DropInside');
+        this.itemChildContainer.classList.remove('DropInside');
         this.container.classList.remove('DropBefore');
         this.container.classList.remove('DropAfter');
     };
+    DataItem.prototype.IsValidDragTaget = function () {
+        return !(this.item instanceof Light) &&
+            !(this.item.owner instanceof Scene) &&
+            !(this.item instanceof Scene);
+    };
     DataItem.prototype.InitializeDrapNDrop = function () {
         var _this = this;
+        if (!this.IsValidDragTaget())
+            return;
+        this.container.draggable = true;
         this.container.ondragstart = function (ev) {
             ev.stopPropagation();
             ev.dataTransfer.setData("application/my-app", (ev.target).id);
@@ -9697,10 +9735,12 @@ var DataItem = /** @class */ (function () {
         this.container.ondragover = function (ev) {
             ev.preventDefault();
             ev.stopPropagation();
+            if (!_this.IsValidDragTaget())
+                return;
             ev.dataTransfer.dropEffect = 'move';
             var target = (ev.target);
             if (PCLNode.IsPCLContainer(_this.item) && target.classList.contains('ItemIcon')) {
-                _this.container.classList.add('DropInside');
+                _this.itemChildContainer.classList.add('DropInside');
                 _this.item.SetFolding(false);
             }
             else {
@@ -9853,11 +9893,13 @@ var DataItem = /** @class */ (function () {
     //When right - clicking an item
     DataItem.prototype.ItemMenu = function (ev) {
         var event = ev || window.event;
-        if (event.ctrlKey) {
-            this.item.Select(true);
-        }
-        else {
-            this.dataHandler.selection.SingleSelect(this.item);
+        if (!this.item.selected) {
+            if (event.ctrlKey) {
+                this.item.Select(true);
+            }
+            else {
+                this.dataHandler.selection.SingleSelect(this.item);
+            }
         }
         var actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
         if (actions) {
@@ -10784,8 +10826,8 @@ var PCLApp = /** @class */ (function () {
     //===================================
     // Implement ActionsDelegate interface
     // ==================================
-    PCLApp.prototype.ScanFromCurrentViewPoint = function (group, hsampling, vsampling) {
-        this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling);
+    PCLApp.prototype.ScanFromCurrentViewPoint = function (group, hsampling, vsampling, noise) {
+        this.sceneRenderer.ScanFromCurrentViewPoint(group, hsampling, vsampling, noise);
     };
     PCLApp.prototype.GetShapesSampling = function () {
         return this.sceneRenderer.drawingcontext.sampling;
