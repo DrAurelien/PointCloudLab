@@ -100,7 +100,12 @@ div.DataToolbar, div.DataArea, div.PropertiesArea {
 }
 
 div.TreeItemContainer {
-	padding-left: 10px;
+}
+
+div.ItemChildContainer {
+	padding-left: 5px;
+	margin-left: 5px;
+	border-left: 1px dashed lightgray;
 }
 
 div.SceneItem, div.SelectedSceneItem {
@@ -264,12 +269,12 @@ div.NestedProgressContainer {
 	padding-left: 20px;
 }
 
-div.NestedProgressContainer .ProgressControl {
-	position: relative;
-	right: unset;
-	bottom: unset;
-	opacity: unset;
-}
+	div.NestedProgressContainer .ProgressControl {
+		position: relative;
+		right: unset;
+		bottom: unset;
+		opacity: unset;
+	}
 
 div.ProgressMessage {
 	width: 450px;
@@ -294,7 +299,7 @@ div.ProgressBar {
 	height: 12px;
 	overflow: hidden;
 	margin: 0px;
-	padding : 0px;
+	padding: 0px;
 	padding-left: 5px;
 	background-color: green;
 	z-index: 3;
@@ -314,11 +319,11 @@ div.ProgressBar {
 	margin-top: 5px;
 }
 
-.ProgressStop:hover {
-	border-color: orangered;
-	color:orangered;
-	background-color: darkgray;
-}
+	.ProgressStop:hover {
+		border-color: orangered;
+		color: orangered;
+		background-color: darkgray;
+	}
 
 .ButtonIcon {
 	margin-right: 1em;
