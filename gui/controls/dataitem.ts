@@ -36,7 +36,6 @@ class DataItem implements Control, Notifiable {
 		this.container = <HTMLDivElement>document.createElement('div');
 		this.container.className = 'TreeItemContainer';
 		this.container.id = DataItem.GetId(this.uuid);
-		this.container.draggable = true;
 
 		this.itemContentContainer = <HTMLDivElement>document.createElement('div');
 		this.itemContentContainer.className = item.selected ? 'SelectedSceneItem' : 'SceneItem';
@@ -105,12 +104,22 @@ class DataItem implements Control, Notifiable {
 	}
 
 	private ClearDrapNDropStyles() {
-		this.container.classList.remove('DropInside');
+		this.itemChildContainer.classList.remove('DropInside');
 		this.container.classList.remove('DropBefore');
 		this.container.classList.remove('DropAfter');
 	}
 
+	private IsValidDragTaget() {
+		return !(this.item instanceof Light) &&
+			!(this.item.owner instanceof Scene) &&
+			!(this.item instanceof Scene);
+	}
+
 	private InitializeDrapNDrop() {
+		if (!this.IsValidDragTaget())
+			return;
+
+		this.container.draggable = true;
 		this.container.ondragstart = (ev: DragEvent) => {
 			ev.stopPropagation();
 			ev.dataTransfer.setData("application/my-app", ((ev.target) as HTMLElement).id);
@@ -123,10 +132,14 @@ class DataItem implements Control, Notifiable {
 		this.container.ondragover = (ev: DragEvent) => {
 			ev.preventDefault();
 			ev.stopPropagation();
+
+			if (!this.IsValidDragTaget())
+				return;
+
 			ev.dataTransfer.dropEffect = 'move';
 			let target = (ev.target) as HTMLElement;
 			if (PCLNode.IsPCLContainer(this.item) && target.classList.contains('ItemIcon')) {
-				this.container.classList.add('DropInside');
+				this.itemChildContainer.classList.add('DropInside');
 				(this.item as PCLGroup).SetFolding(false);
 			}
 			else {
@@ -299,11 +312,13 @@ class DataItem implements Control, Notifiable {
 	//When right - clicking an item
 	ItemMenu(ev: MouseEvent): boolean {
 		let event: MouseEvent = ev || (window.event as MouseEvent);
-		if (event.ctrlKey) {
-			this.item.Select(true);
-		}
-		else {
-			this.dataHandler.selection.SingleSelect(this.item);
+		if (!this.item.selected) {
+			if (event.ctrlKey) {
+				this.item.Select(true);
+			}
+			else {
+				this.dataHandler.selection.SingleSelect(this.item);
+			}
 		}
 		let actions = this.dataHandler.selection.GetActions(this.dataHandler.GetActionsDelegate());
 		if (actions) {

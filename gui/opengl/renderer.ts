@@ -7,6 +7,7 @@
 /// <reference path="../objects/pclpointcloud.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../../tools/longprocess.ts" />
+/// <reference path="../../tools/random.ts" />
 /// <reference path="../../model/pointcloud.ts" />
 
 
@@ -83,8 +84,8 @@ class Renderer implements Control {
 		return null;
 	}
 
-	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number) {
-		let scanner = new SceneScanner(this, group, hsampling, vsampling);
+	ScanFromCurrentViewPoint(group: PCLGroup, hsampling: number, vsampling: number, noise: number) {
+		let scanner = new SceneScanner(this, group, hsampling, vsampling, noise);
 		scanner.SetNext((s: SceneScanner) => {
 			let cloud = new PCLPointCloud(s.cloud);
 			group.Add(cloud);
@@ -99,7 +100,7 @@ class SceneScanner extends LongProcess {
 	currentj: number;
 	public cloud: PointCloud;
 
-	constructor(private renderer: Renderer, private group: PCLNode, private width: number, private height: number) {
+	constructor(private renderer: Renderer, private group: PCLNode, private width: number, private height: number, private noise:number=0) {
 		super('Scanning the scene (' + width + 'x' + height + ')');
 		this.currenti = 0;
 		this.currentj = 0;
@@ -122,7 +123,8 @@ class SceneScanner extends LongProcess {
 
 		let intersection = this.renderer.ResolveRayIntersection(ray, this.group);
 		if (intersection && intersection.HasIntersection()) {
-			let point = ray.from.Plus(ray.dir.Times(intersection.distance));
+			let dist = Random.Gaussian(intersection.distance, this.noise);
+			let point = ray.from.Plus(ray.dir.Times(dist));
 			this.cloud.PushPoint(point);
 		}
 
