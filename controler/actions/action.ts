@@ -54,7 +54,21 @@ class SimpleAction extends Action {
 		return this.callback !== null;
 	}
 
-	Trigger(): Function {
+	Trigger() {
+		return this.callback();
+	}
+}
+
+class ActivableAction extends Action {
+	constructor(label: string, protected callback: Function, protected isactive: Function, public hintMessage?: string) {
+		super(label, hintMessage)
+	}
+
+	Enabled(): boolean {
+		return this.isactive();
+	}
+
+	Trigger() {
 		return this.callback();
 	}
 }

@@ -19,7 +19,7 @@
 // Entry point for the point cloud application
 // Invoke PCLApp.Run() to start the whole thing
 //===========================================
-class PCLApp implements Controlable, ActionDelegate {
+class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 	static instance: PCLApp;
 	sceneRenderer: Renderer;
 	dataHandler: DataHandler;
@@ -263,6 +263,10 @@ class PCLApp implements Controlable, ActionDelegate {
 		}
 	}
 
+	HasSelection(): boolean {
+		return this.dataHandler.selection.Size() > 0;
+	}
+
 	CanFocus(): boolean {
 		let selectionbb = this.dataHandler.selection.GetBoundingBox();
 		return (selectionbb && selectionbb.IsValid());
@@ -323,5 +327,13 @@ class PCLApp implements Controlable, ActionDelegate {
 	// ==================================
 	NotifyChange(source: PCLNode) {
 		this.RenderScene();
+	}
+
+	//===================================
+	// Implement SelectionChangeHandler interface
+	// ==================================
+	OnSelectionChange(selectionList: SelectionList) {
+		this.dataHandler.OnSelectionChange(selectionList);
+		this.menu.OnSelectionChange(selectionList);
 	}
 }

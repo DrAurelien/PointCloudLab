@@ -1,5 +1,6 @@
 ﻿/// <reference path="control.ts" />
 /// <reference path="hint.ts" />
+/// <reference path="../../controler/actions/action.ts" />
 
 
 class Button implements Control {
@@ -7,11 +8,11 @@ class Button implements Control {
 	hint: Hint;
 	buttonLabel: Text;
 
-    constructor(label: string, callback: Function, hintMessage? : string) {
+	constructor(private action: Action) {
         this.button = document.createElement('div');
         this.button.className = 'Button';
 		let namePattern = /(?:\[Icon\:(.*)\]\s*)?(.*)/i;
-		let name = namePattern.exec(label);
+		let name = namePattern.exec(action.GetLabel(false));
 		this.buttonLabel = document.createTextNode(name[name.length - 1]);
 		let nameContainer: any = this.buttonLabel;
 		if (name[1]) {
@@ -23,13 +24,15 @@ class Button implements Control {
 		}
 		this.button.appendChild(nameContainer);
 
-		if (hintMessage) {
-			this.hint = new Hint(this, hintMessage);
+		if (action.hintMessage) {
+			this.hint = new Hint(this, action.hintMessage);
 		}
 
-        if (callback) {
-            this.button.onclick = function (event) { callback() };
-        }
+		if (action) {
+			this.button.onclick = function (event) { action.Run() };
+		}
+
+		this.UpdateEnabledState();
     }
 
     GetElement(): HTMLElement {
@@ -42,5 +45,11 @@ class Button implements Control {
 
 	GetLabel() : string {
 		return this.buttonLabel.data;
+	}
+
+	UpdateEnabledState() {
+		if (this.action) {
+			this.button.setAttribute('enabled', this.action.Enabled() ? '1' : '0');
+        }
 	}
 }

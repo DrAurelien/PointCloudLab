@@ -131,8 +131,12 @@ div.Button, div.ComboButton, div.FileOpener {
 	margin: auto;
 	cursor: pointer;
 }
+	div.Button[enabled='0'], div.ComboButton[enabled='0'] {
+		color: lightgray;
+		cursor: default;
+	}
 
-	div.Button:hover, div.ComboButton:hover, div.FileOpener:hover {
+	div.Button[enabled='1']:hover, div.ComboButton[enabled='1']:hover, div.FileOpener:hover {
 		background-color: lightgray;
 		border: 1px solid darkgray;
 	}

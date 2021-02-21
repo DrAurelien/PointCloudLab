@@ -32,8 +32,8 @@ class Dialog implements Control {
 		}
 
 		let toolbar = new Toolbar();
-		toolbar.AddControl(new Button('Ok', ApplyAndClose(onAccept)));
-		toolbar.AddControl(new Button('Cancel', ApplyAndClose(onCancel)));
+		toolbar.AddControl(new Button(new SimpleAction('Ok', ApplyAndClose(onAccept))));
+		toolbar.AddControl(new Button(new SimpleAction('Cancel', ApplyAndClose(onCancel))));
 		cell.appendChild(toolbar.GetElement());
 
 		document.body.appendChild(this.container);
