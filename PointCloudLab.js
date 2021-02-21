@@ -2,7 +2,7 @@ var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
@@ -573,7 +573,7 @@ var Cursor = /** @class */ (function () {
                 }
             }
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Cursor.Combine = function (iconCodes) {
@@ -672,7 +672,7 @@ var MouseControler = /** @class */ (function () {
             this.cursor.Icon = iconCode;
             this.cursor.Apply(this.targetElement);
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     MouseControler.prototype.GetSelectionColor = function () {
@@ -919,6 +919,23 @@ var SimpleAction = /** @class */ (function (_super) {
         return this.callback();
     };
     return SimpleAction;
+}(Action));
+var ActivableAction = /** @class */ (function (_super) {
+    __extends(ActivableAction, _super);
+    function ActivableAction(label, callback, isactive, hintMessage) {
+        var _this = _super.call(this, label, hintMessage) || this;
+        _this.callback = callback;
+        _this.isactive = isactive;
+        _this.hintMessage = hintMessage;
+        return _this;
+    }
+    ActivableAction.prototype.Enabled = function () {
+        return this.isactive();
+    };
+    ActivableAction.prototype.Trigger = function () {
+        return this.callback();
+    };
+    return ActivableAction;
 }(Action));
 /// <reference path="action.ts" />
 /// <reference path="../controler.ts" />
@@ -2508,7 +2525,7 @@ var LongProcess = /** @class */ (function (_super) {
         get: function () {
             return this.Target <= this.Current;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     LongProcess.prototype.Run = function (ondone) {
@@ -2578,14 +2595,14 @@ var IterativeLongProcess = /** @class */ (function (_super) {
         get: function () {
             return this.currentstep;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(IterativeLongProcess.prototype, "Target", {
         get: function () {
             return this.nbsteps;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     return IterativeLongProcess;
@@ -2631,7 +2648,7 @@ var MeshFace = /** @class */ (function () {
             }
             return this.normal;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(MeshFace.prototype, "BoundingBox", {
@@ -2644,7 +2661,7 @@ var MeshFace = /** @class */ (function () {
             }
             return this.boundingbox;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     MeshFace.prototype.IntersectBox = function (box) {
@@ -2710,7 +2727,7 @@ var Octree = /** @class */ (function () {
         get: function () {
             return this.facescache.length;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     return Octree;
@@ -3155,7 +3172,7 @@ var RegionGrowthProcess = /** @class */ (function (_super) {
         get: function () {
             return this.iterator.End();
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     RegionGrowthProcess.prototype.Iterate = function () {
@@ -3958,6 +3975,7 @@ var Toolbar = /** @class */ (function () {
         var container = document.createElement('span');
         container.appendChild(control.GetElement());
         this.toolbar.appendChild(container);
+        return control;
     };
     Toolbar.prototype.RemoveControl = function (control) {
         var element = control.GetElement();
@@ -4037,12 +4055,14 @@ var TemporaryHint = /** @class */ (function (_super) {
 }(Hint));
 /// <reference path="control.ts" />
 /// <reference path="hint.ts" />
+/// <reference path="../../controler/actions/action.ts" />
 var Button = /** @class */ (function () {
-    function Button(label, callback, hintMessage) {
+    function Button(action) {
+        this.action = action;
         this.button = document.createElement('div');
         this.button.className = 'Button';
         var namePattern = /(?:\[Icon\:(.*)\]\s*)?(.*)/i;
-        var name = namePattern.exec(label);
+        var name = namePattern.exec(action.GetLabel(false));
         this.buttonLabel = document.createTextNode(name[name.length - 1]);
         var nameContainer = this.buttonLabel;
         if (name[1]) {
@@ -4053,12 +4073,13 @@ var Button = /** @class */ (function () {
             nameContainer.appendChild(this.buttonLabel);
         }
         this.button.appendChild(nameContainer);
-        if (hintMessage) {
-            this.hint = new Hint(this, hintMessage);
+        if (action.hintMessage) {
+            this.hint = new Hint(this, action.hintMessage);
         }
-        if (callback) {
-            this.button.onclick = function (event) { callback(); };
+        if (action) {
+            this.button.onclick = function (event) { action.Run(); };
         }
+        this.UpdateEnabledState();
     }
     Button.prototype.GetElement = function () {
         return this.button;
@@ -4068,6 +4089,11 @@ var Button = /** @class */ (function () {
     };
     Button.prototype.GetLabel = function () {
         return this.buttonLabel.data;
+    };
+    Button.prototype.UpdateEnabledState = function () {
+        if (this.action) {
+            this.button.setAttribute('enabled', this.action.Enabled() ? '1' : '0');
+        }
     };
     return Button;
 }());
@@ -4097,8 +4123,8 @@ var Dialog = /** @class */ (function () {
             };
         }
         var toolbar = new Toolbar();
-        toolbar.AddControl(new Button('Ok', ApplyAndClose(onAccept)));
-        toolbar.AddControl(new Button('Cancel', ApplyAndClose(onCancel)));
+        toolbar.AddControl(new Button(new SimpleAction('Ok', ApplyAndClose(onAccept))));
+        toolbar.AddControl(new Button(new SimpleAction('Cancel', ApplyAndClose(onCancel))));
         cell.appendChild(toolbar.GetElement());
         document.body.appendChild(this.container);
     }
@@ -4562,21 +4588,21 @@ var LeastSquaresFitting = /** @class */ (function (_super) {
             return (this.counter >= this.stabilityNbSteps) ||
                 (this.delta < this.stabilityFactor * this.error);
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(LeastSquaresFitting.prototype, "Current", {
         get: function () {
             return this.maxcounter;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(LeastSquaresFitting.prototype, "Target", {
         get: function () {
             return this.stabilityNbSteps;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     LeastSquaresFitting.prototype.Step = function () {
@@ -6412,21 +6438,21 @@ var RansacStepProcessor = /** @class */ (function (_super) {
         get: function () {
             return this.nbTrials >= this.ransac.nbFailure;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(RansacStepProcessor.prototype, "Current", {
         get: function () {
             return this.progress;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(RansacStepProcessor.prototype, "Target", {
         get: function () {
             return this.ransac.nbFailure;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     RansacStepProcessor.prototype.Step = function () {
@@ -7759,7 +7785,7 @@ var CSVParser = /** @class */ (function (_super) {
     };
     Object.defineProperty(CSVParser.prototype, "Done", {
         get: function () { return this.done || !!this.error; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     CSVParser.prototype.SetHeader = function (line) {
@@ -8212,17 +8238,17 @@ var ItemsLoader = /** @class */ (function (_super) {
     };
     Object.defineProperty(ItemsLoader.prototype, "Done", {
         get: function () { return this.reader.Eof(); },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(ItemsLoader.prototype, "Current", {
         get: function () { return this.reader.stream.byteOffset; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(ItemsLoader.prototype, "Target", {
         get: function () { return this.reader.stream.byteLength; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     return ItemsLoader;
@@ -8491,7 +8517,7 @@ var Camera = /** @class */ (function () {
         set: function (d) {
             this.at = this.to.Minus(this.GetDirection().Times(d));
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     return Camera;
@@ -8699,7 +8725,7 @@ var Scene = /** @class */ (function (_super) {
             this.children[1] = c;
             c.owner = this;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Scene.prototype, "Lights", {
@@ -8710,7 +8736,7 @@ var Scene = /** @class */ (function (_super) {
             this.children[0] = l;
             l.owner = this;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Scene.prototype.GetDisplayIcon = function () {
@@ -8877,12 +8903,12 @@ var SceneScanner = /** @class */ (function (_super) {
     };
     Object.defineProperty(SceneScanner.prototype, "Current", {
         get: function () { return this.currenti * this.width + this.currentj; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(SceneScanner.prototype, "Target", {
         get: function () { return this.width * this.height; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     return SceneScanner;
@@ -10078,7 +10104,7 @@ var DataHandler = /** @class */ (function (_super) {
         var _this = _super.call(this, 'DataWindow', HandlePosition.Right) || this;
         _this.scene = scene;
         _this.ownerView = ownerView;
-        _this.selection = new SelectionList(_this);
+        _this.selection = new SelectionList(ownerView);
         _this.dataArea = new Pannel('DataArea');
         _this.propertiesArea = new Pannel('PropertiesArea');
         _this.AddControl(_this.dataArea);
@@ -10186,9 +10212,10 @@ var DataHandler = /** @class */ (function (_super) {
 /// <reference path="control.ts" />
 /// <reference path="button.ts" />
 var ComboBox = /** @class */ (function () {
-    function ComboBox(label, actions, hintMessage) {
+    function ComboBox(label, actions, isactive, hintMessage) {
+        if (isactive === void 0) { isactive = null; }
         var self = this;
-        this.button = new Button(label, function () {
+        this.button = new Button(new ActivableAction(label, function () {
             var options;
             if (Action.IsActionProvider(actions)) {
                 options = actions.GetActions();
@@ -10199,10 +10226,14 @@ var ComboBox = /** @class */ (function () {
             if (options && options.length) {
                 Popup.CreatePopup(self.button, options);
             }
-        }, hintMessage);
+        }, isactive || (function () { true; }), hintMessage));
+        this.UpdateEnabledState();
     }
     ComboBox.prototype.GetElement = function () {
         return this.button.GetElement();
+    };
+    ComboBox.prototype.UpdateEnabledState = function () {
+        this.button.UpdateEnabledState();
     };
     return ComboBox;
 }());
@@ -10292,10 +10323,9 @@ var ProgressBar = /** @class */ (function () {
 var FileOpener = /** @class */ (function (_super) {
     __extends(FileOpener, _super);
     function FileOpener(label, filehandler, hintMessage) {
-        var _this = _super.call(this, label, function () { return _this.UploadFile(); }, hintMessage) || this;
+        var _this = _super.call(this, new SimpleAction(label, function () { return _this.UploadFile(); }, hintMessage)) || this;
         _this.label = label;
         _this.filehandler = filehandler;
-        _this.hintMessage = hintMessage;
         var self = _this;
         _this.input = document.createElement('input');
         _this.input.type = 'File';
@@ -10370,7 +10400,7 @@ var SelectDrop = /** @class */ (function () {
         for (var index = 0; index < options.length; index++) {
             options[index].AddListener(this);
         }
-        this.button = new Button(label, function () { return Popup.CreatePopup(self.button, self.GetAvailableOptions(options)); }, hintMessage);
+        this.button = new Button(new SimpleAction(label, function () { return Popup.CreatePopup(self.button, self.GetAvailableOptions(options)); }, hintMessage));
         this.SetCurrent(options[selected].GetLabel(false));
     }
     SelectDrop.prototype.GetAvailableOptions = function (options) {
@@ -10410,6 +10440,8 @@ var Menu = /** @class */ (function (_super) {
         _this.toolbar = new Toolbar();
         _this.container.AddControl(_this.toolbar);
         var dataHandler = application.dataHandler;
+        // ================================
+        // Open a file
         _this.toolbar.AddControl(new FileOpener('[Icon:file-o]', function (createdObject) {
             if (createdObject != null) {
                 if (createdObject instanceof Scene) {
@@ -10422,21 +10454,35 @@ var Menu = /** @class */ (function (_super) {
                 }
             }
         }, 'Load data from a file'));
-        _this.toolbar.AddControl(new Button('[Icon:save]', function () {
+        // ================================
+        // Save the current state
+        _this.toolbar.AddControl(new Button(new SimpleAction('[Icon:save]', function () {
             application.SaveCurrentScene();
-        }, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)'));
-        _this.toolbar.AddControl(new ComboBox('[Icon:bars]', _this, 'Contextual menu : list of actions available for the current selection.'));
-        _this.toolbar.AddControl(new Button('[Icon:search]', function () {
+        }, 'Save the scene data to your browser storage (data will be automatically retrieved on next launch)')));
+        // ================================
+        // Action for the current selection
+        _this.selectionActions = _this.toolbar.AddControl(new ComboBox('[Icon:bars]', _this, function () {
+            return application.dataHandler.selection && application.dataHandler.selection.Size() > 0;
+        }, 'Contextual menu : list of actions available for the current selection.'));
+        // ================================
+        // Focus on the current selection
+        _this.focusSelection = _this.toolbar.AddControl(new Button(new ActivableAction('[Icon:crosshairs]', function () {
             application.FocusOnCurrentSelection();
-        }, 'Focus current viewpoint on the selected item'));
+        }, function () {
+            return application.CanFocus();
+        }, 'Focus current viewpoint on the selected item')));
+        // ================================
+        // Change the current mode
         _this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
             application.RegisterShortCut(new CameraModeAction(application)),
             application.RegisterShortCut(new TransformModeAction(application)),
             application.RegisterShortCut(new LightModeAction(application))
         ], 0, 'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'));
-        _this.toolbar.AddControl(new Button('[Icon:question-circle]', function () {
+        // ================================
+        // Help menu
+        _this.toolbar.AddControl(new Button(new SimpleAction('[Icon:question-circle]', function () {
             window.open('help.html', '_blank');
-        }));
+        })));
         return _this;
     }
     Menu.prototype.Clear = function () {
@@ -10444,6 +10490,10 @@ var Menu = /** @class */ (function (_super) {
     };
     Menu.prototype.GetActions = function () {
         return this.application.dataHandler.selection.GetActions(this.application);
+    };
+    Menu.prototype.OnSelectionChange = function (selection) {
+        this.focusSelection.UpdateEnabledState();
+        this.selectionActions.UpdateEnabledState();
     };
     return Menu;
 }(HideablePannel));
@@ -10553,7 +10603,7 @@ var CoordinatesSystem = /** @class */ (function () {
         get: function () {
             return this.view.sceneRenderer;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     CoordinatesSystem.prototype.NotifyChange = function (node) {
@@ -10783,6 +10833,9 @@ var PCLApp = /** @class */ (function () {
             this.sceneRenderer.Draw(this.dataHandler.scene);
         }
     };
+    PCLApp.prototype.HasSelection = function () {
+        return this.dataHandler.selection.Size() > 0;
+    };
     PCLApp.prototype.CanFocus = function () {
         var selectionbb = this.dataHandler.selection.GetBoundingBox();
         return (selectionbb && selectionbb.IsValid());
@@ -10837,6 +10890,13 @@ var PCLApp = /** @class */ (function () {
     // ==================================
     PCLApp.prototype.NotifyChange = function (source) {
         this.RenderScene();
+    };
+    //===================================
+    // Implement SelectionChangeHandler interface
+    // ==================================
+    PCLApp.prototype.OnSelectionChange = function (selectionList) {
+        this.dataHandler.OnSelectionChange(selectionList);
+        this.menu.OnSelectionChange(selectionList);
     };
     PCLApp.sceneStorageKey = 'PointCloudLab-Scene';
     return PCLApp;
@@ -11208,14 +11268,14 @@ var ICPRegistration = /** @class */ (function (_super) {
         get: function () {
             return this.done || this.currentstep >= this.maxiterations;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(ICPRegistration.prototype, "Trim", {
         get: function () {
             return Math.round(this.cloud.Size() * this.overlap);
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     ICPRegistration.prototype.Iterate = function () {
