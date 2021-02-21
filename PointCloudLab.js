@@ -7358,7 +7358,7 @@ var ComputeNormalsAction = /** @class */ (function (_super) {
         var cloud = this.GetPCLCloud();
         var ondone = function () { return cloud.InvalidateDrawing(); };
         var ncomputer = new NormalsComputer(this.GetCloud(), k);
-        var nharmonizer = new NormalsComputer(this.GetCloud(), k);
+        var nharmonizer = new NormalsHarmonizer(this.GetCloud(), k);
         ncomputer.SetNext(nharmonizer).SetNext(ondone);
         ncomputer.Start();
     };
@@ -7397,7 +7397,7 @@ var NormalsHarmonizer = /** @class */ (function (_super) {
         var normal = cloud.GetNormal(index);
         for (var ii = 0; ii < knn.length; ii++) {
             var nnindex = knn[ii].index;
-            if (this.Status(nnindex) === RegionGrowthStatus.processed) {
+            if (this.Status(nnindex) === RegionGrowthStatus.processed && nnindex !== index) {
                 var nnormal = cloud.GetNormal(nnindex);
                 var s = nnormal.Dot(normal);
                 if (Math.abs(s) > Math.abs(ss))
