@@ -368,7 +368,7 @@ class ComputeNormalsAction extends PCLCloudAction {
 		let cloud = this.GetPCLCloud();
 		let ondone = () => cloud.InvalidateDrawing();
 		let ncomputer = new NormalsComputer(this.GetCloud(), k);
-		let nharmonizer = new NormalsComputer(this.GetCloud(), k);
+		let nharmonizer = new NormalsHarmonizer(this.GetCloud(), k);
 		ncomputer.SetNext(nharmonizer).SetNext(ondone);
 		ncomputer.Start();
 	}
