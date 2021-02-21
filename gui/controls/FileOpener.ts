@@ -10,8 +10,8 @@
 class FileOpener extends Button {
 	input: HTMLInputElement;
 
-	constructor(public label: string, public filehandler: Function, private hintMessage?: string) {
-		super(label, () => this.UploadFile(), hintMessage);
+	constructor(public label: string, public filehandler: Function, hintMessage?: string) {
+		super(new SimpleAction(label, () => this.UploadFile(), hintMessage));
 
 		let self = this;
 		this.input = document.createElement('input');

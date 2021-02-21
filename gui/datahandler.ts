@@ -19,7 +19,7 @@ class DataHandler extends HideablePannel implements SelectionChangeHandler {
 	constructor(public scene: Scene, private ownerView: PCLApp) {
 		super('DataWindow', HandlePosition.Right);
 
-		this.selection = new SelectionList(this);
+		this.selection = new SelectionList(ownerView);
 		this.dataArea = new Pannel('DataArea');
 		this.propertiesArea = new Pannel('PropertiesArea');
 

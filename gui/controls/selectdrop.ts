@@ -10,10 +10,10 @@ class SelectDrop implements Control, ActionListener {
 		for (let index = 0; index < options.length; index++) {
 			options[index].AddListener(this);
 		}
-		this.button = new Button(label,
+		this.button = new Button(new SimpleAction(label,
 			() => Popup.CreatePopup(self.button, self.GetAvailableOptions(options)),
 			hintMessage
-		);
+		));
 		this.SetCurrent(options[selected].GetLabel(false));
 	}
 

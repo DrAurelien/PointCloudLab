@@ -9,10 +9,11 @@ class Toolbar implements Container {
 		this.toolbar.className = classname;
 	}
 
-	AddControl(control: Control) {
+	AddControl(control: Control): Control {
 		let container = document.createElement('span');
 		container.appendChild(control.GetElement());
 		this.toolbar.appendChild(container);
+		return control;
 	}
 
 	RemoveControl(control: Control) {
