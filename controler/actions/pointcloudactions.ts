@@ -404,7 +404,7 @@ class NormalsHarmonizer extends RegionGrowthProcess {
 		let normal = cloud.GetNormal(index);
 		for (var ii = 0; ii < knn.length; ii++) {
 			let nnindex = knn[ii].index;
-			if (this.Status(nnindex) === RegionGrowthStatus.processed) {
+			if (this.Status(nnindex) === RegionGrowthStatus.processed && nnindex !== index) {
 				let nnormal = cloud.GetNormal(nnindex);
 				let s = nnormal.Dot(normal);
 				if (Math.abs(s) > Math.abs(ss))
