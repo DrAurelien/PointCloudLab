@@ -143,6 +143,7 @@
     <Content Include="gui\controls\draggable.ts" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="controler\meshconstraintscontroler.ts" />
     <TypeScriptCompile Include="gui\controls\colorscale\scalebounds.ts" />
     <TypeScriptCompile Include="gui\controls\colorscale\scalerenderer.ts" />
     <Content Include="gui\selectionlist.ts" />

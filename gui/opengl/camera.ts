@@ -189,6 +189,11 @@ class Camera implements ViewPoint {
 		return Homogeneous.ToVector(v);
 	}
 
+	GetRay(x: number, y: number): Ray {
+		let point: Vector = this.ComputeInvertedProjection(new Vector([x, y, -1.0]));
+		return new Ray(this.at, point.Minus(this.at).Normalized());
+	}
+
 	CenterOnBox(box: BoundingBox): boolean {
 		if (box && box.IsValid()) {
 			let radius = box.GetSize().Norm() / 2.0;

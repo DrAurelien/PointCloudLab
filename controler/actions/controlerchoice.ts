@@ -2,6 +2,7 @@
 /// <reference path="../cameracontroler.ts" />
 /// <reference path="../transformcontroler.ts" />
 /// <reference path="../lightcontroler.ts" />
+/// <reference path="../meshconstraintscontroler.ts" />
 
 
 class CameraModeAction extends Action {
@@ -59,5 +60,26 @@ class LightModeAction extends Action {
 
 	GetShortCut(): string {
 		return 'L';
+	}
+}
+
+class DrawConstraintsAction extends Action
+{
+	constructor(private target: Controlable) {
+		super('Draw constraints', 'The mouse can be used select triangles to constraint on a mesh');
+	}
+
+	Trigger() {
+		this.target.SetCurrentControler(new MeshConstraintsControler(this.target));
+	}
+
+	Enabled(): boolean {
+		if (!(this.target.GetCurrentTransformable() instanceof PCLMesh))
+			return false;
+		return !(this.target.GetCurrentControler() instanceof MeshConstraintsControler);
+	}
+
+	GetShortCut(): string {
+		return 'D';
 	}
 }

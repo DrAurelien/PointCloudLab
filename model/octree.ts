@@ -119,7 +119,7 @@ class OctreeCell {
 					let face = this.octree.GetFace(this.faces[index]);
 					let tt = face.LineFaceIntersection(ray);
 					if (tt != null) {
-						result.Add(tt);
+						result.Add(tt, face);
 					}
 				}
 			}

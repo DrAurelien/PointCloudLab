@@ -9,6 +9,7 @@
 		attribute vec3 VertexPosition;
 		attribute vec3 NormalVector;
 		attribute float ScalarValue;
+		attribute float FlagValue;
 		uniform mat4 ModelView;
 		uniform mat4 Projection;
 		uniform mat4 ShapeTransform;
@@ -16,6 +17,7 @@
 		varying highp vec3 Position;
 		varying highp vec3 Normal;
 		varying highp float Scalar;
+		varying lowp float Flag;
 
 		void main(void) {
 			gl_PointSize = 5.0;
@@ -23,7 +25,9 @@
 			Position = VertexPosition;
 
 			Normal = vec3((ShapeTransform * vec4(NormalVector, 0.0)).xyz);
+
 			Scalar = ScalarValue;
+			Flag = FlagValue;
 		}
 	</script>
 	<script id="FragmentShader" type="x-shader/x-fragment">
@@ -39,6 +43,7 @@
 		uniform  highp float GlossyPow;
 		uniform lowp int UseNormals;
 		uniform lowp int UseScalars;
+		uniform lowp int UseFlags;
 		uniform highp float MinScalarValue;
 		uniform highp float MaxScalarValue;
 		uniform  highp vec3 MinScalarColor;
@@ -47,6 +52,7 @@
 		varying highp vec3 Position;
 		varying highp vec3 Normal;
 		varying highp float Scalar;
+		varying lowp float Flag;
 
 		void main(void) {
 			highp float ambiant;
@@ -66,7 +72,11 @@
 				}
 			}
 
-			if(UseNormals == 0)
+			if(UseFlags == 1 && Flag > 0.0)
+			{
+				gl_FragColor = vec4(1, 1, 1, 1);
+			}
+			else if(UseNormals == 0)
 			{
 				gl_FragColor = vec4(color, 1);
 			}

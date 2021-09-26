@@ -83,7 +83,8 @@ class Menu extends HideablePannel implements ActionsProvider, SelectionChangeHan
 			[
 				application.RegisterShortCut(new CameraModeAction(application)),
 				application.RegisterShortCut(new TransformModeAction(application)),
-				application.RegisterShortCut(new LightModeAction(application))
+				application.RegisterShortCut(new LightModeAction(application)),
+				application.RegisterShortCut(new DrawConstraintsAction(application))
 			],
 			0,
 			'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'

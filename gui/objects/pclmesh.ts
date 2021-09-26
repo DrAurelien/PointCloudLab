@@ -133,6 +133,7 @@ class PCLMeshParsingHandler extends PCLPrimitiveParsingHandler {
 
 class MeshDrawing {
 	glIndexBuffer: ElementArrayBuffer;
+	glFlagsBuffer: FloatArrayBuffer;
 	pcdrawing: PointCloudDrawing;
 	context: DrawingContext;
 	buffersize: number;
@@ -151,11 +152,20 @@ class MeshDrawing {
 		if (!this.glIndexBuffer) {
 			this.glIndexBuffer = new ElementArrayBuffer(mesh.faces, ctx);
 		}
+
+		if (!this.glFlagsBuffer) {
+			this.glFlagsBuffer = new FloatArrayBuffer(new Float32Array(mesh.flags), ctx, 1);
+		}
 	}
 
 	Draw(lighting: boolean, ctx: DrawingContext) {
 		this.pcdrawing.BindBuffers(lighting, null, ctx);
 		this.glIndexBuffer.Bind();
+
+		if (this.glFlagsBuffer) {
+			ctx.EnableFlags(true);
+			this.glFlagsBuffer.BindAttribute(ctx.flagvalue);
+		}
 
 		if (ctx.rendering.Point()) {
 			ctx.gl.drawElements(ctx.gl.POINTS, this.buffersize, ctx.GetIntType(), 0);
@@ -166,6 +176,8 @@ class MeshDrawing {
 		if (ctx.rendering.Wire()) {
 			ctx.gl.drawElements(ctx.gl.LINES, this.buffersize, ctx.GetIntType(), 0);
 		}
+
+		ctx.EnableFlags(false);
 	}
 
 	Clear() {
@@ -173,6 +185,10 @@ class MeshDrawing {
 		if (this.glIndexBuffer) {
 			this.glIndexBuffer.Clear();
 			this.glIndexBuffer = null;
+		}
+		if (this.glFlagsBuffer) {
+			this.glFlagsBuffer.Clear();
+			this.glFlagsBuffer = null;
 		}
 	}
 }

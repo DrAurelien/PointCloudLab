@@ -66,8 +66,7 @@ class Renderer implements Control {
 	}
 
 	GetRay(x: number, y: number): Ray {
-		let point: Vector = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
-		return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
+		return this.camera.GetRay(x, y);
 	}
 
 	ResolveRayIntersection(ray: Ray, root: PCLNode): Picking {

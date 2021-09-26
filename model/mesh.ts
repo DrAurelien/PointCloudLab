@@ -8,50 +8,47 @@
 
 class Mesh {
 	faces: number[];
+	flags: number[];
 	size: number;
 	octree: Octree;
 
 	constructor(public pointcloud: PointCloud, faces?: number[]) {
 		this.faces = faces || [];
 		this.size = this.faces.length;
+		this.flags = new Array(this.Size());
+		for (let index = 0; index < this.Size(); index++)
+			this.flags[index] = 0;
 	}
 
-	PushFace(f: number[]): void {
-		if (f.length != 3) {
+	PushFace(pointindices: number[], flag:number = 0): void {
+		if (pointindices.length != 3) {
 			throw 'Non triangular faces are not (yet) supported in meshes';
 		}
 
-		if (this.size + f.length > this.faces.length) {
+		if (this.size + pointindices.length > this.faces.length) {
 			//Not optimal (Reserve should be called before callin PushFace)
-			this.Reserve(this.faces.length + f.length);
+			this.Reserve(this.faces.length + pointindices.length);
 		}
 
-		for (let index = 0; index < f.length; index++) {
-			this.faces[this.size++] = f[index];
+		this.flags[this.Size()] = flag;
+		for (let index = 0; index < pointindices.length; index++) {
+			this.faces[this.size++] = pointindices[index];
 		}
 	}
 
 	Reserve(capacity: number): void {
 		let faces = new Array(3 * capacity);
-		for (let index = 0; index < this.size; index++) {
+		let flags = new Array(capacity);
+		for (let index = 0; index < this.size && index < capacity; index++)
 			faces[index] = this.faces[index];
-		}
+		for (let index = 0; index < this.Size() && index < capacity; index++)
+			flags[index] = this.flags[index]
 		this.faces = faces;
+		this.flags = flags;
 	}
 
-	GetFace(i: number): MeshFace {
-		let index = 3 * i;
-		let indices = [
-			this.faces[index++],
-			this.faces[index++],
-			this.faces[index++]
-		];
-		return new MeshFace(indices, [
-			this.pointcloud.GetPoint(indices[0]),
-			this.pointcloud.GetPoint(indices[1]),
-			this.pointcloud.GetPoint(indices[2])
-		]
-		);
+	GetFace(index: number): MeshFace {
+		return new MeshFace(this, index);
 	}
 
 	Size(): number {
@@ -91,9 +88,10 @@ class Mesh {
 		//We should never get here !!! but just in case ...
 		let result = new Picking(wrapper);
 		for (let ii = 0; ii < this.Size(); ii++) {
-			let tt = this.GetFace(ii).LineFaceIntersection(ray);
+			let face = this.GetFace(ii);
+			let tt = face.LineFaceIntersection(ray);
 			if (tt !== null) {
-				result.Add(tt);
+				result.Add(tt, face);
 			}
 		}
 		return result;
@@ -135,8 +133,8 @@ class MeshNormalsComputer extends IterativeLongProcess {
 
 	Iterate(step: number) {
 		let face = this.mesh.GetFace(step);
-		for (let index = 0; index < face.indices.length; index++) {
-			let nindex = face.indices[index];
+		for (let index = 0; index < 3; index++) {
+			let nindex = face.GetPointIndex(index);
 			this.normals[nindex] = this.normals[nindex].Plus(face.Normal);
 		}
 	}

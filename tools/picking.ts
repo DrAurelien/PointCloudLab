@@ -5,20 +5,25 @@ interface Pickable {
 }
 
 class Picking {
-    distance: number;
+	distance: number;
+	details: any;
 
 	constructor(public object: Pickable) {
-        this.distance = null;
+		this.distance = null;
+		this.details = null;
     }
 
     HasIntersection(): boolean {
         return this.distance !== null;
     }
 
-    Add(distance: number): void {
+    Add(distance: number, details?: any): boolean {
         if (this.distance === null || this.distance > distance) {
-            this.distance = distance;
-        }
+			this.distance = distance;
+			this.details = details;
+			return true;
+		}
+		return false;
     }
 
     Compare(picking: Picking): number {

@@ -586,6 +586,7 @@ var Cursor = /** @class */ (function () {
     Cursor.Scale = '\uf002'; //fa-search
     Cursor.Edit = '\uf040'; //fa-pencil
     Cursor.Light = '\uf0eb'; //fa-lightbulb-o
+    Cursor.Brush = '\uf1fc'; //fa-paint-brush
     return Cursor;
 }());
 /// <reference path="mousetracker.ts" />
@@ -797,6 +798,54 @@ var LightControler = /** @class */ (function (_super) {
 /// <reference path="mousetracker.ts" />
 /// <reference path="cursor.ts" />
 /**
+ * The Camera Contorler handles mouse inputs in order to move the camera for the scene renderering
+ */
+var MeshConstraintsControler = /** @class */ (function (_super) {
+    __extends(MeshConstraintsControler, _super);
+    function MeshConstraintsControler(target) {
+        var _this = _super.call(this, target) || this;
+        _this.mesh = _this.target.GetCurrentTransformable();
+        return _this;
+    }
+    MeshConstraintsControler.prototype.HandleMouseMove = function (displacement) {
+        if (displacement.IsNull()) {
+            return true;
+        }
+        switch (displacement.button) {
+            case 1: //Left mouse
+            case 3: //Right mouse
+                var face = this.GetFace();
+                if (face) {
+                    face.Flag = displacement.button == 1 ? 1 : 0;
+                    this.mesh.InvalidateDrawing();
+                    this.mesh.NotifyChange(this.mesh, ChangeType.Display);
+                }
+                break;
+            default:
+                return true;
+        }
+        this.Cursor = Cursor.Brush;
+        return true;
+    };
+    MeshConstraintsControler.prototype.HandleClick = function (tracker) {
+        return true;
+    };
+    MeshConstraintsControler.prototype.HandleWheel = function (delta) {
+        return true;
+    };
+    MeshConstraintsControler.prototype.GetFace = function () {
+        var camera = this.target.GetViewPoint();
+        var ray = camera.GetRay(this.mousetracker.x, this.mousetracker.y);
+        var picking = this.mesh.RayIntersection(ray);
+        return picking.details;
+    };
+    return MeshConstraintsControler;
+}(MouseControler));
+/// <reference path="controler.ts" />
+/// <reference path="mousecontroler.ts" />
+/// <reference path="mousetracker.ts" />
+/// <reference path="cursor.ts" />
+/**
  * The Transform Contorler handles mouse inputs in order to apply transformations the the currently selected element
  */
 var TransformControler = /** @class */ (function (_super) {
@@ -958,6 +1007,7 @@ var CenterCameraAction = /** @class */ (function (_super) {
 /// <reference path="../cameracontroler.ts" />
 /// <reference path="../transformcontroler.ts" />
 /// <reference path="../lightcontroler.ts" />
+/// <reference path="../meshconstraintscontroler.ts" />
 var CameraModeAction = /** @class */ (function (_super) {
     __extends(CameraModeAction, _super);
     function CameraModeAction(target) {
@@ -1016,19 +1066,43 @@ var LightModeAction = /** @class */ (function (_super) {
     };
     return LightModeAction;
 }(Action));
+var DrawConstraintsAction = /** @class */ (function (_super) {
+    __extends(DrawConstraintsAction, _super);
+    function DrawConstraintsAction(target) {
+        var _this = _super.call(this, 'Draw constraints', 'The mouse can be used select triangles to constraint on a mesh') || this;
+        _this.target = target;
+        return _this;
+    }
+    DrawConstraintsAction.prototype.Trigger = function () {
+        this.target.SetCurrentControler(new MeshConstraintsControler(this.target));
+    };
+    DrawConstraintsAction.prototype.Enabled = function () {
+        if (!(this.target.GetCurrentTransformable() instanceof PCLMesh))
+            return false;
+        return !(this.target.GetCurrentControler() instanceof MeshConstraintsControler);
+    };
+    DrawConstraintsAction.prototype.GetShortCut = function () {
+        return 'D';
+    };
+    return DrawConstraintsAction;
+}(Action));
 /// <reference path="../maths/vector.ts" />
 var Picking = /** @class */ (function () {
     function Picking(object) {
         this.object = object;
         this.distance = null;
+        this.details = null;
     }
     Picking.prototype.HasIntersection = function () {
         return this.distance !== null;
     };
-    Picking.prototype.Add = function (distance) {
+    Picking.prototype.Add = function (distance, details) {
         if (this.distance === null || this.distance > distance) {
             this.distance = distance;
+            this.details = details;
+            return true;
         }
+        return false;
     };
     Picking.prototype.Compare = function (picking) {
         if (this.HasIntersection() && picking.HasIntersection()) {
@@ -1224,6 +1298,9 @@ var DrawingContext = /** @class */ (function () {
         this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
         this.minscalarcolor = this.gl.getUniformLocation(this.shaders, "MinScalarColor");
         this.maxscalarcolor = this.gl.getUniformLocation(this.shaders, "MaxScalarColor");
+        this.useflags = this.gl.getUniformLocation(this.shaders, "UseFlags");
+        this.flagvalue = this.gl.getAttribLocation(this.shaders, "FlagValue");
+        this.EnableFlags(false);
         this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
         this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
         this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
@@ -1253,14 +1330,24 @@ var DrawingContext = /** @class */ (function () {
             this.gl.disableVertexAttribArray(this.normals);
         }
     };
-    DrawingContext.prototype.EnableScalars = function (b) {
-        if (b) {
+    DrawingContext.prototype.EnableScalars = function (enable) {
+        if (enable) {
             this.gl.uniform1i(this.usescalars, 1);
             this.gl.enableVertexAttribArray(this.scalarvalue);
         }
         else {
             this.gl.uniform1i(this.usescalars, 0);
             this.gl.disableVertexAttribArray(this.scalarvalue);
+        }
+    };
+    DrawingContext.prototype.EnableFlags = function (enable) {
+        if (enable) {
+            this.gl.uniform1i(this.useflags, 1);
+            this.gl.enableVertexAttribArray(this.flagvalue);
+        }
+        else {
+            this.gl.uniform1i(this.useflags, 0);
+            this.gl.disableVertexAttribArray(this.flagvalue);
         }
     };
     DrawingContext.prototype.GetIntType = function (forceshort) {
@@ -2612,14 +2699,14 @@ var IterativeLongProcess = /** @class */ (function (_super) {
 /// <reference path="../tools/longprocess.ts" />
 /// <reference path="../tools/picking.ts" />
 var MeshFace = /** @class */ (function () {
-    function MeshFace(indices, points) {
-        this.indices = indices;
-        this.points = points;
+    function MeshFace(owner, index) {
+        this.owner = owner;
+        this.index = index;
     }
     MeshFace.prototype.LineFaceIntersection = function (line) {
         //Compute line / face intersection
         //solve line.from + t * line.dir
-        var dd = this.Normal.Dot(this.points[0]);
+        var dd = this.Normal.Dot(this.GetPoint(0));
         var nn = line.dir.Dot(this.Normal);
         if (Math.abs(nn) < 1e-6) {
             return null;
@@ -2633,7 +2720,7 @@ var MeshFace = /** @class */ (function () {
     };
     MeshFace.prototype.Inside = function (point) {
         for (var ii = 0; ii < 3; ii++) {
-            var test = point.Minus(this.points[ii]).Cross(this.points[(ii + 1) % 3].Minus(this.points[ii]));
+            var test = point.Minus(this.GetPoint(ii)).Cross(this.GetPoint((ii + 1) % 3).Minus(this.GetPoint(ii)));
             if (test.Dot(this.Normal) > 0) {
                 return false;
                 ;
@@ -2644,7 +2731,7 @@ var MeshFace = /** @class */ (function () {
     Object.defineProperty(MeshFace.prototype, "Normal", {
         get: function () {
             if (!this.normal) {
-                this.normal = this.points[1].Minus(this.points[0]).Cross(this.points[2].Minus(this.points[0])).Normalized();
+                this.normal = this.GetPoint(1).Minus(this.GetPoint(0)).Cross(this.GetPoint(2).Minus(this.GetPoint(0))).Normalized();
             }
             return this.normal;
         },
@@ -2655,11 +2742,21 @@ var MeshFace = /** @class */ (function () {
         get: function () {
             if (!this.boundingbox) {
                 this.boundingbox = new BoundingBox();
-                for (var index = 0; index < this.points.length; index++) {
-                    this.boundingbox.Add(this.points[index]);
+                for (var index = 0; index < 3; index++) {
+                    this.boundingbox.Add(this.GetPoint(index));
                 }
             }
             return this.boundingbox;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(MeshFace.prototype, "Flag", {
+        get: function () {
+            return this.owner.flags[this.index];
+        },
+        set: function (value) {
+            this.owner.flags[this.index] = value;
         },
         enumerable: false,
         configurable: true
@@ -2670,20 +2767,26 @@ var MeshFace = /** @class */ (function () {
             return false;
         }
         //Todo : Normal cross edges ?
-        return !box.TestAxisSeparation(this.points[0], this.Normal);
+        return !box.TestAxisSeparation(this.GetPoint(0), this.Normal);
     };
     MeshFace.prototype.Distance = function (point) {
         if (this.Inside(point)) {
-            return Math.abs(this.Normal.Dot(point.Minus(this.points[0])));
+            return Math.abs(this.Normal.Dot(point.Minus(this.GetPoint(0))));
         }
         var dist = null;
         for (var ii = 0; ii < 3; ii++) {
-            var dd = Geometry.DistanceToSegment(point, this.points[ii], this.points[(ii + 1) % 3]);
+            var dd = Geometry.DistanceToSegment(point, this.GetPoint(ii), this.GetPoint((ii + 1) % 3));
             if (dist == null || dd < dist) {
                 dist = dd;
             }
         }
         return dist;
+    };
+    MeshFace.prototype.GetPointIndex = function (index) {
+        return this.owner.faces[3 * this.index + index];
+    };
+    MeshFace.prototype.GetPoint = function (index) {
+        return this.owner.pointcloud.GetPoint(this.GetPointIndex(index));
     };
     return MeshFace;
 }());
@@ -2799,7 +2902,7 @@ var OctreeCell = /** @class */ (function () {
                     var face = this.octree.GetFace(this.faces[index]);
                     var tt = face.LineFaceIntersection(ray);
                     if (tt != null) {
-                        result.Add(tt);
+                        result.Add(tt, face);
                     }
                 }
             }
@@ -3639,38 +3742,36 @@ var Mesh = /** @class */ (function () {
         this.pointcloud = pointcloud;
         this.faces = faces || [];
         this.size = this.faces.length;
+        this.flags = new Array(this.Size());
+        for (var index = 0; index < this.Size(); index++)
+            this.flags[index] = 0;
     }
-    Mesh.prototype.PushFace = function (f) {
-        if (f.length != 3) {
+    Mesh.prototype.PushFace = function (pointindices, flag) {
+        if (flag === void 0) { flag = 0; }
+        if (pointindices.length != 3) {
             throw 'Non triangular faces are not (yet) supported in meshes';
         }
-        if (this.size + f.length > this.faces.length) {
+        if (this.size + pointindices.length > this.faces.length) {
             //Not optimal (Reserve should be called before callin PushFace)
-            this.Reserve(this.faces.length + f.length);
+            this.Reserve(this.faces.length + pointindices.length);
         }
-        for (var index = 0; index < f.length; index++) {
-            this.faces[this.size++] = f[index];
+        this.flags[this.Size()] = flag;
+        for (var index = 0; index < pointindices.length; index++) {
+            this.faces[this.size++] = pointindices[index];
         }
     };
     Mesh.prototype.Reserve = function (capacity) {
         var faces = new Array(3 * capacity);
-        for (var index = 0; index < this.size; index++) {
+        var flags = new Array(capacity);
+        for (var index = 0; index < this.size && index < capacity; index++)
             faces[index] = this.faces[index];
-        }
+        for (var index = 0; index < this.Size() && index < capacity; index++)
+            flags[index] = this.flags[index];
         this.faces = faces;
+        this.flags = flags;
     };
-    Mesh.prototype.GetFace = function (i) {
-        var index = 3 * i;
-        var indices = [
-            this.faces[index++],
-            this.faces[index++],
-            this.faces[index++]
-        ];
-        return new MeshFace(indices, [
-            this.pointcloud.GetPoint(indices[0]),
-            this.pointcloud.GetPoint(indices[1]),
-            this.pointcloud.GetPoint(indices[2])
-        ]);
+    Mesh.prototype.GetFace = function (index) {
+        return new MeshFace(this, index);
     };
     Mesh.prototype.Size = function () {
         return this.size / 3;
@@ -3707,9 +3808,10 @@ var Mesh = /** @class */ (function () {
         //We should never get here !!! but just in case ...
         var result = new Picking(wrapper);
         for (var ii = 0; ii < this.Size(); ii++) {
-            var tt = this.GetFace(ii).LineFaceIntersection(ray);
+            var face = this.GetFace(ii);
+            var tt = face.LineFaceIntersection(ray);
             if (tt !== null) {
-                result.Add(tt);
+                result.Add(tt, face);
             }
         }
         return result;
@@ -3748,8 +3850,8 @@ var MeshNormalsComputer = /** @class */ (function (_super) {
     };
     MeshNormalsComputer.prototype.Iterate = function (step) {
         var face = this.mesh.GetFace(step);
-        for (var index = 0; index < face.indices.length; index++) {
-            var nindex = face.indices[index];
+        for (var index = 0; index < 3; index++) {
+            var nindex = face.GetPointIndex(index);
             this.normals[nindex] = this.normals[nindex].Plus(face.Normal);
         }
     };
@@ -3922,10 +4024,17 @@ var MeshDrawing = /** @class */ (function () {
         if (!this.glIndexBuffer) {
             this.glIndexBuffer = new ElementArrayBuffer(mesh.faces, ctx);
         }
+        if (!this.glFlagsBuffer) {
+            this.glFlagsBuffer = new FloatArrayBuffer(new Float32Array(mesh.flags), ctx, 1);
+        }
     };
     MeshDrawing.prototype.Draw = function (lighting, ctx) {
         this.pcdrawing.BindBuffers(lighting, null, ctx);
         this.glIndexBuffer.Bind();
+        if (this.glFlagsBuffer) {
+            ctx.EnableFlags(true);
+            this.glFlagsBuffer.BindAttribute(ctx.flagvalue);
+        }
         if (ctx.rendering.Point()) {
             ctx.gl.drawElements(ctx.gl.POINTS, this.buffersize, ctx.GetIntType(), 0);
         }
@@ -3935,12 +4044,17 @@ var MeshDrawing = /** @class */ (function () {
         if (ctx.rendering.Wire()) {
             ctx.gl.drawElements(ctx.gl.LINES, this.buffersize, ctx.GetIntType(), 0);
         }
+        ctx.EnableFlags(false);
     };
     MeshDrawing.prototype.Clear = function () {
         this.pcdrawing.Clear();
         if (this.glIndexBuffer) {
             this.glIndexBuffer.Clear();
             this.glIndexBuffer = null;
+        }
+        if (this.glFlagsBuffer) {
+            this.glFlagsBuffer.Clear();
+            this.glFlagsBuffer = null;
         }
     };
     return MeshDrawing;
@@ -8492,6 +8606,10 @@ var Camera = /** @class */ (function () {
         var v = render.LUSolve(u);
         return Homogeneous.ToVector(v);
     };
+    Camera.prototype.GetRay = function (x, y) {
+        var point = this.ComputeInvertedProjection(new Vector([x, y, -1.0]));
+        return new Ray(this.at, point.Minus(this.at).Normalized());
+    };
     Camera.prototype.CenterOnBox = function (box) {
         if (box && box.IsValid()) {
             var radius = box.GetSize().Norm() / 2.0;
@@ -8838,8 +8956,7 @@ var Renderer = /** @class */ (function () {
         this.camera.screen.height = height;
     };
     Renderer.prototype.GetRay = function (x, y) {
-        var point = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
-        return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
+        return this.camera.GetRay(x, y);
     };
     Renderer.prototype.ResolveRayIntersection = function (ray, root) {
         return root.RayIntersection(ray);
@@ -10476,7 +10593,8 @@ var Menu = /** @class */ (function (_super) {
         _this.toolbar.AddControl(new SelectDrop('[Icon:desktop] Mode', [
             application.RegisterShortCut(new CameraModeAction(application)),
             application.RegisterShortCut(new TransformModeAction(application)),
-            application.RegisterShortCut(new LightModeAction(application))
+            application.RegisterShortCut(new LightModeAction(application)),
+            application.RegisterShortCut(new DrawConstraintsAction(application))
         ], 0, 'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'));
         // ================================
         // Help menu

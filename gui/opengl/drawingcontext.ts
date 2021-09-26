@@ -30,6 +30,9 @@ class DrawingContext {
 	maxscalarvalue: WebGLUniformLocation;
 	minscalarcolor: WebGLUniformLocation;
 	maxscalarcolor: WebGLUniformLocation;
+	//Mesh flags
+	useflags: WebGLUniformLocation;
+	flagvalue: number;
 	//Extensions
 	useuint: boolean;
 	//
@@ -73,6 +76,10 @@ class DrawingContext {
 		this.minscalarcolor = this.gl.getUniformLocation(this.shaders, "MinScalarColor");
 		this.maxscalarcolor = this.gl.getUniformLocation(this.shaders, "MaxScalarColor");
 
+		this.useflags = this.gl.getUniformLocation(this.shaders, "UseFlags");
+		this.flagvalue = this.gl.getAttribLocation(this.shaders, "FlagValue");
+		this.EnableFlags(false);
+
 		this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
 		this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
 		this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
@@ -107,8 +114,8 @@ class DrawingContext {
 		}
 	}
 
-	EnableScalars(b): void {
-		if (b) {
+	EnableScalars(enable: boolean): void {
+		if (enable) {
 			this.gl.uniform1i(this.usescalars, 1);
 			this.gl.enableVertexAttribArray(this.scalarvalue);
 		}
@@ -117,6 +124,18 @@ class DrawingContext {
 			this.gl.disableVertexAttribArray(this.scalarvalue);
 		}
 	}
+
+	EnableFlags(enable: boolean): void {
+		if (enable) {
+			this.gl.uniform1i(this.useflags, 1);
+			this.gl.enableVertexAttribArray(this.flagvalue);
+		}
+		else {
+			this.gl.uniform1i(this.useflags, 0);
+			this.gl.disableVertexAttribArray(this.flagvalue);
+		}
+	}
+
 
 	GetIntType(forceshort: boolean=false): number {
 		if (this.useuint && !forceshort) {

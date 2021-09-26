@@ -62,4 +62,5 @@
 	static Scale = '\uf002'; //fa-search
 	static Edit = '\uf040'; //fa-pencil
 	static Light = '\uf0eb'; //fa-lightbulb-o
+	static Brush = '\uf1fc'; //fa-paint-brush
 }

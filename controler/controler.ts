@@ -24,6 +24,7 @@ interface ViewPoint {
 	GetRotationMatrix(xfrom: number, yfrom: number, xto: number, yto: number): Matrix;
 	GetTranslationVector(dx: number, dy: number): Vector;
 	GetScreenHeight(): number;
+	GetRay(x: number, y: number): Ray;
 }
 
 interface LightingPosition {
