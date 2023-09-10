@@ -1,4 +1,10 @@
-﻿class Vector {
+﻿enum SphericalRepresentation
+{
+	AzimuthColatitude, // Theta ranges from 0=Z to pi=-Z
+	AzimuthLatitude //Theta range from -pi/2=-Z to pi/2=Z
+}
+
+class Vector {
 	coordinates: number[];
 
 	constructor(coords) {
@@ -168,5 +174,68 @@
 			v[index] = 0;
 		}
 		return new Vector(v);
+	}
+
+	static Spherical(phi: number, theta: number, radius: number) : Vector
+	{
+		return new Vector([phi, theta, radius]);
+	}
+
+	// Transforms spherical coordinates to cartesian coordinates [phi, theta, length]
+	// phi is the azimut (angle to X)
+	// theta is the latitude/colatitude (angle to Z - depending on the specified representation)
+	// length is the vector length
+	static SphericalToCartesian(spherical: Vector, representation: SphericalRepresentation = SphericalRepresentation.AzimuthColatitude) : Vector
+	{
+		let phi = spherical.Get(0);
+		let theta = spherical.Get(1);
+		let radius = spherical.Get(2);
+		switch(representation)
+		{
+			case SphericalRepresentation.AzimuthColatitude:	
+				return new Vector(
+					[
+						Math.cos(phi) * Math.sin(theta),
+						Math.sin(phi) * Math.sin(theta),
+						Math.cos(theta)
+					]
+				).Times(radius);
+			case SphericalRepresentation.AzimuthLatitude:
+				return new Vector(
+					[
+						Math.cos(phi) * Math.cos(theta),
+						Math.sin(phi) * Math.cos(theta),
+						-Math.sin(theta)
+					]
+				).Times(radius);
+			default:
+				throw "Erroneous spherical representation";
+		}
+	}
+
+	static CartesianToSpherical(cartesian: Vector, representation: SphericalRepresentation = SphericalRepresentation.AzimuthColatitude) : Vector
+	{
+		let norm = cartesian.Norm();
+		let theta = 0.;
+		let phi = 0.;
+		if(norm > 1e-6)
+		{
+			switch(representation)
+			{
+				case SphericalRepresentation.AzimuthColatitude:
+					theta = Math.acos(cartesian.Get(2) / norm);
+					if(theta > 1e-8)
+						phi = Math.asin((cartesian.Get(1) / norm) / Math.sin(theta));
+					break;
+				case SphericalRepresentation.AzimuthLatitude:
+					theta = Math.acos(cartesian.Get(2) / norm);
+					if(theta > 1e-8)
+						phi = Math.asin((cartesian.Get(1) / norm) / Math.sin(theta));
+					break;
+				default:
+					throw "Erroneous spherical representation";
+			}
+		}
+		return Vector.Spherical(phi, theta, norm);
 	}
 }

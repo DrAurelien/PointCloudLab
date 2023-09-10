@@ -245,6 +245,7 @@ class FindBestFittingShapeAction extends PCLCloudAction {
 		dialog.InsertCheckBox('Sphere', true);
 		dialog.InsertCheckBox('Cylinder', true);
 		dialog.InsertCheckBox('Cone', true);
+		dialog.InsertCheckBox('Torus', true);
 	}
 
 	ComputeBestFittingShape(properties: Dialog): boolean {
@@ -263,6 +264,9 @@ class FindBestFittingShapeAction extends PCLCloudAction {
 		}
 		if (properties.GetValue('Cone')) {
 			fittingProcesses.push(new ConeFittingProcess(this.results));
+		}
+		if (properties.GetValue('Torus')) {
+			fittingProcesses.push(new TorusFittingProcess(this.results));
 		}
 
 		if (fittingProcesses.length) {
@@ -348,6 +352,16 @@ class ConeFittingProcess extends LSFittingProcess {
 
 	GetInitialGuess(cloud: PointCloud): Shape {
 		return Cone.InitialGuessForFitting(cloud);
+	}
+}
+
+class TorusFittingProcess extends LSFittingProcess {
+	constructor(fittingResult: ShapeFittingResult) {
+		super(fittingResult);
+	}
+
+	GetInitialGuess(cloud: PointCloud): Shape {
+		return Torus.InitialGuessForFitting(cloud);
 	}
 }
 
