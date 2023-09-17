@@ -143,7 +143,153 @@ class Torus extends Shape {
 		//NA
 	}
 
+	static InitialGuessForFitting(cloud: PointCloud): Torus {
+		const nbSeeds = 32;
+		let seeds = cloud.Sample(nbSeeds);
+
+		let split : PointSubCloud[] = [];
+		let nbNeighours = Math.max(Math.floor(cloud.Size()/seeds.Size()), 150);
+		for(let index=0; index<seeds.Size(); index++)
+		{
+			let neighbours = cloud.KNearestNeighbours(seeds.GetPoint(index), nbNeighours);
+			split.push(neighbours.AsSubCloud());
+		};
+
+		// Fit a rough cylinder in each octant
+		let cylinders : Cylinder[] = []
+		for(let index=0; index<split.length; index++)
+		{
+			if(split[index].Size() < 10)
+				continue;
+			let localCloud = split[index].ToPointCloud();
+			let localCylinder = Cylinder.InitialGuessForFitting(localCloud);
+			localCylinder.ComputeBounds(localCloud);
+			cylinders.push(localCylinder);
+		}
+
+		if(cylinders.length < 3)
+			return null;
+
+		// Guess the parameters from the rough cylinders
+		let cylindersAxes = new PointCloud;
+		let smallRadius = 0;
+		for(let index=0; index<cylinders.length; index++)
+		{
+			cylindersAxes.PushPoint(cylinders[index].axis);
+			smallRadius += cylinders[index].radius;
+		}
+		smallRadius /= cylinders.length;
+		let axis = Geometry.PlaneFitting(cylindersAxes).normal;
+		let cylindersPlanes : PlaneFittingResult[] = [];
+		for(let index=0; index<cylinders.length; index++)
+		{
+			cylindersPlanes.push(new PlaneFittingResult(cylinders[index].center, cylinders[index].axis));
+			cylindersPlanes.push(new PlaneFittingResult(cylinders[index].center, axis));
+		}
+		let center = Geometry.PlanesIntersection(cylindersPlanes);
+		let greatRadius = 0;
+		for( let index=0; index<cylinders.length; index++)
+			greatRadius += center.Minus(cylinders[index].center).Norm();
+		greatRadius /= cylinders.length;
+		return new Torus(center, axis, greatRadius, smallRadius);
+	}
+
 	FitToPoints(points: PointSet): Process {
-		throw 'Not implemented yet';
+		let lsFitting = new LeastSquaresFitting(
+			TorusFitting.Parameters(this.center, this.axis, this.smallRadius, this.greatRadius),
+			new TorusFitting(this),
+			points,
+			'Computing best fitting torus');
+		lsFitting.Start();
+		return lsFitting;
+	}
+}
+
+class TorusFitting implements LeastSquaresEvaluable<Vector> {
+	constructor(private torus: Torus) {
+	}
+
+	static Parameters(center: Vector, axis : Vector, smallRadius: number, greatRadius): number[] {
+		let spherical = Vector.CartesianToSpherical(axis).Normalized();
+		let params = center.coordinates.slice();
+		params.push(spherical.Get(0));
+		params.push(spherical.Get(1));
+		params.push(smallRadius);
+		params.push(greatRadius);
+		return params;
+	}
+
+	static GetCenter(params: number[]): Vector {
+		return new Vector(params.slice(0, 3));
+	}
+
+	static GetPhi(params: number[]): number {
+		return params[3];
+	}
+
+	static GetTheta(params: number[]): number {
+		return params[4];
+	}
+	
+	static GetAxis(params: number[]): Vector {
+		let spherical = Vector.Spherical(
+			TorusFitting.GetPhi(params),
+			TorusFitting.GetTheta(params),
+			1);
+		return Vector.SphericalToCartesian(spherical);
+	}
+
+	static GetSmallRadius(params: number[]): number {
+		return params[5];
+	}
+
+	static GetGreatRadius(params: number[]): number {
+		return params[6];
+	}
+
+	Distance(params: number[], point: Vector): number {
+		let axis = TorusFitting.GetAxis(params).Normalized();
+		let delta = point.Minus(TorusFitting.GetCenter(params));
+		let vect2D =  new Vector([
+			TorusFitting.GetGreatRadius(params) - axis.Cross(delta).Norm(),
+			axis.Dot(delta)
+		]);
+		return vect2D.Norm() - TorusFitting.GetSmallRadius(params);
+	} 
+
+	DistanceGradient(params: number[], point: Vector): number[] {
+		let delta = point.Minus(TorusFitting.GetCenter(params));
+		let theta = TorusFitting.GetTheta(params);
+		let phi = TorusFitting.GetPhi(params);
+		let radius = TorusFitting.GetGreatRadius(params);
+
+		let spherical = Vector.Spherical(phi, theta, 1);
+		let uu = Vector.SphericalToCartesian(spherical, SphericalRepresentation.AzimuthColatitude);
+		let vv = Vector.SphericalToCartesian(spherical, SphericalRepresentation.AzimuthLatitude);
+		let ww = uu.Cross(vv);
+		let dd = delta.Cross(uu).Norm();
+
+		let ss = Math.sqrt(delta.SqrNorm() + (radius * radius) - (2. * radius * dd));
+
+		let dTheta = radius * delta.Dot(uu) * delta.Dot(vv) / (dd * ss);
+		let dPhi = radius * Math.sin(theta) * delta.Dot(uu) * delta.Dot(ww) / (dd * ss);
+		let dRadius = (radius - dd) / ss;
+		let dCenter = delta.Minus(
+			delta.Minus(uu.Times(delta.Dot(uu))).Times(radius/dd)
+			).Times(-1./ss);
+
+		let gradient = dCenter.coordinates.slice();
+		gradient.push(dPhi);
+		gradient.push(dTheta);
+		gradient.push(-1);
+		gradient.push(dRadius);
+		return gradient;
+	}
+
+	NotifyNewSolution(params: number[]) {
+		this.torus.center = TorusFitting.GetCenter(params);
+		this.torus.axis = TorusFitting.GetAxis(params).Normalized();
+		this.torus.smallRadius = TorusFitting.GetSmallRadius(params);
+		this.torus.greatRadius = TorusFitting.GetGreatRadius(params);
 	}
 }
