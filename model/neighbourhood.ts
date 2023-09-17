@@ -41,6 +41,11 @@ abstract class Neighbourhood implements DataProvider<Vector> {
 	Neighbours(): Neighbour[] {
 		return this.neighbours;
 	}
+
+	AsSubCloud() : PointSubCloud
+	{
+		return new PointSubCloud(this.cloud, this.neighbours.map(neighbour => neighbour.index));
+	}
 }
 
 //==================================

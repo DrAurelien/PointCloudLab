@@ -162,6 +162,14 @@ class PointCloud extends PointSet {
 			delete this.tree;
 		}
 	}
+
+	Sample(nbSamples: number) : PointSubCloud
+	{
+		if (!this.tree) {
+			this.tree = new KDTree(this);
+		}
+		return new PointSubCloud(this, this.tree.ExtractSamples(nbSamples));
+	}
 }
 
 class GaussianSphere extends PointSet {
@@ -212,8 +220,21 @@ class PointSubCloud extends PointSet{
 		return this.indices.length;
 	}
 
+	Push(index: number)
+	{
+		this.indices.push(index);
+	}
+
 	GetPoint(index: number): Vector {
 		return this.cloud.GetPoint(this.indices[index]);
+	}
+	
+	GetNormal(index: number): Vector {
+		return this.cloud.GetNormal(this.indices[index]);
+	}
+
+	HasNormals(): boolean {
+		return this.cloud.HasNormals();
 	}
 
 	ToPointCloud(): PointCloud {
@@ -222,8 +243,8 @@ class PointSubCloud extends PointSet{
 		subcloud.Reserve(size);
 		for (let index = 0; index < size; index++) {
 			subcloud.PushPoint(this.GetPoint(index));
-			if (this.cloud.HasNormals()) {
-				subcloud.PushNormal(this.cloud.GetNormal(this.indices[index]));
+			if (this.HasNormals()) {
+				subcloud.PushNormal(this.GetNormal(index));
 			}
 		}
 		return subcloud;
