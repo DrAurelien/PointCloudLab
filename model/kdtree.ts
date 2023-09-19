@@ -110,6 +110,45 @@ class KDTree {
 		return nbh.Neighbours();
 	}
 
+	ExtractSamples(nbSamples : number, cell: KDTreeCell=null) : number[]
+	{
+		if(nbSamples == 0)
+			return [];
+		if(!cell)
+			cell = this.root;
+
+		let nbItems = cell.toIndex - cell.fromIndex;
+		if(nbSamples == 1)
+		{
+			let index = cell.fromIndex + Math.floor(Math.random() * nbItems)
+			return [this.indices[index]];
+		}
+		else if(cell.left && cell.right)
+		{
+			let nbLeft = Math.floor(nbSamples / 2);
+			let nbRight = nbSamples - nbLeft;
+			let samples = this.ExtractSamples(nbLeft, cell.left);
+			samples = samples.concat(this.ExtractSamples(nbRight, cell.right));
+			return samples;
+		}
+		else
+		{
+			let candidates = new Array<number>(nbItems);
+			for(let index=cell.fromIndex; index<cell.toIndex; index++)
+				candidates[index] = this.indices[cell.toIndex + index];
+
+			let samples : number[] = [];
+			while(samples.length < nbSamples && candidates.length > 0)
+			{
+				let index = Math.floor(Math.random() * candidates.length);
+				samples.push(candidates[index]);
+				candidates[index] = candidates[candidates.length - 1]
+				candidates.splice(candidates.length-1, 1);
+			}
+			return samples;
+		}
+	}
+
 	Log(cellData): string {
 		if (!cellData) {
 			cellData = this.root;
