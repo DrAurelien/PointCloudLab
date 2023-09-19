@@ -5640,10 +5640,12 @@ class Torus extends Shape {
         smallRadius /= cylinders.length;
         let axis = Geometry.PlaneFitting(cylindersAxes).normal;
         let cylindersPlanes = [];
+        let cylindersCenter = new Vector([0, 0, 0]);
         for (let index = 0; index < cylinders.length; index++) {
             cylindersPlanes.push(new PlaneFittingResult(cylinders[index].center, cylinders[index].axis));
-            cylindersPlanes.push(new PlaneFittingResult(cylinders[index].center, axis));
+            cylindersCenter.Add(cylinders[index].center.Times(1.0 / cylinders.length));
         }
+        cylindersPlanes.push(new PlaneFittingResult(cylindersCenter, axis));
         let center = Geometry.PlanesIntersection(cylindersPlanes);
         let greatRadius = 0;
         for (let index = 0; index < cylinders.length; index++)
