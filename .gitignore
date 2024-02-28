@@ -1,2 +1,4 @@
 *.sln
 .vs
+*.js
+*.js.map
