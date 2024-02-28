@@ -89,7 +89,9 @@ class PCLPointCloud extends PCLPrimitive implements Pickable {
 	}
 
 	RayIntersection(ray: Ray): Picking {
-		return new Picking(this);
+		let result = this.cloud.RayIntersection(ray);
+		result.object = this;
+		return result;
 	}
 
 	GetDistance(p: Vector): number {

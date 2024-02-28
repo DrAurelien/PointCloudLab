@@ -65,9 +65,9 @@ class Renderer implements Control {
 		this.camera.screen.height = height;
 	}
 
-	GetRay(x: number, y: number): Ray {
+	GetRay(x: number, y: number, aperture?: number): Ray {
 		let point: Vector = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
-		return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
+		return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized(), aperture);
 	}
 
 	ResolveRayIntersection(ray: Ray, root: PCLNode): Picking {
@@ -75,7 +75,7 @@ class Renderer implements Control {
 	}
 
 	PickObject(x: number, y: number, scene: Scene): Pickable {
-		let ray: Ray = this.GetRay(x, y);
+		let ray: Ray = this.GetRay(x, y, Geometry.DegreeToRadian(2));
 		let picked = this.ResolveRayIntersection(ray, scene.Contents);
 
 		if (picked != null && picked.HasIntersection()) {

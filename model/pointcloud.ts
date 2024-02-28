@@ -134,7 +134,32 @@ class PointCloud extends PointSet {
 	}
 
 	RayIntersection(ray: Ray): Picking {
-		return new Picking(this);
+		if (!this.tree) {
+			this.tree = new KDTree(this);
+		}
+		let result = this.tree.RayIntersection(ray);
+		if(result.HasIntersection())
+		{
+			let cell = result.object as KDTreeCell;
+			let subCloud = this.tree.GetSubCloud(cell);
+			let tanAperture = ray.aperture ? Math.tan(ray.aperture) : null;
+			result = new Picking(this);
+			for(let index=0; index<subCloud.Size(); index++)
+			{
+				let delta = subCloud.GetPoint(index).Minus(ray.from);
+				let distAlongRay = Math.abs(delta.Dot(ray.dir));
+				if(tanAperture !== null)
+				{
+					let sqrDistToRay = delta.SqrNorm() - distAlongRay**2;
+					let threshold = (tanAperture * distAlongRay) ** 2;
+					if(sqrDistToRay <= threshold)
+						result.Add(distAlongRay);
+				}
+				else
+					result.Add(distAlongRay);
+			}
+		}
+		return result;
 	}
 
 	ComputeNormal(index: number, k: number): Vector {

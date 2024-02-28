@@ -1038,9 +1038,10 @@ class Picking {
     }
 }
 class Ray {
-    constructor(from, dir) {
+    constructor(from, dir, aperture) {
         this.from = from;
         this.dir = dir;
+        this.aperture = aperture;
     }
     GetPoint(distance) {
         return this.from.Plus(this.dir.Times(distance));
@@ -2803,25 +2804,10 @@ class KNearestNeighbours extends Neighbourhood {
 /// <reference path="../maths/vector.ts" />
 /// <reference path="pointcloud.ts" />
 /// <reference path="neighbourhood.ts" />
+/// <reference path="../tools/picking.ts" />
 class KDTree {
     constructor(cloud) {
         this.cloud = cloud;
-        this.GetIndices = function (start, nbItems, direction) {
-            var array = new Array(nbItems);
-            for (var index = 0; index < nbItems; index++) {
-                var cloudIndex = this.indices[start + index];
-                array[index] = {
-                    index: cloudIndex,
-                    coord: this.cloud.GetPointCoordinate(cloudIndex, direction)
-                };
-            }
-            return array;
-        };
-        this.SetIndices = function (start, array) {
-            for (var index = 0; index < array.length; index++) {
-                this.indices[start + index] = array[index].index;
-            }
-        };
         this.root = null;
         var size = cloud.Size();
         if (size > 0) {
@@ -2833,6 +2819,22 @@ class KDTree {
         }
         else {
             this.indices = [];
+        }
+    }
+    GetIndices(start, nbItems, direction) {
+        var array = new Array(nbItems);
+        for (var index = 0; index < nbItems; index++) {
+            var cloudIndex = this.indices[start + index];
+            array[index] = {
+                index: cloudIndex,
+                coord: this.cloud.GetPointCoordinate(cloudIndex, direction)
+            };
+        }
+        return array;
+    }
+    SetIndices(start, array) {
+        for (var index = 0; index < array.length; index++) {
+            this.indices[start + index] = array[index].index;
         }
     }
     Split(fromIndex, toIndex, direction) {
@@ -2857,7 +2859,15 @@ class KDTree {
                 if (left && right) {
                     cellData.left = left;
                     cellData.right = right;
+                    cellData.innerBox = new BoundingBox();
+                    cellData.innerBox.AddBoundingBox(left.innerBox);
+                    cellData.innerBox.AddBoundingBox(right.innerBox);
                 }
+            }
+            else {
+                cellData.innerBox = new BoundingBox();
+                for (let index = 0; index < nbItems; index++)
+                    cellData.innerBox.Add(this.cloud.GetPoint(subIndices[index].index));
             }
             return cellData;
         }
@@ -2922,6 +2932,37 @@ class KDTree {
             }
             return samples;
         }
+    }
+    GetSubCloud(cell) {
+        let nbItems = cell.toIndex - cell.fromIndex;
+        let cloudIndices = Array(nbItems);
+        for (var index = 0; index < nbItems; index++) {
+            cloudIndices[index] = this.indices[cell.fromIndex + index];
+        }
+        return new PointSubCloud(this.cloud, cloudIndices);
+    }
+    RayIntersection(ray, cell = null) {
+        if (!cell)
+            cell = this.root;
+        let intersection = cell.innerBox ? cell.innerBox.RayIntersection(ray) : new Picking(cell);
+        intersection.object = cell;
+        if (intersection.HasIntersection() && cell.left && cell.right) {
+            let rayPos = ray.from.Get(cell.direction);
+            let dist = rayPos - cell.cutValue;
+            let firstSon = dist < 0 ? cell.left : cell.right;
+            let secondSon = dist < 0 ? cell.right : cell.left;
+            let firstIntersection = this.RayIntersection(ray, firstSon);
+            if (!firstIntersection.HasIntersection() || Math.abs(firstIntersection.distance) >= Math.abs(dist)) {
+                let secondIntersection = this.RayIntersection(ray, secondSon);
+                if (secondIntersection.Compare(firstIntersection) < 0)
+                    intersection = secondIntersection;
+                else
+                    intersection = firstIntersection;
+            }
+            else
+                intersection = firstIntersection;
+        }
+        return intersection;
     }
     Log(cellData) {
         if (!cellData) {
@@ -3409,7 +3450,29 @@ class PointCloud extends PointSet {
         return knn;
     }
     RayIntersection(ray) {
-        return new Picking(this);
+        if (!this.tree) {
+            this.tree = new KDTree(this);
+        }
+        let result = this.tree.RayIntersection(ray);
+        if (result.HasIntersection()) {
+            let cell = result.object;
+            let subCloud = this.tree.GetSubCloud(cell);
+            let tanAperture = ray.aperture ? Math.tan(ray.aperture) : null;
+            result = new Picking(this);
+            for (let index = 0; index < subCloud.Size(); index++) {
+                let delta = subCloud.GetPoint(index).Minus(ray.from);
+                let distAlongRay = Math.abs(delta.Dot(ray.dir));
+                if (tanAperture !== null) {
+                    let sqrDistToRay = delta.SqrNorm() - distAlongRay ** 2;
+                    let threshold = (tanAperture * distAlongRay) ** 2;
+                    if (sqrDistToRay <= threshold)
+                        result.Add(distAlongRay);
+                }
+                else
+                    result.Add(distAlongRay);
+            }
+        }
+        return result;
     }
     ComputeNormal(index, k) {
         //Get the K-nearest neighbours (including the query point)
@@ -6576,7 +6639,9 @@ class PCLPointCloud extends PCLPrimitive {
         return null;
     }
     RayIntersection(ray) {
-        return new Picking(this);
+        let result = this.cloud.RayIntersection(ray);
+        result.object = this;
+        return result;
     }
     GetDistance(p) {
         return this.cloud.Distance(p);
@@ -8540,15 +8605,15 @@ class Renderer {
         this.camera.screen.width = width;
         this.camera.screen.height = height;
     }
-    GetRay(x, y) {
+    GetRay(x, y, aperture) {
         let point = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
-        return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized());
+        return new Ray(this.camera.at, point.Minus(this.camera.at).Normalized(), aperture);
     }
     ResolveRayIntersection(ray, root) {
         return root.RayIntersection(ray);
     }
     PickObject(x, y, scene) {
-        let ray = this.GetRay(x, y);
+        let ray = this.GetRay(x, y, Geometry.DegreeToRadian(2));
         let picked = this.ResolveRayIntersection(ray, scene.Contents);
         if (picked != null && picked.HasIntersection()) {
             return picked.object;

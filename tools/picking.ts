@@ -42,7 +42,7 @@ class Picking {
 }
 
 class Ray {
-	constructor(public from: Vector, public dir: Vector) {
+	constructor(public from: Vector, public dir: Vector, public aperture? : number) {
 	}
 
 	GetPoint(distance: number) {

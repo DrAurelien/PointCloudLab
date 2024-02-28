@@ -1,6 +1,7 @@
 ﻿/// <reference path="../maths/vector.ts" />
 /// <reference path="pointcloud.ts" />
 /// <reference path="neighbourhood.ts" />
+/// <reference path="../tools/picking.ts" />
 
 
 class KDTree {
@@ -22,7 +23,7 @@ class KDTree {
 		}
 	}
 
-	private GetIndices = function (start, nbItems, direction) {
+	private GetIndices(start, nbItems, direction) {
 		var array = new Array(nbItems);
 		for (var index = 0; index < nbItems; index++) {
 			var cloudIndex = this.indices[start + index];
@@ -34,7 +35,7 @@ class KDTree {
 		return array;
 	}
 
-	private SetIndices = function (start, array) {
+	private SetIndices(start, array) {
 		for (var index = 0; index < array.length; index++) {
 			this.indices[start + index] = array[index].index;
 		}
@@ -67,7 +68,16 @@ class KDTree {
 				if (left && right) {
 					cellData.left = left;
 					cellData.right = right;
+					cellData.innerBox = new BoundingBox();
+					cellData.innerBox.AddBoundingBox(left.innerBox);
+					cellData.innerBox.AddBoundingBox(right.innerBox);
 				}
+			}
+			else
+			{
+				cellData.innerBox = new BoundingBox();
+				for(let index=0; index<nbItems; index++)
+					cellData.innerBox.Add(this.cloud.GetPoint(subIndices[index].index));
 			}
 			return cellData;
 		}
@@ -149,6 +159,43 @@ class KDTree {
 		}
 	}
 
+	GetSubCloud(cell : KDTreeCell) : PointSubCloud
+	{
+		let nbItems = cell.toIndex - cell.fromIndex;
+		let cloudIndices = Array(nbItems);
+		for (var index = 0; index < nbItems; index++) {
+			cloudIndices[index] = this.indices[cell.fromIndex + index];
+		}
+		return new PointSubCloud(this.cloud, cloudIndices);
+	}
+
+	RayIntersection(ray: Ray, cell: KDTreeCell=null): Picking {
+		if(!cell)
+			cell = this.root;
+
+		let intersection = cell.innerBox ? cell.innerBox.RayIntersection(ray) :  new Picking(cell);
+		intersection.object = cell;
+		if(intersection.HasIntersection() && cell.left && cell.right)
+		{
+			let rayPos = ray.from.Get(cell.direction);
+			let dist = rayPos - cell.cutValue;
+			let firstSon = dist < 0 ? cell.left : cell.right;
+			let secondSon = dist < 0 ? cell.right : cell.left;
+			let firstIntersection = this.RayIntersection(ray, firstSon);
+			if(!firstIntersection.HasIntersection() || Math.abs(firstIntersection.distance) >= Math.abs(dist))
+			{
+				let secondIntersection = this.RayIntersection(ray, secondSon);
+				if(secondIntersection.Compare(firstIntersection) < 0)
+					intersection = secondIntersection;
+				else
+					intersection = firstIntersection;
+			}
+			else
+				intersection = firstIntersection;
+		}
+		return intersection;
+	}
+
 	Log(cellData): string {
 		if (!cellData) {
 			cellData = this.root;
@@ -174,10 +221,11 @@ class KDTree {
 	}
 }
 
-class KDTreeCell {
+class KDTreeCell implements Pickable {
 	cutValue: number;
 	right: KDTreeCell;
 	left: KDTreeCell;
+	innerBox: BoundingBox;
 
 	constructor(public fromIndex: number, public toIndex: number, public direction: number) {
 		this.right = null;
