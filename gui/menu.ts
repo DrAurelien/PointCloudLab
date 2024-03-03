@@ -90,6 +90,13 @@ class Menu extends HideablePannel implements ActionsProvider, SelectionChangeHan
 		));
 
 		// ================================
+		// Eye dome lighting
+		this.toolbar.AddControl(new Button(new SimpleAction('[Icon:flash]', function () {
+			application.ToggleRendering(RenderingMode.EDL);
+		},
+		'Toggle the Eye Dome Lighting filter.')));
+
+		// ================================
 		// Help menu
 		this.toolbar.AddControl(new Button(new SimpleAction('[Icon:question-circle]', function () {
 			window.open('help.html', '_blank');
