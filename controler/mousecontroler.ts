@@ -89,6 +89,8 @@ abstract class MouseControler implements Controler {
 			case 's':
 				this.target.ToggleRendering(RenderingMode.Surface);
 				break;
+			case 'e':
+				this.target.ToggleRendering(RenderingMode.EDL);
 			default:
 				this.target.HandleShortcut(strkey);
 				break;

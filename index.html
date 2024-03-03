@@ -100,6 +100,96 @@
 			}
 		}
 	</script>
+	<script  id="RawVertexShader" type="x-shader/x-vertex">
+		attribute vec3 VertexPosition;
+		attribute vec2 TextureCoordinate;
+
+		varying highp vec2 TexCoord;
+		void	main ()
+		{
+			gl_Position = vec4(VertexPosition, 1.0);
+			TexCoord = TextureCoordinate;
+		}
+	</script>
+	<script  id="EDLFragmentShader" type="x-shader/x-fragment">
+		uniform	sampler2D colorTexture;
+		uniform	sampler2D depthTexture;
+		
+		varying highp vec2 TexCoord;
+
+		uniform highp float		Pix_scale;				// (relative) pixel scale in image
+		uniform highp vec2		Neigh_pos_2D[8];		// array of neighbors (2D positions)
+		uniform highp float		Exp_scale;				// exponential scale factor (for computed AO)
+
+		uniform highp float		Zm;						// minimal depth in image
+		uniform highp float		ZM;						// maximal depth in image
+
+		uniform highp float		Sx;						// screen width (pix)
+		uniform highp float		Sy;						// screen height (pix)
+
+		uniform highp float		Dist_to_neighbor_pix;	// distance to neighbors (in pixel)
+		uniform int			PerspectiveMode;		// whether perspective mode is enabled (1) or not (0) - for z-Buffer compensation
+
+		uniform highp vec3		Light_dir;
+		/**************************************************/
+
+		highp float fixDepth(highp float depth)
+		{
+			if (PerspectiveMode == 1)
+			{
+				//'1/z' depth-buffer transformation correction
+				depth = (2.0 * ZM * Zm) / ((ZM + Zm) - (2.0 * depth - 1.0) * (ZM - Zm));
+				//eventually we want the depth to fall between 0 and 1
+				depth = (depth - Zm) / (ZM - Zm);
+			}
+
+			return clamp(1.0 - depth, 0.0, 1.0);
+		}
+
+		highp float computeObscurance(highp float depth, highp float scale)
+		{
+			// light-plane point
+			highp vec4 P = vec4( Light_dir.xyz , -dot(Light_dir.xyz,vec3(0.0, 0.0, depth)) );
+
+			highp float sum = 0.0;
+
+			// contribution of each neighbor
+			for(int c = 0; c < 8; c++)
+			{
+				highp vec2 N_rel_pos = scale * Dist_to_neighbor_pix / vec2(Sx, Sy) * Neigh_pos_2D[c];	//neighbor relative position
+				highp vec2 N_abs_pos = TexCoord + N_rel_pos;					//neighbor absolute position
+				
+				// version with background shading
+				highp float Zn = fixDepth(texture2D(depthTexture, N_abs_pos).r);			//depth of the real neighbor
+				highp float Znp = dot(vec4(N_rel_pos, Zn, 1.0), P);					//depth of the in-plane neighbor
+
+				// obscurance (pseudo angle version)
+				sum +=  max(0.0, Znp) / scale;
+			}
+
+			return	sum;
+		}
+
+		void main (void)
+		{
+			highp vec3 rgb = texture2D(colorTexture, TexCoord).rgb;
+			highp float depth = fixDepth(texture2D(depthTexture, TexCoord).r);
+
+			if (depth > 0.001)
+			{
+				highp float f = computeObscurance(depth, Pix_scale);
+				f = exp(-Exp_scale*f);
+			
+				gl_FragData[0] = vec4(f*rgb, 1.0);
+			}
+			else
+			{
+				gl_FragData[0] = vec4(rgb, 1.0);
+			}
+			//For debug ony .... remove this line
+			gl_FragColor = vec4(1.0, 0., 0., 1.0);
+		}
+	</script>
 	<script type="text/javascript" src="PointCloudLab.js"></script>
 </head>
 <body onload="PCLApp.Run();">

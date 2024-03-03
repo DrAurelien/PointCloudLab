@@ -1,6 +1,7 @@
 ﻿/// <reference path="../controls/control.ts" />
 /// <reference path="drawingcontext.ts" />
 /// <reference path="camera.ts" />
+/// <reference path="edlfilter.ts" />
 /// <reference path="../objects/scene.ts" />
 /// <reference path="../objects/pclnode.ts" />
 /// <reference path="../objects/light.ts" />
@@ -10,11 +11,18 @@
 /// <reference path="../../tools/random.ts" />
 /// <reference path="../../model/pointcloud.ts" />
 
+interface IRenderingFilter
+{
+	Dispose();
+	CollectRendering();
+	Render(camera: Camera, scene: Scene);
+}
 
-class Renderer implements Control {
+class Renderer implements Control, IRenderingTypeListener {
 	sceneRenderingArea: HTMLCanvasElement;
 	drawingcontext: DrawingContext;
 	camera: Camera;
+	activeFilter : IRenderingFilter;
 
 	constructor(className: string) {
 		//Create a canvas to display the scene
@@ -23,6 +31,26 @@ class Renderer implements Control {
 
 		this.drawingcontext = new DrawingContext(this.sceneRenderingArea);
 		this.camera = new Camera(this.drawingcontext);
+		this.activeFilter = null;
+		this.drawingcontext.rendering.Register(this);
+	}
+
+	UseEDL(b? : boolean) : boolean
+	{
+		if(b === true)
+		{
+			if(!this.activeFilter)
+				this.activeFilter = new EDLFilter(this.drawingcontext);
+		}
+		else if(b === false)
+		{
+			if(this.activeFilter as EDLFilter)
+			{
+				this.activeFilter.Dispose();
+				this.activeFilter = null;
+			}
+		}
+		return !!(this.activeFilter as EDLFilter);
 	}
 
 	GetElement(): HTMLElement {
@@ -30,8 +58,10 @@ class Renderer implements Control {
 	}
 
 	Draw(scene: Scene): void {
+		this.drawingcontext.shaders.Use();
 		var gl = this.drawingcontext.gl;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.DEPTH_TEST);
 
 		//Set the lights positions and colors
 		let nbLights = 0;
@@ -50,7 +80,13 @@ class Renderer implements Control {
 
 		//Perform rendering
 		if (scene) {
+			if(this.activeFilter)
+				this.activeFilter.CollectRendering();
+
 			scene.Draw(this.drawingcontext);
+
+			if(this.activeFilter)
+				this.activeFilter.Render(this.camera, scene);
 		}
 	}
 
@@ -92,6 +128,13 @@ class Renderer implements Control {
 			cloud.NotifyChange(cloud, ChangeType.NewItem);
 		});
 		scanner.Start();
+	}
+
+	OnRenderingTypeChange(renderingType: RenderingType)
+	{
+		let shouldUseEDL = renderingType.EDL();
+		if(this.UseEDL() != shouldUseEDL)
+			this.UseEDL(shouldUseEDL);
 	}
 }
 

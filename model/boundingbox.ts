@@ -111,4 +111,18 @@ class BoundingBox {
 		}
 		return delta.SqrNorm();
 	}
+
+	GetVertices() : Vector[]
+	{
+		return [
+			new Vector([this.min.Get(0), this.min.Get(1), this.min.Get(2)]),
+			new Vector([this.min.Get(0), this.min.Get(1), this.max.Get(2)]),
+			new Vector([this.min.Get(0), this.max.Get(1), this.min.Get(2)]),
+			new Vector([this.min.Get(0), this.max.Get(1), this.max.Get(2)]),
+			new Vector([this.max.Get(0), this.min.Get(1), this.min.Get(2)]),
+			new Vector([this.max.Get(0), this.min.Get(1), this.max.Get(2)]),
+			new Vector([this.max.Get(0), this.max.Get(1), this.min.Get(2)]),
+			new Vector([this.max.Get(0), this.max.Get(1), this.max.Get(2)])
+		];
+	}
 }

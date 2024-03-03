@@ -284,6 +284,9 @@ class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 			case RenderingMode.Surface:
 				rendering.Surface(!rendering.Surface());
 				break;
+			case RenderingMode.EDL:
+				rendering.EDL(!rendering.EDL());
+				break;
 		}
 		this.RenderScene();
 	}

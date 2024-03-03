@@ -1,5 +1,6 @@
 ﻿/// <reference path="drawingcontext.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/interval.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../model/boundingbox.ts" />
 /// <reference path="../../controler/controler.ts" />
@@ -22,7 +23,7 @@ class Camera implements ViewPoint {
 	to: Vector;
 	//Camera vertical direction
 	up: Vector;
-	//near clipping distince
+	//near clipping distance
 	near: number;
 	//far clipping dtstance
 	far: number;
@@ -204,6 +205,7 @@ class Camera implements ViewPoint {
 	GetDirection(): Vector {
 		return this.to.Minus(this.at).Normalized();
 	}
+
 	SetDirection(dir: Vector, upv: Vector) {
 		this.at = this.to.Minus(dir.Normalized().Times(this.Distance));
 		this.up = upv;
@@ -212,7 +214,22 @@ class Camera implements ViewPoint {
 	get Distance(): number {
 		return this.to.Minus(this.at).Norm();
 	}
+
 	set Distance(d: number) {
 		this.at = this.to.Minus(this.GetDirection().Times(d));
 	}
+
+	GetDepthRange(scene: Scene) : Interval
+	{
+		let vertices = scene.GetBoundingBox().GetVertices();
+		let dir = this.GetDirection();
+		let range = new Interval;
+		for(let index=0; index<vertices.length; index++)
+		{
+			let z = vertices[index].Minus(this.at).Dot(dir);
+			range.Add(z);
+		}
+		return range;
+	}
+	
 }
