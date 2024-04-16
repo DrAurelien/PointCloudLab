@@ -14,17 +14,17 @@ class EDLFilter implements IRenderingFilter
 	zMax : WebGLUniformLocation;
 	width : WebGLUniformLocation;
 	height : WebGLUniformLocation;
+	useColors : WebGLUniformLocation;;
 	nbhPositions : Float32Array;
 	points : FloatArrayBuffer;
 	textCoords : FloatArrayBuffer;
 	indices : ElementArrayBuffer;
 	vertices : number;
 	uv : number;
-	useNormals :boolean;
 
-	constructor(private context: DrawingContext)
+	constructor(private context: DrawingContext, public withColors:boolean)
 	{
-		this.Resize(this.context);
+		this.Resize(new ScreenDimensions(this.context.renderingArea.width,this.context.renderingArea.height));
 		this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
 		this.shaders.Use();
 		this.color = this.shaders.Uniform("colorTexture");
@@ -35,6 +35,7 @@ class EDLFilter implements IRenderingFilter
 		this.zMax = this.shaders.Uniform("DepthMax");
 		this.width = this.shaders.Uniform("ScreenWidth");
 		this.height = this.shaders.Uniform("ScreenHeight");
+		this.useColors = this.shaders.Uniform("UseColors");
 
 		this.nbhPositions = new Float32Array([
 			-1., -1.,
@@ -71,13 +72,11 @@ class EDLFilter implements IRenderingFilter
 		this.context.gl.enableVertexAttribArray(this.uv);
 	}
 
-	Resize(context: DrawingContext)
+	Resize(size: ScreenDimensions)
 	{
 		if(this.fbo)
 			this.fbo.Delete();
-		let width = context.renderingArea.width;
-		let height = context.renderingArea.height;
-		this.fbo = new FrameBuffer(context.gl, width, height);
+		this.fbo = new FrameBuffer(this.context.gl, size.width, size.height);
 	}
 
 	Dispose()
@@ -123,6 +122,7 @@ class EDLFilter implements IRenderingFilter
 		gl.uniform1f(this.zMax, camera.depthRange.max);
 		gl.uniform1f(this.width, width);
 		gl.uniform1f(this.height, height);
+		gl.uniform1i(this.useColors, this.withColors ? 1 : 0);
 		
 		gl.viewport(0, 0, width, height);
 

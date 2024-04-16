@@ -127,6 +127,7 @@
 		uniform highp float	DepthMax;
 		uniform highp float ScreenWidth;
 		uniform highp float ScreenHeight;
+		uniform int UseColors;
 
 		highp float getHeight(highp vec2 position)
 		{
@@ -158,9 +159,11 @@
 
 		void main (void)
 		{
-			highp vec3 color = texture2D(colorTexture, TexCoord).rgb;
 			highp float factor = eyeDomeFactor(TexCoord);
-			gl_FragColor = vec4(factor * vec3(1., 1., 1.), 1.0);
+			highp vec3 color = vec3(1., 1., 1.);
+			if(UseColors != 0)
+				color = texture2D(colorTexture, TexCoord).rgb;
+			gl_FragColor = vec4(factor * color, 1.0);
 		}
 	</script>
 	<script type="text/javascript" src="PointCloudLab.js"></script>

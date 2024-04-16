@@ -16,6 +16,12 @@ interface IRenderingFilter
 	Dispose();
 	CollectRendering();
 	Render(camera: Camera, scene: Scene);
+	Resize(size: ScreenDimensions);
+}
+
+interface IRenderingFilterFactory
+{
+	(context: DrawingContext) : IRenderingFilter;
 }
 
 class Renderer implements Control, IRenderingTypeListener {
@@ -35,22 +41,11 @@ class Renderer implements Control, IRenderingTypeListener {
 		this.drawingcontext.rendering.Register(this);
 	}
 
-	UseEDL(b? : boolean) : boolean
+	SetFilter(filter : IRenderingFilter = null)
 	{
-		if(b === true)
-		{
-			if(!this.activeFilter)
-				this.activeFilter = new EDLFilter(this.drawingcontext);
-		}
-		else if(b === false)
-		{
-			if(this.activeFilter as EDLFilter)
-			{
-				this.activeFilter.Dispose();
-				this.activeFilter = null;
-			}
-		}
-		return !!(this.activeFilter as EDLFilter);
+		if(this.activeFilter)
+			this.activeFilter.Dispose();
+		this.activeFilter = filter;
 	}
 
 	GetElement(): HTMLElement {
@@ -100,6 +95,8 @@ class Renderer implements Control, IRenderingTypeListener {
 		this.drawingcontext.renderingArea.height = height;
 		this.camera.screen.width = width;
 		this.camera.screen.height = height;
+		if(this.activeFilter)
+			this.activeFilter.Resize(this.camera.screen);
 	}
 
 	GetRay(x: number, y: number, aperture?: number): Ray {
@@ -133,9 +130,6 @@ class Renderer implements Control, IRenderingTypeListener {
 
 	OnRenderingTypeChange(renderingType: RenderingType)
 	{
-		let shouldUseEDL = renderingType.EDL();
-		if(this.UseEDL() != shouldUseEDL)
-			this.UseEDL(shouldUseEDL);
 	}
 }
 

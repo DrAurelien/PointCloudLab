@@ -293,14 +293,22 @@ class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 				let surface = rendering.Surface(!rendering.Surface());
 				message = "Surface representation : " + getState(surface);
 				break;
-			case RenderingMode.EDL:
-				let edl = rendering.EDL(!rendering.EDL());
-				message = "Eye Dome Lighting : " + getState(edl);
-				break;
 		}
 		if(message)
 			new TemporaryHint(message);
 		this.RenderScene();
+	}
+
+	ChangeRenderingFilter(newFilter : IRenderingFilter|IRenderingFilterFactory)
+	{
+		let filter: IRenderingFilter = null;
+		let factory = newFilter as IRenderingFilterFactory;
+		if(factory)
+			filter = factory(this.sceneRenderer.drawingcontext);
+		this.sceneRenderer.SetFilter(filter);
+		// TODO : fix bug ... for some reason, we need to render twice when activating EDL
+		this.RefreshRendering();
+		this.RefreshRendering();
 	}
 
 	RegisterShortCut(action: Action): Action {
