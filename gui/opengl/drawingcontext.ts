@@ -1,11 +1,11 @@
 ﻿/// <reference path="renderingtype.ts" />
-
+/// <reference path="shaders.ts" />
 
 class DrawingContext {
 	static NbMaxLights = 8;
 	sampling: number = 30;
-	gl: WebGLRenderingContext;
-	shaders: WebGLShader;
+	gl: WebGL2RenderingContext;
+	shaders: Shaders;
 	projection: WebGLUniformLocation;
 	modelview: WebGLUniformLocation;
 	shapetransform: WebGLUniformLocation;
@@ -38,7 +38,7 @@ class DrawingContext {
 	constructor(public renderingArea: HTMLCanvasElement) {
 		this.rendering = new RenderingType();
 
-		this.gl = <WebGLRenderingContext>(this.renderingArea.getContext("webgl", { preserveDrawingBuffer: true }) ||
+		this.gl = <WebGL2RenderingContext>(this.renderingArea.getContext("webgl2", { preserveDrawingBuffer: true }) ||
 			this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
 		this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		this.gl.enable(this.gl.DEPTH_TEST);
@@ -49,54 +49,46 @@ class DrawingContext {
 			this.gl.getExtension('MOZ_OES_element_index_uint') ||
 			this.gl.getExtension('WEBKIT_OES_element_index_uint');
 
-		var fragmentShader = this.GetShader("FragmentShader");
-		var vertexShader = this.GetShader("VertexShader");
-		this.shaders = this.gl.createProgram();
-		this.gl.attachShader(this.shaders, vertexShader);
-		this.gl.attachShader(this.shaders, fragmentShader);
-		this.gl.linkProgram(this.shaders);
-		if (!this.gl.getProgramParameter(this.shaders, this.gl.LINK_STATUS)) {
-			throw 'Unable to initialize the shader program';
-		}
-		this.gl.useProgram(this.shaders);
+		this.shaders = new Shaders(this.gl, "VertexShader", "FragmentShader");
 
-		this.vertices = this.gl.getAttribLocation(this.shaders, "VertexPosition");
+		this.vertices = this.shaders.Attribute("VertexPosition");
 		this.gl.enableVertexAttribArray(this.vertices);
 
-		this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
+		this.normals = this.shaders.Attribute("NormalVector");
 		this.EnableNormals(true);
 
-		this.scalarvalue = this.gl.getAttribLocation(this.shaders, "ScalarValue");
-		this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
-		this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
-		this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
-		this.minscalarcolor = this.gl.getUniformLocation(this.shaders, "MinScalarColor");
-		this.maxscalarcolor = this.gl.getUniformLocation(this.shaders, "MaxScalarColor");
+		this.scalarvalue = this.shaders.Attribute("ScalarValue");
+		this.usescalars = this.shaders.Uniform("UseScalars");
+		this.minscalarvalue = this.shaders.Uniform("MinScalarValue");
+		this.maxscalarvalue = this.shaders.Uniform("MaxScalarValue");
+		this.minscalarcolor = this.shaders.Uniform("MinScalarColor");
+		this.maxscalarcolor = this.shaders.Uniform("MaxScalarColor");
 
-		this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
-		this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
-		this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
+		this.projection = this.shaders.Uniform("Projection");
+		this.modelview = this.shaders.Uniform("ModelView");
+		this.shapetransform = this.shaders.Uniform("ShapeTransform");
 
-		this.color = this.gl.getUniformLocation(this.shaders, "Color");
-		this.eyeposition = this.gl.getUniformLocation(this.shaders, "EyePosition");
+		this.color = this.shaders.Uniform("Color");
+		this.eyeposition = this.shaders.Uniform("EyePosition");
 
 		this.lightpositions = [];
 		this.lightcolors = [];
-		this.nblights = this.gl.getUniformLocation(this.shaders, "NbLights");
+		this.nblights = this.shaders.Uniform("NbLights");
 		for (var index = 0; index < DrawingContext.NbMaxLights; index++) {
-			this.lightpositions.push(this.gl.getUniformLocation(this.shaders, "LightPositions[" + index + "]"));
-			this.lightcolors.push(this.gl.getUniformLocation(this.shaders, "LightColors[" + index + "]"));
+			this.lightpositions.push(this.shaders.Uniform("LightPositions[" + index + "]"));
+			this.lightcolors.push(this.shaders.Uniform("LightColors[" + index + "]"));
 		}
-		this.diffuse = this.gl.getUniformLocation(this.shaders, "DiffuseCoef");
-		this.ambiant = this.gl.getUniformLocation(this.shaders, "AmbiantCoef");
-		this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");
-		this.glossy = this.gl.getUniformLocation(this.shaders, "GlossyPow");
-		this.usenormals = this.gl.getUniformLocation(this.shaders, "UseNormals");
+		this.diffuse = this.shaders.Uniform("DiffuseCoef");
+		this.ambiant = this.shaders.Uniform("AmbiantCoef");
+		this.specular = this.shaders.Uniform("SpecularCoef");
+		this.glossy = this.shaders.Uniform("GlossyPow");
+		this.usenormals = this.shaders.Uniform("UseNormals");
 
 		this.bboxcolor = [1, 1, 1];
 	}
 
-	EnableNormals(b): void {
+	EnableNormals(b): boolean {
+		let isEnabled = this.gl.getVertexAttrib(this.normals, this.gl.VERTEX_ATTRIB_ARRAY_ENABLED);
 		if (b) {
 			this.gl.uniform1i(this.usenormals, 1);
 			this.gl.enableVertexAttribArray(this.normals);
@@ -105,6 +97,7 @@ class DrawingContext {
 			this.gl.uniform1i(this.usenormals, 0);
 			this.gl.disableVertexAttribArray(this.normals);
 		}
+		return isEnabled;
 	}
 
 	EnableScalars(b): void {
@@ -146,7 +139,7 @@ class DrawingContext {
 		}
 	}
 
-	GetShader(identifier): WebGLShader {
+	GetShader(identifier: string): WebGLShader {
 		let shaderScript: HTMLScriptElement;
 		let shaderSource: string;
 		let shader: WebGLShader;

@@ -5,7 +5,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
 	<link rel="stylesheet" type="text/css" href="style.css">
-	<script id="VertexShader" type="x-shader/x-vertex">
+		<script id="VertexShader" type="x-shader/x-vertex">
 		attribute vec3 VertexPosition;
 		attribute vec3 NormalVector;
 		attribute float ScalarValue;
@@ -98,6 +98,69 @@
 
 				gl_FragColor = vec4(result, 1);
 			}
+		}
+	</script>
+	<script  id="RawVertexShader" type="x-shader/x-vertex">
+		attribute vec3 VertexPosition;
+		attribute vec2 TextureCoordinate;
+
+		varying highp vec2 TexCoord;
+		void main ()
+		{
+			gl_Position = vec4(VertexPosition, 1.0);
+			TexCoord = TextureCoordinate;
+		}
+	</script>
+	<script  id="RawFragmentShader" type="x-shader/x-fragment">
+		void main ()
+		{
+			gl_FragColor = vec4(1.0, 1.0, 0., 1.0);
+		}
+	</script>
+	<script  id="EDLFragmentShader" type="x-shader/x-fragment">
+		uniform	sampler2D colorTexture;
+		uniform	sampler2D depthTexture;
+		varying highp vec2 TexCoord;
+		uniform highp vec2 Neighbors[8];
+		uniform highp float ExpFactor;
+		uniform highp float	DepthMin;
+		uniform highp float	DepthMax;
+		uniform highp float ScreenWidth;
+		uniform highp float ScreenHeight;
+
+		highp float getHeight(highp vec2 position)
+		{
+			highp float depth = texture2D(depthTexture, position).r;
+
+			// Revert the perspective depth transform, and bring the height(=inverted depth) back to [0, 1]
+			highp float depthRange = DepthMax - DepthMin;
+			depth = (2.0 * DepthMax * DepthMin) / ((DepthMax + DepthMin) - (2.0 * depth - 1.0) * depthRange);
+			depth = (depth - DepthMin) / depthRange;
+			return clamp(1.0 - depth, 0.0, 1.0);
+		}
+
+		// Visualisation scientifique de grands volumes de données : Pour une approche perceptive
+		// by Christian Boucheny
+		// Chapter 4 : EyeDome Lighting : un éclairage interactif et perceptivement adapté
+		// pp. 115 - 118
+		highp float eyeDomeFactor(highp vec2 position)
+		{
+			highp float sum = 0.0;
+			highp float height = getHeight(position);
+			for(int c = 0; c < 8; c++)
+			{
+				highp vec2 neighborPos = position + (Neighbors[c] / vec2(ScreenWidth, ScreenHeight));
+				highp float neighborHeight = getHeight(neighborPos);
+				sum += max(0., neighborHeight-height);
+			}
+			return exp(-ExpFactor * sum);
+		}
+
+		void main (void)
+		{
+			highp vec3 color = texture2D(colorTexture, TexCoord).rgb;
+			highp float factor = eyeDomeFactor(TexCoord);
+			gl_FragColor = vec4(factor * vec3(1., 1., 1.), 1.0);
 		}
 	</script>
 	<script type="text/javascript" src="PointCloudLab.js"></script>

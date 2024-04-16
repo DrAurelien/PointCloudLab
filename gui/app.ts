@@ -274,17 +274,32 @@ class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 
 	ToggleRendering(mode: RenderingMode) {
 		let rendering = this.sceneRenderer.drawingcontext.rendering;
+		let message = null;
+		function getState(state)
+		{
+			return state ? '<b style="color:green;">ON</b>' : '<b style="color:red;">OFF</b>';
+		}
+
 		switch (mode) {
 			case RenderingMode.Point:
-				rendering.Point(!rendering.Point());
+				let point = rendering.Point(!rendering.Point());
+				message = "Point representation : " + getState(point);
 				break;
 			case RenderingMode.Wire:
-				rendering.Wire(!rendering.Wire());
+				let wire = rendering.Wire(!rendering.Wire());
+				message = "Wire representation : " + getState(wire);
 				break;
 			case RenderingMode.Surface:
-				rendering.Surface(!rendering.Surface());
+				let surface = rendering.Surface(!rendering.Surface());
+				message = "Surface representation : " + getState(surface);
+				break;
+			case RenderingMode.EDL:
+				let edl = rendering.EDL(!rendering.EDL());
+				message = "Eye Dome Lighting : " + getState(edl);
 				break;
 		}
+		if(message)
+			new TemporaryHint(message);
 		this.RenderScene();
 	}
 
