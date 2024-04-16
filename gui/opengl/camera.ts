@@ -1,5 +1,6 @@
 ﻿/// <reference path="drawingcontext.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/interval.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../model/boundingbox.ts" />
 /// <reference path="../../controler/controler.ts" />
@@ -22,10 +23,8 @@ class Camera implements ViewPoint {
 	to: Vector;
 	//Camera vertical direction
 	up: Vector;
-	//near clipping distince
-	near: number;
-	//far clipping dtstance
-	far: number;
+	//near clipping distance
+	depthRange : Interval;
 	//Field of view
 	fov: number;
 	//Screen dimensions
@@ -35,8 +34,7 @@ class Camera implements ViewPoint {
 		this.at = new Vector([10.0, 10.0, 10.0]);
 		this.to = new Vector([.0, .0, .0]);
 		this.up = new Vector([.0, 1.0, .0]);
-		this.near = 0.001;
-		this.far = 10000.0;
+		this.depthRange = new Interval();
 		this.fov = Math.PI / 4;
 
 		this.InititalizeDrawingContext(context);
@@ -83,13 +81,19 @@ class Camera implements ViewPoint {
 	}
 
 	GetProjectionMatrix(): Matrix {
+		let near = this.depthRange.min;
+		let far = this.depthRange.max;
+		if(near < 0)
+			near = 0;
+		if(far<=near)
+			far = near + 0.0001;
 		let aspectRatio: number = this.screen.width / this.screen.height;
 		var projection = Matrix.Null(4, 4);
 		var f = 1. / Math.tan(this.fov / 2.);
 		projection.SetValue(0, 0, f / aspectRatio);
 		projection.SetValue(1, 1, f);
-		projection.SetValue(2, 2, -(this.near + this.far) / (this.far - this.near));
-		projection.SetValue(2, 3, -(2.0 * this.near * this.far) / (this.far - this.near));
+		projection.SetValue(2, 2, -(near + far) / (far - near));
+		projection.SetValue(2, 3, -(2.0 * near * far) / (far - near));
 		projection.SetValue(3, 2, -1.0);
 		return projection;
 	}
@@ -204,6 +208,7 @@ class Camera implements ViewPoint {
 	GetDirection(): Vector {
 		return this.to.Minus(this.at).Normalized();
 	}
+
 	SetDirection(dir: Vector, upv: Vector) {
 		this.at = this.to.Minus(dir.Normalized().Times(this.Distance));
 		this.up = upv;
@@ -212,7 +217,22 @@ class Camera implements ViewPoint {
 	get Distance(): number {
 		return this.to.Minus(this.at).Norm();
 	}
+
 	set Distance(d: number) {
 		this.at = this.to.Minus(this.GetDirection().Times(d));
 	}
+
+	UpdateDepthRange(scene: Scene) : Interval
+	{
+		let vertices = scene.GetBoundingBox().GetVertices();
+		let dir = this.GetDirection();
+		this.depthRange = new Interval;
+		for(let index=0; index<vertices.length; index++)
+		{
+			let z = vertices[index].Minus(this.at).Dot(dir);
+			this.depthRange.Add(z);
+		}
+		return this.depthRange;
+	}
+	
 }

@@ -556,6 +556,7 @@ var RenderingMode;
     RenderingMode[RenderingMode["Point"] = 0] = "Point";
     RenderingMode[RenderingMode["Wire"] = 1] = "Wire";
     RenderingMode[RenderingMode["Surface"] = 2] = "Surface";
+    RenderingMode[RenderingMode["EDL"] = 3] = "EDL";
 })(RenderingMode || (RenderingMode = {}));
 class Cursor {
     constructor(iconCode) {
@@ -678,6 +679,8 @@ class MouseControler {
             case 's':
                 this.target.ToggleRendering(RenderingMode.Surface);
                 break;
+            case 'e':
+                this.target.ToggleRendering(RenderingMode.EDL);
             default:
                 this.target.HandleShortcut(strkey);
                 break;
@@ -1147,10 +1150,23 @@ class BoundingBox {
         }
         return delta.SqrNorm();
     }
+    GetVertices() {
+        return [
+            new Vector([this.min.Get(0), this.min.Get(1), this.min.Get(2)]),
+            new Vector([this.min.Get(0), this.min.Get(1), this.max.Get(2)]),
+            new Vector([this.min.Get(0), this.max.Get(1), this.min.Get(2)]),
+            new Vector([this.min.Get(0), this.max.Get(1), this.max.Get(2)]),
+            new Vector([this.max.Get(0), this.min.Get(1), this.min.Get(2)]),
+            new Vector([this.max.Get(0), this.min.Get(1), this.max.Get(2)]),
+            new Vector([this.max.Get(0), this.max.Get(1), this.min.Get(2)]),
+            new Vector([this.max.Get(0), this.max.Get(1), this.max.Get(2)])
+        ];
+    }
 }
 class RenderingType {
     constructor() {
         this.value = 0;
+        this.listeners = [];
         this.Surface(true);
     }
     Point(activate) {
@@ -1162,23 +1178,95 @@ class RenderingType {
     Surface(activate) {
         return this.Set(activate, 4);
     }
+    EDL(activate) {
+        return this.Set(activate, 8);
+    }
+    Register(listener) {
+        this.listeners.push(listener);
+    }
+    Unregister(listener) {
+        let index = this.listeners.indexOf(listener);
+        if (index >= 0 && index <= this.listeners.length)
+            this.listeners.splice(index, 1);
+    }
     Set(activate, base) {
+        let formerState = this.Get(base);
         if (activate === true) {
             this.value = this.value | base;
         }
         else if (activate === false) {
             this.value = this.value ^ base;
         }
+        let currentState = this.Get(base);
+        if (formerState !== currentState) {
+            for (let index = 0; index < this.listeners.length; index++)
+                this.listeners[index].OnRenderingTypeChange(this);
+        }
+        return currentState;
+    }
+    Get(base) {
         return ((this.value & base) != 0);
     }
 }
+class Shaders {
+    constructor(gl, vertexShader, fragmentShader) {
+        this.gl = gl;
+        this.shaders = new Map();
+        this.program = this.gl.createProgram();
+        this.gl.attachShader(this.program, this.GetShader(vertexShader));
+        this.gl.attachShader(this.program, this.GetShader(fragmentShader));
+        this.gl.linkProgram(this.program);
+        if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+            throw 'Unable to initialize the shader program';
+        }
+        this.Use();
+    }
+    Use() {
+        this.gl.useProgram(this.program);
+    }
+    Attribute(name) {
+        return this.gl.getAttribLocation(this.program, name);
+    }
+    Uniform(name) {
+        return this.gl.getUniformLocation(this.program, name);
+    }
+    GetShader(identifier) {
+        let shaderScript;
+        let shaderSource;
+        let shader;
+        shaderScript = document.getElementById(identifier);
+        if (!shaderScript) {
+            throw 'Cannot find shader script "' + identifier + '"';
+        }
+        shaderSource = shaderScript.innerHTML;
+        let shaderType = null;
+        if (shaderScript.type.toLowerCase() == "x-shader/x-fragment") {
+            shaderType = this.gl.FRAGMENT_SHADER;
+        }
+        else if (shaderScript.type.toLowerCase() == "x-shader/x-vertex") {
+            shaderType = this.gl.VERTEX_SHADER;
+        }
+        else {
+            throw 'Unknown shadert type ' + shaderScript.type;
+        }
+        shader = this.gl.createShader(shaderType);
+        this.shaders[shaderType] = shader;
+        this.gl.shaderSource(shader, shaderSource);
+        this.gl.compileShader(shader);
+        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+            throw 'An error occurred while compiling the shader "' + identifier + '": ' + this.gl.getShaderInfoLog(shader) + '\nCource code :\n' + shaderSource;
+        }
+        return shader;
+    }
+}
 /// <reference path="renderingtype.ts" />
+/// <reference path="shaders.ts" />
 class DrawingContext {
     constructor(renderingArea) {
         this.renderingArea = renderingArea;
         this.sampling = 30;
         this.rendering = new RenderingType();
-        this.gl = (this.renderingArea.getContext("webgl", { preserveDrawingBuffer: true }) ||
+        this.gl = (this.renderingArea.getContext("webgl2", { preserveDrawingBuffer: true }) ||
             this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -1187,46 +1275,38 @@ class DrawingContext {
         this.useuint = this.gl.getExtension('OES_element_index_uint') ||
             this.gl.getExtension('MOZ_OES_element_index_uint') ||
             this.gl.getExtension('WEBKIT_OES_element_index_uint');
-        var fragmentShader = this.GetShader("FragmentShader");
-        var vertexShader = this.GetShader("VertexShader");
-        this.shaders = this.gl.createProgram();
-        this.gl.attachShader(this.shaders, vertexShader);
-        this.gl.attachShader(this.shaders, fragmentShader);
-        this.gl.linkProgram(this.shaders);
-        if (!this.gl.getProgramParameter(this.shaders, this.gl.LINK_STATUS)) {
-            throw 'Unable to initialize the shader program';
-        }
-        this.gl.useProgram(this.shaders);
-        this.vertices = this.gl.getAttribLocation(this.shaders, "VertexPosition");
+        this.shaders = new Shaders(this.gl, "VertexShader", "FragmentShader");
+        this.vertices = this.shaders.Attribute("VertexPosition");
         this.gl.enableVertexAttribArray(this.vertices);
-        this.normals = this.gl.getAttribLocation(this.shaders, "NormalVector");
+        this.normals = this.shaders.Attribute("NormalVector");
         this.EnableNormals(true);
-        this.scalarvalue = this.gl.getAttribLocation(this.shaders, "ScalarValue");
-        this.usescalars = this.gl.getUniformLocation(this.shaders, "UseScalars");
-        this.minscalarvalue = this.gl.getUniformLocation(this.shaders, "MinScalarValue");
-        this.maxscalarvalue = this.gl.getUniformLocation(this.shaders, "MaxScalarValue");
-        this.minscalarcolor = this.gl.getUniformLocation(this.shaders, "MinScalarColor");
-        this.maxscalarcolor = this.gl.getUniformLocation(this.shaders, "MaxScalarColor");
-        this.projection = this.gl.getUniformLocation(this.shaders, "Projection");
-        this.modelview = this.gl.getUniformLocation(this.shaders, "ModelView");
-        this.shapetransform = this.gl.getUniformLocation(this.shaders, "ShapeTransform");
-        this.color = this.gl.getUniformLocation(this.shaders, "Color");
-        this.eyeposition = this.gl.getUniformLocation(this.shaders, "EyePosition");
+        this.scalarvalue = this.shaders.Attribute("ScalarValue");
+        this.usescalars = this.shaders.Uniform("UseScalars");
+        this.minscalarvalue = this.shaders.Uniform("MinScalarValue");
+        this.maxscalarvalue = this.shaders.Uniform("MaxScalarValue");
+        this.minscalarcolor = this.shaders.Uniform("MinScalarColor");
+        this.maxscalarcolor = this.shaders.Uniform("MaxScalarColor");
+        this.projection = this.shaders.Uniform("Projection");
+        this.modelview = this.shaders.Uniform("ModelView");
+        this.shapetransform = this.shaders.Uniform("ShapeTransform");
+        this.color = this.shaders.Uniform("Color");
+        this.eyeposition = this.shaders.Uniform("EyePosition");
         this.lightpositions = [];
         this.lightcolors = [];
-        this.nblights = this.gl.getUniformLocation(this.shaders, "NbLights");
+        this.nblights = this.shaders.Uniform("NbLights");
         for (var index = 0; index < DrawingContext.NbMaxLights; index++) {
-            this.lightpositions.push(this.gl.getUniformLocation(this.shaders, "LightPositions[" + index + "]"));
-            this.lightcolors.push(this.gl.getUniformLocation(this.shaders, "LightColors[" + index + "]"));
+            this.lightpositions.push(this.shaders.Uniform("LightPositions[" + index + "]"));
+            this.lightcolors.push(this.shaders.Uniform("LightColors[" + index + "]"));
         }
-        this.diffuse = this.gl.getUniformLocation(this.shaders, "DiffuseCoef");
-        this.ambiant = this.gl.getUniformLocation(this.shaders, "AmbiantCoef");
-        this.specular = this.gl.getUniformLocation(this.shaders, "SpecularCoef");
-        this.glossy = this.gl.getUniformLocation(this.shaders, "GlossyPow");
-        this.usenormals = this.gl.getUniformLocation(this.shaders, "UseNormals");
+        this.diffuse = this.shaders.Uniform("DiffuseCoef");
+        this.ambiant = this.shaders.Uniform("AmbiantCoef");
+        this.specular = this.shaders.Uniform("SpecularCoef");
+        this.glossy = this.shaders.Uniform("GlossyPow");
+        this.usenormals = this.shaders.Uniform("UseNormals");
         this.bboxcolor = [1, 1, 1];
     }
     EnableNormals(b) {
+        let isEnabled = this.gl.getVertexAttrib(this.normals, this.gl.VERTEX_ATTRIB_ARRAY_ENABLED);
         if (b) {
             this.gl.uniform1i(this.usenormals, 1);
             this.gl.enableVertexAttribArray(this.normals);
@@ -1235,6 +1315,7 @@ class DrawingContext {
             this.gl.uniform1i(this.usenormals, 0);
             this.gl.disableVertexAttribArray(this.normals);
         }
+        return isEnabled;
     }
     EnableScalars(b) {
         if (b) {
@@ -8145,8 +8226,24 @@ class Finalizer extends Process {
         }
     }
 }
+class Interval {
+    constructor() {
+        this.min = null;
+        this.max = null;
+    }
+    Add(n) {
+        if (this.min === null || n < this.min)
+            this.min = n;
+        if (this.max === null || n > this.max)
+            this.max = n;
+    }
+    IsValid() {
+        return this.min !== null && this.max !== null;
+    }
+}
 /// <reference path="drawingcontext.ts" />
 /// <reference path="../../maths/vector.ts" />
+/// <reference path="../../maths/interval.ts" />
 /// <reference path="../../maths/matrix.ts" />
 /// <reference path="../../model/boundingbox.ts" />
 /// <reference path="../../controler/controler.ts" />
@@ -8169,8 +8266,7 @@ class Camera {
         this.at = new Vector([10.0, 10.0, 10.0]);
         this.to = new Vector([.0, .0, .0]);
         this.up = new Vector([.0, 1.0, .0]);
-        this.near = 0.001;
-        this.far = 10000.0;
+        this.depthRange = new Interval();
         this.fov = Math.PI / 4;
         this.InititalizeDrawingContext(context);
     }
@@ -8209,13 +8305,19 @@ class Camera {
         return basechange.Multiply(translation);
     }
     GetProjectionMatrix() {
+        let near = this.depthRange.min;
+        let far = this.depthRange.max;
+        if (near < 0)
+            near = 0;
+        if (far <= near)
+            far = near + 0.0001;
         let aspectRatio = this.screen.width / this.screen.height;
         var projection = Matrix.Null(4, 4);
         var f = 1. / Math.tan(this.fov / 2.);
         projection.SetValue(0, 0, f / aspectRatio);
         projection.SetValue(1, 1, f);
-        projection.SetValue(2, 2, -(this.near + this.far) / (this.far - this.near));
-        projection.SetValue(2, 3, -(2.0 * this.near * this.far) / (this.far - this.near));
+        projection.SetValue(2, 2, -(near + far) / (far - near));
+        projection.SetValue(2, 3, -(2.0 * near * far) / (far - near));
         projection.SetValue(3, 2, -1.0);
         return projection;
     }
@@ -8321,6 +8423,64 @@ class Camera {
     }
     set Distance(d) {
         this.at = this.to.Minus(this.GetDirection().Times(d));
+    }
+    UpdateDepthRange(scene) {
+        let vertices = scene.GetBoundingBox().GetVertices();
+        let dir = this.GetDirection();
+        this.depthRange = new Interval;
+        for (let index = 0; index < vertices.length; index++) {
+            let z = vertices[index].Minus(this.at).Dot(dir);
+            this.depthRange.Add(z);
+        }
+        return this.depthRange;
+    }
+}
+class FrameBuffer {
+    constructor(gl, width, height) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.textures = new Map();
+        this.fbo = gl.createFramebuffer();
+        this.ColorTexture();
+    }
+    Delete() {
+        this.gl.deleteFramebuffer(this.fbo);
+        this.fbo = null;
+    }
+    Activate(b = true) {
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, b ? this.fbo : null);
+    }
+    ColorTexture() {
+        return this.AttachTexture(this.gl.COLOR_ATTACHMENT0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE);
+    }
+    DepthTexture() {
+        return this.AttachTexture(this.gl.DEPTH_ATTACHMENT, this.gl.DEPTH_COMPONENT32F, this.gl.DEPTH_COMPONENT, this.gl.FLOAT);
+    }
+    Check() {
+        this.Activate();
+        let status = this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER);
+        if (status != this.gl.FRAMEBUFFER_COMPLETE)
+            throw "Unexpected frame buffer status: " + status;
+    }
+    AttachTexture(attachment, internalFormat, format, storage) {
+        if (attachment in this.textures)
+            return this.textures[attachment];
+        let previousFBO = this.gl.getParameter(this.gl.FRAMEBUFFER_BINDING);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
+        let texture = this.gl.createTexture();
+        let level = 0;
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texImage2D(this.gl.TEXTURE_2D, level, internalFormat, this.width, this.height, 0, format, storage, null);
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachment, this.gl.TEXTURE_2D, texture, level);
+        if (previousFBO != this.fbo)
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, previousFBO);
+        this.textures[attachment] = texture;
+        return texture;
     }
 }
 /// <reference path="pclgroup.ts" />
@@ -8536,6 +8696,102 @@ class SceneParsingHandler extends PCLGroupParsingHandler {
         return new Scene(false);
     }
 }
+/// <reference path="framebuffer.ts" />
+/// <reference path="../objects/scene.ts" />
+class EDLFilter {
+    constructor(context) {
+        this.context = context;
+        this.Resize(this.context);
+        this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
+        this.shaders.Use();
+        this.color = this.shaders.Uniform("colorTexture");
+        this.depth = this.shaders.Uniform("depthTexture");
+        this.nbhPos = this.shaders.Uniform("Neighbors");
+        this.expScale = this.shaders.Uniform("ExpFactor");
+        this.zMin = this.shaders.Uniform("DepthMin");
+        this.zMax = this.shaders.Uniform("DepthMax");
+        this.width = this.shaders.Uniform("ScreenWidth");
+        this.height = this.shaders.Uniform("ScreenHeight");
+        this.nbhPositions = new Float32Array([
+            -1., -1.,
+            -1., 0.,
+            -1., 1.,
+            0., 1.,
+            1., 1.,
+            0., 1.,
+            -1., 1.,
+            -1., 0
+        ]);
+        this.points = new FloatArrayBuffer(new Float32Array([
+            -1.0, -1.0, 0.0,
+            1.0, -1.0, 0.0,
+            1.0, 1.0, 0.0,
+            -1.0, 1.0, 0.0,
+        ]), this.context, 3);
+        this.textCoords = new FloatArrayBuffer(new Float32Array([
+            0., 0.,
+            1., 0.,
+            1., 1.,
+            0., 1.
+        ]), this.context, 2);
+        this.indices = new ElementArrayBuffer([
+            0, 1, 2,
+            0, 2, 3
+        ], this.context, true);
+        this.vertices = this.shaders.Attribute("VertexPosition");
+        this.context.gl.enableVertexAttribArray(this.vertices);
+        this.uv = this.shaders.Attribute("TextureCoordinate");
+        this.context.gl.enableVertexAttribArray(this.uv);
+    }
+    Resize(context) {
+        if (this.fbo)
+            this.fbo.Delete();
+        let width = context.renderingArea.width;
+        let height = context.renderingArea.height;
+        this.fbo = new FrameBuffer(context.gl, width, height);
+    }
+    Dispose() {
+        this.fbo.Activate(false);
+        this.fbo.Delete();
+        this.fbo = null;
+    }
+    CollectRendering() {
+        this.fbo.Activate();
+        let gl = this.context.gl;
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+        gl.disable(gl.CULL_FACE);
+    }
+    Render(camera, scene) {
+        let gl = this.context.gl;
+        gl.flush();
+        this.shaders.Use();
+        this.fbo.Activate(false);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.CULL_FACE);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.fbo.ColorTexture());
+        gl.uniform1i(this.color, 0);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.fbo.DepthTexture());
+        gl.uniform1i(this.depth, 1);
+        let width = this.context.renderingArea.width;
+        let height = this.context.renderingArea.height;
+        gl.uniform2fv(this.nbhPos, this.nbhPositions);
+        gl.uniform1f(this.expScale, 4.);
+        gl.uniform1f(this.zMin, camera.depthRange.min);
+        gl.uniform1f(this.zMax, camera.depthRange.max);
+        gl.uniform1f(this.width, width);
+        gl.uniform1f(this.height, height);
+        gl.viewport(0, 0, width, height);
+        this.textCoords.BindAttribute(this.uv);
+        this.points.BindAttribute(this.vertices);
+        this.indices.Bind();
+        gl.drawElements(gl.TRIANGLES, 6, this.context.GetIntType(true), 0);
+        gl.flush();
+    }
+}
 class Random {
     static Uniform(start = 0, end = 1) {
         let r = Math.random();
@@ -8556,6 +8812,7 @@ class Random {
 /// <reference path="../controls/control.ts" />
 /// <reference path="drawingcontext.ts" />
 /// <reference path="camera.ts" />
+/// <reference path="edlfilter.ts" />
 /// <reference path="../objects/scene.ts" />
 /// <reference path="../objects/pclnode.ts" />
 /// <reference path="../objects/light.ts" />
@@ -8571,29 +8828,51 @@ class Renderer {
         this.sceneRenderingArea.className = className;
         this.drawingcontext = new DrawingContext(this.sceneRenderingArea);
         this.camera = new Camera(this.drawingcontext);
+        this.activeFilter = null;
+        this.drawingcontext.rendering.Register(this);
+    }
+    UseEDL(b) {
+        if (b === true) {
+            if (!this.activeFilter)
+                this.activeFilter = new EDLFilter(this.drawingcontext);
+        }
+        else if (b === false) {
+            if (this.activeFilter) {
+                this.activeFilter.Dispose();
+                this.activeFilter = null;
+            }
+        }
+        return !!this.activeFilter;
     }
     GetElement() {
         return this.sceneRenderingArea;
     }
     Draw(scene) {
+        this.drawingcontext.shaders.Use();
         var gl = this.drawingcontext.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
         //Set the lights positions and colors
         let nbLights = 0;
         for (var index = 0; index < scene.Lights.children.length; index++) {
             let light = scene.Lights.children[index];
             if (light.visible) {
-                this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.position.Flatten()));
-                this.drawingcontext.gl.uniform3fv(this.drawingcontext.lightcolors[nbLights], new Float32Array(light.color));
+                gl.uniform3fv(this.drawingcontext.lightpositions[nbLights], new Float32Array(light.position.Flatten()));
+                gl.uniform3fv(this.drawingcontext.lightcolors[nbLights], new Float32Array(light.color));
                 nbLights++;
             }
         }
-        this.drawingcontext.gl.uniform1i(this.drawingcontext.nblights, nbLights);
+        gl.uniform1i(this.drawingcontext.nblights, nbLights);
         //Set the camera position
+        this.camera.UpdateDepthRange(scene);
         this.camera.InititalizeDrawingContext(this.drawingcontext);
         //Perform rendering
         if (scene) {
+            if (this.activeFilter)
+                this.activeFilter.CollectRendering();
             scene.Draw(this.drawingcontext);
+            if (this.activeFilter)
+                this.activeFilter.Render(this.camera, scene);
         }
     }
     RefreshSize() {
@@ -8628,6 +8907,11 @@ class Renderer {
             cloud.NotifyChange(cloud, ChangeType.NewItem);
         });
         scanner.Start();
+    }
+    OnRenderingTypeChange(renderingType) {
+        let shouldUseEDL = renderingType.EDL();
+        if (this.UseEDL() != shouldUseEDL)
+            this.UseEDL(shouldUseEDL);
     }
 }
 class SceneScanner extends LongProcess {
@@ -10183,6 +10467,11 @@ class Menu extends HideablePannel {
             application.RegisterShortCut(new LightModeAction(application))
         ], 0, 'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'));
         // ================================
+        // Eye dome lighting
+        this.toolbar.AddControl(new Button(new SimpleAction('[Icon:flash]', function () {
+            application.ToggleRendering(RenderingMode.EDL);
+        }, 'Toggle the Eye Dome Lighting filter.')));
+        // ================================
         // Help menu
         this.toolbar.AddControl(new Button(new SimpleAction('[Icon:question-circle]', function () {
             window.open('help.html', '_blank');
@@ -10537,17 +10826,30 @@ class PCLApp {
     }
     ToggleRendering(mode) {
         let rendering = this.sceneRenderer.drawingcontext.rendering;
+        let message = null;
+        function getState(state) {
+            return state ? '<b style="color:green;">ON</b>' : '<b style="color:red;">OFF</b>';
+        }
         switch (mode) {
             case RenderingMode.Point:
-                rendering.Point(!rendering.Point());
+                let point = rendering.Point(!rendering.Point());
+                message = "Point representation : " + getState(point);
                 break;
             case RenderingMode.Wire:
-                rendering.Wire(!rendering.Wire());
+                let wire = rendering.Wire(!rendering.Wire());
+                message = "Wire representation : " + getState(wire);
                 break;
             case RenderingMode.Surface:
-                rendering.Surface(!rendering.Surface());
+                let surface = rendering.Surface(!rendering.Surface());
+                message = "Surface representation : " + getState(surface);
+                break;
+            case RenderingMode.EDL:
+                let edl = rendering.EDL(!rendering.EDL());
+                message = "Eye Dome Lighting : " + getState(edl);
                 break;
         }
+        if (message)
+            new TemporaryHint(message);
         this.RenderScene();
     }
     RegisterShortCut(action) {
