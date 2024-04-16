@@ -12,8 +12,7 @@ enum ViewPointChange {
 enum RenderingMode {
 	Point,
 	Wire,
-	Surface,
-	EDL
+	Surface
 }
 
 interface ViewPoint {

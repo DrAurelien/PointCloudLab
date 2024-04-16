@@ -40,7 +40,6 @@ class DrawingContext {
 
 		this.gl = <WebGL2RenderingContext>(this.renderingArea.getContext("webgl2", { preserveDrawingBuffer: true }) ||
 			this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
-		this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		this.gl.enable(this.gl.DEPTH_TEST);
 		this.gl.disable(this.gl.CULL_FACE);
 		this.gl.depthFunc(this.gl.LEQUAL);

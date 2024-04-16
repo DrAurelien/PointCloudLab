@@ -556,7 +556,6 @@ var RenderingMode;
     RenderingMode[RenderingMode["Point"] = 0] = "Point";
     RenderingMode[RenderingMode["Wire"] = 1] = "Wire";
     RenderingMode[RenderingMode["Surface"] = 2] = "Surface";
-    RenderingMode[RenderingMode["EDL"] = 3] = "EDL";
 })(RenderingMode || (RenderingMode = {}));
 class Cursor {
     constructor(iconCode) {
@@ -679,8 +678,6 @@ class MouseControler {
             case 's':
                 this.target.ToggleRendering(RenderingMode.Surface);
                 break;
-            case 'e':
-                this.target.ToggleRendering(RenderingMode.EDL);
             default:
                 this.target.HandleShortcut(strkey);
                 break;
@@ -1178,9 +1175,6 @@ class RenderingType {
     Surface(activate) {
         return this.Set(activate, 4);
     }
-    EDL(activate) {
-        return this.Set(activate, 8);
-    }
     Register(listener) {
         this.listeners.push(listener);
     }
@@ -1268,7 +1262,6 @@ class DrawingContext {
         this.rendering = new RenderingType();
         this.gl = (this.renderingArea.getContext("webgl2", { preserveDrawingBuffer: true }) ||
             this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
         this.gl.depthFunc(this.gl.LEQUAL);
@@ -1737,7 +1730,7 @@ class PCLSerializer {
         this.PushSection('HEADER');
         this.PushParameter(this.writer.endianness == Endianness.BigEndian ?
             PCLSerializer.BigEndian : PCLSerializer.LittleEndian);
-        this.PushParameter('version', (s) => s.PushUInt8(1));
+        this.PushParameter('version', (s) => s.PushUInt8(PCLSerializer.CurrentVersion));
         this.PushSection('CONTENTS');
     }
     PushSection(name) {
@@ -1782,6 +1775,7 @@ PCLSerializer.ContentsSection = 'CONTENTS';
 PCLSerializer.VersionParam = 'version';
 PCLSerializer.BigEndian = 'bigendian';
 PCLSerializer.LittleEndian = 'littleendian';
+PCLSerializer.CurrentVersion = 2;
 var PCLTokenType;
 (function (PCLTokenType) {
     PCLTokenType[PCLTokenType["SectionEntry"] = 0] = "SectionEntry";
@@ -8644,12 +8638,14 @@ class LightParsingHandler extends PCLNodeParsingHandler {
 /// <reference path="pclgroup.ts" />
 /// <reference path="light.ts" />
 /// <reference path="lightscontainer.ts" />
+/// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../../tools/picking.ts" />
 /// <reference path="../../model/boundingbox.ts" />
 class Scene extends PCLGroup {
     constructor(initialize = true) {
         super("Scene");
         this.deletable = false;
+        this.backgroundColor = [0.2, 0.2, 0.2];
         if (initialize) {
             this.children = [null, null];
             this.Contents = new PCLGroup("Objects");
@@ -8686,22 +8682,61 @@ class Scene extends PCLGroup {
     GetParsingHandler() {
         return new SceneParsingHandler();
     }
+    GetProperties() {
+        let self = this;
+        if (!this.properties) {
+            let properties = super.GetProperties();
+            properties.Push(new ColorProperty('Background', () => self.backgroundColor, (value) => self.backgroundColor = value));
+        }
+        return this.properties;
+    }
+    DrawNode(drawingContext) {
+        let gl = drawingContext.gl;
+        gl.clearColor(this.backgroundColor[0], this.backgroundColor[1], this.backgroundColor[2], 1.);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        super.DrawNode(drawingContext);
+    }
+    SerializeNode(serializer) {
+        let self = this;
+        super.SerializeNode(serializer);
+        serializer.PushParameter('background', (s) => {
+            s.PushFloat32(self.backgroundColor[0]);
+            s.PushFloat32(self.backgroundColor[1]);
+            s.PushFloat32(self.backgroundColor[2]);
+        });
+    }
 }
 Scene.SerializationID = 'SCENE';
 class SceneParsingHandler extends PCLGroupParsingHandler {
     constructor() {
         super();
     }
+    ProcessNodeParam(paramname, parser) {
+        switch (paramname) {
+            case 'background':
+                this.backgroundColor = [
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32(),
+                    parser.reader.GetNextFloat32()
+                ];
+                return true;
+        }
+        return super.ProcessNodeParam(paramname, parser);
+    }
     GetObject() {
-        return new Scene(false);
+        let scene = new Scene(false);
+        if (this.backgroundColor)
+            scene.backgroundColor = this.backgroundColor;
+        return scene;
     }
 }
 /// <reference path="framebuffer.ts" />
 /// <reference path="../objects/scene.ts" />
 class EDLFilter {
-    constructor(context) {
+    constructor(context, withColors) {
         this.context = context;
-        this.Resize(this.context);
+        this.withColors = withColors;
+        this.Resize(new ScreenDimensions(this.context.renderingArea.width, this.context.renderingArea.height));
         this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
         this.shaders.Use();
         this.color = this.shaders.Uniform("colorTexture");
@@ -8712,6 +8747,7 @@ class EDLFilter {
         this.zMax = this.shaders.Uniform("DepthMax");
         this.width = this.shaders.Uniform("ScreenWidth");
         this.height = this.shaders.Uniform("ScreenHeight");
+        this.useColors = this.shaders.Uniform("UseColors");
         this.nbhPositions = new Float32Array([
             -1., -1.,
             -1., 0.,
@@ -8743,12 +8779,11 @@ class EDLFilter {
         this.uv = this.shaders.Attribute("TextureCoordinate");
         this.context.gl.enableVertexAttribArray(this.uv);
     }
-    Resize(context) {
+    ;
+    Resize(size) {
         if (this.fbo)
             this.fbo.Delete();
-        let width = context.renderingArea.width;
-        let height = context.renderingArea.height;
-        this.fbo = new FrameBuffer(context.gl, width, height);
+        this.fbo = new FrameBuffer(this.context.gl, size.width, size.height);
     }
     Dispose() {
         this.fbo.Activate(false);
@@ -8784,6 +8819,7 @@ class EDLFilter {
         gl.uniform1f(this.zMax, camera.depthRange.max);
         gl.uniform1f(this.width, width);
         gl.uniform1f(this.height, height);
+        gl.uniform1i(this.useColors, this.withColors ? 1 : 0);
         gl.viewport(0, 0, width, height);
         this.textCoords.BindAttribute(this.uv);
         this.points.BindAttribute(this.vertices);
@@ -8831,18 +8867,10 @@ class Renderer {
         this.activeFilter = null;
         this.drawingcontext.rendering.Register(this);
     }
-    UseEDL(b) {
-        if (b === true) {
-            if (!this.activeFilter)
-                this.activeFilter = new EDLFilter(this.drawingcontext);
-        }
-        else if (b === false) {
-            if (this.activeFilter) {
-                this.activeFilter.Dispose();
-                this.activeFilter = null;
-            }
-        }
-        return !!this.activeFilter;
+    SetFilter(filter = null) {
+        if (this.activeFilter)
+            this.activeFilter.Dispose();
+        this.activeFilter = filter;
     }
     GetElement() {
         return this.sceneRenderingArea;
@@ -8883,6 +8911,8 @@ class Renderer {
         this.drawingcontext.renderingArea.height = height;
         this.camera.screen.width = width;
         this.camera.screen.height = height;
+        if (this.activeFilter)
+            this.activeFilter.Resize(this.camera.screen);
     }
     GetRay(x, y, aperture) {
         let point = this.camera.ComputeInvertedProjection(new Vector([x, y, -1.0]));
@@ -8909,9 +8939,6 @@ class Renderer {
         scanner.Start();
     }
     OnRenderingTypeChange(renderingType) {
-        let shouldUseEDL = renderingType.EDL();
-        if (this.UseEDL() != shouldUseEDL)
-            this.UseEDL(shouldUseEDL);
     }
 }
 class SceneScanner extends LongProcess {
@@ -10468,9 +10495,17 @@ class Menu extends HideablePannel {
         ], 0, 'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'));
         // ================================
         // Eye dome lighting
-        this.toolbar.AddControl(new Button(new SimpleAction('[Icon:flash]', function () {
-            application.ToggleRendering(RenderingMode.EDL);
-        }, 'Toggle the Eye Dome Lighting filter.')));
+        this.toolbar.AddControl(new SelectDrop("[Icon:flash] Effets", [
+            new SimpleAction('No effect', function () {
+                application.ChangeRenderingFilter(null);
+            }),
+            new SimpleAction('Colored EDL', function () {
+                application.ChangeRenderingFilter((ctx) => new EDLFilter(ctx, true));
+            }, "Eye Dome Lighting with colors."),
+            new SimpleAction('Raw EDL', function () {
+                application.ChangeRenderingFilter((ctx) => new EDLFilter(ctx, false));
+            }, "Eye Dome Lighting with no color at all.")
+        ], 0, 'Select visual effects to apply.'));
         // ================================
         // Help menu
         this.toolbar.AddControl(new Button(new SimpleAction('[Icon:question-circle]', function () {
@@ -10843,14 +10878,20 @@ class PCLApp {
                 let surface = rendering.Surface(!rendering.Surface());
                 message = "Surface representation : " + getState(surface);
                 break;
-            case RenderingMode.EDL:
-                let edl = rendering.EDL(!rendering.EDL());
-                message = "Eye Dome Lighting : " + getState(edl);
-                break;
         }
         if (message)
             new TemporaryHint(message);
         this.RenderScene();
+    }
+    ChangeRenderingFilter(newFilter) {
+        let filter = null;
+        let factory = newFilter;
+        if (factory)
+            filter = factory(this.sceneRenderer.drawingcontext);
+        this.sceneRenderer.SetFilter(filter);
+        // TODO : fix bug ... for some reason, we need to render twice when activating EDL
+        this.RefreshRendering();
+        this.RefreshRendering();
     }
     RegisterShortCut(action) {
         let shortcut = action.GetShortCut();

@@ -25,6 +25,7 @@ class PCLSerializer {
 	static VersionParam = 'version';
 	static BigEndian = 'bigendian';
 	static LittleEndian = 'littleendian';
+	static CurrentVersion : number = 2;
 
 	constructor(buffersize) {
 		this.writer = new BinaryWriter(buffersize);
@@ -32,7 +33,7 @@ class PCLSerializer {
 		this.PushSection('HEADER');
 		this.PushParameter(this.writer.endianness == Endianness.BigEndian ?
 			PCLSerializer.BigEndian : PCLSerializer.LittleEndian);
-		this.PushParameter('version', (s) => s.PushUInt8(1));
+		this.PushParameter('version', (s) => s.PushUInt8(PCLSerializer.CurrentVersion));
 		this.PushSection('CONTENTS');
 	}
 

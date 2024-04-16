@@ -24,10 +24,6 @@ class RenderingType {
 		return this.Set(activate, 4);
 	}
 
-	EDL(activate?: boolean): boolean {
-		return this.Set(activate, 8);
-	}
-
 	Register(listener: IRenderingTypeListener)
 	{
 		this.listeners.push(listener);
