@@ -8825,6 +8825,8 @@ class EDLFilter {
         gl.uniform1f(this.height, height);
         gl.uniform1i(this.useColors, this.withColors ? 1 : 0);
         gl.viewport(0, 0, width, height);
+        this.context.gl.enableVertexAttribArray(this.vertices);
+        this.context.gl.enableVertexAttribArray(this.uv);
         this.textCoords.BindAttribute(this.uv);
         this.points.BindAttribute(this.vertices);
         this.indices.Bind();
