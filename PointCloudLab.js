@@ -1148,6 +1148,8 @@ class BoundingBox {
         return delta.SqrNorm();
     }
     GetVertices() {
+        if (!this.min || !this.max)
+            return [];
         return [
             new Vector([this.min.Get(0), this.min.Get(1), this.min.Get(2)]),
             new Vector([this.min.Get(0), this.min.Get(1), this.max.Get(2)]),
@@ -3935,7 +3937,8 @@ class MeshDrawing {
             ctx.gl.drawElements(ctx.gl.TRIANGLES, this.buffersize, ctx.GetIntType(), 0);
         }
         if (ctx.rendering.Wire()) {
-            ctx.gl.drawElements(ctx.gl.LINES, this.buffersize, ctx.GetIntType(), 0);
+            for (let index = 0; index < this.buffersize; index++)
+                ctx.gl.drawElements(ctx.gl.LINE_LOOP, 3, ctx.GetIntType(), 3 * index);
         }
     }
     Clear() {
@@ -8301,10 +8304,6 @@ class Camera {
     GetProjectionMatrix() {
         let near = this.depthRange.min;
         let far = this.depthRange.max;
-        if (near < 0)
-            near = 0;
-        if (far <= near)
-            far = near + 0.0001;
         let aspectRatio = this.screen.width / this.screen.height;
         var projection = Matrix.Null(4, 4);
         var f = 1. / Math.tan(this.fov / 2.);
@@ -8424,8 +8423,15 @@ class Camera {
         this.depthRange = new Interval;
         for (let index = 0; index < vertices.length; index++) {
             let z = vertices[index].Minus(this.at).Dot(dir);
-            this.depthRange.Add(z);
+            this.depthRange.Add(z >= 0 ? z : 0);
         }
+        if (!this.depthRange.IsValid()) {
+            this.depthRange.Add(0);
+            this.depthRange.Add(1);
+        }
+        ;
+        if (this.depthRange.max == this.depthRange.min)
+            this.depthRange.max = this.depthRange.min + 1e-5;
         return this.depthRange;
     }
 }
@@ -8795,7 +8801,6 @@ class EDLFilter {
         let gl = this.context.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
     }
     Render(camera, scene) {
         let gl = this.context.gl;
@@ -8804,7 +8809,6 @@ class EDLFilter {
         this.fbo.Activate(false);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.fbo.ColorTexture());
         gl.uniform1i(this.color, 0);

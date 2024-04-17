@@ -114,6 +114,8 @@ class BoundingBox {
 
 	GetVertices() : Vector[]
 	{
+		if(!this.min || !this.max)
+			return [];
 		return [
 			new Vector([this.min.Get(0), this.min.Get(1), this.min.Get(2)]),
 			new Vector([this.min.Get(0), this.min.Get(1), this.max.Get(2)]),
