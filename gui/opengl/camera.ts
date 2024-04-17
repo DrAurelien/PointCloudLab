@@ -83,10 +83,6 @@ class Camera implements ViewPoint {
 	GetProjectionMatrix(): Matrix {
 		let near = this.depthRange.min;
 		let far = this.depthRange.max;
-		if(near < 0)
-			near = 0;
-		if(far<=near)
-			far = near + 0.0001;
 		let aspectRatio: number = this.screen.width / this.screen.height;
 		var projection = Matrix.Null(4, 4);
 		var f = 1. / Math.tan(this.fov / 2.);
@@ -230,8 +226,15 @@ class Camera implements ViewPoint {
 		for(let index=0; index<vertices.length; index++)
 		{
 			let z = vertices[index].Minus(this.at).Dot(dir);
-			this.depthRange.Add(z);
+			this.depthRange.Add(z >= 0 ? z : 0);
 		}
+		if(!this.depthRange.IsValid())
+		{
+			this.depthRange.Add(0);
+			this.depthRange.Add(1);
+		};
+		if(this.depthRange.max == this.depthRange.min)
+			this.depthRange.max = this.depthRange.min + 1e-5;
 		return this.depthRange;
 	}
 	

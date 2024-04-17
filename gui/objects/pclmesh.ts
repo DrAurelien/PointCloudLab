@@ -164,7 +164,8 @@ class MeshDrawing {
 			ctx.gl.drawElements(ctx.gl.TRIANGLES, this.buffersize, ctx.GetIntType(), 0);
 		}
 		if (ctx.rendering.Wire()) {
-			ctx.gl.drawElements(ctx.gl.LINES, this.buffersize, ctx.GetIntType(), 0);
+			for(let index=0; index<this.buffersize; index++)
+			ctx.gl.drawElements(ctx.gl.LINE_LOOP, 3, ctx.GetIntType(), 3*index);
 		}
 	}
 

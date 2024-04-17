@@ -92,7 +92,6 @@ class EDLFilter implements IRenderingFilter
 		let gl = this.context.gl;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-		gl.disable(gl.CULL_FACE);
 	}
 
 	Render(camera: Camera, scene: Scene)
@@ -105,7 +104,6 @@ class EDLFilter implements IRenderingFilter
 		
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		gl.disable(gl.DEPTH_TEST);
-		gl.disable(gl.CULL_FACE);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.fbo.ColorTexture());
 		gl.uniform1i(this.color, 0);
