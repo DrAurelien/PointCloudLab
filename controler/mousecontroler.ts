@@ -46,7 +46,9 @@ abstract class MouseControler implements Controler {
 
 		this.targetElement.onwheel = function (event: WheelEvent) {
 			event = <WheelEvent>(event || window.event);
+			self.StartMouseEvent();
 			self.HandleWheel(event.deltaY);
+			self.EndMouseEvent();
 		};
 
 		document.onkeypress = function (event: KeyboardEvent) {

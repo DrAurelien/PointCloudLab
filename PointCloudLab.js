@@ -644,7 +644,9 @@ class MouseControler {
         };
         this.targetElement.onwheel = function (event) {
             event = (event || window.event);
+            self.StartMouseEvent();
             self.HandleWheel(event.deltaY);
+            self.EndMouseEvent();
         };
         document.onkeypress = function (event) {
             event = (event || window.event);
@@ -8747,23 +8749,13 @@ class EDLFilter {
         this.shaders.Use();
         this.color = this.shaders.Uniform("colorTexture");
         this.depth = this.shaders.Uniform("depthTexture");
-        this.nbhPos = this.shaders.Uniform("Neighbors");
+        this.nbhDist = this.shaders.Uniform("NeighborsDist");
         this.expScale = this.shaders.Uniform("ExpFactor");
         this.zMin = this.shaders.Uniform("DepthMin");
         this.zMax = this.shaders.Uniform("DepthMax");
         this.width = this.shaders.Uniform("ScreenWidth");
         this.height = this.shaders.Uniform("ScreenHeight");
         this.useColors = this.shaders.Uniform("UseColors");
-        this.nbhPositions = new Float32Array([
-            -1., -1.,
-            -1., 0.,
-            -1., 1.,
-            0., 1.,
-            1., 1.,
-            0., 1.,
-            -1., 1.,
-            -1., 0
-        ]);
         this.points = new FloatArrayBuffer(new Float32Array([
             -1.0, -1.0, 0.0,
             1.0, -1.0, 0.0,
@@ -8817,7 +8809,7 @@ class EDLFilter {
         gl.uniform1i(this.depth, 1);
         let width = this.context.renderingArea.width;
         let height = this.context.renderingArea.height;
-        gl.uniform2fv(this.nbhPos, this.nbhPositions);
+        gl.uniform1f(this.nbhDist, 0.25);
         gl.uniform1f(this.expScale, 4.);
         gl.uniform1f(this.zMin, camera.depthRange.min);
         gl.uniform1f(this.zMax, camera.depthRange.max);
