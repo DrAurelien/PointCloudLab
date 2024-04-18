@@ -68,8 +68,8 @@ class RansacDetectionAction extends PCLCloudAction implements Stopable {
 			(d: Dialog) => { return self.InitializeAndLauchRansac(d); },
 			(d: Dialog) => { return true; }
 		);
-		dialog.InsertValue('Failures', 100);
-		dialog.InsertValue('Noise', 0.1);
+		dialog.InsertNumericValue('Failures', 100);
+		dialog.InsertNumericValue('Noise', 0.1);
 		dialog.InsertTitle('Shapes to detect');
 		dialog.InsertCheckBox('Planes', true);
 		dialog.InsertCheckBox('Spheres', true);
@@ -680,8 +680,8 @@ class RegistrationAction extends PCLCloudAction {
 		)
 
 		dialog.InsertTitle('Registration settings (Trimmed Iterative Closest Points)')
-		dialog.InsertValue(overlapLabel, 100);
-		dialog.InsertValue(maxiterationsLabel, 20);
+		dialog.InsertNumericValue(overlapLabel, 100);
+		dialog.InsertNumericValue(maxiterationsLabel, 20);
 	}
 }
 

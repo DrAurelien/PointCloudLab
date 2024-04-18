@@ -311,6 +311,11 @@ class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 		this.RefreshRendering();
 	}
 
+	GetCurrentRenderingFilter() : IRenderingFilter
+	{
+		return this.sceneRenderer.activeFilter;
+	}
+
 	RegisterShortCut(action: Action): Action {
 		let shortcut = action.GetShortCut();
 		if (shortcut) {

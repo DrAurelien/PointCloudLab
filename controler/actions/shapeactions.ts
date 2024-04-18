@@ -26,7 +26,7 @@ class CreateShapeMeshAction extends Action {
 			() => true
 		);
 
-		dialog.InsertValue('Sampling', this.sampling);
+		dialog.InsertNumericValue('Sampling', this.sampling);
 	}
 
 	CreateMesh(properties: Dialog): boolean {

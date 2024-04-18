@@ -6,23 +6,24 @@ class EDLFilter implements IRenderingFilter
 	fbo : FrameBuffer;
 	shaders : Shaders;
 
-	color : WebGLUniformLocation;
-	depth : WebGLUniformLocation;
-	nbhDist : WebGLUniformLocation;
-	expScale : WebGLUniformLocation;
-	zMin : WebGLUniformLocation;
-	zMax : WebGLUniformLocation;
-	width : WebGLUniformLocation;
-	height : WebGLUniformLocation;
-	useColors : WebGLUniformLocation;;
-	nbhPositions : Float32Array;
-	points : FloatArrayBuffer;
-	textCoords : FloatArrayBuffer;
-	indices : ElementArrayBuffer;
-	vertices : number;
-	uv : number;
+	private color : WebGLUniformLocation;
+	private depth : WebGLUniformLocation;
+	private nbhDist : WebGLUniformLocation;
+	private expScale : WebGLUniformLocation;
+	private zMin : WebGLUniformLocation;
+	private zMax : WebGLUniformLocation;
+	private width : WebGLUniformLocation;
+	private height : WebGLUniformLocation;
+	private useColors : WebGLUniformLocation;;
+	private nbhPositions : Float32Array;
+	private points : FloatArrayBuffer;
+	private textCoords : FloatArrayBuffer;
+	private indices : ElementArrayBuffer;
+	private vertices : number;
+	private uv : number;
 
-	constructor(private context: DrawingContext, public withColors:boolean)
+
+	constructor(private context: DrawingContext, public withColors:boolean, public expFactor:number=4.0, public neighborDist:number=0.25)
 	{
 		this.Resize(new ScreenDimensions(this.context.renderingArea.width,this.context.renderingArea.height));
 		this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
@@ -103,8 +104,8 @@ class EDLFilter implements IRenderingFilter
 		let width = this.context.renderingArea.width;
 		let height = this.context.renderingArea.height;
 
-		gl.uniform1f(this.nbhDist, 0.25);
-		gl.uniform1f(this.expScale, 4.);
+		gl.uniform1f(this.nbhDist, this.neighborDist);
+		gl.uniform1f(this.expScale, this.expFactor);
 		gl.uniform1f(this.zMin, camera.depthRange.min);
 		gl.uniform1f(this.zMax, camera.depthRange.max);
 		gl.uniform1f(this.width, width);
