@@ -4097,8 +4097,168 @@ class Button {
 /// <reference path="control.ts" />
 /// <reference path="toolbar.ts" />
 /// <reference path="button.ts" />
+var DialogItems;
+(function (DialogItems) {
+    ;
+    //============================================================
+    class DialogItem {
+        constructor(title) {
+            this.title = title;
+            this.container = null;
+        }
+        Show(isVisible) {
+            if (this.container)
+                this.container.hidden = !isVisible;
+        }
+        AddToLayout(table, index) {
+            if (!this.container) {
+                this.container = table.insertRow(index);
+                if (this.title) {
+                    let titleCell = this.container.insertCell();
+                    titleCell.innerText = this.title;
+                }
+                let control = this.GetElement();
+                var contentCell = this.container.insertCell();
+                contentCell.appendChild(control);
+                if (!this.title)
+                    contentCell.colSpan = 2;
+            }
+            return this.container;
+        }
+        ;
+    }
+    DialogItems.DialogItem = DialogItem;
+    ;
+    //============================================================
+    class DialogValue extends DialogItem {
+    }
+    DialogItems.DialogValue = DialogValue;
+    ;
+    //============================================================
+    class Title extends DialogItem {
+        constructor(contents) {
+            super(null);
+            this.span = document.createElement('span');
+            if (contents) {
+                this.span.innerText = contents;
+                this.span.style.fontWeight = 'bold';
+                this.span.style.textDecoration = 'underline';
+            }
+        }
+        GetElement() {
+            return this.span;
+        }
+    }
+    DialogItems.Title = Title;
+    ;
+    //============================================================
+    class Spacer extends Title {
+        constructor() {
+            super(null);
+        }
+        GetElement() {
+            return null;
+        }
+    }
+    DialogItems.Spacer = Spacer;
+    ;
+    //============================================================
+    class CheckBox extends DialogValue {
+        constructor(title, defaultValue) {
+            super(title);
+            this.input = document.createElement('input');
+            this.input.type = 'checkbox';
+            this.input.checked = defaultValue ? true : false;
+        }
+        GetElement() {
+            return this.input;
+        }
+        GetValue() {
+            return this.input.checked;
+        }
+        OnValueChange(listener) {
+            let self = this;
+            this.input.addEventListener('change', (evt) => { listener(self); });
+        }
+    }
+    DialogItems.CheckBox = CheckBox;
+    ;
+    //============================================================
+    class StringValue extends DialogValue {
+        constructor(title, defaultValue) {
+            super(title);
+            this.input = document.createElement('input');
+            this.input.type = 'text';
+            this.input.width = 20;
+            this.input.value = defaultValue;
+        }
+        GetElement() {
+            return this.input;
+        }
+        GetValue() {
+            return this.input.value;
+        }
+        OnValueChange(listener) {
+            let self = this;
+            this.input.addEventListener('change', (evt) => { listener(self); });
+        }
+    }
+    DialogItems.StringValue = StringValue;
+    ;
+    //============================================================
+    class NumericValue extends DialogValue {
+        constructor(title, defaultValue) {
+            super(title);
+            this.input = document.createElement('input');
+            this.input.type = 'number';
+            this.input.width = 20;
+            this.input.value = '' + defaultValue;
+        }
+        GetElement() {
+            return this.input;
+        }
+        GetValue() {
+            return parseFloat(this.input.value);
+        }
+        OnValueChange(listener) {
+            let self = this;
+            this.input.addEventListener('change', (evt) => { listener(self); });
+        }
+    }
+    DialogItems.NumericValue = NumericValue;
+    ;
+    //============================================================
+    class Choice extends DialogValue {
+        constructor(title, choices, defaultValue) {
+            super(title);
+            this.select = document.createElement('select');
+            for (let index = 0; index < choices.length; index++) {
+                let option = document.createElement('option');
+                option.value = choices[index];
+                option.innerText = choices[index];
+                this.select.options.add(option);
+            }
+            this.select.selectedIndex = defaultValue;
+        }
+        GetElement() {
+            return this.select;
+        }
+        GetValue() {
+            let index = this.select.selectedIndex;
+            return this.select.options[index].value;
+        }
+        OnValueChange(listener) {
+            let self = this;
+            this.select.addEventListener('change', (evt) => { listener(self); });
+        }
+    }
+    DialogItems.Choice = Choice;
+    ;
+})(DialogItems || (DialogItems = {}));
+//============================================================
 class Dialog {
     constructor(onAccept, onCancel) {
+        this.items = new Map();
         this.container = document.createElement('div');
         this.container.className = 'Dialog';
         var table = document.createElement('table');
@@ -4125,55 +4285,41 @@ class Dialog {
         cell.appendChild(toolbar.GetElement());
         document.body.appendChild(this.container);
     }
-    InsertItem(title, control = null) {
+    InsertItem(item) {
+        let title = item.title;
+        this.items[title] = item;
         let table = this.container.childNodes[0];
-        var row = table.insertRow(table.rows.length - 1);
-        var titleCell = row.insertCell();
-        titleCell.appendChild(document.createTextNode(title));
-        if (control) {
-            var contentCell = row.insertCell();
-            contentCell.appendChild(control);
-        }
-        else {
-            titleCell.colSpan = 2;
-        }
-        return row;
+        return item.AddToLayout(table, table.rows.length - 1);
     }
-    InsertTitle(title) {
-        let row = this.InsertItem(title);
-        let cell = row.cells[0];
-        cell.style.fontWeight = 'bold';
-        cell.style.textDecoration = 'underline';
-        return row;
+    InsertTitle(contents) {
+        let title = new DialogItems.Title(contents);
+        this.InsertItem(title);
+        return title;
     }
-    InsertValue(title, defaultValue) {
-        let valueControl = document.createElement('input');
-        valueControl.type = 'text';
-        valueControl.width = 20;
-        valueControl.value = defaultValue;
-        return this.InsertItem(title, valueControl);
+    InsertStringValue(title, defaultValue) {
+        let stringValue = new DialogItems.StringValue(title, defaultValue);
+        this.InsertItem(stringValue);
+        return stringValue;
+    }
+    InsertNumericValue(title, defaultValue) {
+        let numericValue = new DialogItems.NumericValue(title, defaultValue);
+        this.InsertItem(numericValue);
+        return numericValue;
     }
     InsertCheckBox(title, defaultValue = null) {
-        let valueControl = document.createElement('input');
-        valueControl.type = 'checkbox';
-        valueControl.checked = defaultValue ? true : false;
-        return this.InsertItem(title, valueControl);
+        let checkBox = new DialogItems.CheckBox(title, defaultValue);
+        this.InsertItem(checkBox);
+        return checkBox;
+    }
+    InsertChoice(title, choices, defaultValue = 0) {
+        let choice = new DialogItems.Choice(title, choices, defaultValue);
+        this.InsertItem(choice);
+        return choice;
     }
     GetValue(title) {
-        let table = this.container.childNodes[0];
-        for (var index = 0; index < table.rows.length; index++) {
-            let row = table.rows[index];
-            let rowTitle = (row.cells[0]).innerText;
-            if (rowTitle == title) {
-                let valueInput = row.cells[1].childNodes[0];
-                if (valueInput.type == 'text') {
-                    return valueInput.value;
-                }
-                else if (valueInput.type == 'checkbox') {
-                    return valueInput.checked;
-                }
-            }
-        }
+        let item = this.items[title];
+        if (item)
+            return item.GetValue();
         return null;
     }
     GetElement() {
@@ -4204,7 +4350,7 @@ class CreateShapeMeshAction extends Action {
         }, 
         //Cancel has been clicked
         () => true);
-        dialog.InsertValue('Sampling', this.sampling);
+        dialog.InsertNumericValue('Sampling', this.sampling);
     }
     CreateMesh(properties) {
         let sampling = parseInt(properties.GetValue('Sampling'));
@@ -5980,9 +6126,9 @@ class ScanFromCurrentViewPointAction extends Action {
         }, 
         //Cancel has been clicked
         () => true);
-        dialog.InsertValue(ScanFromCurrentViewPointAction.hSamplingTitle, 500);
-        dialog.InsertValue(ScanFromCurrentViewPointAction.vSamplingTitle, 500);
-        dialog.InsertValue(ScanFromCurrentViewPointAction.Noise, 0);
+        dialog.InsertNumericValue(ScanFromCurrentViewPointAction.hSamplingTitle, 500);
+        dialog.InsertNumericValue(ScanFromCurrentViewPointAction.vSamplingTitle, 500);
+        dialog.InsertNumericValue(ScanFromCurrentViewPointAction.Noise, 0);
     }
     LaunchScan(properties) {
         let hsampling = parseInt(properties.GetValue(ScanFromCurrentViewPointAction.hSamplingTitle));
@@ -7062,8 +7208,8 @@ class RansacDetectionAction extends PCLCloudAction {
     Trigger() {
         let self = this;
         var dialog = new Dialog((d) => { return self.InitializeAndLauchRansac(d); }, (d) => { return true; });
-        dialog.InsertValue('Failures', 100);
-        dialog.InsertValue('Noise', 0.1);
+        dialog.InsertNumericValue('Failures', 100);
+        dialog.InsertNumericValue('Noise', 0.1);
         dialog.InsertTitle('Shapes to detect');
         dialog.InsertCheckBox('Planes', true);
         dialog.InsertCheckBox('Spheres', true);
@@ -7580,8 +7726,8 @@ class RegistrationAction extends PCLCloudAction {
             return true;
         }, (d) => { return true; });
         dialog.InsertTitle('Registration settings (Trimmed Iterative Closest Points)');
-        dialog.InsertValue(overlapLabel, 100);
-        dialog.InsertValue(maxiterationsLabel, 20);
+        dialog.InsertNumericValue(overlapLabel, 100);
+        dialog.InsertNumericValue(maxiterationsLabel, 20);
     }
 }
 //===================================================
@@ -7598,6 +7744,55 @@ class ExportPointCloudFileAction extends PCLCloudAction {
         FileExporter.ExportFile(this.GetPCLCloud().name + '.csv', this.GetPCLCloud().GetCSVData(), 'text/csv');
     }
 }
+/// <reference path="../../gui/controls/dialog.ts" />
+class SetupFilter extends Action {
+    constructor(application) {
+        super("[Icon:flash] Visual effect", "Setup visual effects for the scene rendering.");
+        this.application = application;
+    }
+    Trigger() {
+        let filter;
+        let edlTitle;
+        let useColors;
+        let expFactor;
+        let nbhDist;
+        let app = this.application;
+        let currentFilter = app.GetCurrentRenderingFilter();
+        let edlFilter = currentFilter;
+        let dialog = new Dialog((dlg) => {
+            let filterToUse = filter.GetValue();
+            if (filterToUse == SetupFilter.EDL)
+                app.ChangeRenderingFilter(ctx => { return new EDLFilter(ctx, useColors.GetValue(), expFactor.GetValue(), nbhDist.GetValue()); });
+            else
+                app.ChangeRenderingFilter(null);
+            return true;
+        }, (dialog) => {
+            return true;
+        });
+        function UpdateFieldsVisibility() {
+            usesEDL = filter.GetValue() == SetupFilter.EDL;
+            edlTitle.Show(usesEDL);
+            useColors.Show(usesEDL);
+            expFactor.Show(usesEDL);
+            nbhDist.Show(usesEDL);
+        }
+        // -------------------------------------
+        // EDL
+        let usesEDL = !!edlFilter;
+        filter = dialog.InsertChoice("Filter", [SetupFilter.NoFilter, SetupFilter.EDL], edlFilter ? 1 : 0);
+        edlTitle = dialog.InsertTitle("Eye Dome Lighting settings");
+        useColors = dialog.InsertCheckBox("Use colors", edlFilter ? edlFilter.withColors : true);
+        expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 4);
+        nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.25);
+        UpdateFieldsVisibility();
+        filter.OnValueChange(UpdateFieldsVisibility);
+    }
+    Enabled() {
+        return true;
+    }
+}
+SetupFilter.EDL = 'Eye Dome Lighting (EDL)';
+SetupFilter.NoFilter = 'None';
 /// <reference path="binarystream.ts" />
 class BinaryWriter extends BinaryStream {
     constructor(size) {
@@ -8741,9 +8936,11 @@ class SceneParsingHandler extends PCLGroupParsingHandler {
 /// <reference path="framebuffer.ts" />
 /// <reference path="../objects/scene.ts" />
 class EDLFilter {
-    constructor(context, withColors) {
+    constructor(context, withColors, expFactor = 4.0, neighborDist = 0.25) {
         this.context = context;
         this.withColors = withColors;
+        this.expFactor = expFactor;
+        this.neighborDist = neighborDist;
         this.Resize(new ScreenDimensions(this.context.renderingArea.width, this.context.renderingArea.height));
         this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
         this.shaders.Use();
@@ -8809,8 +9006,8 @@ class EDLFilter {
         gl.uniform1i(this.depth, 1);
         let width = this.context.renderingArea.width;
         let height = this.context.renderingArea.height;
-        gl.uniform1f(this.nbhDist, 0.25);
-        gl.uniform1f(this.expScale, 4.);
+        gl.uniform1f(this.nbhDist, this.neighborDist);
+        gl.uniform1f(this.expScale, this.expFactor);
         gl.uniform1f(this.zMin, camera.depthRange.min);
         gl.uniform1f(this.zMax, camera.depthRange.max);
         gl.uniform1f(this.width, width);
@@ -10446,6 +10643,7 @@ class SelectDrop {
 /// <reference path="app.ts" />
 /// <reference path="../controler/actions/cameracenter.ts" />
 /// <reference path="../controler/actions/controlerchoice.ts" />
+/// <reference path="../controler/actions/setupfilter.ts" />
 class Menu extends HideablePannel {
     constructor(application) {
         super('MenuToolbar', HandlePosition.Bottom);
@@ -10493,17 +10691,7 @@ class Menu extends HideablePannel {
         ], 0, 'Change the current working mode (how the mouse/keyboard are considered to interact with the scene)'));
         // ================================
         // Eye dome lighting
-        this.toolbar.AddControl(new SelectDrop("[Icon:flash] Effets", [
-            new SimpleAction('No effect', function () {
-                application.ChangeRenderingFilter(null);
-            }),
-            new SimpleAction('Colored EDL', function () {
-                application.ChangeRenderingFilter((ctx) => new EDLFilter(ctx, true));
-            }, "Eye Dome Lighting with colors."),
-            new SimpleAction('Raw EDL', function () {
-                application.ChangeRenderingFilter((ctx) => new EDLFilter(ctx, false));
-            }, "Eye Dome Lighting with no color at all.")
-        ], 0, 'Select visual effects to apply.'));
+        this.toolbar.AddControl(new Button(new SetupFilter(application)));
         // ================================
         // Help menu
         this.toolbar.AddControl(new Button(new SimpleAction('[Icon:question-circle]', function () {
@@ -10890,6 +11078,9 @@ class PCLApp {
         // TODO : fix bug ... for some reason, we need to render twice when activating EDL
         this.RefreshRendering();
         this.RefreshRendering();
+    }
+    GetCurrentRenderingFilter() {
+        return this.sceneRenderer.activeFilter;
     }
     RegisterShortCut(action) {
         let shortcut = action.GetShortCut();

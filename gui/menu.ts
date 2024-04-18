@@ -6,6 +6,7 @@
 /// <reference path="app.ts" />
 /// <reference path="../controler/actions/cameracenter.ts" />
 /// <reference path="../controler/actions/controlerchoice.ts" />
+/// <reference path="../controler/actions/setupfilter.ts" />
 
 
 class Menu extends HideablePannel implements ActionsProvider, SelectionChangeHandler {
@@ -91,21 +92,7 @@ class Menu extends HideablePannel implements ActionsProvider, SelectionChangeHan
 
 		// ================================
 		// Eye dome lighting
-		this.toolbar.AddControl(new SelectDrop(
-			"[Icon:flash] Effets",
-			[
-				new SimpleAction('No effect', function () {
-					application.ChangeRenderingFilter(null);
-				}),
-				new SimpleAction('Colored EDL', function () {
-					application.ChangeRenderingFilter((ctx) => new EDLFilter(ctx, true));
-				},"Eye Dome Lighting with colors."),
-				new SimpleAction('Raw EDL', function () {
-					application.ChangeRenderingFilter((ctx) => new EDLFilter(ctx, false));
-				},"Eye Dome Lighting with no color at all.")
-			],
-			0,
-			'Select visual effects to apply.'));
+		this.toolbar.AddControl(new Button(new SetupFilter(application)));
 
 		// ================================
 		// Help menu
