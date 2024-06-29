@@ -7203,7 +7203,7 @@ class RansacDetectionAction extends PCLCloudAction {
         super(cloud, 'Detect shapes ...', 'Try to detect as many shapes as possible in the selected point cloud (using the RANSAC algorithm)');
     }
     Enabled() {
-        return this.GetCloud().HasNormals();
+        return true;
     }
     Trigger() {
         let self = this;
@@ -7240,7 +7240,15 @@ class RansacDetectionAction extends PCLCloudAction {
         this.ransac = new Ransac(this.GetCloud(), generators, nbFailure, noise);
         this.progress = new ProgressBar(() => self.Stop());
         this.progress.Initialize('Dicovering shapes in the point cloud', this);
-        this.LaunchNewRansacStep();
+        if (!this.GetCloud().HasNormals()) {
+            let k = 30;
+            let ncomputer = new NormalsComputer(this.GetCloud(), k);
+            let nharmonizer = new NormalsHarmonizer(this.GetCloud(), k);
+            ncomputer.SetNext(nharmonizer).SetNext(() => self.LaunchNewRansacStep());
+            ncomputer.Start();
+        }
+        else
+            this.LaunchNewRansacStep();
         return true;
     }
     Stopable() {
