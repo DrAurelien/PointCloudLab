@@ -124,14 +124,14 @@ class PCLParser {
 	}
 
 	private TryGetTokenValue(line: string, prefix: string): string {
-		if (line.substr(0, prefix.length) === prefix) {
-			return line.substr(prefix.length);
+		if (line.substring(0, prefix.length) === prefix) {
+			return line.substring(prefix.length);
 		}
 		return null;
 	}
 
 	GetStringValue(): string {
-		return this.reader.GetAsciiUntil(['\n']);
+		return this.reader.GetAsciiLine();
 	}
 
 	private static GetTokenMap() {
@@ -152,7 +152,7 @@ class PCLParser {
 
 		this.reader.Ignore(['\n']);
 
-		this.line = this.reader.GetAsciiUntil(['\n']);
+		this.line = this.reader.GetAsciiLine();
 
 		let tokenmap = PCLParser.GetTokenMap();
 
