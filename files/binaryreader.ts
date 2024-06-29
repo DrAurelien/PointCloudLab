@@ -2,6 +2,10 @@
 
 
 class BinaryReader extends BinaryStream {
+	private static Whitespaces : string[] = [' ', '\t'];
+	private static Linebreaks : string[] = ['\n', '\r\n'];
+	private static Allwhitespaces : string[] = (() =>{ return BinaryReader.Whitespaces.concat(BinaryReader.Linebreaks);})();
+
 	constructor(buffer: ArrayBuffer) {
 		super(buffer);
 	}
@@ -18,21 +22,20 @@ class BinaryReader extends BinaryStream {
 	}
 
 	GetAsciiLine(): string {
-		return this.GetAsciiUntil(['\r\n', '\n']);
+		let result = this.GetAsciiUntil(BinaryReader.Linebreaks);
+		this.Ignore(BinaryReader.Linebreaks);
+		return result;
 	}
 
-	GetAsciiWord(onSameLine: boolean): string {
-		var stops = [' '];
-		if (onSameLine === false) {
-			stops.push('\n');
-			stops.push('\r\n');
-		}
-		return this.GetAsciiUntil(stops);
+	GetAsciiWord(stayOnSameLine: boolean = false): string {
+		let result = this.GetAsciiUntil(BinaryReader.Allwhitespaces);
+		this.Ignore(stayOnSameLine ? BinaryReader.Whitespaces : BinaryReader.Allwhitespaces);
+		return result;
 	}
 
 	GetAsciiUntil(stops: string[]): string {
 		let result = '';
-		while (!this.Eof() && this.Ignore(stops) == 0) {
+		while (!this.Eof() && !this.GetNextMatchingAsciiStr(stops, false)) {
 			result += this.GetNextAsciiChar();
 		}
 		return result;
@@ -47,6 +50,11 @@ class BinaryReader extends BinaryStream {
 				count++;
 		} while (match)
 		return count;
+	}
+
+	IgnoreWhiteSpaces(includeLineBreaks: boolean = true): number
+	{
+		return this.Ignore(includeLineBreaks ? BinaryReader.Allwhitespaces : BinaryReader.Whitespaces);
 	}
 
 	GetNextAsciiStr(length: number = 1, move: boolean = true): string {

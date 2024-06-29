@@ -1631,19 +1631,18 @@ class BinaryReader extends BinaryStream {
         return count;
     }
     GetAsciiLine() {
-        return this.GetAsciiUntil(['\r\n', '\n']);
+        let result = this.GetAsciiUntil(BinaryReader.Linebreaks);
+        this.Ignore(BinaryReader.Linebreaks);
+        return result;
     }
-    GetAsciiWord(onSameLine) {
-        var stops = [' '];
-        if (onSameLine === false) {
-            stops.push('\n');
-            stops.push('\r\n');
-        }
-        return this.GetAsciiUntil(stops);
+    GetAsciiWord(stayOnSameLine = false) {
+        let result = this.GetAsciiUntil(BinaryReader.Allwhitespaces);
+        this.Ignore(stayOnSameLine ? BinaryReader.Whitespaces : BinaryReader.Allwhitespaces);
+        return result;
     }
     GetAsciiUntil(stops) {
         let result = '';
-        while (!this.Eof() && this.Ignore(stops) == 0) {
+        while (!this.Eof() && !this.GetNextMatchingAsciiStr(stops, false)) {
             result += this.GetNextAsciiChar();
         }
         return result;
@@ -1657,6 +1656,9 @@ class BinaryReader extends BinaryStream {
                 count++;
         } while (match);
         return count;
+    }
+    IgnoreWhiteSpaces(includeLineBreaks = true) {
+        return this.Ignore(includeLineBreaks ? BinaryReader.Allwhitespaces : BinaryReader.Whitespaces);
     }
     GetNextAsciiStr(length = 1, move = true) {
         let result = '';
@@ -1725,6 +1727,9 @@ class BinaryReader extends BinaryStream {
         return result;
     }
 }
+BinaryReader.Whitespaces = [' ', '\t'];
+BinaryReader.Linebreaks = ['\n', '\r\n'];
+BinaryReader.Allwhitespaces = (() => { return BinaryReader.Whitespaces.concat(BinaryReader.Linebreaks); })();
 /// <reference path="../maths/vector.ts" />
 /// <reference path="binaryreader.ts" />
 /// <reference path="binaryreader.ts" />
@@ -1811,13 +1816,13 @@ class PCLParser {
         this.line = '';
     }
     TryGetTokenValue(line, prefix) {
-        if (line.substr(0, prefix.length) === prefix) {
-            return line.substr(prefix.length);
+        if (line.substring(0, prefix.length) === prefix) {
+            return line.substring(prefix.length);
         }
         return null;
     }
     GetStringValue() {
-        return this.reader.GetAsciiUntil(['\n']);
+        return this.reader.GetAsciiLine();
     }
     static GetTokenMap() {
         if (!PCLParser.tokenmap) {
@@ -1834,7 +1839,7 @@ class PCLParser {
             this.Error('unexpected end of file');
         }
         this.reader.Ignore(['\n']);
-        this.line = this.reader.GetAsciiUntil(['\n']);
+        this.line = this.reader.GetAsciiLine();
         let tokenmap = PCLParser.GetTokenMap();
         let value;
         for (let tokenprfix in tokenmap) {
@@ -7983,6 +7988,111 @@ class CSVParser extends IterativeLongProcess {
 CSVParser.PointCoordinates = ['x', 'y', 'z'];
 CSVParser.NormalCoordinates = ['nx', 'ny', 'nz'];
 /// <reference path="fileloader.ts" />
+/// <reference path="binaryreader.ts" />
+/// <reference path="../model/pointcloud.ts" />
+/// <reference path="../model/mesh.ts" />
+/// <reference path="../gui/objects/pclpointcloud.ts" />
+/// <reference path="../gui/objects/pclmesh.ts" />
+var OBJTokenType;
+(function (OBJTokenType) {
+    OBJTokenType[OBJTokenType["Vertex"] = 0] = "Vertex";
+    OBJTokenType[OBJTokenType["Face"] = 1] = "Face";
+    OBJTokenType[OBJTokenType["Comment"] = 2] = "Comment";
+    OBJTokenType[OBJTokenType["Unknown"] = 3] = "Unknown";
+})(OBJTokenType || (OBJTokenType = {}));
+//////////////////////////////////////////
+// PLY File Loader
+//////////////////////////////////////////
+class ObjLoader extends FileLoader {
+    constructor(content) {
+        super();
+        this.reader = new BinaryReader(content);
+        this.vertices = new PointCloud();
+        this.mesh = new Mesh(this.vertices);
+    }
+    static GetTokenMap() {
+        if (!ObjLoader.tokenmap) {
+            ObjLoader.tokenmap = new Map();
+            ObjLoader.tokenmap["v"] = OBJTokenType.Vertex;
+            ObjLoader.tokenmap["f"] = OBJTokenType.Face;
+            ObjLoader.tokenmap["#"] = OBJTokenType.Comment;
+        }
+        return ObjLoader.tokenmap;
+    }
+    GetNextToken() {
+        this.reader.IgnoreWhiteSpaces();
+        let keyword = this.reader.GetAsciiWord(false);
+        if (keyword === '')
+            return null;
+        let tokens = ObjLoader.GetTokenMap();
+        if (!(keyword in tokens))
+            return OBJTokenType.Unknown;
+        return tokens[keyword];
+    }
+    GetNextInt() {
+        let valuestr = this.reader.GetAsciiWord(true);
+        if (valuestr === '')
+            return null;
+        return parseInt(valuestr, 10);
+    }
+    GetNextFloat() {
+        let valuestr = this.reader.GetAsciiWord(true);
+        if (valuestr === '')
+            return null;
+        return parseFloat(valuestr);
+    }
+    Load(onloaded, onerror) {
+        try {
+            let token;
+            while ((token = this.GetNextToken()) !== null) {
+                switch (token) {
+                    case OBJTokenType.Vertex:
+                        this.PushNewVertex();
+                        break;
+                    case OBJTokenType.Face:
+                        this.PushNewFace();
+                        break;
+                    case OBJTokenType.Comment:
+                    default:
+                        this.reader.GetAsciiLine();
+                        break;
+                }
+            }
+            this.mesh.ComputeNormals((m) => {
+                m.ComputeOctree(onloaded(new PCLMesh(m)));
+                return true;
+            });
+        }
+        catch (error) {
+            onerror(error);
+        }
+    }
+    PushNewVertex() {
+        let coordinates = [];
+        let coord = null;
+        while ((coord = this.GetNextFloat()) !== null)
+            coordinates.push(coord);
+        if (coordinates.length == 4) {
+            let w = coordinates[3];
+            if (w === 0)
+                throw "Unexpected null homogeneous coordinate.";
+            for (let index = 0; index < 3; index++)
+                coordinates[index] /= w;
+            coordinates = coordinates.slice(0, 3);
+        }
+        if (coordinates.length < 3)
+            throw "Expected 3 coordinates, got " + coordinates.length;
+        return this.vertices.PushPoint(new Vector(coordinates));
+    }
+    PushNewFace() {
+        let indices = [];
+        let index = null;
+        while ((index = this.GetNextInt()) !== null)
+            indices.push(index - 1);
+        return this.mesh.PushFace(indices);
+    }
+}
+/// <reference path="fileloader.ts" />
 /// <reference path="pclserializer.ts" />
 /// <reference path="binaryreader.ts" />
 /// <reference path="../tools/longprocess.ts" />
@@ -10543,6 +10653,7 @@ class ProgressBar {
 /// <reference path="../../files/csvloader.ts" />
 /// <reference path="../../files/plyloader.ts" />
 /// <reference path="../../files/pclloader.ts" />
+/// <reference path="../../files/objloader.ts" />
 class FileOpener extends Button {
     constructor(label, filehandler, hintMessage) {
         super(new SimpleAction(label, () => this.UploadFile(), hintMessage));
@@ -10559,7 +10670,7 @@ class FileOpener extends Button {
     }
     UploadFile() {
         this.input.value = null;
-        this.input.accept = '.ply,.csv,.pcld';
+        this.input.accept = '.ply,.csv,.pcld,.obj';
         this.input.click();
     }
     LoadFile(file) {
@@ -10601,6 +10712,9 @@ class FileOpener extends Button {
                     break;
                 case 'pcld':
                     loader = new PCLLoader(fileContent);
+                    break;
+                case 'obj':
+                    loader = new ObjLoader(fileContent);
                     break;
                 default:
                     alert('The file extension \"' + extension + '\" is not handled.');
