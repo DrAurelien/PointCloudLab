@@ -127,9 +127,9 @@ abstract class LongProcess extends Process implements Stopable {
 				progress.Finalize();
 			}
 
-			if (this.stoped) {
-				if (this.onstoped) {
-					this.onstoped();
+			if (self.stoped) {
+				if (self.onstoped) {
+					self.onstoped();
 				}
 			}
 			else {
