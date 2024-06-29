@@ -59,7 +59,7 @@ class RansacDetectionAction extends PCLCloudAction implements Stopable {
 	}
 
 	Enabled() {
-		return this.GetCloud().HasNormals();
+		return true;
 	}
 
 	Trigger() {
@@ -100,11 +100,21 @@ class RansacDetectionAction extends PCLCloudAction implements Stopable {
 
 		let self = this;
 		this.stoped = false;
+
 		this.ransac = new Ransac(this.GetCloud(), generators, nbFailure, noise);
 		this.progress = new ProgressBar(() => self.Stop());
 		this.progress.Initialize('Dicovering shapes in the point cloud', this);
 
-		this.LaunchNewRansacStep();
+		if(!this.GetCloud().HasNormals())
+		{
+			let k = 30;
+			let ncomputer = new NormalsComputer(this.GetCloud(), k);
+			let nharmonizer = new NormalsHarmonizer(this.GetCloud(), k);
+			ncomputer.SetNext(nharmonizer).SetNext(()=>self.LaunchNewRansacStep());
+			ncomputer.Start();
+		}
+		else
+			this.LaunchNewRansacStep();
 
 		return true;
 	}
