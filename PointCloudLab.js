@@ -1647,6 +1647,9 @@ class BinaryReader extends BinaryStream {
         }
         return result;
     }
+    IgnoreBytes(count) {
+        this.cursor += count;
+    }
     Ignore(words) {
         let count = 0;
         let match = null;
@@ -8538,6 +8541,180 @@ class Finalizer extends Process {
         }
     }
 }
+/// <reference path="fileloader.ts" />
+/// <reference path="binaryreader.ts" />
+/// <reference path="../model/pointcloud.ts" />
+/// <reference path="../model/mesh.ts" />
+/// <reference path="../gui/objects/pclpointcloud.ts" />
+/// <reference path="../gui/objects/pclmesh.ts" />
+/// <reference path="../gui/objects/pclgroup.ts" />
+var STLTokenType;
+(function (STLTokenType) {
+    STLTokenType[STLTokenType["Solid"] = 0] = "Solid";
+    STLTokenType[STLTokenType["Vertex"] = 1] = "Vertex";
+    STLTokenType[STLTokenType["Normal"] = 2] = "Normal";
+    STLTokenType[STLTokenType["Facet"] = 3] = "Facet";
+    STLTokenType[STLTokenType["Outer"] = 4] = "Outer";
+    STLTokenType[STLTokenType["EndFacet"] = 5] = "EndFacet";
+    STLTokenType[STLTokenType["Loop"] = 6] = "Loop";
+    STLTokenType[STLTokenType["EndLoop"] = 7] = "EndLoop";
+    STLTokenType[STLTokenType["EndSolid"] = 8] = "EndSolid";
+    STLTokenType[STLTokenType["Unknown"] = 9] = "Unknown";
+})(STLTokenType || (STLTokenType = {}));
+//////////////////////////////////////////
+// PLY File Loader
+//////////////////////////////////////////
+class StlLoader extends FileLoader {
+    constructor(content) {
+        super();
+        this.reader = new BinaryReader(content);
+    }
+    static GetTokenMap() {
+        if (!StlLoader.tokenmap) {
+            StlLoader.tokenmap = new Map();
+            StlLoader.tokenmap["solid"] = STLTokenType.Solid;
+            StlLoader.tokenmap["facet"] = STLTokenType.Facet;
+            StlLoader.tokenmap["normal"] = STLTokenType.Normal;
+            StlLoader.tokenmap["outer"] = STLTokenType.Outer;
+            StlLoader.tokenmap["loop"] = STLTokenType.Loop;
+            StlLoader.tokenmap["vertex"] = STLTokenType.Vertex;
+            StlLoader.tokenmap["endloop"] = STLTokenType.EndLoop;
+            StlLoader.tokenmap["endfacet"] = STLTokenType.EndFacet;
+            StlLoader.tokenmap["endsolid"] = STLTokenType.EndSolid;
+        }
+        return StlLoader.tokenmap;
+    }
+    GetNextToken() {
+        this.reader.IgnoreWhiteSpaces();
+        let keyword = this.reader.GetAsciiWord(false);
+        if (keyword === '')
+            return null;
+        let tokens = StlLoader.GetTokenMap();
+        if (!(keyword in tokens))
+            return STLTokenType.Unknown;
+        return tokens[keyword];
+    }
+    GetNextName() {
+        return this.reader.GetAsciiWord(true);
+    }
+    GetNextFloat() {
+        let valuestr = this.reader.GetAsciiWord(true);
+        if (valuestr === '')
+            return null;
+        return parseFloat(valuestr);
+    }
+    GetNextCoords() {
+        let coordinates = [];
+        let coord = null;
+        while ((coord = this.GetNextFloat()) !== null)
+            coordinates.push(coord);
+        return coordinates;
+    }
+    Load(onloaded, onerror) {
+        try {
+            let meshes;
+            if (this.IsASCII())
+                meshes = this.LoadASCII();
+            else
+                meshes = [this.LoadBinary()];
+            if (meshes.length > 1)
+                throw "Multiple solids not supported in STL files import";
+            else if (meshes.length == 0)
+                throw 'No meshes loaded from STL file';
+            let result = meshes[0];
+            result.mesh.ComputeOctree(onloaded(result));
+        }
+        catch (error) {
+            onerror(error);
+        }
+    }
+    IsASCII() {
+        let firstWord = this.reader.GetNextAsciiStr(5, false) || '';
+        return firstWord.toLowerCase() === 'solid';
+    }
+    LoadASCII() {
+        let meshes = [];
+        while (!this.reader.Eof()) {
+            let mesh = this.ParseNextSolidASCII();
+            if (mesh)
+                meshes.push(mesh);
+        }
+        return meshes;
+    }
+    GetBinaryVector() {
+        return new Vector([this.reader.GetNextFloat32(), this.reader.GetNextFloat32(), this.reader.GetNextFloat32()]);
+    }
+    LoadBinary() {
+        this.reader.IgnoreBytes(80);
+        let vertices = new PointCloud;
+        let mesh = new Mesh(vertices);
+        let pclMesh = new PCLMesh(mesh);
+        let nbtriangles = this.reader.GetNextInt32();
+        for (let index = 0; index < nbtriangles; index++) {
+            let normal = this.GetBinaryVector();
+            normal.Normalize();
+            for (let vertex = 0; vertex < 3; vertex++) {
+                vertices.PushPoint(this.GetBinaryVector());
+                vertices.PushNormal(normal);
+            }
+            mesh.PushFace([3 * index, 3 * index + 1, 3 * index + 2]);
+            this.reader.IgnoreBytes(2);
+        }
+        return pclMesh;
+    }
+    ParseNextSolidASCII() {
+        let token = this.GetNextToken();
+        if (token == null)
+            return null;
+        if (token !== STLTokenType.Solid)
+            throw 'Unexpected STL token while loading STL solid.';
+        let vertices = new PointCloud;
+        let mesh = new Mesh(vertices);
+        let pclMesh = new PCLMesh(mesh);
+        pclMesh.name = this.GetNextName();
+        while ((token = this.GetNextToken()) !== null) {
+            if (token === STLTokenType.EndSolid) {
+                if (this.GetNextName() != pclMesh.name)
+                    throw 'STL architecture error : ending a solid that is not the current solid.';
+                return pclMesh;
+            }
+            if (token !== STLTokenType.Facet)
+                throw 'Unexpect STL token while parsing solid facets.';
+            this.ParseNextFacetASCII(mesh);
+        }
+        throw 'STL architecture error : endsolid has not been called.';
+    }
+    ParseNextFacetASCII(mesh) {
+        let token = this.GetNextToken();
+        if (token !== STLTokenType.Normal)
+            throw 'Facet normal is not provided.';
+        let coords = this.GetNextCoords();
+        if (coords.length != 3)
+            throw 'Expected 3 coordinates for the facet normal, got ' + coords.length;
+        let normal = new Vector(coords);
+        normal.Normalize();
+        if (this.GetNextToken() !== STLTokenType.Outer || this.GetNextToken() !== STLTokenType.Loop)
+            throw 'Unexpect STL token while parsing facet.';
+        let vertices = [];
+        while ((token = this.GetNextToken()) !== null) {
+            if (token == STLTokenType.EndLoop)
+                break;
+            if (token != STLTokenType.Vertex)
+                throw 'Unexpect STL token while parsing facet loop.';
+            let coords = this.GetNextCoords();
+            if (coords.length != 3)
+                throw 'Expected 3 coordinates for the facet vertex, got ' + coords.length;
+            vertices.push(mesh.pointcloud.Size());
+            mesh.pointcloud.PushPoint(new Vector(coords));
+            mesh.pointcloud.PushNormal(normal);
+        }
+        if (this.GetNextToken() !== STLTokenType.EndFacet)
+            throw 'STL architecture error : endfacet has not been called.';
+        if (vertices.length != 3)
+            throw 'Cannot suport non triangular STL meshes (got ' + vertices.length + ' vertices instead of 3)';
+        mesh.PushFace(vertices);
+    }
+}
 class Interval {
     constructor() {
         this.min = null;
@@ -10654,6 +10831,7 @@ class ProgressBar {
 /// <reference path="../../files/plyloader.ts" />
 /// <reference path="../../files/pclloader.ts" />
 /// <reference path="../../files/objloader.ts" />
+/// <reference path="../../files/stlloader.ts" />
 class FileOpener extends Button {
     constructor(label, filehandler, hintMessage) {
         super(new SimpleAction(label, () => this.UploadFile(), hintMessage));
@@ -10670,7 +10848,8 @@ class FileOpener extends Button {
     }
     UploadFile() {
         this.input.value = null;
-        this.input.accept = '.ply,.csv,.pcld,.obj';
+        this.input.accept;
+        this.input.accept = '.ply,.csv,.pcld,.obj,.stl';
         this.input.click();
     }
     LoadFile(file) {
@@ -10715,6 +10894,9 @@ class FileOpener extends Button {
                     break;
                 case 'obj':
                     loader = new ObjLoader(fileContent);
+                    break;
+                case 'stl':
+                    loader = new StlLoader(fileContent);
                     break;
                 default:
                     alert('The file extension \"' + extension + '\" is not handled.');

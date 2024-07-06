@@ -6,6 +6,7 @@
 /// <reference path="../../files/plyloader.ts" />
 /// <reference path="../../files/pclloader.ts" />
 /// <reference path="../../files/objloader.ts" />
+/// <reference path="../../files/stlloader.ts" />
 
 
 class FileOpener extends Button {
@@ -26,7 +27,8 @@ class FileOpener extends Button {
 
 	private UploadFile() {
 		this.input.value = null;
-		this.input.accept = '.ply,.csv,.pcld,.obj';
+		this.input.accept
+		this.input.accept = '.ply,.csv,.pcld,.obj,.stl';
 		this.input.click();
 	}
 
@@ -68,6 +70,7 @@ class FileOpener extends Button {
 				case 'csv': loader = new CsvLoader(fileContent); break;
 				case 'pcld': loader = new PCLLoader(fileContent); break;
 				case 'obj': loader = new ObjLoader(fileContent); break;
+				case 'stl': loader = new StlLoader(fileContent); break;
 				default:
 					alert('The file extension \"' + extension + '\" is not handled.');
 					break;
