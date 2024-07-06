@@ -41,6 +41,10 @@ class BinaryReader extends BinaryStream {
 		return result;
 	}
 
+	IgnoreBytes(count: number) {
+		this.cursor += count;
+	}
+
 	Ignore(words: string[]): number {
 		let count = 0;
 		let match = null;

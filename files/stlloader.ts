@@ -84,36 +84,72 @@ class StlLoader extends FileLoader {
 
 	Load(onloaded: FileLoaderResultHandler, onerror: FileLoaderErrorHandler) {
 		try {
-			let meshes : PCLMesh[] = [];
-			while(!this.reader.Eof())
-			{
-				let mesh = this.ParseNextSolid();
-				if(mesh)
-					meshes.push(mesh);
-			}
-			let result : PCLGroup | PCLMesh;
-			if(meshes.length > 0)
-			{
-				let group = new PCLGroup("STL file");
-				for(let index=0; index<meshes.length; index++)
-					group.Add(meshes[index]);
-				result = group;
-			}
-			else if(meshes.length == 0)
-			{
-				result = meshes[0]
-			}
+			let meshes : PCLMesh[];
+			if(this.IsASCII())
+				meshes = this.LoadASCII();
 			else
+				meshes = [this.LoadBinary()];
+			if(meshes.length > 1)
+				throw "Multiple solids not supported in STL files import";
+			else if(meshes.length == 0)
 				throw 'No meshes loaded from STL file';
 
-			onloaded(result);
+			let result = meshes[0];
+			result.mesh.ComputeOctree(onloaded(result));
 		}
 		catch (error) {
 			onerror(error);
 		}
 	}
 
-	private ParseNextSolid() : PCLMesh
+	IsASCII() : boolean
+	{
+		let firstWord = this.reader.GetNextAsciiStr(5, false) || '';
+		return firstWord.toLowerCase() === 'solid';
+	}
+
+	LoadASCII() : PCLMesh[] 
+	{
+		let meshes : PCLMesh[] = [];
+		while(!this.reader.Eof())
+		{
+			let mesh = this.ParseNextSolidASCII();
+			if(mesh)
+				meshes.push(mesh);
+		}
+		return meshes;
+	}
+
+	GetBinaryVector() : Vector {
+		return new Vector([this.reader.GetNextFloat32(), this.reader.GetNextFloat32(), this.reader.GetNextFloat32()]);
+	}
+
+	LoadBinary() : PCLMesh 
+	{
+		this.reader.IgnoreBytes(80);
+
+		let vertices = new PointCloud;
+		let mesh = new Mesh(vertices);
+		let pclMesh = new PCLMesh(mesh);
+
+		let nbtriangles = this.reader.GetNextInt32();
+		for(let index=0; index<nbtriangles; index++)
+		{
+			let normal = this.GetBinaryVector();
+			normal.Normalize();
+			for(let vertex=0; vertex < 3; vertex++)
+			{
+				vertices.PushPoint(this.GetBinaryVector());
+				vertices.PushNormal(normal);
+			}
+			mesh.PushFace([3*index, 3*index+1, 3*index+2]);
+			this.reader.IgnoreBytes(2);
+		}
+
+		return pclMesh;
+	}
+
+	private ParseNextSolidASCII() : PCLMesh
 	{
 		let token = this.GetNextToken();
 		if(token == null)
@@ -138,13 +174,13 @@ class StlLoader extends FileLoader {
 			if(token !== STLTokenType.Facet)
 				throw 'Unexpect STL token while parsing solid facets.';
 
-			this.ParseNextFacet(mesh);
+			this.ParseNextFacetASCII(mesh);
 		}
 
 		throw 'STL architecture error : endsolid has not been called.'
 	}
 
-	private ParseNextFacet(mesh : Mesh)
+	private ParseNextFacetASCII(mesh : Mesh)
 	{
 		let token = this.GetNextToken();
 		if(token !== STLTokenType.Normal)
