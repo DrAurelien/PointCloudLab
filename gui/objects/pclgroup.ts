@@ -39,6 +39,11 @@ class PCLGroup extends PCLNode implements PCLContainer {
 		this.SetFolding(!this.folded);
 	}
 
+	ShouldDraw(drawingContext: DrawingContext)
+	{
+		return true;
+	}
+
 	DrawNode(drawingContext: DrawingContext): void {
 		if (this.visible) {
 			for (var index = 0; index < this.children.length; index++) {

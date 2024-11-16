@@ -34,6 +34,7 @@ class DrawingContext {
 	useuint: boolean;
 	//
 	bboxcolor: number[];
+	showSelectionOnly : boolean;
 
 	constructor(public renderingArea: HTMLCanvasElement) {
 		this.rendering = new RenderingType();
@@ -84,6 +85,8 @@ class DrawingContext {
 		this.usenormals = this.shaders.Uniform("UseNormals");
 
 		this.bboxcolor = [1, 1, 1];
+
+		this.showSelectionOnly = false;
 	}
 
 	EnableNormals(b): boolean {

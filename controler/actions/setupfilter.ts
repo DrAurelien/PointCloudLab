@@ -17,14 +17,14 @@ class SetupFilter extends Action {
 		let nbhDist : DialogItems.NumericValue;
 		let app = this.application;
 		let currentFilter = app.GetCurrentRenderingFilter();
-		let edlFilter = currentFilter as EDLFilter;
+		let edlFilter = currentFilter instanceof EDLFilter ? currentFilter as EDLFilter : null;
 
 		let dialog = new Dialog((dlg : Dialog) => {
 			let filterToUse = filter.GetValue();
 			if(filterToUse == SetupFilter.EDL)
 				app.ChangeRenderingFilter(ctx => { return new EDLFilter(ctx, useColors.GetValue(), expFactor.GetValue(), nbhDist.GetValue());});
 			else
-				app.ChangeRenderingFilter(null);
+				app.ChangeRenderingFilter(ctx => { return new GlowFilter(ctx);});
 			return true;
 		},
 		(dialog) =>{

@@ -14,7 +14,7 @@
 interface IRenderingFilter
 {
 	Dispose();
-	CollectRendering();
+	CollectRendering(scene : Scene);
 	Render(camera: Camera, scene: Scene);
 	Resize(size: ScreenDimensions);
 }
@@ -39,6 +39,8 @@ class Renderer implements Control, IRenderingTypeListener {
 		this.camera = new Camera(this.drawingcontext);
 		this.activeFilter = null;
 		this.drawingcontext.rendering.Register(this);
+
+		this.activeFilter = new GlowFilter(this.drawingcontext);
 	}
 
 	SetFilter(filter : IRenderingFilter = null)
@@ -77,12 +79,12 @@ class Renderer implements Control, IRenderingTypeListener {
 		//Perform rendering
 		if (scene) {
 			if(this.activeFilter)
-				this.activeFilter.CollectRendering();
-
-			scene.Draw(this.drawingcontext);
-
-			if(this.activeFilter)
+			{
+				this.activeFilter.CollectRendering(scene);
 				this.activeFilter.Render(this.camera, scene);
+			}
+			else
+				scene.Draw(this.drawingcontext);
 		}
 	}
 

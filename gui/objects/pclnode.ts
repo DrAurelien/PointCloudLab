@@ -56,11 +56,17 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		this.pendingChanges = null;
 	}
 
+	ShouldDraw(drawingContext: DrawingContext)
+	{
+		return !drawingContext.showSelectionOnly || this.selected;
+	}
+
 	Draw(drawingContext: DrawingContext): void {
 		if (this.visible) {
-			this.DrawNode(drawingContext);
+			if(this.ShouldDraw(drawingContext))
+				this.DrawNode(drawingContext);
 
-			if (this.selected) {
+			if (!drawingContext.showSelectionOnly && this.selected) {
 				BoundingBoxDrawing.Draw(this.GetBoundingBox(), drawingContext);
 			}
 		}
