@@ -62,6 +62,11 @@ class EDLFilter implements IRenderingFilter
 		this.context.gl.enableVertexAttribArray(this.uv);
 	}
 
+	Clone() : IRenderingFilter
+	{
+		return new EDLFilter(this.context, this.withColors, this.withShading, this.expFactor, this.neighborDist);
+	}
+
 	Resize(size: ScreenDimensions)
 	{
 		if(this.fbo)

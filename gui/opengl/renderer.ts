@@ -17,6 +17,7 @@ interface IRenderingFilter
 	CollectRendering(scene : Scene);
 	Render(camera: Camera, scene: Scene);
 	Resize(size: ScreenDimensions);
+	Clone() : IRenderingFilter;
 }
 
 interface IRenderingFilterFactory

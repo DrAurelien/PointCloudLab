@@ -68,6 +68,11 @@ class GlowFilter implements IRenderingFilter
 		this.selectionFBO.DepthTexture();
 	}
 
+	Clone() : IRenderingFilter
+	{
+		return new GlowFilter(this.context);
+	}
+
 	Dispose()
 	{
 		this.sceneFBO.Activate(false);

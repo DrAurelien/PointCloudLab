@@ -23,7 +23,7 @@ class SetupFilter extends Action {
 		let nbhDist : DialogItems.NumericValue;
 		let app = this.application;
 		let initialState ={
-			filter : app.GetCurrentRenderingFilter(),
+			filter : app.GetCurrentRenderingFilter().Clone(),
 			showSelectionBox : app.sceneRenderer.drawingcontext.showselectionbbox
 		};
 		let edlFilter = initialState.filter instanceof EDLFilter ? initialState.filter as EDLFilter : null;
@@ -91,8 +91,8 @@ class SetupFilter extends Action {
 		}
 		edlSettingsTitle = dialog.InsertTitle("Eye Dome Lighting settings");
 		edlColors = dialog.InsertChoice("Use colors", [SetupFilter.EDLNoColor, SetupFilter.EDLFlatColor, SetupFilter.EDLShadedColor], currentEDLColor);
-		expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 4);
-		nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.25);
+		expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 6);
+		nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.15);
 		UpdateFieldsVisibility();
 
 		let settings : DialogItems.IDialogValue[]= [
