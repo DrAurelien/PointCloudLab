@@ -14,7 +14,7 @@ class EDLFilter implements IRenderingFilter
 	private zMax : WebGLUniformLocation;
 	private width : WebGLUniformLocation;
 	private height : WebGLUniformLocation;
-	private useColors : WebGLUniformLocation;;
+	private useColors : WebGLUniformLocation;
 	private nbhPositions : Float32Array;
 	private points : FloatArrayBuffer;
 	private textCoords : FloatArrayBuffer;
@@ -23,7 +23,7 @@ class EDLFilter implements IRenderingFilter
 	private uv : number;
 
 
-	constructor(private context: DrawingContext, public withColors:boolean, public expFactor:number=4.0, public neighborDist:number=0.25)
+	constructor(private context: DrawingContext, public withColors:boolean, public withShading:boolean, public expFactor:number=4.0, public neighborDist:number=0.25)
 	{
 		this.Resize(new ScreenDimensions(this.context.renderingArea.width,this.context.renderingArea.height));
 		this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
@@ -83,8 +83,10 @@ class EDLFilter implements IRenderingFilter
 		let gl = this.context.gl;
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-		
+
+		let allowShading = this.context.AllowShading(this.withShading);
 		scene.Draw(this.context);
+		this.context.AllowShading(allowShading);
 	}
 
 	Render(camera: Camera, scene: Scene)

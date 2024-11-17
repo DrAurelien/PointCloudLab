@@ -7,8 +7,9 @@ class GlowFilter implements IRenderingFilter
 	selectionFBO : FrameBuffer;
 	shaders : Shaders;
 
-	private color : WebGLUniformLocation;
-	private depth : WebGLUniformLocation;
+	private targetcolor : WebGLUniformLocation;
+	private targetdepth : WebGLUniformLocation;
+	private selectiondepth : WebGLUniformLocation;
 	private width : WebGLUniformLocation;
 	private height : WebGLUniformLocation;
 	private points : FloatArrayBuffer;
@@ -23,8 +24,9 @@ class GlowFilter implements IRenderingFilter
 		this.Resize(new ScreenDimensions(this.context.renderingArea.width,this.context.renderingArea.height));
 		this.shaders = new Shaders(this.context.gl, "RawVertexShader", "GlowFragmentShader");
 		this.shaders.Use();
-		this.color = this.shaders.Uniform("colorTexture");
-		this.depth = this.shaders.Uniform("depthTexture");
+		this.targetcolor = this.shaders.Uniform("targetColorTexture");
+		this.targetdepth = this.shaders.Uniform("targetDepthTexture");
+		this.selectiondepth = this.shaders.Uniform("selectionDepthTexture");
 		this.width = this.shaders.Uniform("ScreenWidth");
 		this.height = this.shaders.Uniform("ScreenHeight");
 
@@ -83,9 +85,9 @@ class GlowFilter implements IRenderingFilter
 		this.selectionFBO.Activate();
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-		this.context.showSelectionOnly = true;
+		this.context.showselectiononly = true;
 		scene.Draw(this.context);
-		this.context.showSelectionOnly = false;
+		this.context.showselectiononly = false;
 		this.selectionFBO.Activate(false);
 
 		this.sceneFBO.Activate();
@@ -107,10 +109,13 @@ class GlowFilter implements IRenderingFilter
 		gl.disable(gl.DEPTH_TEST);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.sceneFBO.ColorTexture());
-		gl.uniform1i(this.color, 0);
+		gl.uniform1i(this.targetcolor, 0);
 		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.sceneFBO.DepthTexture());
+		gl.uniform1i(this.targetdepth, 1);
+		gl.activeTexture(gl.TEXTURE2);
 		gl.bindTexture(gl.TEXTURE_2D, this.selectionFBO.DepthTexture());
-		gl.uniform1i(this.depth, 1);
+		gl.uniform1i(this.selectiondepth, 2);
 		
 		let width = this.context.renderingArea.width;
 		let height = this.context.renderingArea.height;
