@@ -1,21 +1,17 @@
 /// <reference path="framebuffer.ts" />
 /// <reference path="../objects/scene.ts" />
 
-class EDLFilter implements IRenderingFilter
+class GlowFilter implements IRenderingFilter
 {
-	fbo : FrameBuffer;
+	sceneFBO : FrameBuffer;
+	selectionFBO : FrameBuffer;
 	shaders : Shaders;
 
-	private color : WebGLUniformLocation;
-	private depth : WebGLUniformLocation;
-	private nbhDist : WebGLUniformLocation;
-	private expScale : WebGLUniformLocation;
-	private zMin : WebGLUniformLocation;
-	private zMax : WebGLUniformLocation;
+	private targetcolor : WebGLUniformLocation;
+	private targetdepth : WebGLUniformLocation;
+	private selectiondepth : WebGLUniformLocation;
 	private width : WebGLUniformLocation;
 	private height : WebGLUniformLocation;
-	private useColors : WebGLUniformLocation;
-	private nbhPositions : Float32Array;
 	private points : FloatArrayBuffer;
 	private textCoords : FloatArrayBuffer;
 	private indices : ElementArrayBuffer;
@@ -23,20 +19,16 @@ class EDLFilter implements IRenderingFilter
 	private uv : number;
 
 
-	constructor(private context: DrawingContext, public withColors:boolean, public withShading:boolean, public expFactor:number=4.0, public neighborDist:number=0.25)
+	constructor(private context: DrawingContext)
 	{
 		this.Resize(new ScreenDimensions(this.context.renderingArea.width,this.context.renderingArea.height));
-		this.shaders = new Shaders(this.context.gl, "RawVertexShader", "EDLFragmentShader");
+		this.shaders = new Shaders(this.context.gl, "RawVertexShader", "GlowFragmentShader");
 		this.shaders.Use();
-		this.color = this.shaders.Uniform("colorTexture");
-		this.depth = this.shaders.Uniform("depthTexture");
-		this.nbhDist = this.shaders.Uniform("NeighborsDist");
-		this.expScale = this.shaders.Uniform("ExpFactor");
-		this.zMin = this.shaders.Uniform("DepthMin");
-		this.zMax = this.shaders.Uniform("DepthMax");
+		this.targetcolor = this.shaders.Uniform("targetColorTexture");
+		this.targetdepth = this.shaders.Uniform("targetDepthTexture");
+		this.selectiondepth = this.shaders.Uniform("selectionDepthTexture");
 		this.width = this.shaders.Uniform("ScreenWidth");
 		this.height = this.shaders.Uniform("ScreenHeight");
-		this.useColors = this.shaders.Uniform("UseColors");
 
 		this.points = new FloatArrayBuffer(new Float32Array([
 			-1.0, -1.0, 0.0,
@@ -64,29 +56,44 @@ class EDLFilter implements IRenderingFilter
 
 	Resize(size: ScreenDimensions)
 	{
-		if(this.fbo)
-			this.fbo.Delete();
-		this.fbo = new FrameBuffer(this.context.gl, size.width, size.height);
-		this.fbo.DepthTexture();
+		if(this.sceneFBO)
+			this.sceneFBO.Delete();
+		this.sceneFBO = new FrameBuffer(this.context.gl, size.width, size.height);
+		this.sceneFBO.ColorTexture();
+		this.sceneFBO.DepthTexture();
+		if(this.selectionFBO)
+			this.selectionFBO.Delete();
+		this.selectionFBO = new FrameBuffer(this.context.gl, size.width, size.height);
+		this.selectionFBO.ColorTexture();
+		this.selectionFBO.DepthTexture();
 	}
 
 	Dispose()
 	{
-		this.fbo.Activate(false);
-		this.fbo.Delete();
-		this.fbo = null;
+		this.sceneFBO.Activate(false);
+		this.sceneFBO.Delete();
+		this.sceneFBO = null;
+		this.selectionFBO.Activate(false);
+		this.selectionFBO.Delete();
+		this.selectionFBO = null;
 	}
 
 	CollectRendering(scene : Scene)
 	{
-		this.fbo.Activate();
 		let gl = this.context.gl;
+		
+		this.selectionFBO.Activate();
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-
-		let allowShading = this.context.AllowShading(this.withShading);
+		this.context.showselectiononly = true;
 		scene.Draw(this.context);
-		this.context.AllowShading(allowShading);
+		this.context.showselectiononly = false;
+		this.selectionFBO.Activate(false);
+
+		this.sceneFBO.Activate();
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.DEPTH_TEST);
+		scene.Draw(this.context);
 	}
 
 	Render(camera: Camera, scene: Scene)
@@ -95,27 +102,26 @@ class EDLFilter implements IRenderingFilter
 		gl.flush();
 
 		this.shaders.Use();
-		this.fbo.Activate(false);
+		this.sceneFBO.Activate(false);
+		this.selectionFBO.Activate(false);
 		
 		gl.clear(gl.COLOR_BUFFER_BIT);
 		gl.disable(gl.DEPTH_TEST);
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.fbo.ColorTexture());
-		gl.uniform1i(this.color, 0);
+		gl.bindTexture(gl.TEXTURE_2D, this.sceneFBO.ColorTexture());
+		gl.uniform1i(this.targetcolor, 0);
 		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.fbo.DepthTexture());
-		gl.uniform1i(this.depth, 1);
+		gl.bindTexture(gl.TEXTURE_2D, this.sceneFBO.DepthTexture());
+		gl.uniform1i(this.targetdepth, 1);
+		gl.activeTexture(gl.TEXTURE2);
+		gl.bindTexture(gl.TEXTURE_2D, this.selectionFBO.DepthTexture());
+		gl.uniform1i(this.selectiondepth, 2);
 		
 		let width = this.context.renderingArea.width;
 		let height = this.context.renderingArea.height;
 
-		gl.uniform1f(this.nbhDist, this.neighborDist);
-		gl.uniform1f(this.expScale, this.expFactor);
-		gl.uniform1f(this.zMin, camera.depthRange.min);
-		gl.uniform1f(this.zMax, camera.depthRange.max);
 		gl.uniform1f(this.width, width);
 		gl.uniform1f(this.height, height);
-		gl.uniform1i(this.useColors, this.withColors ? 1 : 0);
 		
 		gl.viewport(0, 0, width, height);
 

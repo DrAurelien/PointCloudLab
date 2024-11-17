@@ -32,11 +32,18 @@ class DrawingContext {
 	maxscalarcolor: WebGLUniformLocation;
 	//Extensions
 	useuint: boolean;
-	//
+	showselectionbbox : boolean;
 	bboxcolor: number[];
+	showselectiononly : boolean;
+	allowShading : boolean;
 
 	constructor(public renderingArea: HTMLCanvasElement) {
 		this.rendering = new RenderingType();
+
+		this.allowShading = true;
+		this.showselectionbbox = false;
+		this.bboxcolor = [1, 1, 1];
+		this.showselectiononly = false;
 
 		this.gl = <WebGL2RenderingContext>(this.renderingArea.getContext("webgl2", { preserveDrawingBuffer: true }) ||
 			this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
@@ -82,13 +89,19 @@ class DrawingContext {
 		this.specular = this.shaders.Uniform("SpecularCoef");
 		this.glossy = this.shaders.Uniform("GlossyPow");
 		this.usenormals = this.shaders.Uniform("UseNormals");
-
-		this.bboxcolor = [1, 1, 1];
 	}
 
-	EnableNormals(b): boolean {
+	AllowShading(b : boolean) : boolean
+	{
+		let isAllowed = this.allowShading;
+		this.allowShading = b;
+		this.EnableNormals(b);
+		return isAllowed;
+	}
+
+	EnableNormals(b: boolean): boolean {
 		let isEnabled = this.gl.getVertexAttrib(this.normals, this.gl.VERTEX_ATTRIB_ARRAY_ENABLED);
-		if (b) {
+		if (b && this.allowShading) {
 			this.gl.uniform1i(this.usenormals, 1);
 			this.gl.enableVertexAttribArray(this.normals);
 		}

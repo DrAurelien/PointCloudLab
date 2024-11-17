@@ -175,6 +175,51 @@
 				color = texture2D(colorTexture, TexCoord).rgb;
 			gl_FragColor = vec4(factor * color, 1.0);
 		}
+	</script> 
+	<script  id="GlowFragmentShader" type="x-shader/x-fragment">
+		uniform	sampler2D targetColorTexture;
+		uniform	sampler2D targetDepthTexture;
+		uniform	sampler2D selectionDepthTexture;
+		varying highp vec2 TexCoord;
+		uniform highp float ScreenWidth;
+		uniform highp float ScreenHeight;
+
+		bool hasSelectedElement(highp vec2 position)
+		{
+			highp float depth = texture2D(selectionDepthTexture, position).r;
+			return depth < 1.;
+		}
+
+		highp float glowIntensity(highp vec2 position)
+		{
+			if(hasSelectedElement(position))
+				return 0.;
+			highp float sum = 0.0;
+			highp float depth = 1.;
+			for(highp float col=-4.0; col<=4.0; col+= 1.0)
+			{
+				for(highp float row=-4.0; row<=4.0; row+=1.0)
+				{
+					highp vec2 Delta = vec2(col, row) / vec2(ScreenWidth, ScreenHeight);
+					if(hasSelectedElement(position + Delta))
+					{
+						highp float dist = col*col + row*row;
+						sum += (1.0 - exp(-dist / 9.0)) / 16.0;
+						depth = min(depth, texture2D(selectionDepthTexture, position + Delta).r);
+					}
+				}
+			}
+			if(depth > texture2D(targetDepthTexture, position).r)
+				sum = 0.;
+			return sum;
+		}
+		void main (void)
+		{
+			highp vec3 color = texture2D(targetColorTexture, TexCoord).rgb;
+			highp float glow = glowIntensity(TexCoord);
+			highp vec3 glowColor = vec3(1., 1., 0.);
+			gl_FragColor = vec4((glowColor * glow) + (color * (1.0 - glow)), 1.0);
+		}
 	</script>
 	<script type="text/javascript" src="PointCloudLab.js"></script>
 </head>

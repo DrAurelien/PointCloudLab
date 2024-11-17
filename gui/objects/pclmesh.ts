@@ -8,6 +8,7 @@
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
 /// <reference path="../../files/pclserializer.ts" />
+/// <reference path="../../controler/actions/action.ts" />
 
 
 //=================================================
@@ -64,6 +65,20 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 			this.properties.Push(points);
 			this.properties.Push(faces);
 		}
+	}
+
+	GetActions(delegate: ActionDelegate): Action[] {
+		let self = this;
+		let actions = super.GetActions(delegate);
+		actions.push(null);
+		actions.push(new SimpleAction('Export to STL file', () => self.SaveToSTLFile()));
+		return actions;
+	}
+
+	private SaveToSTLFile()
+	{
+		let serializer = new StlSerializer(this.mesh);
+		FileExporter.ExportFile(this.name + '.stl', serializer.GetBuffer(), 'model/stl');
 	}
 
 	static SerializationID = 'MESH';

@@ -48,11 +48,16 @@ namespace DialogItems
 	};
 
 	//============================================================
-	export abstract class DialogValue<ValueType> extends DialogItem
+	export abstract class IDialogValue extends DialogItem
+	{
+		abstract OnValueChange(listener: IValueChangeListener);
+	}
+
+	//============================================================
+	export abstract class DialogValue<ValueType> extends IDialogValue
 	{
 		abstract GetValue() : ValueType;
 		abstract GetElement();
-		abstract OnValueChange(listener: IValueChangeListener);
 	};
 
 	//============================================================

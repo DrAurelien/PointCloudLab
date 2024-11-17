@@ -36,6 +36,7 @@ interface PCLContainer {
 	Insert(node: PCLNode, refnode: PCLNode, mode: PCLInsertionMode);
 	Remove(child: PCLNode);
 	NotifyChange(source: PCLNode, type: ChangeType);
+	IsSelected() : boolean;
 }
 
 abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
@@ -56,11 +57,22 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		this.pendingChanges = null;
 	}
 
+	IsSelected() : boolean
+	{
+		return this.selected ||this.owner && this.owner.IsSelected();
+	}
+
+	ShouldDraw(drawingContext: DrawingContext)
+	{
+		return !drawingContext.showselectiononly || this.IsSelected();
+	}
+
 	Draw(drawingContext: DrawingContext): void {
 		if (this.visible) {
-			this.DrawNode(drawingContext);
+			if(this.ShouldDraw(drawingContext))
+				this.DrawNode(drawingContext);
 
-			if (this.selected) {
+			if (!drawingContext.showselectiononly && this.selected && drawingContext.showselectionbbox) {
 				BoundingBoxDrawing.Draw(this.GetBoundingBox(), drawingContext);
 			}
 		}

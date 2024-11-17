@@ -31,6 +31,11 @@ class FrameBuffer
         return this.AttachTexture(this.gl.DEPTH_ATTACHMENT, this.gl.DEPTH_COMPONENT32F, this.gl.DEPTH_COMPONENT, this.gl.FLOAT);
     }
 
+	SentilTexture() : WebGLTexture
+	{
+		return this.AttachTexture(this.gl.STENCIL_ATTACHMENT, this.gl.STENCIL_BITS, this.gl.STENCIL_BITS, this.gl.UNSIGNED_BYTE);
+	}
+
 	Check()
 	{
 		this.Activate();

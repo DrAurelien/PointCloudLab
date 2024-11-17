@@ -1,5 +1,6 @@
 ﻿/// <reference path="fileloader.ts" />
 /// <reference path="binaryreader.ts" />
+/// <reference path="binarywriter.ts" />
 /// <reference path="../model/pointcloud.ts" />
 /// <reference path="../model/mesh.ts" />
 /// <reference path="../gui/objects/pclpointcloud.ts" />
@@ -218,5 +219,51 @@ class StlLoader extends FileLoader {
 			throw 'Cannot suport non triangular STL meshes (got ' + vertices.length + ' vertices instead of 3)';
 
 		mesh.PushFace(vertices);
+	}
+}
+
+
+class StlSerializer
+{
+	private writer : BinaryWriter;
+
+	constructor(mesh : Mesh)
+	{
+		const bufferSize = StlSerializer.EvalBufferSize(mesh);
+		this.writer = new BinaryWriter(bufferSize);
+		let header = "PointCloudLab generated mesh";
+		while(header.length < 80)
+			header += ' ';
+		this.writer.PushString(header);
+		const nbTriangles = mesh.Size();
+		this.writer.PushInt32(nbTriangles);
+		for(let index=0; index<nbTriangles; index++)
+		{
+			let face = mesh.GetFace(index);
+			this.WriteCoordsinates(face.Normal);
+			for(let cursor=0; cursor<face.points.length; cursor++)
+				this.WriteCoordsinates(face.points[cursor]);
+			this.writer.PushUInt8(0);
+			this.writer.PushUInt8(0);
+		}
+	}
+
+	GetBuffer() : ArrayBuffer
+	{
+		return this.writer.buffer;
+	}
+
+	private WriteCoordsinates(coords: Vector)
+	{
+		for(let index=0; index<coords.Dimension(); index++)
+			this.writer.PushFloat32(coords.Get(index));
+	}
+
+	private static EvalBufferSize(mesh: Mesh)
+	{
+		const nbTriangles = mesh.Size();
+		return 80 // Stl header
+			+ 4 // Number of Triangles
+			+ nbTriangles * 50; // Normal (3*4 bytes) + 3 vertices (3*4 bytes each) + 2 bytes
 	}
 }

@@ -4,6 +4,9 @@
 class SetupFilter extends Action {
 	static EDL = 'Eye Dome Lighting (EDL)';
 	static NoFilter = 'None';
+	static EDLNoColor = 'No color';
+	static EDLFlatColor = 'Flat color';
+	static EDLShadedColor = 'Shaded color';
 
 	constructor(private application: PCLApp) {
 		super("[Icon:flash] Visual effect", "Setup visual effects for the scene rendering.");
@@ -11,46 +14,101 @@ class SetupFilter extends Action {
 
 	protected Trigger() {
 		let filter : DialogItems.Choice;
-		let edlTitle : DialogItems.Title;
-		let useColors : DialogItems.CheckBox;
+		let selectionSettingsTitle : DialogItems.Title;
+		let edlSettingsTitle : DialogItems.Title;
+		let showSelectionBox : DialogItems.CheckBox;
+		let useGlowFilter : DialogItems.CheckBox;
+		let edlColors : DialogItems.Choice;
 		let expFactor : DialogItems.NumericValue;
 		let nbhDist : DialogItems.NumericValue;
 		let app = this.application;
-		let currentFilter = app.GetCurrentRenderingFilter();
-		let edlFilter = currentFilter as EDLFilter;
+		let initialState ={
+			filter : app.GetCurrentRenderingFilter(),
+			showSelectionBox : app.sceneRenderer.drawingcontext.showselectionbbox
+		};
+		let edlFilter = initialState.filter instanceof EDLFilter ? initialState.filter as EDLFilter : null;
+		let glowFilter = initialState.filter instanceof GlowFilter ? initialState.filter as GlowFilter : null;
 
-		let dialog = new Dialog((dlg : Dialog) => {
+		function ApplyCurrentSettings()
+		{
 			let filterToUse = filter.GetValue();
 			if(filterToUse == SetupFilter.EDL)
-				app.ChangeRenderingFilter(ctx => { return new EDLFilter(ctx, useColors.GetValue(), expFactor.GetValue(), nbhDist.GetValue());});
+			{
+				app.ChangeRenderingFilter(ctx => { 
+					ctx.showselectionbbox = showSelectionBox.GetValue();
+					let colorOption = edlColors.GetValue();
+					let edlUseColors = colorOption != SetupFilter.EDLNoColor;
+					let edlUseShading = colorOption == SetupFilter.EDLShadedColor;
+					return new EDLFilter(ctx, edlUseColors, edlUseShading, expFactor.GetValue(), nbhDist.GetValue());
+				});
+			}
 			else
-				app.ChangeRenderingFilter(null);
-			return true;
-		},
-		(dialog) =>{
-			return true;
-		});
+			{
+				app.ChangeRenderingFilter(ctx => {
+					ctx.showselectionbbox = showSelectionBox.GetValue();
+					return useGlowFilter.GetValue() ? new GlowFilter(ctx) : null;
+				});
+			}
+		};
 
 		function UpdateFieldsVisibility()
 		{
 			usesEDL = filter.GetValue() == SetupFilter.EDL;
-			edlTitle.Show(usesEDL);
-			useColors.Show(usesEDL);
+			useGlowFilter.Show(!usesEDL);
+			edlSettingsTitle.Show(usesEDL);
+			edlColors.Show(usesEDL);
 			expFactor.Show(usesEDL);
 			nbhDist.Show(usesEDL);
 		}
 
-		// -------------------------------------
-		// EDL
+		let dialog = new Dialog((dlg : Dialog) => {
+			ApplyCurrentSettings();
+			return true;
+		},
+		(dlg : Dialog) =>{
+			app.ChangeRenderingFilter(ctx => {
+				ctx.showselectionbbox = initialState.showSelectionBox;
+				return initialState.filter;
+			});
+			return true;
+		});
+
 		let usesEDL : boolean = !!edlFilter;
+		let usesGlow :boolean = !!glowFilter;
 		filter = dialog.InsertChoice("Filter",  [SetupFilter.NoFilter, SetupFilter.EDL], edlFilter ? 1 : 0);
-		edlTitle = dialog.InsertTitle("Eye Dome Lighting settings")
-		useColors = dialog.InsertCheckBox("Use colors", edlFilter ? edlFilter.withColors : true);
+
+		selectionSettingsTitle = dialog.InsertTitle("Selection display settings");
+		showSelectionBox = dialog.InsertCheckBox("Show selection bounding box", initialState.showSelectionBox);
+		useGlowFilter = dialog.InsertCheckBox("Glow selection", usesGlow);
+
+		let currentEDLColor = 0;
+		if(edlFilter)
+		{
+			if(edlFilter.withShading)
+				currentEDLColor = 2;
+			else if(edlFilter.withColors)
+				currentEDLColor = 1;
+		}
+		edlSettingsTitle = dialog.InsertTitle("Eye Dome Lighting settings");
+		edlColors = dialog.InsertChoice("Use colors", [SetupFilter.EDLNoColor, SetupFilter.EDLFlatColor, SetupFilter.EDLShadedColor], currentEDLColor);
 		expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 4);
 		nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.25);
 		UpdateFieldsVisibility();
 
-		filter.OnValueChange(UpdateFieldsVisibility);
+		let settings : DialogItems.IDialogValue[]= [
+			filter,
+			showSelectionBox,
+			useGlowFilter,
+			edlColors,
+			expFactor,
+			nbhDist];
+		for(let index=0; index<settings.length; index++)
+		{
+			settings[index].OnValueChange((item:DialogItems.DialogItem) => {
+				UpdateFieldsVisibility();
+				ApplyCurrentSettings()
+			});
+		}
 		
 	}
 

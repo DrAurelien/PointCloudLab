@@ -1264,6 +1264,10 @@ class DrawingContext {
         this.renderingArea = renderingArea;
         this.sampling = 30;
         this.rendering = new RenderingType();
+        this.allowShading = true;
+        this.showselectionbbox = false;
+        this.bboxcolor = [1, 1, 1];
+        this.showselectiononly = false;
         this.gl = (this.renderingArea.getContext("webgl2", { preserveDrawingBuffer: true }) ||
             this.renderingArea.getContext("experimental-webgl", { preserveDrawingBuffer: true }));
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -1300,11 +1304,16 @@ class DrawingContext {
         this.specular = this.shaders.Uniform("SpecularCoef");
         this.glossy = this.shaders.Uniform("GlossyPow");
         this.usenormals = this.shaders.Uniform("UseNormals");
-        this.bboxcolor = [1, 1, 1];
+    }
+    AllowShading(b) {
+        let isAllowed = this.allowShading;
+        this.allowShading = b;
+        this.EnableNormals(b);
+        return isAllowed;
     }
     EnableNormals(b) {
         let isEnabled = this.gl.getVertexAttrib(this.normals, this.gl.VERTEX_ATTRIB_ARRAY_ENABLED);
-        if (b) {
+        if (b && this.allowShading) {
             this.gl.uniform1i(this.usenormals, 1);
             this.gl.enableVertexAttribArray(this.normals);
         }
@@ -1944,10 +1953,17 @@ class PCLNode {
         this.changeListeners = [];
         this.pendingChanges = null;
     }
+    IsSelected() {
+        return this.selected || this.owner && this.owner.IsSelected();
+    }
+    ShouldDraw(drawingContext) {
+        return !drawingContext.showselectiononly || this.IsSelected();
+    }
     Draw(drawingContext) {
         if (this.visible) {
-            this.DrawNode(drawingContext);
-            if (this.selected) {
+            if (this.ShouldDraw(drawingContext))
+                this.DrawNode(drawingContext);
+            if (!drawingContext.showselectiononly && this.selected && drawingContext.showselectionbbox) {
                 BoundingBoxDrawing.Draw(this.GetBoundingBox(), drawingContext);
             }
         }
@@ -3823,6 +3839,7 @@ class NumberProperty extends PropertyWithValue {
 /// <reference path="../controls/properties/properties.ts" />
 /// <reference path="../controls/properties/numberproperty.ts" />
 /// <reference path="../../files/pclserializer.ts" />
+/// <reference path="../../controler/actions/action.ts" />
 //=================================================
 // The PCLMesh provides an interface to interact with a simplicial mesh
 // - Show the mesh
@@ -3867,6 +3884,17 @@ class PCLMesh extends PCLPrimitive {
             this.properties.Push(points);
             this.properties.Push(faces);
         }
+    }
+    GetActions(delegate) {
+        let self = this;
+        let actions = super.GetActions(delegate);
+        actions.push(null);
+        actions.push(new SimpleAction('Export to STL file', () => self.SaveToSTLFile()));
+        return actions;
+    }
+    SaveToSTLFile() {
+        let serializer = new StlSerializer(this.mesh);
+        FileExporter.ExportFile(this.name + '.stl', serializer.GetBuffer(), 'model/stl');
     }
     GetSerializationID() {
         return PCLMesh.SerializationID;
@@ -4138,7 +4166,11 @@ var DialogItems;
     DialogItems.DialogItem = DialogItem;
     ;
     //============================================================
-    class DialogValue extends DialogItem {
+    class IDialogValue extends DialogItem {
+    }
+    DialogItems.IDialogValue = IDialogValue;
+    //============================================================
+    class DialogValue extends IDialogValue {
     }
     DialogItems.DialogValue = DialogValue;
     ;
@@ -6186,6 +6218,9 @@ class PCLGroup extends PCLNode {
     ToggleFolding() {
         this.SetFolding(!this.folded);
     }
+    ShouldDraw(drawingContext) {
+        return true;
+    }
     DrawNode(drawingContext) {
         if (this.visible) {
             for (var index = 0; index < this.children.length; index++) {
@@ -7768,40 +7803,89 @@ class SetupFilter extends Action {
     }
     Trigger() {
         let filter;
-        let edlTitle;
-        let useColors;
+        let selectionSettingsTitle;
+        let edlSettingsTitle;
+        let showSelectionBox;
+        let useGlowFilter;
+        let edlColors;
         let expFactor;
         let nbhDist;
         let app = this.application;
-        let currentFilter = app.GetCurrentRenderingFilter();
-        let edlFilter = currentFilter;
-        let dialog = new Dialog((dlg) => {
+        let initialState = {
+            filter: app.GetCurrentRenderingFilter(),
+            showSelectionBox: app.sceneRenderer.drawingcontext.showselectionbbox
+        };
+        let edlFilter = initialState.filter instanceof EDLFilter ? initialState.filter : null;
+        let glowFilter = initialState.filter instanceof GlowFilter ? initialState.filter : null;
+        function ApplyCurrentSettings() {
             let filterToUse = filter.GetValue();
-            if (filterToUse == SetupFilter.EDL)
-                app.ChangeRenderingFilter(ctx => { return new EDLFilter(ctx, useColors.GetValue(), expFactor.GetValue(), nbhDist.GetValue()); });
-            else
-                app.ChangeRenderingFilter(null);
-            return true;
-        }, (dialog) => {
-            return true;
-        });
+            if (filterToUse == SetupFilter.EDL) {
+                app.ChangeRenderingFilter(ctx => {
+                    ctx.showselectionbbox = showSelectionBox.GetValue();
+                    let colorOption = edlColors.GetValue();
+                    let edlUseColors = colorOption != SetupFilter.EDLNoColor;
+                    let edlUseShading = colorOption == SetupFilter.EDLShadedColor;
+                    return new EDLFilter(ctx, edlUseColors, edlUseShading, expFactor.GetValue(), nbhDist.GetValue());
+                });
+            }
+            else {
+                app.ChangeRenderingFilter(ctx => {
+                    ctx.showselectionbbox = showSelectionBox.GetValue();
+                    return useGlowFilter.GetValue() ? new GlowFilter(ctx) : null;
+                });
+            }
+        }
+        ;
         function UpdateFieldsVisibility() {
             usesEDL = filter.GetValue() == SetupFilter.EDL;
-            edlTitle.Show(usesEDL);
-            useColors.Show(usesEDL);
+            useGlowFilter.Show(!usesEDL);
+            edlSettingsTitle.Show(usesEDL);
+            edlColors.Show(usesEDL);
             expFactor.Show(usesEDL);
             nbhDist.Show(usesEDL);
         }
-        // -------------------------------------
-        // EDL
+        let dialog = new Dialog((dlg) => {
+            ApplyCurrentSettings();
+            return true;
+        }, (dlg) => {
+            app.ChangeRenderingFilter(ctx => {
+                ctx.showselectionbbox = initialState.showSelectionBox;
+                return initialState.filter;
+            });
+            return true;
+        });
         let usesEDL = !!edlFilter;
+        let usesGlow = !!glowFilter;
         filter = dialog.InsertChoice("Filter", [SetupFilter.NoFilter, SetupFilter.EDL], edlFilter ? 1 : 0);
-        edlTitle = dialog.InsertTitle("Eye Dome Lighting settings");
-        useColors = dialog.InsertCheckBox("Use colors", edlFilter ? edlFilter.withColors : true);
+        selectionSettingsTitle = dialog.InsertTitle("Selection display settings");
+        showSelectionBox = dialog.InsertCheckBox("Show selection bounding box", initialState.showSelectionBox);
+        useGlowFilter = dialog.InsertCheckBox("Glow selection", usesGlow);
+        let currentEDLColor = 0;
+        if (edlFilter) {
+            if (edlFilter.withShading)
+                currentEDLColor = 2;
+            else if (edlFilter.withColors)
+                currentEDLColor = 1;
+        }
+        edlSettingsTitle = dialog.InsertTitle("Eye Dome Lighting settings");
+        edlColors = dialog.InsertChoice("Use colors", [SetupFilter.EDLNoColor, SetupFilter.EDLFlatColor, SetupFilter.EDLShadedColor], currentEDLColor);
         expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 4);
         nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.25);
         UpdateFieldsVisibility();
-        filter.OnValueChange(UpdateFieldsVisibility);
+        let settings = [
+            filter,
+            showSelectionBox,
+            useGlowFilter,
+            edlColors,
+            expFactor,
+            nbhDist
+        ];
+        for (let index = 0; index < settings.length; index++) {
+            settings[index].OnValueChange((item) => {
+                UpdateFieldsVisibility();
+                ApplyCurrentSettings();
+            });
+        }
     }
     Enabled() {
         return true;
@@ -7809,6 +7893,9 @@ class SetupFilter extends Action {
 }
 SetupFilter.EDL = 'Eye Dome Lighting (EDL)';
 SetupFilter.NoFilter = 'None';
+SetupFilter.EDLNoColor = 'No color';
+SetupFilter.EDLFlatColor = 'Flat color';
+SetupFilter.EDLShadedColor = 'Shaded color';
 /// <reference path="binarystream.ts" />
 class BinaryWriter extends BinaryStream {
     constructor(size) {
@@ -8543,6 +8630,7 @@ class Finalizer extends Process {
 }
 /// <reference path="fileloader.ts" />
 /// <reference path="binaryreader.ts" />
+/// <reference path="binarywriter.ts" />
 /// <reference path="../model/pointcloud.ts" />
 /// <reference path="../model/mesh.ts" />
 /// <reference path="../gui/objects/pclpointcloud.ts" />
@@ -8713,6 +8801,39 @@ class StlLoader extends FileLoader {
         if (vertices.length != 3)
             throw 'Cannot suport non triangular STL meshes (got ' + vertices.length + ' vertices instead of 3)';
         mesh.PushFace(vertices);
+    }
+}
+class StlSerializer {
+    constructor(mesh) {
+        const bufferSize = StlSerializer.EvalBufferSize(mesh);
+        this.writer = new BinaryWriter(bufferSize);
+        let header = "PointCloudLab generated mesh";
+        while (header.length < 80)
+            header += ' ';
+        this.writer.PushString(header);
+        const nbTriangles = mesh.Size();
+        this.writer.PushInt32(nbTriangles);
+        for (let index = 0; index < nbTriangles; index++) {
+            let face = mesh.GetFace(index);
+            this.WriteCoordsinates(face.Normal);
+            for (let cursor = 0; cursor < face.points.length; cursor++)
+                this.WriteCoordsinates(face.points[cursor]);
+            this.writer.PushUInt8(0);
+            this.writer.PushUInt8(0);
+        }
+    }
+    GetBuffer() {
+        return this.writer.buffer;
+    }
+    WriteCoordsinates(coords) {
+        for (let index = 0; index < coords.Dimension(); index++)
+            this.writer.PushFloat32(coords.Get(index));
+    }
+    static EvalBufferSize(mesh) {
+        const nbTriangles = mesh.Size();
+        return 80 // Stl header
+            + 4 // Number of Triangles
+            + nbTriangles * 50; // Normal (3*4 bytes) + 3 vertices (3*4 bytes each) + 2 bytes
     }
 }
 class Interval {
@@ -8948,6 +9069,9 @@ class FrameBuffer {
     }
     DepthTexture() {
         return this.AttachTexture(this.gl.DEPTH_ATTACHMENT, this.gl.DEPTH_COMPONENT32F, this.gl.DEPTH_COMPONENT, this.gl.FLOAT);
+    }
+    SentilTexture() {
+        return this.AttachTexture(this.gl.STENCIL_ATTACHMENT, this.gl.STENCIL_BITS, this.gl.STENCIL_BITS, this.gl.UNSIGNED_BYTE);
     }
     Check() {
         this.Activate();
@@ -9231,9 +9355,10 @@ class SceneParsingHandler extends PCLGroupParsingHandler {
 /// <reference path="framebuffer.ts" />
 /// <reference path="../objects/scene.ts" />
 class EDLFilter {
-    constructor(context, withColors, expFactor = 4.0, neighborDist = 0.25) {
+    constructor(context, withColors, withShading, expFactor = 4.0, neighborDist = 0.25) {
         this.context = context;
         this.withColors = withColors;
+        this.withShading = withShading;
         this.expFactor = expFactor;
         this.neighborDist = neighborDist;
         this.Resize(new ScreenDimensions(this.context.renderingArea.width, this.context.renderingArea.height));
@@ -9269,22 +9394,25 @@ class EDLFilter {
         this.uv = this.shaders.Attribute("TextureCoordinate");
         this.context.gl.enableVertexAttribArray(this.uv);
     }
-    ;
     Resize(size) {
         if (this.fbo)
             this.fbo.Delete();
         this.fbo = new FrameBuffer(this.context.gl, size.width, size.height);
+        this.fbo.DepthTexture();
     }
     Dispose() {
         this.fbo.Activate(false);
         this.fbo.Delete();
         this.fbo = null;
     }
-    CollectRendering() {
+    CollectRendering(scene) {
         this.fbo.Activate();
         let gl = this.context.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
+        let allowShading = this.context.AllowShading(this.withShading);
+        scene.Draw(this.context);
+        this.context.AllowShading(allowShading);
     }
     Render(camera, scene) {
         let gl = this.context.gl;
@@ -9356,6 +9484,7 @@ class Renderer {
         this.camera = new Camera(this.drawingcontext);
         this.activeFilter = null;
         this.drawingcontext.rendering.Register(this);
+        this.activeFilter = new GlowFilter(this.drawingcontext);
     }
     SetFilter(filter = null) {
         if (this.activeFilter)
@@ -9386,11 +9515,12 @@ class Renderer {
         this.camera.InititalizeDrawingContext(this.drawingcontext);
         //Perform rendering
         if (scene) {
-            if (this.activeFilter)
-                this.activeFilter.CollectRendering();
-            scene.Draw(this.drawingcontext);
-            if (this.activeFilter)
+            if (this.activeFilter) {
+                this.activeFilter.CollectRendering(scene);
                 this.activeFilter.Render(this.camera, scene);
+            }
+            else
+                scene.Draw(this.drawingcontext);
         }
     }
     RefreshSize() {
@@ -11431,6 +11561,105 @@ class PCLApp {
     }
 }
 PCLApp.sceneStorageKey = 'PointCloudLab-Scene';
+/// <reference path="framebuffer.ts" />
+/// <reference path="../objects/scene.ts" />
+class GlowFilter {
+    constructor(context) {
+        this.context = context;
+        this.Resize(new ScreenDimensions(this.context.renderingArea.width, this.context.renderingArea.height));
+        this.shaders = new Shaders(this.context.gl, "RawVertexShader", "GlowFragmentShader");
+        this.shaders.Use();
+        this.targetcolor = this.shaders.Uniform("targetColorTexture");
+        this.targetdepth = this.shaders.Uniform("targetDepthTexture");
+        this.selectiondepth = this.shaders.Uniform("selectionDepthTexture");
+        this.width = this.shaders.Uniform("ScreenWidth");
+        this.height = this.shaders.Uniform("ScreenHeight");
+        this.points = new FloatArrayBuffer(new Float32Array([
+            -1.0, -1.0, 0.0,
+            1.0, -1.0, 0.0,
+            1.0, 1.0, 0.0,
+            -1.0, 1.0, 0.0,
+        ]), this.context, 3);
+        this.textCoords = new FloatArrayBuffer(new Float32Array([
+            0., 0.,
+            1., 0.,
+            1., 1.,
+            0., 1.
+        ]), this.context, 2);
+        this.indices = new ElementArrayBuffer([
+            0, 1, 2,
+            0, 2, 3
+        ], this.context, true);
+        this.vertices = this.shaders.Attribute("VertexPosition");
+        this.context.gl.enableVertexAttribArray(this.vertices);
+        this.uv = this.shaders.Attribute("TextureCoordinate");
+        this.context.gl.enableVertexAttribArray(this.uv);
+    }
+    Resize(size) {
+        if (this.sceneFBO)
+            this.sceneFBO.Delete();
+        this.sceneFBO = new FrameBuffer(this.context.gl, size.width, size.height);
+        this.sceneFBO.ColorTexture();
+        this.sceneFBO.DepthTexture();
+        if (this.selectionFBO)
+            this.selectionFBO.Delete();
+        this.selectionFBO = new FrameBuffer(this.context.gl, size.width, size.height);
+        this.selectionFBO.ColorTexture();
+        this.selectionFBO.DepthTexture();
+    }
+    Dispose() {
+        this.sceneFBO.Activate(false);
+        this.sceneFBO.Delete();
+        this.sceneFBO = null;
+        this.selectionFBO.Activate(false);
+        this.selectionFBO.Delete();
+        this.selectionFBO = null;
+    }
+    CollectRendering(scene) {
+        let gl = this.context.gl;
+        this.selectionFBO.Activate();
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+        this.context.showselectiononly = true;
+        scene.Draw(this.context);
+        this.context.showselectiononly = false;
+        this.selectionFBO.Activate(false);
+        this.sceneFBO.Activate();
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+        scene.Draw(this.context);
+    }
+    Render(camera, scene) {
+        let gl = this.context.gl;
+        gl.flush();
+        this.shaders.Use();
+        this.sceneFBO.Activate(false);
+        this.selectionFBO.Activate(false);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.sceneFBO.ColorTexture());
+        gl.uniform1i(this.targetcolor, 0);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.sceneFBO.DepthTexture());
+        gl.uniform1i(this.targetdepth, 1);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, this.selectionFBO.DepthTexture());
+        gl.uniform1i(this.selectiondepth, 2);
+        let width = this.context.renderingArea.width;
+        let height = this.context.renderingArea.height;
+        gl.uniform1f(this.width, width);
+        gl.uniform1f(this.height, height);
+        gl.viewport(0, 0, width, height);
+        this.context.gl.enableVertexAttribArray(this.vertices);
+        this.context.gl.enableVertexAttribArray(this.uv);
+        this.textCoords.BindAttribute(this.uv);
+        this.points.BindAttribute(this.vertices);
+        this.indices.Bind();
+        gl.drawElements(gl.TRIANGLES, 6, this.context.GetIntType(true), 0);
+        gl.flush();
+    }
+}
 class IterativeRootFinder {
     constructor(derivatives) {
         this.derivatives = derivatives;
