@@ -7812,7 +7812,7 @@ class SetupFilter extends Action {
         let nbhDist;
         let app = this.application;
         let initialState = {
-            filter: app.GetCurrentRenderingFilter(),
+            filter: app.GetCurrentRenderingFilter().Clone(),
             showSelectionBox: app.sceneRenderer.drawingcontext.showselectionbbox
         };
         let edlFilter = initialState.filter instanceof EDLFilter ? initialState.filter : null;
@@ -7869,8 +7869,8 @@ class SetupFilter extends Action {
         }
         edlSettingsTitle = dialog.InsertTitle("Eye Dome Lighting settings");
         edlColors = dialog.InsertChoice("Use colors", [SetupFilter.EDLNoColor, SetupFilter.EDLFlatColor, SetupFilter.EDLShadedColor], currentEDLColor);
-        expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 4);
-        nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.25);
+        expFactor = dialog.InsertNumericValue("Exponential decay", edlFilter ? edlFilter.expFactor : 6);
+        nbhDist = dialog.InsertNumericValue("Neighbors distance", edlFilter ? edlFilter.neighborDist : 0.15);
         UpdateFieldsVisibility();
         let settings = [
             filter,
@@ -9393,6 +9393,9 @@ class EDLFilter {
         this.context.gl.enableVertexAttribArray(this.vertices);
         this.uv = this.shaders.Attribute("TextureCoordinate");
         this.context.gl.enableVertexAttribArray(this.uv);
+    }
+    Clone() {
+        return new EDLFilter(this.context, this.withColors, this.withShading, this.expFactor, this.neighborDist);
     }
     Resize(size) {
         if (this.fbo)
@@ -11606,6 +11609,9 @@ class GlowFilter {
         this.selectionFBO = new FrameBuffer(this.context.gl, size.width, size.height);
         this.selectionFBO.ColorTexture();
         this.selectionFBO.DepthTexture();
+    }
+    Clone() {
+        return new GlowFilter(this.context);
     }
     Dispose() {
         this.sceneFBO.Activate(false);
