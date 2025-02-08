@@ -118,6 +118,54 @@ class Mesh {
 	ApplyTransform(transform: Transform) {
 		this.pointcloud.ApplyTransform(transform);
 	}
+
+	Split(nbMaxPointsPerMesh: number) : Mesh[]
+	{
+		let currentPoints : number[] = [];
+		let currentFaces : number[] = [];
+		let meshes : Mesh[] = [];
+
+		let nbVertices = this.pointcloud.Size();
+		if(nbVertices <= nbMaxPointsPerMesh)
+			return [this];
+
+		let pointLabels = new Uint32Array(nbVertices);
+		for(let index=0; index<nbVertices; index++)
+			pointLabels[index] = nbMaxPointsPerMesh+1;
+
+		let thisMesh = this;
+		function pushNewMesh()
+		{
+			if(currentPoints.length == 0)
+				return;
+			let subCloud = new PointSubCloud(thisMesh.pointcloud, currentPoints);
+			meshes.push(new Mesh(subCloud.ToPointCloud(), currentFaces));
+			currentPoints = [];
+			currentFaces = [];
+			for(let index=0; index<nbVertices; index++)
+				pointLabels[index] = nbMaxPointsPerMesh+1;
+		}
+
+		for(let index=0; index<this.faces.length; index+=3)
+		{
+			if(currentPoints.length + 3 > nbMaxPointsPerMesh)
+				pushNewMesh();
+
+			for(let ii=0; ii<3; ii++)
+			{
+				let vertexIndex = this.faces[index + ii];
+				if(pointLabels[vertexIndex] >= nbMaxPointsPerMesh)
+				{
+					pointLabels[vertexIndex] = currentPoints.length;
+					currentPoints.push(vertexIndex);
+				}
+				currentFaces.push(pointLabels[vertexIndex]);
+			}
+		}
+		pushNewMesh();
+
+		return meshes;
+	}
 }
 
 class MeshNormalsComputer extends IterativeLongProcess {

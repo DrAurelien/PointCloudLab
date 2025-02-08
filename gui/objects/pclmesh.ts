@@ -18,11 +18,11 @@
 // - Get/set the mesh properties
 //=================================================
 class PCLMesh extends PCLPrimitive implements Pickable {
-	drawing: MeshDrawing;
+	drawings: MeshDrawing[];
 
 	constructor(public mesh: Mesh) {
 		super(NameProvider.GetName('Mesh'));
-		this.drawing = new MeshDrawing();
+		this.drawings = [];
 	}
 
 	GetPrimitiveBoundingBox(): BoundingBox {
@@ -30,15 +30,31 @@ class PCLMesh extends PCLPrimitive implements Pickable {
 	}
 
 	DrawPrimitive(drawingContext: DrawingContext): void {
-		this.drawing.FillBuffers(this.mesh, drawingContext);
-		this.drawing.Draw(this.lighting, drawingContext);
+		this.UpdateMeshDrawings(drawingContext);
+		for(let index=0; index<this.drawings.length ;index++)
+			this.drawings[index].Draw(this.lighting, drawingContext);
 	}
 
 	InvalidateDrawing() {
-		this.drawing.Clear();
+		for(let index=0; index<this.drawings.length; index++)
+			this.drawings[index].Clear();
+		this.drawings = [];
 		this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
 	}
 
+	UpdateMeshDrawings(drawingContext: DrawingContext)
+	{
+		if(this.drawings.length == 0)
+		{
+			let subMeshes = this.mesh.Split(drawingContext.gl.MAX_ELEMENT_INDEX);
+			for(let index=0; index<subMeshes.length; index++)
+			{
+				let subMeshDrawing = new MeshDrawing();
+				subMeshDrawing.FillBuffers(subMeshes[index], drawingContext);
+				this.drawings.push(subMeshDrawing);
+			}
+		}
+	}
 
 	RayIntersection(ray: Ray): Picking {
 		return this.mesh.RayIntersection(ray, this);
