@@ -31,12 +31,24 @@ enum PCLInsertionMode {
 	After
 }
 
+enum PCLNodeFilerResult
+{
+	Reject,
+	Accept,
+	IgnoreAndContinue
+}
+
+interface PCLNodeFiler {
+	(primitive: PCLNode): PCLNodeFilerResult;
+}
+
 interface PCLContainer {
 	Add(child: PCLNode);
 	Insert(node: PCLNode, refnode: PCLNode, mode: PCLInsertionMode);
 	Remove(child: PCLNode);
 	NotifyChange(source: PCLNode, type: ChangeType);
 	IsSelected() : boolean;
+	GetNodes(filter: PCLNodeFiler) : PCLNode[];
 }
 
 abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
@@ -204,7 +216,9 @@ abstract class PCLNode implements Pickable, Notifiable, PCLSerializable {
 		return x &&
 			x.Add && x.Add instanceof Function &&
 			x.Remove && x.Remove instanceof Function &&
-			x.NotifyChange && x.NotifyChange instanceof Function;
+			x.NotifyChange && x.NotifyChange instanceof Function &&
+			x.IsSelected && x.IsSelected instanceof Function && 
+			x.GetNodes && x.GetNodes instanceof Function;
 	}
 }
 

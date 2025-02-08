@@ -220,7 +220,12 @@ class Camera implements ViewPoint {
 
 	UpdateDepthRange(scene: Scene) : Interval
 	{
-		let vertices = scene.GetBoundingBox().GetVertices();
+		let visibleItems = scene.GetNodes((pclNode : PCLNode) => {
+			if(!pclNode.visible)
+				return PCLNodeFilerResult.Reject;
+			return pclNode instanceof PCLPrimitive ? PCLNodeFilerResult.Accept : PCLNodeFilerResult.IgnoreAndContinue;
+		});
+		let vertices = PCLGroup.GetBoundingBox(visibleItems).GetVertices();
 		let dir = this.GetDirection();
 		this.depthRange = new Interval;
 		for(let index=0; index<vertices.length; index++)

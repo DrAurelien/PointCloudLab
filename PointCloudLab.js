@@ -1943,6 +1943,12 @@ var PCLInsertionMode;
     PCLInsertionMode[PCLInsertionMode["Before"] = 0] = "Before";
     PCLInsertionMode[PCLInsertionMode["After"] = 1] = "After";
 })(PCLInsertionMode || (PCLInsertionMode = {}));
+var PCLNodeFilerResult;
+(function (PCLNodeFilerResult) {
+    PCLNodeFilerResult[PCLNodeFilerResult["Reject"] = 0] = "Reject";
+    PCLNodeFilerResult[PCLNodeFilerResult["Accept"] = 1] = "Accept";
+    PCLNodeFilerResult[PCLNodeFilerResult["IgnoreAndContinue"] = 2] = "IgnoreAndContinue";
+})(PCLNodeFilerResult || (PCLNodeFilerResult = {}));
 class PCLNode {
     constructor(name) {
         this.name = name;
@@ -2067,7 +2073,9 @@ class PCLNode {
         return x &&
             x.Add && x.Add instanceof Function &&
             x.Remove && x.Remove instanceof Function &&
-            x.NotifyChange && x.NotifyChange instanceof Function;
+            x.NotifyChange && x.NotifyChange instanceof Function &&
+            x.IsSelected && x.IsSelected instanceof Function &&
+            x.GetNodes && x.GetNodes instanceof Function;
     }
 }
 class BoundingBoxDrawing {
@@ -3775,6 +3783,42 @@ class Mesh {
     ApplyTransform(transform) {
         this.pointcloud.ApplyTransform(transform);
     }
+    Split(nbMaxPointsPerMesh) {
+        let currentPoints = [];
+        let currentFaces = [];
+        let meshes = [];
+        let nbVertices = this.pointcloud.Size();
+        if (nbVertices <= nbMaxPointsPerMesh)
+            return [this];
+        let pointLabels = new Uint32Array(nbVertices);
+        for (let index = 0; index < nbVertices; index++)
+            pointLabels[index] = nbMaxPointsPerMesh + 1;
+        let thisMesh = this;
+        function pushNewMesh() {
+            if (currentPoints.length == 0)
+                return;
+            let subCloud = new PointSubCloud(thisMesh.pointcloud, currentPoints);
+            meshes.push(new Mesh(subCloud.ToPointCloud(), currentFaces));
+            currentPoints = [];
+            currentFaces = [];
+            for (let index = 0; index < nbVertices; index++)
+                pointLabels[index] = nbMaxPointsPerMesh + 1;
+        }
+        for (let index = 0; index < this.faces.length; index += 3) {
+            if (currentPoints.length + 3 > nbMaxPointsPerMesh)
+                pushNewMesh();
+            for (let ii = 0; ii < 3; ii++) {
+                let vertexIndex = this.faces[index + ii];
+                if (pointLabels[vertexIndex] >= nbMaxPointsPerMesh) {
+                    pointLabels[vertexIndex] = currentPoints.length;
+                    currentPoints.push(vertexIndex);
+                }
+                currentFaces.push(pointLabels[vertexIndex]);
+            }
+        }
+        pushNewMesh();
+        return meshes;
+    }
 }
 class MeshNormalsComputer extends IterativeLongProcess {
     constructor(mesh) {
@@ -3850,18 +3894,31 @@ class PCLMesh extends PCLPrimitive {
     constructor(mesh) {
         super(NameProvider.GetName('Mesh'));
         this.mesh = mesh;
-        this.drawing = new MeshDrawing();
+        this.drawings = [];
     }
     GetPrimitiveBoundingBox() {
         return this.mesh.GetBoundingBox();
     }
     DrawPrimitive(drawingContext) {
-        this.drawing.FillBuffers(this.mesh, drawingContext);
-        this.drawing.Draw(this.lighting, drawingContext);
+        this.UpdateMeshDrawings(drawingContext);
+        for (let index = 0; index < this.drawings.length; index++)
+            this.drawings[index].Draw(this.lighting, drawingContext);
     }
     InvalidateDrawing() {
-        this.drawing.Clear();
+        for (let index = 0; index < this.drawings.length; index++)
+            this.drawings[index].Clear();
+        this.drawings = [];
         this.NotifyChange(this, ChangeType.Display | ChangeType.Properties);
+    }
+    UpdateMeshDrawings(drawingContext) {
+        if (this.drawings.length == 0) {
+            let subMeshes = this.mesh.Split(drawingContext.gl.MAX_ELEMENT_INDEX);
+            for (let index = 0; index < subMeshes.length; index++) {
+                let subMeshDrawing = new MeshDrawing();
+                subMeshDrawing.FillBuffers(subMeshes[index], drawingContext);
+                this.drawings.push(subMeshDrawing);
+            }
+        }
     }
     RayIntersection(ray) {
         return this.mesh.RayIntersection(ray, this);
@@ -6284,12 +6341,36 @@ class PCLGroup extends PCLNode {
         let boundingbox = new BoundingBox();
         for (var index = 0; index < this.children.length; index++) {
             let bb = this.children[index].GetBoundingBox();
-            if (bb && bb.IsValid()) {
-                boundingbox.Add(bb.min);
-                boundingbox.Add(bb.max);
-            }
+            boundingbox.AddBoundingBox(bb);
         }
         return boundingbox;
+    }
+    static GetBoundingBox(nodes) {
+        let boundingbox = new BoundingBox();
+        for (let index = 0; index < nodes.length; index++)
+            boundingbox.AddBoundingBox(nodes[index].GetBoundingBox());
+        return boundingbox;
+    }
+    GetNodes(filter) {
+        let result = [];
+        let currentStatus = filter(this);
+        if (currentStatus == PCLNodeFilerResult.Reject)
+            return result;
+        if (currentStatus == PCLNodeFilerResult.Accept)
+            result.push(this);
+        for (let index = 0; index < this.children.length; index++) {
+            let child = this.children[index];
+            if (PCLNode.IsPCLContainer(child)) {
+                let childrenResult = child.GetNodes(filter);
+                result = result.concat(childrenResult);
+            }
+            else {
+                let childStatus = filter(child);
+                if (childStatus == PCLNodeFilerResult.Accept)
+                    result.push(child);
+            }
+        }
+        return result;
     }
     Apply(proc) {
         if (!super.Apply(proc)) {
@@ -7811,8 +7892,9 @@ class SetupFilter extends Action {
         let expFactor;
         let nbhDist;
         let app = this.application;
+        let initialFilter = app.GetCurrentRenderingFilter();
         let initialState = {
-            filter: app.GetCurrentRenderingFilter().Clone(),
+            filter: initialFilter ? initialFilter.Clone() : null,
             showSelectionBox: app.sceneRenderer.drawingcontext.showselectionbbox
         };
         let edlFilter = initialState.filter instanceof EDLFilter ? initialState.filter : null;
@@ -8738,7 +8820,11 @@ class StlLoader extends FileLoader {
         let mesh = new Mesh(vertices);
         let pclMesh = new PCLMesh(mesh);
         let nbtriangles = this.reader.GetNextInt32();
+        vertices.Reserve(nbtriangles * 3);
+        mesh.Reserve(nbtriangles);
         for (let index = 0; index < nbtriangles; index++) {
+            if (this.reader.Eof())
+                throw "STL reading went out of binary stream.";
             let normal = this.GetBinaryVector();
             normal.Normalize();
             for (let vertex = 0; vertex < 3; vertex++) {
@@ -9031,7 +9117,12 @@ class Camera {
         this.at = this.to.Minus(this.GetDirection().Times(d));
     }
     UpdateDepthRange(scene) {
-        let vertices = scene.GetBoundingBox().GetVertices();
+        let visibleItems = scene.GetNodes((pclNode) => {
+            if (!pclNode.visible)
+                return PCLNodeFilerResult.Reject;
+            return pclNode instanceof PCLPrimitive ? PCLNodeFilerResult.Accept : PCLNodeFilerResult.IgnoreAndContinue;
+        });
+        let vertices = PCLGroup.GetBoundingBox(visibleItems).GetVertices();
         let dir = this.GetDirection();
         this.depthRange = new Interval;
         for (let index = 0; index < vertices.length; index++) {
@@ -11276,6 +11367,7 @@ class CoordinatesSystem {
 //===========================================
 class PCLApp {
     constructor() {
+        this.currentTimeout = null;
         this.shortcuts = {};
         let scenebuffer = null;
         try {
@@ -11425,10 +11517,15 @@ class PCLApp {
         return null;
     }
     NotifyControlStart() {
-        this.dataHandler.TemporaryHide();
-        this.menu.TemporaryHide();
+        let thisApp = this;
+        this.currentTimeout = setTimeout(() => {
+            thisApp.dataHandler.TemporaryHide();
+            thisApp.menu.TemporaryHide();
+        }, 500);
     }
     NotifyControlEnd() {
+        if (this.currentTimeout !== null)
+            clearTimeout(this.currentTimeout);
         this.dataHandler.RestoreVisibility();
         this.menu.RestoreVisibility();
     }

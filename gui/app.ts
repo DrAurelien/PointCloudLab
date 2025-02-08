@@ -27,6 +27,7 @@ class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 	currentControler: Controler;
 	coordinatesSystem: CoordinatesSystem;
 	shortcuts: Record<string, Action>;
+	private currentTimeout : number = null;
 
 	static sceneStorageKey = 'PointCloudLab-Scene';
 
@@ -203,11 +204,16 @@ class PCLApp implements Controlable, ActionDelegate, SelectionChangeHandler {
 	}
 
 	NotifyControlStart() {
-		this.dataHandler.TemporaryHide();
-		this.menu.TemporaryHide();
+		let thisApp = this;
+		this.currentTimeout = setTimeout(() => {
+			thisApp.dataHandler.TemporaryHide();
+			thisApp.menu.TemporaryHide();
+		}, 500);
 	}
 
 	NotifyControlEnd() {
+		if(this.currentTimeout !== null)
+			clearTimeout(this.currentTimeout);
 		this.dataHandler.RestoreVisibility();
 		this.menu.RestoreVisibility();
 	}

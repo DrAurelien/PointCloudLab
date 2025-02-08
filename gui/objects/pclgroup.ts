@@ -114,12 +114,44 @@ class PCLGroup extends PCLNode implements PCLContainer {
 		let boundingbox = new BoundingBox();
 		for (var index = 0; index < this.children.length; index++) {
 			let bb = this.children[index].GetBoundingBox();
-			if (bb && bb.IsValid()) {
-				boundingbox.Add(bb.min);
-				boundingbox.Add(bb.max);
-			}
+			boundingbox.AddBoundingBox(bb);
 		}
 		return boundingbox;
+	}
+
+	static GetBoundingBox(nodes : PCLNode[]): BoundingBox
+	{
+		let boundingbox = new BoundingBox();
+		for(let index=0; index<nodes.length; index++)
+			boundingbox.AddBoundingBox(nodes[index].GetBoundingBox());
+		return boundingbox;
+	}
+
+	GetNodes(filter : PCLNodeFiler) : PCLNode[]
+	{
+		let result : PCLNode[] = [];
+		let currentStatus = filter(this);
+		if(currentStatus == PCLNodeFilerResult.Reject)
+			return result;
+		if(currentStatus == PCLNodeFilerResult.Accept)
+			result.push(this);
+		for(let index=0 ;index<this.children.length; index++)
+		{
+			let child = this.children[index];
+			if(PCLNode.IsPCLContainer(child))
+			{
+				let childrenResult = (child as PCLContainer).GetNodes(filter);
+				result = result.concat(childrenResult);
+
+			}
+			else
+			{
+				let childStatus = filter(child);
+				if(childStatus == PCLNodeFilerResult.Accept)
+					result.push(child);
+			}
+		}
+		return result;
 	}
 
 	Apply(proc: PCLNodeHandler): boolean {

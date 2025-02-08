@@ -134,8 +134,12 @@ class StlLoader extends FileLoader {
 		let pclMesh = new PCLMesh(mesh);
 
 		let nbtriangles = this.reader.GetNextInt32();
+		vertices.Reserve(nbtriangles*3);
+		mesh.Reserve(nbtriangles);
 		for(let index=0; index<nbtriangles; index++)
 		{
+			if(this.reader.Eof())
+				throw "STL reading went out of binary stream.";
 			let normal = this.GetBinaryVector();
 			normal.Normalize();
 			for(let vertex=0; vertex < 3; vertex++)

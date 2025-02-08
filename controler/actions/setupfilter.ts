@@ -22,8 +22,9 @@ class SetupFilter extends Action {
 		let expFactor : DialogItems.NumericValue;
 		let nbhDist : DialogItems.NumericValue;
 		let app = this.application;
+		let initialFilter = app.GetCurrentRenderingFilter();
 		let initialState ={
-			filter : app.GetCurrentRenderingFilter().Clone(),
+			filter : initialFilter ? initialFilter.Clone() : null,
 			showSelectionBox : app.sceneRenderer.drawingcontext.showselectionbbox
 		};
 		let edlFilter = initialState.filter instanceof EDLFilter ? initialState.filter as EDLFilter : null;
